@@ -63,7 +63,7 @@ body {
 .auth-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 44px 40px;
   width: 100%;
   box-shadow: var(--card-shadow);
@@ -1886,32 +1886,68 @@ body {
 /* Compact register card layout to fit viewport height and width */
 .auth-card.register-card {
   max-width: 400px;
-  padding: 24px 32px;
+  max-height: calc(100vh - 32px);
+  padding: 16px 28px;
+  overflow: visible;
 }
 
 .auth-card.register-card .large-title {
-  font-size: 28px;
-  margin-bottom: 16px;
+  font-size: 24px;
+  margin-bottom: 8px;
 }
 
 .auth-card.register-card .form-group {
-  margin-bottom: 10px;
-}
-
-.auth-card.register-card .form-label {
   margin-bottom: 4px;
 }
 
+.auth-card.register-card .form-label {
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+
+.auth-card.register-card .centered-header {
+  margin-bottom: 8px;
+}
+
+.auth-card.register-card .form-input {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  font-size: 14px;
+}
+
+.auth-card.register-card .form-input-with-icon {
+  padding-left: 40px !important;
+}
+
+.auth-card.register-card .input-icon-left {
+  left: 14px;
+  font-size: 14px;
+}
+
 .auth-card.register-card .google-center-wrapper {
-  margin: 12px 0 16px 0;
+  margin: 8px 0 10px 0;
 }
 
 .auth-card.register-card .divider-text {
-  margin: 16px 0;
+  margin: 10px 0;
 }
 
 .auth-card.register-card .footer-centered-text {
-  margin-top: 16px;
+  margin-top: 10px;
+}
+
+.auth-card.register-card .register-submit-btn {
+  padding: 10px;
+  font-size: 14.5px;
+}
+
+.auth-card.register-card .google-signin-btn-narrow {
+  padding: 8px 20px;
+}
+
+.auth-card.register-card .error-text {
+  margin-top: 2px;
+  font-size: 10.5px;
 }
 
 /* Align auth card error messages to the right */
