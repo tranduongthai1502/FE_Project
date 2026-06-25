@@ -22,7 +22,7 @@ export function HeroPanel() {
             Empowering your recruitment with Human-in-the-Loop AI
           </h2>
           <p className="hero-desc">
-            Save time, make smarter decisions, and deliver the best candidate experience using our AI talent suite.
+            Seamlessly blending machine intelligence with human intuition to find your perfect candidate match, faster than ever.
           </p>
         </div>
       </div>

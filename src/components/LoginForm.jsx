@@ -1,17 +1,43 @@
 import React, { useState } from 'react'
+import { validateEmail } from '../utils/validation'
 
 export function LoginForm({
   setStep,
-  setEmail,
-  setEmailError,
+  setEmail: setParentEmail,
+  setEmailError: setParentEmailError,
   isLoading,
   handleSignInSubmit,
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
 
+  const [email, setEmail] = useState('abcd123@example.com')
+  const [password, setPassword] = useState('12345678')
+  
+  const [localEmailError, setLocalEmailError] = useState('')
+  const [localPasswordError, setLocalPasswordError] = useState('')
+
+  const onSubmit = (e) => {
+    e.preventDefault()
+    
+    const eErr = validateEmail(email)
+    let pErr = ''
+    if (!password) {
+      pErr = 'Please enter a password.'
+    }
+    
+    setLocalEmailError(eErr)
+    setLocalPasswordError(pErr)
+    
+    if (eErr || pErr) {
+      return
+    }
+    
+    handleSignInSubmit(e)
+  }
+
   return (
-    <form onSubmit={handleSignInSubmit} noValidate className="auth-form-content">
+    <form onSubmit={onSubmit} noValidate className="auth-form-content">
       <div className="form-header">
         <h1 className="form-title">Welcome Back</h1>
         <p className="form-desc">
@@ -34,30 +60,41 @@ export function LoginForm({
         <span>Or continue with</span>
       </div>
 
+      {/* Work Email */}
       <div className="form-group">
         <label htmlFor="loginEmail" className="form-label">Work Email</label>
         <div className="input-wrapper">
           <input
             type="email"
             id="loginEmail"
-            className="form-input"
+            className={`form-input ${localEmailError ? 'has-error' : ''}`}
             placeholder="name@company.com"
-            defaultValue="abcd123@example.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (localEmailError) setLocalEmailError(validateEmail(e.target.value))
+            }}
             disabled={isLoading}
             required
           />
         </div>
+        {localEmailError && <span className="error-text">{localEmailError}</span>}
       </div>
 
+      {/* Password */}
       <div className="form-group">
         <label htmlFor="loginPass" className="form-label">Password</label>
         <div className="input-wrapper">
           <input
             type={showPassword ? 'text' : 'password'}
             id="loginPass"
-            className="form-input"
+            className={`form-input ${localPasswordError ? 'has-error' : ''}`}
             placeholder="Enter your password"
-            defaultValue="••••••••"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (localPasswordError) setLocalPasswordError(e.target.value ? '' : 'Please enter a password.')
+            }}
             disabled={isLoading}
             required
           />
@@ -70,6 +107,7 @@ export function LoginForm({
             <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
           </button>
         </div>
+        {localPasswordError && <span className="error-text">{localPasswordError}</span>}
       </div>
 
       <div className="form-options">
@@ -89,8 +127,8 @@ export function LoginForm({
           className="forgot-password-link"
           onClick={() => {
             setStep('forgot')
-            setEmail('')
-            setEmailError('')
+            setParentEmail('')
+            setParentEmailError('')
           }}
           disabled={isLoading}
         >

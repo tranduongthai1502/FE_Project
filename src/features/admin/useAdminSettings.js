@@ -17,6 +17,7 @@ export function useAdminSettings({ triggerToast }) {
   const [showAdminNewPassword, setShowAdminNewPassword] = useState(false)
   const [showAdminConfirmPassword, setShowAdminConfirmPassword] = useState(false)
   const [isAdminSaving, setIsAdminSaving] = useState(false)
+  const [showConfirmSave, setShowConfirmSave] = useState(false)
 
   const adminStrength = getAdminPasswordStrength(adminNewPassword)
 
@@ -62,6 +63,12 @@ export function useAdminSettings({ triggerToast }) {
 
     if (hasError) return
 
+    // Show confirmation popup modal instead of executing save instantly
+    setShowConfirmSave(true)
+  }
+
+  const executeAdminSaveChanges = () => {
+    setShowConfirmSave(false)
     setIsAdminSaving(true)
 
     setTimeout(() => {
@@ -98,7 +105,10 @@ export function useAdminSettings({ triggerToast }) {
     setShowAdminConfirmPassword,
     adminStrength,
     isAdminSaving,
+    showConfirmSave,
+    setShowConfirmSave,
     handleAdminSaveChanges,
+    executeAdminSaveChanges,
     handleAdminCancel,
   }
 }

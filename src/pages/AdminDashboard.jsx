@@ -1,4 +1,5 @@
 import React from 'react'
+import { ConfirmModal } from '../components/ConfirmModal'
 
 export function AdminDashboard({
   activeSidebarMenu,
@@ -25,10 +26,17 @@ export function AdminDashboard({
   setShowAdminConfirmPassword,
   adminStrength,
   isLoading,
+  showConfirmSave,
+  setShowConfirmSave,
   handleAdminSaveChanges,
+  executeAdminSaveChanges,
   handleAdminCancel,
   handleBackToLogin,
+  handleLogout,
 }) {
+  const [showProfileDropdown, setShowProfileDropdown] = React.useState(false)
+  const [showConfirmCancel, setShowConfirmCancel] = React.useState(false)
+
   return (
     <div className="admin-dashboard">
       {/* Sidebar */}
@@ -113,12 +121,62 @@ export function AdminDashboard({
               <i className="fa-regular fa-circle-question"></i>
             </button>
 
-            <div className="user-profile-section">
+            <div 
+              className="user-profile-section" 
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              style={{ position: 'relative', cursor: 'pointer' }}
+            >
               <div className="user-avatar-placeholder">AT</div>
               <div className="user-info">
                 <span className="user-name">Alex Thompson</span>
                 <span className="user-role">HR</span>
               </div>
+
+              {showProfileDropdown && (
+                <div className="profile-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                  <div className="dropdown-user-header">
+                    <span className="dropdown-user-name">Alex Thompson</span>
+                    <span className="dropdown-user-role">alex.t@jobfusion.ai</span>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setActiveSidebarMenu('settings')
+                      setActiveSettingsTab('profile')
+                      setShowProfileDropdown(false)
+                    }}
+                  >
+                    <i className="fa-regular fa-user"></i>
+                    <span>Profile Information</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setActiveSidebarMenu('settings')
+                      setActiveSettingsTab('change_password')
+                      setShowProfileDropdown(false)
+                    }}
+                  >
+                    <i className="fa-solid fa-lock"></i>
+                    <span>Change Password</span>
+                  </button>
+                  <div className="dropdown-divider"></div>
+                  <button 
+                    type="button" 
+                    className="dropdown-item logout-btn" 
+                    onClick={() => {
+                      setShowProfileDropdown(false)
+                      if (handleLogout) handleLogout()
+                    }}
+                  >
+                    <i className="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -161,7 +219,7 @@ export function AdminDashboard({
               <button 
                 type="button" 
                 style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}
-                onClick={handleAdminCancel}
+                onClick={() => setShowConfirmCancel(true)}
                 aria-label="Clear form"
               >
                 <i className="fa-solid fa-xmark"></i>
@@ -306,7 +364,7 @@ export function AdminDashboard({
                   <button 
                     type="button" 
                     className="btn-outline-cancel"
-                    onClick={handleAdminCancel}
+                    onClick={() => setShowConfirmCancel(true)}
                     disabled={isLoading}
                   >
                     Cancel
@@ -344,6 +402,31 @@ export function AdminDashboard({
           </div>
         </footer>
       </main>
+
+      {/* Confirmation Modal for Cancel */}
+      <ConfirmModal
+        isOpen={showConfirmCancel}
+        title="Confirm Action"
+        message="Are you sure you want to proceed? This action will trigger the next step in the recruitment workflow."
+        alertTitle="WORKFLOW ALERT"
+        alertMessage="Are you sure you want to cancel? Your changes will not be saved."
+        onCancel={() => setShowConfirmCancel(false)}
+        onConfirm={() => {
+          handleAdminCancel()
+          setShowConfirmCancel(false)
+        }}
+      />
+
+      {/* Confirmation Modal for Save Changes */}
+      <ConfirmModal
+        isOpen={showConfirmSave}
+        title="Confirm Save Changes"
+        message="Are you sure you want to update your password? This action will update your login credentials."
+        alertTitle="SECURITY ALERT"
+        alertMessage="Make sure you remember your new password before confirming. You will need to use it for your next sign in."
+        onCancel={() => setShowConfirmSave(false)}
+        onConfirm={executeAdminSaveChanges}
+      />
     </div>
   )
 }

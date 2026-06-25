@@ -194,6 +194,9 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
       setIsAuthLoading(false)
       setStep('admin')
       onSignInSuccess()
+      if (triggerToast) {
+        triggerToast("Logged in successfully.")
+      }
     }, 1000)
   }
 

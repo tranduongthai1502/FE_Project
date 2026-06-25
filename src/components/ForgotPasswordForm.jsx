@@ -46,11 +46,6 @@ export function ForgotPasswordForm({
             autoComplete="email"
             required
           />
-          {emailError && (
-            <span className="input-error-icon">
-              <i className="fa-solid fa-circle-exclamation"></i>
-            </span>
-          )}
         </div>
         {emailError && <span className="error-text">{emailError}</span>}
       </div>

@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 export function useToast() {
   const [showToast, setShowToast] = useState(false)
   const [toastFadeOut, setToastFadeOut] = useState(false)
+  const [toastMessage, setToastMessage] = useState("Password reset successful.")
+  const [toastType, setToastType] = useState("success") // 'success' | 'error'
   const toastTimerRef = useRef(null)
   const toastFadeTimerRef = useRef(null)
 
@@ -13,10 +15,12 @@ export function useToast() {
     }
   }, [])
 
-  const triggerToast = () => {
+  const triggerToast = (message = "Password reset successful.", type = "success") => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
 
+    setToastMessage(message)
+    setToastType(type)
     setShowToast(true)
     setToastFadeOut(false)
 
@@ -32,6 +36,8 @@ export function useToast() {
   return {
     showToast,
     toastFadeOut,
+    toastMessage,
+    toastType,
     triggerToast,
   }
 }
