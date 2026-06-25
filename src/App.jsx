@@ -1,412 +1,81 @@
-import { useState, useRef, useEffect } from 'react'
+import { ToastNotification } from './components/ToastNotification'
+import { useAdminSettings } from './features/admin/useAdminSettings'
+import { useAuthFlow } from './features/auth/useAuthFlow'
+import { useToast } from './hooks/useToast'
 
 function App() {
-  const [step, setStep] = useState('login') // 'login' | 'forgot' | 'otp' | 'reset' | 'admin'
-  const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  
-  // OTP state
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const [otpError, setOtpError] = useState('')
-  const otpInputsRef = useRef([])
-
-  // Resend OTP countdown timer
-  const [countdown, setCountdown] = useState(59)
-  const timerRef = useRef(null)
-
-  // Reset Password state
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [newPasswordError, setNewPasswordError] = useState('')
-  const [confirmPasswordError, setConfirmPasswordError] = useState('')
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-
-  // Toast Notification state
-  const [showToast, setShowToast] = useState(false)
-  const [toastFadeOut, setToastFadeOut] = useState(false)
-  const toastTimerRef = useRef(null)
-  const toastFadeTimerRef = useRef(null)
-
-  // Admin Account Settings state
-  const [activeSidebarMenu, setActiveSidebarMenu] = useState('settings')
-  const [activeSettingsTab, setActiveSettingsTab] = useState('change_password')
-  
-  const [adminCurrentPassword, setAdminCurrentPassword] = useState('')
-  const [adminNewPassword, setAdminNewPassword] = useState('')
-  const [adminConfirmPassword, setAdminConfirmPassword] = useState('')
-  
-  const [adminCurrentPasswordError, setAdminCurrentPasswordError] = useState('')
-  const [adminNewPasswordError, setAdminNewPasswordError] = useState('')
-  const [adminConfirmPasswordError, setAdminConfirmPasswordError] = useState('')
-  
-  const [showAdminCurrentPassword, setShowAdminCurrentPassword] = useState(false)
-  const [showAdminNewPassword, setShowAdminNewPassword] = useState(false)
-  const [showAdminConfirmPassword, setShowAdminConfirmPassword] = useState(false)
-
-  const startTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current)
-    setCountdown(59)
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
-  // Handle step-change side-effects (like timers)
-  useEffect(() => {
-    if (step === 'otp') {
-      startTimer()
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [step])
-
-  // Toast cleanup
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-      if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
-    }
-  }, [])
-
-  const triggerToast = () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
-    
-    setShowToast(true)
-    setToastFadeOut(false)
-
-    toastFadeTimerRef.current = setTimeout(() => {
-      setToastFadeOut(true)
-    }, 3000)
-
-    toastTimerRef.current = setTimeout(() => {
-      setShowToast(false)
-    }, 3400)
-  }
-
-  // Validate email address
-  const validateEmail = (val) => {
-    if (!val) {
-      return 'Please enter your email address.'
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(val)) {
-      return 'Please enter a valid email address'
-    }
-    return ''
-  }
-
-  // Evaluate password strength (for reset screen)
-  const getPasswordStrength = () => {
-    const requirements = {
-      length: newPassword.length >= 8,
-      case: /[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword),
-      number: /\d/.test(newPassword),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
-    }
-
-    const score = Object.values(requirements).filter(Boolean).length
-    
-    let strengthLabel = 'Weak'
-    let strengthClass = 'weak'
-    let progressWidth = '25%'
-
-    if (score === 3) {
-      strengthLabel = 'Medium'
-      strengthClass = 'medium'
-      progressWidth = '60%'
-    } else if (score === 4) {
-      strengthLabel = 'Strong'
-      strengthClass = 'strong'
-      progressWidth = '100%'
-    }
-
-    return { requirements, score, strengthLabel, strengthClass, progressWidth }
-  }
-
-  const strength = getPasswordStrength()
-
-  // Evaluate password strength (for admin settings screen)
-  const getAdminPasswordStrength = () => {
-    const requirements = {
-      length: adminNewPassword.length >= 8,
-      case: /[a-z]/.test(adminNewPassword) && /[A-Z]/.test(adminNewPassword),
-      number: /\d/.test(adminNewPassword),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(adminNewPassword),
-    }
-
-    const score = Object.values(requirements).filter(Boolean).length
-    
-    let strengthLabel = 'Weak'
-    let strengthClass = 'weak'
-
-    if (adminNewPassword) {
-      if (score === 3) {
-        strengthLabel = 'Medium'
-        strengthClass = 'medium'
-      } else if (score === 4) {
-        strengthLabel = 'Strong'
-        strengthClass = 'strong'
-      }
-    } else {
-      // Default state matching screenshot (empty displays Weak)
-      strengthLabel = 'Weak'
-      strengthClass = 'weak'
-    }
-
-    return { requirements, score, strengthLabel, strengthClass }
-  }
-
-  const adminStrength = getAdminPasswordStrength()
-
-  // Handle email form submission
-  const handleSendCode = (e) => {
-    e.preventDefault()
-    const error = validateEmail(email)
-    if (error) {
-      setEmailError(error)
-      return
-    }
-
-    setEmailError('')
-    setIsLoading(true)
-
-    // Simulate sending code via API
-    setTimeout(() => {
-      setIsLoading(false)
-      setStep('otp')
-    }, 1500)
-  }
-
-  // Handle individual OTP input changes
-  const handleOtpChange = (element, index) => {
-    const value = element.value
-    if (isNaN(Number(value))) return
-
-    const newOtp = [...otp]
-    newOtp[index] = value.substring(value.length - 1) // Keep only the last character
-    setOtp(newOtp)
-    setOtpError('')
-
-    // Move focus to next input if value is entered
-    if (value && index < 5) {
-      otpInputsRef.current[index + 1].focus()
-    }
-  }
-
-  // Handle backspace in OTP input
-  const handleOtpKeyDown = (e, index) => {
-    if (e.key === 'Backspace') {
-      const newOtp = [...otp]
-      
-      // If current is empty, clear and move focus to previous input
-      if (!otp[index] && index > 0) {
-        newOtp[index - 1] = ''
-        setOtp(newOtp)
-        otpInputsRef.current[index - 1].focus()
-      } else {
-        newOtp[index] = ''
-        setOtp(newOtp)
-      }
-      setOtpError('')
-    }
-  }
-
-  // Handle paste in OTP input
-  const handleOtpPaste = (e) => {
-    e.preventDefault()
-    const pastedData = e.clipboardData.getData('text').trim()
-    if (!/^\d+$/.test(pastedData)) return // Only allow digits
-
-    const pastedDigits = pastedData.slice(0, 6).split('')
-    const newOtp = [...otp]
-    
-    pastedDigits.forEach((digit, index) => {
-      if (index < 6) {
-        newOtp[index] = digit
-      }
-    })
-    
-    setOtp(newOtp)
-    setOtpError('')
-
-    // Focus last filled or next empty input
-    const focusIndex = Math.min(pastedDigits.length, 5)
-    if (otpInputsRef.current[focusIndex]) {
-      otpInputsRef.current[focusIndex].focus()
-    }
-  }
-
-  // Handle OTP verification submission
-  const handleVerifyOtp = (e) => {
-    e.preventDefault()
-    const otpCode = otp.join('')
-    
-    if (otpCode.length < 6) {
-      setOtpError('Please enter the OTP code.')
-      return
-    }
-
-    setOtpError('')
-    setIsLoading(true)
-
-    // Simulate OTP verification API call
-    setTimeout(() => {
-      setIsLoading(false)
-      setStep('reset')
-    }, 1500)
-  }
-
-  // Handle Reset Password form submission
-  const handleResetPassword = (e) => {
-    e.preventDefault()
-    let hasError = false
-
-    if (strength.score < 4) {
-      setNewPasswordError('Password does not meet requirements.')
-      hasError = true
-    } else {
-      setNewPasswordError('')
-    }
-
-    if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your new password.')
-      hasError = true
-    } else if (newPassword !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match.')
-      hasError = true
-    } else {
-      setConfirmPasswordError('')
-    }
-
-    if (hasError) return
-
-    setIsLoading(true)
-
-    // Simulate Reset Password API call
-    setTimeout(() => {
-      setIsLoading(false)
-      
-      // Redirect to login screen
-      setStep('login')
-      
-      // Reset form variables
-      setNewPassword('')
-      setConfirmPassword('')
-      setEmail('')
-      setOtp(['', '', '', '', '', ''])
-      
-      // Pop up the success toast notification
-      triggerToast()
-    }, 1500)
-  }
-
-  // Handle Admin Change Password Form Submission
-  const handleAdminSaveChanges = (e) => {
-    e.preventDefault()
-    let hasError = false
-
-    if (!adminCurrentPassword) {
-      setAdminCurrentPasswordError('Please enter current password.')
-      hasError = true
-    } else {
-      setAdminCurrentPasswordError('')
-    }
-
-    if (!adminNewPassword) {
-      setAdminNewPasswordError('Please enter new password.')
-      hasError = true
-    } else if (adminStrength.score < 4) {
-      setAdminNewPasswordError('Password does not meet requirements.')
-      hasError = true
-    } else {
-      setAdminNewPasswordError('')
-    }
-
-    if (!adminConfirmPassword) {
-      setAdminConfirmPasswordError('Please enter confirm password.')
-      hasError = true
-    } else if (adminNewPassword !== adminConfirmPassword) {
-      setAdminConfirmPasswordError('Passwords do not match.')
-      hasError = true
-    } else {
-      setAdminConfirmPasswordError('')
-    }
-
-    if (hasError) return
-
-    setIsLoading(true)
-
-    // Simulate saving changes
-    setTimeout(() => {
-      setIsLoading(false)
-      
-      // Clear form
-      setAdminCurrentPassword('')
-      setAdminNewPassword('')
-      setAdminConfirmPassword('')
-      
-      // Show success toast on top-right
-      triggerToast()
-    }, 1200)
-  }
-
-  // Clear admin change password form
-  const handleAdminCancel = () => {
-    setAdminCurrentPassword('')
-    setAdminNewPassword('')
-    setAdminConfirmPassword('')
-    setAdminCurrentPasswordError('')
-    setAdminNewPasswordError('')
-    setAdminConfirmPasswordError('')
-  }
-
-  // Back to login from forgot password screen
-  const handleBackToLogin = () => {
-    setStep('login')
-    setEmail('')
-    setEmailError('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setNewPasswordError('')
-    setConfirmPasswordError('')
-  }
-
-  // Login handler
-  const handleSignInSubmit = (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    // Simulate API sign in
-    setTimeout(() => {
-      setIsLoading(false)
-      setStep('admin')
-      handleAdminCancel()
-    }, 1000)
-  }
+  const { showToast, toastFadeOut, triggerToast } = useToast()
+  const {
+    activeSidebarMenu,
+    setActiveSidebarMenu,
+    activeSettingsTab,
+    setActiveSettingsTab,
+    adminCurrentPassword,
+    setAdminCurrentPassword,
+    adminNewPassword,
+    setAdminNewPassword,
+    adminConfirmPassword,
+    setAdminConfirmPassword,
+    adminCurrentPasswordError,
+    setAdminCurrentPasswordError,
+    adminNewPasswordError,
+    setAdminNewPasswordError,
+    adminConfirmPasswordError,
+    setAdminConfirmPasswordError,
+    showAdminCurrentPassword,
+    setShowAdminCurrentPassword,
+    showAdminNewPassword,
+    setShowAdminNewPassword,
+    showAdminConfirmPassword,
+    setShowAdminConfirmPassword,
+    adminStrength,
+    isAdminSaving,
+    handleAdminSaveChanges,
+    handleAdminCancel,
+  } = useAdminSettings({ triggerToast })
+  const {
+    step,
+    setStep,
+    email,
+    setEmail,
+    emailError,
+    setEmailError,
+    isAuthLoading,
+    otp,
+    setOtp,
+    otpError,
+    setOtpError,
+    otpInputsRef,
+    countdown,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    newPasswordError,
+    setNewPasswordError,
+    confirmPasswordError,
+    setConfirmPasswordError,
+    showNewPassword,
+    setShowNewPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    strength,
+    startTimer,
+    validateEmail,
+    handleSendCode,
+    handleOtpChange,
+    handleOtpKeyDown,
+    handleOtpPaste,
+    handleVerifyOtp,
+    handleResetPassword,
+    handleBackToLogin,
+    handleSignInSubmit,
+  } = useAuthFlow({ triggerToast, onSignInSuccess: handleAdminCancel })
+  const isLoading = isAuthLoading || isAdminSaving
 
   return (
     <>
-      {/* Floating Success Toast Alert (renders globally over dashboard and cards) */}
-      {showToast && (
-        <div className={`toast-notification ${toastFadeOut ? 'hide' : ''}`} role="alert" aria-live="assertive">
-          <span className="toast-icon">
-            <i className="fa-regular fa-square-check"></i>
-          </span>
-          <span className="toast-text">Password reset successful.</span>
-        </div>
-      )}
+      <ToastNotification isVisible={showToast} isFadingOut={toastFadeOut} />
 
       {step !== 'admin' ? (
         <div style={{ width: '100%', maxWidth: '460px', padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
