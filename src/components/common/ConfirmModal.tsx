@@ -9,11 +9,11 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }) {
+  const backdropMouseDownRef = React.useRef(false)
+
   if (!isOpen) return null
 
   // Setup click away safety similar to the main modal
-  const backdropMouseDownRef = React.useRef(false)
-
   const handleMouseDown = (e) => {
     backdropMouseDownRef.current = e.target === e.currentTarget
   }

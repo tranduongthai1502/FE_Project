@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { getPasswordStrength } from '../../utils/passwordStrength'
-import { validateEmail } from '../../utils/validation'
+import { getPasswordStrength } from '../utils/passwordStrength'
+import { validateEmail } from '../utils/validation'
 
 const emptyOtp = ['', '', '', '', '', '']
 

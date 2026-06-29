@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import bgImg from '../assets/ai_recruitment_bg.png'
+import bgImg from '../../assets/ai_recruitment_bg.png'
 
 type AuthLayoutProps = {
   children: ReactNode

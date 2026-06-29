@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { validateEmail } from '../utils/validation'
 
 export function LoginForm({

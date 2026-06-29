@@ -1,12 +1,13 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { AuthLayout } from '../components/AuthLayout'
-import { EyeIcon, GoogleIcon, LockIcon, MailIcon } from '../components/icons'
+import { AuthLayout } from '../components/layout/AuthLayout'
+import { EyeIcon, GoogleIcon, LockIcon, MailIcon } from '../components/icons/Icons'
 
 type LoginPageProps = {
   onGoToSignup: () => void
+  onSignInSuccess: () => void
 }
 
-export function LoginPage({ onGoToSignup }: LoginPageProps) {
+export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(false)
@@ -24,7 +25,10 @@ export function LoginPage({ onGoToSignup }: LoginPageProps) {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     setIsLoading(true)
-    window.setTimeout(() => setIsLoading(false), 800)
+    window.setTimeout(() => {
+      setIsLoading(false)
+      onSignInSuccess()
+    }, 800)
   }
 
   return (

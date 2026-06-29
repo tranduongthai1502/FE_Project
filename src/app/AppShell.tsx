@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import App from './App.jsx'
+import App from './App'
 
 export function AppShell() {
   return (

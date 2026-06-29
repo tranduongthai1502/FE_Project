@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { AuthLayout } from '../components/AuthLayout'
-import { EyeIcon, GoogleIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons'
+import { AuthLayout } from '../components/layout/AuthLayout'
+import { EyeIcon, GoogleIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons/Icons'
 
 type SignupPageProps = {
   onGoToSignin: () => void

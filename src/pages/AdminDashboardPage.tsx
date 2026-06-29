@@ -1,10 +1,10 @@
 import React from 'react'
-import { ConfirmModal } from '../components/ConfirmModal'
-import SuperAdminFlow from '../features/admin/roles/SuperAdminFlow'
-import TenantAdminFlow from '../features/admin/roles/TenantAdminFlow'
-import HRFlow from '../features/admin/roles/HRFlow'
-import InterviewerFlow from '../features/admin/roles/InterviewerFlow'
-import CandidateFlow from '../features/admin/roles/CandidateFlow'
+import { ConfirmModal } from '../components/common/ConfirmModal'
+import SuperAdminFlow from '../features/admin/flows/SuperAdminFlow'
+import TenantAdminFlow from '../features/admin/flows/TenantAdminFlow'
+import HRFlow from '../features/admin/flows/HRFlow'
+import InterviewerFlow from '../features/admin/flows/InterviewerFlow'
+import CandidateFlow from '../features/admin/flows/CandidateFlow'
 
 const ROLE_MENU_ITEMS = {
   super_admin: [
@@ -86,7 +86,7 @@ function getRoleUserMetadata(role) {
   return ROLE_USER_METADATA[role] || ROLE_USER_METADATA.super_admin
 }
 
-export function AdminDashboard({
+export function AdminDashboardPage({
   activeSidebarMenu,
   setActiveSidebarMenu,
   activeSettingsTab,
@@ -116,7 +116,6 @@ export function AdminDashboard({
   handleAdminSaveChanges,
   executeAdminSaveChanges,
   handleAdminCancel,
-  handleBackToLogin,
   handleLogout,
 }) {
   const [showProfileDropdown, setShowProfileDropdown] = React.useState(false)
