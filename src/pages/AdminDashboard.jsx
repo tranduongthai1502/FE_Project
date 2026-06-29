@@ -1,5 +1,90 @@
 import React from 'react'
 import { ConfirmModal } from '../components/ConfirmModal'
+import SuperAdminFlow from '../features/admin/roles/SuperAdminFlow'
+import TenantAdminFlow from '../features/admin/roles/TenantAdminFlow'
+import HRFlow from '../features/admin/roles/HRFlow'
+import InterviewerFlow from '../features/admin/roles/InterviewerFlow'
+import CandidateFlow from '../features/admin/roles/CandidateFlow'
+
+const ROLE_MENU_ITEMS = {
+  super_admin: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-chart-line' },
+    { key: 'tenants', label: 'Tenant Management', icon: 'fa-solid fa-building' },
+    { key: 'subscriptions', label: 'Subscription Plans', icon: 'fa-solid fa-credit-card' },
+    { key: 'prompts', label: 'Prompt Management', icon: 'fa-solid fa-code' },
+    { key: 'settings', label: 'Settings', icon: 'fa-solid fa-gear' },
+  ],
+  tenant_admin: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-chart-line' },
+    { key: 'staff', label: 'Staff Management', icon: 'fa-solid fa-user-group' },
+    { key: 'analytics', label: 'Analytics', icon: 'fa-solid fa-chart-pie' },
+    { key: 'settings', label: 'Settings', icon: 'fa-solid fa-gear' },
+  ],
+  hr: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-chart-line' },
+    { key: 'jobs', label: 'Jobs', icon: 'fa-solid fa-briefcase' },
+    { key: 'candidates', label: 'Candidates', icon: 'fa-solid fa-users' },
+    { key: 'email', label: 'Email Management', icon: 'fa-solid fa-envelope' },
+    { key: 'interviews', label: 'Interviews', icon: 'fa-solid fa-calendar-days' },
+    { key: 'analytics', label: 'Analytics', icon: 'fa-solid fa-chart-pie' },
+    { key: 'settings', label: 'Settings', icon: 'fa-solid fa-gear' },
+  ],
+  interviewer: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-chart-line' },
+    { key: 'my_interviews', label: 'My Interviews', icon: 'fa-solid fa-calendar-check' },
+    { key: 'candidates', label: 'Candidates', icon: 'fa-solid fa-users' },
+    { key: 'interview_detail', label: 'Interview Detail', icon: 'fa-solid fa-clipboard-list' },
+    { key: 'settings', label: 'Settings', icon: 'fa-solid fa-gear' },
+  ],
+  candidate: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-chart-line' },
+    { key: 'my_jobs', label: 'My Jobs', icon: 'fa-solid fa-briefcase' },
+    { key: 'interviews', label: 'Interviews', icon: 'fa-solid fa-calendar-days' },
+    { key: 'ai_insights', label: 'AI Insights', icon: 'fa-solid fa-brain' },
+    { key: 'settings', label: 'Profile Settings', icon: 'fa-solid fa-user-gear' },
+  ],
+}
+
+const ROLE_USER_METADATA = {
+  super_admin: {
+    initials: 'SA',
+    name: 'System Admin',
+    roleName: 'Super Admin',
+    email: 'admin@jobfusion.ai',
+  },
+  tenant_admin: {
+    initials: 'TA',
+    name: 'Sarah Jenkins',
+    roleName: 'Tenant Admin',
+    email: 'sarah.j@ttbmedia.com',
+  },
+  hr: {
+    initials: 'HR',
+    name: 'David Ross',
+    roleName: 'HR Manager',
+    email: 'd.ross@ttbmedia.com',
+  },
+  interviewer: {
+    initials: 'IV',
+    name: 'Emma Stone',
+    roleName: 'Interviewer',
+    email: 'emma@ttbmedia.com',
+  },
+  candidate: {
+    initials: 'JD',
+    name: 'John Doe',
+    roleName: 'Candidate',
+    email: 'john.doe@email.com',
+  },
+}
+
+function getRoleMenuItems(role) {
+  return ROLE_MENU_ITEMS[role] || ROLE_MENU_ITEMS.super_admin
+}
+
+function getRoleUserMetadata(role) {
+  return ROLE_USER_METADATA[role] || ROLE_USER_METADATA.super_admin
+}
 
 export function AdminDashboard({
   activeSidebarMenu,
@@ -37,6 +122,26 @@ export function AdminDashboard({
   const [showProfileDropdown, setShowProfileDropdown] = React.useState(false)
   const [showConfirmCancel, setShowConfirmCancel] = React.useState(false)
 
+  // Local state for Tenant Management
+  const [tenantSearch, setTenantSearch] = React.useState('')
+  const [tenantFilterTab, setTenantFilterTab] = React.useState('all')
+  const [tenantFilterPlan, setTenantFilterPlan] = React.useState('all')
+  const [showPlanDropdown, setShowPlanDropdown] = React.useState(false)
+  const [selectedTenant, setSelectedTenant] = React.useState(null)
+  const [currentRole, setCurrentRole] = React.useState('super_admin')
+  const [isCreatingTenant, setIsCreatingTenant] = React.useState(false)
+
+  const tenantsData = [
+    { id: 'TNT-001', name: 'Nexus Media Group', domain: 'nexusmedia.com', initials: 'NM', plan: 'ENTERPRISE', expiration: 'Oct 24, 2025', expirationSub: 'Auto-renews', expirationSubClass: '', quotaUsed: 12, quotaMax: 14, status: 'Active', bgClass: 'orange-avatar-bg' },
+    { id: 'TNT-002', name: 'Vanguard Logistics', domain: 'vanguard.io', initials: 'V', plan: 'PRO PLAN', expiration: 'Dec 15, 2023', expirationSub: 'Expired', expirationSubClass: 'expired-text', quotaUsed: 20, quotaMax: 20, status: 'Inactive', bgClass: 'blue-avatar-bg' },
+    { id: 'TNT-003', name: 'TalentCloud AI', domain: 'talentcloud.ai', initials: 'TC', plan: 'ENTERPRISE', expiration: 'May 12, 2026', expirationSub: 'Annual Billing', expirationSubClass: '', quotaUsed: 1, quotaMax: 10, status: 'Active', bgClass: 'light-blue-avatar-bg' },
+    { id: 'TNT-004', name: 'SkyBlue Ventures', domain: 'skyblue.com', initials: 'SB', plan: 'GROWTH', expiration: 'Jan 30, 2025', expirationSub: 'Trialing', expirationSubClass: '', quotaUsed: 5, quotaMax: 10, status: 'Active', bgClass: 'indigo-avatar-bg' },
+    { id: 'TNT-005', name: 'TTB Media', domain: 'ttbmedia.com', initials: 'TT', plan: 'GROWTH', expiration: 'Oct 23, 2025', expirationSub: 'Trialing', expirationSubClass: '', quotaUsed: 7, quotaMax: 10, status: 'Active', bgClass: 'indigo-avatar-bg' },
+  ]
+
+
+  const meta = getRoleUserMetadata(currentRole)
+
   return (
     <div className="admin-dashboard">
       {/* Sidebar */}
@@ -49,49 +154,42 @@ export function AdminDashboard({
           <span className="sidebar-logo-sub">AI Talent Suite</span>
         </div>
 
+        <div className="role-switcher-container">
+          <label className="role-switcher-label">ROLE FLOW</label>
+          <select 
+            className="role-switcher-select" 
+            value={currentRole} 
+            onChange={(e) => {
+              const role = e.target.value;
+              setCurrentRole(role);
+              setActiveSidebarMenu('dashboard');
+              setSelectedTenant(null);
+              setIsCreatingTenant(false);
+            }}
+          >
+            <option value="super_admin">Super Admin</option>
+            <option value="tenant_admin">Tenant Admin</option>
+            <option value="hr">HR</option>
+            <option value="interviewer">Interviewer</option>
+            <option value="candidate">Candidate</option>
+          </select>
+        </div>
+
         <ul className="sidebar-menu">
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'dashboard' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('dashboard')}>
-              <i className="fa-solid fa-grip"></i>
-              <span>Dashboard</span>
-            </button>
-          </li>
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'jobs' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('jobs')}>
-              <i className="fa-solid fa-briefcase"></i>
-              <span>Jobs</span>
-            </button>
-          </li>
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'candidates' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('candidates')}>
-              <i className="fa-solid fa-users"></i>
-              <span>Candidates</span>
-            </button>
-          </li>
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'emails' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('emails')}>
-              <i className="fa-solid fa-envelope"></i>
-              <span>Email Management</span>
-            </button>
-          </li>
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'interviews' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('interviews')}>
-              <i className="fa-solid fa-calendar-days"></i>
-              <span>Interviews</span>
-            </button>
-          </li>
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'analytics' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('analytics')}>
-              <i className="fa-solid fa-chart-line"></i>
-              <span>Analytics</span>
-            </button>
-          </li>
-          <li className={`sidebar-menu-item ${activeSidebarMenu === 'settings' ? 'active' : ''}`}>
-            <button type="button" onClick={() => setActiveSidebarMenu('settings')}>
-              <i className="fa-solid fa-gear"></i>
-              <span>Settings</span>
-            </button>
-          </li>
+          {getRoleMenuItems(currentRole).map((item) => (
+            <li key={item.key} className={`sidebar-menu-item ${activeSidebarMenu === item.key ? 'active' : ''}`}>
+              <button type="button" onClick={() => {
+                setActiveSidebarMenu(item.key);
+                if (item.key !== 'tenants') {
+                  setSelectedTenant(null);
+                  setIsCreatingTenant(false);
+                }
+              }}>
+                <i className={item.icon}></i>
+                <span>{item.label}</span>
+              </button>
+            </li>
+          ))}
         </ul>
       </aside>
 
@@ -109,10 +207,6 @@ export function AdminDashboard({
           </div>
 
           <div className="header-actions">
-            <button type="button" className="workspace-btn">
-              Workspace Switcher
-            </button>
-
             <button type="button" className="header-icon-link" aria-label="Notifications">
               <i className="fa-regular fa-bell"></i>
             </button>
@@ -126,19 +220,14 @@ export function AdminDashboard({
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               style={{ position: 'relative', cursor: 'pointer' }}
             >
-              <div className="user-avatar-placeholder">AT</div>
+              <div className="user-avatar-placeholder">{meta.initials}</div>
               <div className="user-info">
-                <span className="user-name">Alex Thompson</span>
-                <span className="user-role">HR</span>
+                <span className="user-name">{meta.name}</span>
+                <span className="user-role">{meta.roleName}</span>
               </div>
 
               {showProfileDropdown && (
-                <div className="profile-dropdown-menu" onClick={(e) => e.stopPropagation()}>
-                  <div className="dropdown-user-header">
-                    <span className="dropdown-user-name">Alex Thompson</span>
-                    <span className="dropdown-user-role">alex.t@jobfusion.ai</span>
-                  </div>
-                  <div className="dropdown-divider"></div>
+                <div className="profile-dropdown-menu custom-logout-dropdown" onClick={(e) => e.stopPropagation()}>
                   <button 
                     type="button" 
                     className="dropdown-item" 
@@ -148,8 +237,8 @@ export function AdminDashboard({
                       setShowProfileDropdown(false)
                     }}
                   >
-                    <i className="fa-regular fa-user"></i>
-                    <span>Profile Information</span>
+                    <i className="fa-solid fa-user-group"></i>
+                    <span>Profile</span>
                   </button>
                   <button 
                     type="button" 
@@ -161,19 +250,19 @@ export function AdminDashboard({
                     }}
                   >
                     <i className="fa-solid fa-lock"></i>
-                    <span>Change Password</span>
+                    <span>Change password</span>
                   </button>
                   <div className="dropdown-divider"></div>
                   <button 
                     type="button" 
-                    className="dropdown-item logout-btn" 
+                    className="dropdown-item logout-menu-btn" 
                     onClick={() => {
                       setShowProfileDropdown(false)
                       if (handleLogout) handleLogout()
                     }}
                   >
-                    <i className="fa-solid fa-right-from-bracket"></i>
-                    <span>Sign Out</span>
+                    <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Log out</span>
                   </button>
                 </div>
               )}
@@ -183,14 +272,140 @@ export function AdminDashboard({
 
         {/* Content Body */}
         <div className="admin-content-wrapper">
-          <button type="button" className="back-home-link" onClick={handleBackToLogin}>
-            <i className="fa-solid fa-arrow-left"></i>
-            <span>Back to Home</span>
-          </button>
+          {activeSidebarMenu === 'tenants' ? (
+            selectedTenant ? (
+              <div className="admin-breadcrumb">
+                <i className="fa-solid fa-house breadcrumb-icon clickable" onClick={() => { setSelectedTenant(null); setIsCreatingTenant(false); }}></i>
+                <span className="breadcrumb-item clickable" onClick={() => { setSelectedTenant(null); setIsCreatingTenant(false); }}>Home</span>
+                <span className="breadcrumb-separator">/</span>
+                <span className="breadcrumb-item clickable" onClick={() => { setSelectedTenant(null); setIsCreatingTenant(false); }}>Tenant Management</span>
+                <span className="breadcrumb-separator">/</span>
+                <span className="breadcrumb-item active-breadcrumb">Tenant detail</span>
+              </div>
+            ) : isCreatingTenant ? (
+              <div className="admin-breadcrumb">
+                <i className="fa-solid fa-house breadcrumb-icon clickable" onClick={() => { setSelectedTenant(null); setIsCreatingTenant(false); }}></i>
+                <span className="breadcrumb-item clickable" onClick={() => { setSelectedTenant(null); setIsCreatingTenant(false); }}>Home</span>
+                <span className="breadcrumb-separator">/</span>
+                <span className="breadcrumb-item clickable" onClick={() => { setSelectedTenant(null); setIsCreatingTenant(false); }}>Tenant Management</span>
+                <span className="breadcrumb-separator">/</span>
+                <span className="breadcrumb-item active-breadcrumb" style={{ color: '#ea4335' }}>Create New Tenant</span>
+              </div>
+            ) : (
+              <div className="admin-breadcrumb">
+                <i className="fa-solid fa-house breadcrumb-icon"></i>
+                <span className="breadcrumb-item">Home</span>
+                <span className="breadcrumb-separator">/</span>
+                <span className="breadcrumb-item active-breadcrumb">Tenant Management</span>
+              </div>
+            )
+          ) : (
+            activeSidebarMenu !== 'dashboard' && (
+              <h2 className="admin-page-title">
+                {activeSidebarMenu === 'subscriptions' && 'Subscription Plans'}
+                {activeSidebarMenu === 'prompts' && 'Prompt Management'}
+                {activeSidebarMenu === 'settings' && (currentRole === 'candidate' ? 'Profile Settings' : 'Account Settings')}
+                {activeSidebarMenu === 'analytics' && 'Analytics'}
+                {activeSidebarMenu === 'jobs' && 'Jobs'}
+                {activeSidebarMenu === 'candidates' && 'Candidates'}
+                {activeSidebarMenu === 'email' && 'Email Management'}
+                {activeSidebarMenu === 'interviews' && 'Interviews'}
+                {activeSidebarMenu === 'my_interviews' && 'My Interviews'}
+                {activeSidebarMenu === 'interview_detail' && 'Interview Detail'}
+                {activeSidebarMenu === 'my_jobs' && 'My Jobs'}
+                {activeSidebarMenu === 'ai_insights' && 'AI Insights'}
+              </h2>
+            )
+          )}
 
-          <h2 className="admin-page-title">Account Settings</h2>
+          {/* Super Admin views */}
+          {currentRole === 'super_admin' && (
+            <SuperAdminFlow
+              activeSidebarMenu={activeSidebarMenu}
+              tenantSearch={tenantSearch}
+              setTenantSearch={setTenantSearch}
+              tenantFilterTab={tenantFilterTab}
+              setTenantFilterTab={setTenantFilterTab}
+              tenantFilterPlan={tenantFilterPlan}
+              setTenantFilterPlan={setTenantFilterPlan}
+              showPlanDropdown={showPlanDropdown}
+              setShowPlanDropdown={setShowPlanDropdown}
+              selectedTenant={selectedTenant}
+              setSelectedTenant={setSelectedTenant}
+              tenantsData={tenantsData}
+              isCreatingTenant={isCreatingTenant}
+              setIsCreatingTenant={setIsCreatingTenant}
+            />
+          )}
 
-          <div className="settings-grid">
+          {/* Tenant Admin views */}
+          {currentRole === 'tenant_admin' && (
+            <TenantAdminFlow
+              activeSidebarMenu={activeSidebarMenu}
+              setActiveSidebarMenu={setActiveSidebarMenu}
+            />
+          )}
+
+          {/* HR views */}
+          {currentRole === 'hr' && (
+            <HRFlow
+              activeSidebarMenu={activeSidebarMenu}
+              renderAnalyticsView={() => (
+                <div className="dashboard-card full-width">
+                  <div className="card-header"><h3 className="card-title">Analytics & Token Usage</h3></div>
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                    <i className="fa-solid fa-chart-line" style={{ fontSize: '48px', color: 'var(--primary-color)', marginBottom: '16px' }}></i>
+                    <h4>Usage over time</h4>
+                    <p>Token usage has increased by 14% this month. Total calls: 124.5k.</p>
+                  </div>
+                </div>
+              )}
+            />
+          )}
+
+          {/* Interviewer views */}
+          {currentRole === 'interviewer' && (
+            <InterviewerFlow
+              activeSidebarMenu={activeSidebarMenu}
+              renderCandidatesView={() => (
+                <div className="dashboard-card full-width">
+                  <div className="card-header"><h3 className="card-title">Candidates Pool</h3></div>
+                  <div className="table-responsive">
+                    <table className="dashboard-table large">
+                      <thead>
+                        <tr><th>Name</th><th>Role Applied</th><th>Match Score</th><th>Status</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td className="font-semibold">John Doe</td><td>React Tech Lead</td><td><span className="badge badge-starter" style={{ color: '#166534', backgroundColor: '#dcfce7' }}>98% Match</span></td><td><span className="status-indicator status-active">Screened</span></td></tr>
+                        <tr><td className="font-semibold">Alice Vance</td><td>UI/UX Designer</td><td><span className="badge badge-starter" style={{ color: '#166534', backgroundColor: '#dcfce7' }}>91% Match</span></td><td><span className="status-indicator status-active">Interviewing</span></td></tr>
+                        <tr><td className="font-semibold">Bob Miller</td><td>QA Analyst</td><td><span className="badge badge-enterprise" style={{ color: '#991b1b', backgroundColor: '#fef2f2' }}>45% Match</span></td><td><span className="status-indicator status-suspended">Rejected</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            />
+          )}
+
+          {/* Candidate views */}
+          {currentRole === 'candidate' && (
+            <CandidateFlow
+              activeSidebarMenu={activeSidebarMenu}
+              renderInterviewsView={() => (
+                <div className="dashboard-card full-width">
+                  <div className="card-header"><h3 className="card-title">Interviews Calendar</h3></div>
+                  <div style={{ padding: '20px', color: '#64748b', textAlign: 'center' }}>
+                    <i className="fa-regular fa-calendar-days" style={{ fontSize: '48px', color: 'var(--primary-color)', marginBottom: '16px' }}></i>
+                    <p>No upcoming interviews scheduled for today.</p>
+                  </div>
+                </div>
+              )}
+            />
+          )}
+
+          {/* Settings view shared across roles */}
+          {activeSidebarMenu === 'settings' && (
+            <div className="settings-grid">
             {/* Security Tabs Card */}
             <div className="settings-tabs-card">
               <span className="tabs-group-title">Security Tabs</span>
@@ -388,19 +603,8 @@ export function AdminDashboard({
               </form>
             </div>
           </div>
+          )}
         </div>
-
-        {/* Footer */}
-        <footer className="admin-footer">
-          <span className="footer-copyright">
-            <strong>JobFusion AI</strong> &copy; 2024 JobFusion AI. All rights reserved.
-          </span>
-          <div className="footer-links-group">
-            <a href="#privacy" className="footer-link-item" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
-            <a href="#terms" className="footer-link-item" onClick={(e) => e.preventDefault()}>Terms of Service</a>
-            <a href="#help" className="footer-link-item" onClick={(e) => e.preventDefault()}>Help Center</a>
-          </div>
-        </footer>
       </main>
 
       {/* Confirmation Modal for Cancel */}

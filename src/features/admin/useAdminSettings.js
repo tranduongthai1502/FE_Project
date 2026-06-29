@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { getAdminPasswordStrength } from '../../utils/passwordStrength'
 
 export function useAdminSettings({ triggerToast }) {
-  const [activeSidebarMenu, setActiveSidebarMenu] = useState('settings')
+  const [activeSidebarMenu, setActiveSidebarMenu] = useState('dashboard')
   const [activeSettingsTab, setActiveSettingsTab] = useState('change_password')
 
   const [adminCurrentPassword, setAdminCurrentPassword] = useState('')
