@@ -36,12 +36,15 @@ export function ResetPasswordForm({
       </p>
 
       <div className="form-group">
-        <label htmlFor="newPassword" className="form-label">New Password</label>
+        <label htmlFor="newPassword" className="form-label font-bold">New Password</label>
         <div className="input-wrapper">
+          <span className="input-icon-left">
+            <i className="fa-solid fa-lock"></i>
+          </span>
           <input
             type={showNewPassword ? 'text' : 'password'}
             id="newPassword"
-            className={`form-input ${newPasswordError ? 'has-error' : ''}`}
+            className={`form-input form-input-with-icon ${newPasswordError ? 'has-error' : ''}`}
             placeholder="Enter new password"
             value={newPassword}
             onChange={(e) => {
@@ -64,12 +67,15 @@ export function ResetPasswordForm({
       </div>
 
       <div className="form-group">
-        <label htmlFor="confirmPassword" className="form-label">Confirm New Password</label>
+        <label htmlFor="confirmPassword" className="form-label font-bold">Confirm New Password</label>
         <div className="input-wrapper">
+          <span className="input-icon-left">
+            <i className="fa-solid fa-lock"></i>
+          </span>
           <input
             type={showConfirmPassword ? 'text' : 'password'}
             id="confirmPassword"
-            className={`form-input ${confirmPasswordError ? 'has-error' : ''}`}
+            className={`form-input form-input-with-icon ${confirmPasswordError ? 'has-error' : ''}`}
             placeholder="Re-type new password"
             value={confirmPassword}
             onChange={(e) => {

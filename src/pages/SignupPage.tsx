@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { AuthLayout } from '../components/AuthLayout'
 import { EyeIcon, GoogleIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons'
+import { getPasswordStrength } from '../utils/passwordStrength'
 
 type SignupPageProps = {
   onGoToSignin: () => void
@@ -28,14 +29,16 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
     window.setTimeout(() => setIsLoading(false), 800)
   }
 
+  const passwordStrength = getPasswordStrength(password)
+
   return (
     <AuthLayout isSignup>
-      <div className="form-shell signup-shell">
+      <div className="form-shell signup-shell signup-card">
         <header className="signup-header">
           <h2>Sign up</h2>
         </header>
 
-        <form className="signup-form" onSubmit={handleSubmit}>
+        <form className="signup-form signup-form-layout" onSubmit={handleSubmit}>
           <div className="field-group">
             <label htmlFor="fullName">Your Full Name</label>
             <div className="input-wrap">
@@ -94,6 +97,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 value={password}
                 onChange={handleInput(setPassword)}
                 autoComplete="new-password"
+                placeholder="********"
               />
               <button
                 type="button"
@@ -104,6 +108,18 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 <EyeIcon />
               </button>
             </div>
+
+            <div className="password-strength-header">
+              <span>PASSWORD STRENGTH</span>
+              <span className={`strength-label ${passwordStrength.strengthClass}`}>{passwordStrength.strengthLabel}</span>
+            </div>
+            <div className="strength-bar-outer">
+              <div
+                className={`strength-bar-inner ${passwordStrength.strengthClass}`}
+                style={{ width: password ? passwordStrength.progressWidth : '15%' }}
+              />
+            </div>
+            <p className="password-hint">Hint: Use mixed case, numbers, and symbols.</p>
           </div>
 
           <div className="field-group">
@@ -117,6 +133,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 value={confirmPassword}
                 onChange={handleInput(setConfirmPassword)}
                 autoComplete="new-password"
+                placeholder="********"
               />
               <button
                 type="button"

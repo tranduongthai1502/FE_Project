@@ -111,7 +111,23 @@ function App() {
       {step !== 'admin' ? (
         <>
           {/* Main Auth split screen: displays LoginForm when on login or recovery steps, and RegisterForm on register step */}
-          <AuthLayout cardClass={step === 'register' ? 'register-card' : ''}>
+          <AuthLayout 
+            cardClass={step === 'register' ? 'register-card' : ''}
+            header={
+              step === 'register' ? (
+                <div className="form-header centered-header">
+                  <h1 className="form-title large-title">Sign up</h1>
+                </div>
+              ) : (
+                <div className="form-header">
+                  <h1 className="form-title">Welcome Back</h1>
+                  <p className="form-desc">
+                    Enter your credentials to access your dashboard.
+                  </p>
+                </div>
+              )
+            }
+          >
             {step === 'register' ? (
               <RegisterForm
                 setStep={setStep}

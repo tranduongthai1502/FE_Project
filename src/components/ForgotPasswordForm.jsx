@@ -30,13 +30,16 @@ export function ForgotPasswordForm({
       </p>
 
       <div className="form-group" style={{ marginTop: '8px' }}>
-        <label htmlFor="email" className="form-label">Email Address</label>
+        <label htmlFor="email" className="form-label font-bold">Email Address</label>
         <div className="input-wrapper">
+          <span className="input-icon-left">
+            <i className="fa-regular fa-envelope"></i>
+          </span>
           <input
             type="email"
             id="email"
-            className={`form-input ${emailError ? 'has-error' : ''}`}
-            placeholder="Enter your email"
+            className={`form-input form-input-with-icon ${emailError ? 'has-error' : ''}`}
+            placeholder="name@company.com"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)
