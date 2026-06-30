@@ -97,46 +97,21 @@ export function ResetPasswordForm({
         {confirmPasswordError && <span className="error-text">{confirmPasswordError}</span>}
       </div>
 
-      <div className="requirements-box">
-        <div className="requirements-header">
-          <div className="requirements-header-title">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10 4Q10 12 18 12Q10 12 10 20Q10 12 2 12Q10 12 10 4Z" />
-              <path d="M18 2Q18 6 22 6Q18 6 18 10Q18 6 14 6Q18 6 18 2Z" />
-              <path d="M19 13Q19 17 23 17Q19 17 19 21Q19 17 15 17Q19 17 19 13Z" />
-            </svg>
-            <span>Password Requirements</span>
-          </div>
-          <span className={`strength-label ${strength.strengthClass}`}>
-            {strength.strengthLabel}
+      {/* Password Strength Section */}
+      <div className="form-group password-strength-group" style={{ marginTop: '4px', marginBottom: '24px' }}>
+        <div className="strength-header-row">
+          <span className="strength-title-label">PASSWORD STRENGTH</span>
+          <span className={`strength-value-label ${strength.strengthClass}`}>
+            {strength.strengthLabel === 'Weak' ? 'Week' : strength.strengthLabel}
           </span>
         </div>
-
-        <div className="strength-bar-outer">
-          <div 
-            className={`strength-bar-inner ${strength.strengthClass}`} 
-            style={{ width: newPassword ? strength.progressWidth : '25%' }}
-          />
+        <div className="strength-segments-container">
+          <div className={`strength-segment ${newPassword && strength.score >= 1 ? `active-${strength.strengthClass}` : ''}`} />
+          <div className={`strength-segment ${newPassword && strength.score >= 2 ? `active-${strength.strengthClass}` : ''}`} />
+          <div className={`strength-segment ${newPassword && strength.score >= 3 ? `active-${strength.strengthClass}` : ''}`} />
+          <div className={`strength-segment ${newPassword && strength.score >= 4 ? `active-${strength.strengthClass}` : ''}`} />
         </div>
-
-        <ul className="req-list">
-          <li className={`req-item ${strength.requirements.length ? 'met' : ''}`}>
-            <i className={strength.requirements.length ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>At least 8 characters</span>
-          </li>
-          <li className={`req-item ${strength.requirements.case ? 'met' : ''}`}>
-            <i className={strength.requirements.case ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>Uppercase & lowercase letters</span>
-          </li>
-          <li className={`req-item ${strength.requirements.number ? 'met' : ''}`}>
-            <i className={strength.requirements.number ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>At least one number</span>
-          </li>
-          <li className={`req-item ${strength.requirements.special ? 'met' : ''}`}>
-            <i className={strength.requirements.special ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>At least one special character</span>
-          </li>
-        </ul>
+        <p className="strength-hint-text">Hint: Use mixed case, numbers, and symbols.</p>
       </div>
 
       <button type="submit" className="submit-btn" disabled={isLoading}>

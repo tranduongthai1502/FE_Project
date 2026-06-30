@@ -11,8 +11,8 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('admin@company.com')
+  const [password, setPassword] = useState('12345678')
   
   const [localEmailError, setLocalEmailError] = useState('')
   const [localPasswordError, setLocalPasswordError] = useState('')
@@ -24,8 +24,6 @@ export function LoginForm({
     let pErr = ''
     if (!password) {
       pErr = 'Please enter your password.'
-    } else if (password !== '12345678') {
-      pErr = 'The password is incorrect. Please retry'
     }
     
     setLocalEmailError(eErr)
