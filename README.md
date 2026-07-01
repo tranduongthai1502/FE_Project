@@ -114,3 +114,7 @@ npm run preview
 - Cac API hien tai la mock, vi du `authApi` va `adminApi` luon tra ve `{ ok: true }`.
 - Du lieu dashboard va bang bieu dang duoc khai bao truc tiep trong component/flow de phuc vu demo UI.
 - Khi tich hop backend that, nen thay cac mock service trong `src/features/auth/services` va `src/features/admin/services` bang request HTTP toi API.
+
+- tài khoản demo 
+email: anhquocps@gmail.com
+mật khẩu: Anhquocps*3
