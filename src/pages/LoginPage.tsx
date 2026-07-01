@@ -15,6 +15,8 @@ import { ResetPasswordForm } from '../features/auth/components/ResetPasswordForm
 import { getPasswordStrength } from '../features/auth/utils/passwordStrength'
 import { validateEmail, validateRequired } from '../features/auth/utils/validation'
 
+import { authApi } from '../features/auth/services/authApi'
+
 const emptyOtp = ['', '', '', '', '', '']
 type ForgotStep = 'email' | 'otp' | 'reset'
 
@@ -76,7 +78,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     }
   }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
     const nextEmailError = validateEmail(email)
@@ -90,13 +92,30 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     }
 
     setIsLoading(true)
-    window.setTimeout(() => {
+    try {
+      const response: any = await authApi.login({ email, password })
+      if (response && response.success) {
+        const { token, refresh_token, user } = response.data
+        const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
+        storage.setItem('access_token', token)
+        if (refresh_token) {
+          storage.setItem('refresh_token', refresh_token)
+        }
+        if (user) {
+          storage.setItem('user_info', JSON.stringify(user))
+        }
+        onSignInSuccess(email, keepLoggedIn)
+      } else {
+        setPasswordError(response.message || 'Login failed')
+      }
+    } catch (error: any) {
+      setPasswordError(error.message || 'Login failed. Please check your credentials.')
+    } finally {
       setIsLoading(false)
-      onSignInSuccess(email, keepLoggedIn)
-    }, 800)
+    }
   }
 
-  const handleSendCode = (event: FormEvent<HTMLFormElement>) => {
+  const handleSendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const nextEmailError = validateEmail(forgotEmail)
@@ -107,11 +126,19 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     }
 
     setIsSendingCode(true)
-    window.setTimeout(() => {
+    try {
+      const response: any = await authApi.sendResetCode(forgotEmail)
+      if (response && response.success) {
+        setForgotStep('otp')
+        setCountdown(59)
+      } else {
+        setForgotEmailError(response.message || 'Failed to send OTP')
+      }
+    } catch (error: any) {
+      setForgotEmailError(error.message || 'Failed to send OTP. Please try again.')
+    } finally {
       setIsSendingCode(false)
-      setForgotStep('otp')
-      setCountdown(59)
-    }, 800)
+    }
   }
 
   const handleCloseForgotPassword = () => {
@@ -172,26 +199,35 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     otpInputsRef.current[Math.min(pastedDigits.length, 5)]?.focus()
   }
 
-  const handleVerifyOtp = (event: FormEvent<HTMLFormElement>) => {
+  const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (otp.join('').length < 6) {
+    const otpCode = otp.join('')
+    if (otpCode.length < 6) {
       setOtpError('Please enter the OTP code.')
       return
     }
 
     setIsSendingCode(true)
-    window.setTimeout(() => {
+    try {
+      const response: any = await authApi.verifyOtp(forgotEmail, otpCode)
+      if (response && response.success) {
+        setForgotStep('reset')
+      } else {
+        setOtpError(response.message || 'Invalid OTP code')
+      }
+    } catch (error: any) {
+      setOtpError(error.message || 'Verification failed. Please try again.')
+    } finally {
       setIsSendingCode(false)
-      setForgotStep('reset')
-    }, 800)
+    }
   }
 
   const startTimer = () => {
     setCountdown(59)
   }
 
-  const handleResetPassword = (event: FormEvent<HTMLFormElement>) => {
+  const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     let hasError = false
 
@@ -211,10 +247,19 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     if (hasError) return
 
     setIsSendingCode(true)
-    window.setTimeout(() => {
+    try {
+      const response: any = await authApi.resetPassword(forgotEmail, newPassword)
+      if (response && response.success) {
+        alert('Password reset successful! Please log in.')
+        handleCloseForgotPassword()
+      } else {
+        setConfirmPasswordError(response.message || 'Password reset failed')
+      }
+    } catch (error: any) {
+      setConfirmPasswordError(error.message || 'Password reset failed. Please try again.')
+    } finally {
       setIsSendingCode(false)
-      handleCloseForgotPassword()
-    }, 800)
+    }
   }
 
   return (

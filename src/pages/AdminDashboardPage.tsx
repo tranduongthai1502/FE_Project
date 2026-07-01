@@ -521,32 +521,6 @@ export function AdminDashboardPage({
                   </div>
                 </div>
 
-                {/* Password Strength segments indicator */}
-                <div style={{ marginBottom: '20px' }}>
-                  <div className="form-label-row">
-                    <span className="form-label" style={{ marginBottom: 0, textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px' }}>
-                      Password Strength
-                    </span>
-                    {adminNewPassword && (
-                      <span className={`strength-label ${adminStrength.strengthClass}`} style={{ fontSize: '12px' }}>
-                        {adminStrength.strengthLabel}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Segmented Strength Bar */}
-                  <div className="strength-segments-container">
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 1 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 2 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 3 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 4 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                  </div>
-
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>
-                    Hint: Use mixed case, numbers, and symbols.
-                  </span>
-                </div>
-
                 {/* Confirm New Password */}
                 <div className="form-group" style={{ marginBottom: '20px' }}>
                   <div className="form-label-row">
@@ -579,6 +553,32 @@ export function AdminDashboardPage({
                       <i className={`fa-solid ${showAdminConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
+                </div>
+
+                {/* Password Strength segments indicator */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div className="form-label-row">
+                    <span className="form-label" style={{ marginBottom: 0, textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      Password Strength
+                    </span>
+                    {adminNewPassword && (
+                      <span className={`strength-label ${adminStrength.strengthClass}`} style={{ fontSize: '12px' }}>
+                        {adminStrength.strengthLabel}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Segmented Strength Bar */}
+                  <div className="strength-segments-container">
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 1 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 2 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 3 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 4 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                  </div>
+
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>
+                    Hint: Use mixed case, numbers, and symbols.
+                  </span>
                 </div>
 
                 {/* Cancel & Save Buttons */}

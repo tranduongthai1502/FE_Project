@@ -1,3 +1,5 @@
+import { useState, useRef, useEffect } from 'react'
+
 type CandidatePortalPageProps = {
   onLogout: () => void
 }
@@ -38,6 +40,21 @@ const navItems = [
 ]
 
 export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   return (
     <main className="candidate-page">
       <aside className="candidate-sidebar">
@@ -61,7 +78,9 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
             <strong>Alex Nguyen</strong>
             <span>Senior Developer</span>
           </div>
-          <button type="button">Post New Job</button>
+          <button type="button" onClick={onLogout} className="candidate-logout-btn">
+            <i className="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+          </button>
         </div>
       </aside>
 
@@ -87,9 +106,45 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
           <div className="candidate-top-icons">
             <i className="fa-regular fa-bell"></i>
             <i className="fa-regular fa-circle-question"></i>
-            <button type="button" className="candidate-mini-avatar" onClick={onLogout} aria-label="Log out">
-              A
-            </button>
+            <div className="candidate-user-menu-container" ref={dropdownRef}>
+              <button 
+                type="button" 
+                className="candidate-user-trigger" 
+                onClick={() => setShowDropdown(!showDropdown)}
+                aria-label="User menu"
+                aria-expanded={showDropdown}
+              >
+                <div className="candidate-mini-avatar">A</div>
+                <span className="candidate-user-name">Alex Nguyen</span>
+                <i className={`fa-solid fa-chevron-down candidate-chevron ${showDropdown ? 'open' : ''}`}></i>
+              </button>
+              
+              {showDropdown && (
+                <div className="candidate-user-dropdown" onClick={(e) => e.stopPropagation()}>
+                  <div className="dropdown-header">
+                    <strong>Alex Nguyen</strong>
+                    <span>alex.nguyen@example.com</span>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  <button type="button" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <i className="fa-solid fa-user"></i>
+                    <span>Thông tin cá nhân</span>
+                  </button>
+                  <button type="button" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <i className="fa-solid fa-gear"></i>
+                    <span>Cài đặt tài khoản</span>
+                  </button>
+                  <div className="dropdown-divider"></div>
+                  <button type="button" className="dropdown-item logout" onClick={() => {
+                    setShowDropdown(false)
+                    onLogout()
+                  }}>
+                    <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

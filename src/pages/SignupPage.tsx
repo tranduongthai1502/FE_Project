@@ -9,6 +9,7 @@ import {
   validatePhone,
 } from '../features/auth/utils/validation'
 import { getPasswordStrength } from '../features/auth/utils/passwordStrength'
+import { authApi } from '../features/auth/services/authApi'
 
 type SignupPageProps = {
   onGoToSignin: () => void
@@ -39,7 +40,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
       clearError?.(nextValue)
     }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
     const nextFullNameError = validateFullName(fullName)
@@ -65,7 +66,19 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
     }
 
     setIsLoading(true)
-    window.setTimeout(() => setIsLoading(false), 800)
+    try {
+      const response: any = await authApi.register({ fullName, email, phone, password })
+      if (response && response.success) {
+        alert('Sign up successful! Please sign in.')
+        onGoToSignin()
+      } else {
+        setConfirmPasswordError(response.message || 'Registration failed')
+      }
+    } catch (error: any) {
+      setConfirmPasswordError(error.message || 'Registration failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
