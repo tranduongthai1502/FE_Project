@@ -111,61 +111,6 @@
   font-weight: 500;
 }
 
-.google-button {
-  width: 392px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 127px;
-  margin: 0 auto 32px;
-  padding: 0 21px;
-  color: #6b4a43;
-  background: #fffdfc;
-  border: 1px solid #efc8bf;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.google-button:focus,
-.google-button:focus-visible {
-  outline: none;
-  border-color: #efc8bf;
-  box-shadow: none;
-}
-
-.google-icon {
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
-}
-
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 34px;
-  color: #6f514b;
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 500;
-}
-
-.divider::before,
-.divider::after {
-  content: '';
-  height: 1px;
-  flex: 1;
-  background: #46494f;
-}
-
-.divider span {
-  white-space: nowrap;
-}
-
 .login-form {
   display: grid;
   gap: 26px;
@@ -245,6 +190,23 @@
 .input-wrap:focus-within {
   border-color: #dd6b4c;
   box-shadow: 0 0 0 3px rgba(209, 61, 10, 0.08);
+}
+
+.input-wrap.has-error {
+  border-color: #ef4444;
+  background: #fff8f8;
+}
+
+.input-wrap.has-error:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.field-error {
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .password-group {
@@ -343,16 +305,6 @@
   cursor: pointer;
 }
 
-.signup-divider {
-  margin: 31px 5px 24px;
-}
-
-.signup-google {
-  width: 204px;
-  margin-bottom: 21px;
-  gap: 48px;
-}
-
 .signin-copy {
   margin-top: 0;
 }
@@ -395,12 +347,7 @@
     font-size: 30px;
   }
 
-  .google-button,
   .submit-button {
-    width: 100%;
-  }
-
-  .signup-google {
     width: 100%;
   }
 }

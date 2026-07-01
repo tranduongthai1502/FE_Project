@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { AuthLayout } from '../components/layout/AuthLayout'
-import { EyeIcon, GoogleIcon, LockIcon, MailIcon } from '../components/icons/Icons'
+import { EyeIcon, LockIcon, MailIcon } from '../components/icons/Icons'
+import { validateEmail, validateRequired } from '../features/auth/utils/validation'
 
 type LoginPageProps = {
   onGoToSignup: () => void
@@ -13,17 +14,38 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
 
   const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setEmail(event.target.value)
+    const nextEmail = event.target.value
+    setEmail(nextEmail)
+    if (emailError) {
+      setEmailError(validateEmail(nextEmail))
+    }
   }
 
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setPassword(event.target.value)
+    const nextPassword = event.target.value
+    setPassword(nextPassword)
+    if (passwordError) {
+      setPasswordError(validateRequired(nextPassword, 'Please enter your password.'))
+    }
   }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+
+    const nextEmailError = validateEmail(email)
+    const nextPasswordError = validateRequired(password, 'Please enter your password.')
+
+    setEmailError(nextEmailError)
+    setPasswordError(nextPasswordError)
+
+    if (nextEmailError || nextPasswordError) {
+      return
+    }
+
     setIsLoading(true)
     window.setTimeout(() => {
       setIsLoading(false)
@@ -39,19 +61,10 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
           <p>Enter your credentials to access your dashboard.</p>
         </header>
 
-        <button type="button" className="google-button">
-          <GoogleIcon />
-          <span>Google</span>
-        </button>
-
-        <div className="divider">
-          <span>OR CONTINUE WITH</span>
-        </div>
-
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={handleSubmit} noValidate>
           <div className="field-group">
             <label htmlFor="email">Email Address</label>
-            <div className="input-wrap">
+            <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
                 id="email"
@@ -61,8 +74,15 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
                 onChange={handleEmailChange}
                 placeholder="name@company.com"
                 autoComplete="email"
+                aria-invalid={emailError ? 'true' : 'false'}
+                aria-describedby={emailError ? 'email-error' : undefined}
               />
             </div>
+            {emailError && (
+              <span id="email-error" className="field-error">
+                {emailError}
+              </span>
+            )}
           </div>
 
           <div className="field-group password-group">
@@ -70,7 +90,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
               <label htmlFor="password">Password</label>
               <a href="#forgot">Forgot password?</a>
             </div>
-            <div className="input-wrap">
+            <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
                 id="password"
@@ -80,6 +100,8 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
                 onChange={handlePasswordChange}
                 placeholder="********"
                 autoComplete="current-password"
+                aria-invalid={passwordError ? 'true' : 'false'}
+                aria-describedby={passwordError ? 'password-error' : undefined}
               />
               <button
                 type="button"
@@ -90,6 +112,11 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
                 <EyeIcon />
               </button>
             </div>
+            {passwordError && (
+              <span id="password-error" className="field-error">
+                {passwordError}
+              </span>
+            )}
           </div>
 
           <label className="check-row" htmlFor="keep-logged-in">

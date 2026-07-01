@@ -1,6 +1,13 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { AuthLayout } from '../components/layout/AuthLayout'
-import { EyeIcon, GoogleIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons/Icons'
+import { EyeIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons/Icons'
+import {
+  validateConfirmPassword,
+  validateEmail,
+  validateFullName,
+  validatePassword,
+  validatePhone,
+} from '../features/auth/utils/validation'
 
 type SignupPageProps = {
   onGoToSignin: () => void
@@ -15,15 +22,45 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [fullNameError, setFullNameError] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [confirmPasswordError, setConfirmPasswordError] = useState('')
 
   const handleInput =
-    (setter: (value: string) => void) =>
+    (setter: (value: string) => void, clearError?: (value: string) => void) =>
     (event: ChangeEvent<HTMLInputElement>) => {
-      setter(event.target.value)
+      const nextValue = event.target.value
+      setter(nextValue)
+      clearError?.(nextValue)
     }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+
+    const nextFullNameError = validateFullName(fullName)
+    const nextEmailError = validateEmail(email)
+    const nextPhoneError = validatePhone(phone)
+    const nextPasswordError = validatePassword(password)
+    const nextConfirmPasswordError = validateConfirmPassword(confirmPassword, password)
+
+    setFullNameError(nextFullNameError)
+    setEmailError(nextEmailError)
+    setPhoneError(nextPhoneError)
+    setPasswordError(nextPasswordError)
+    setConfirmPasswordError(nextConfirmPasswordError)
+
+    if (
+      nextFullNameError ||
+      nextEmailError ||
+      nextPhoneError ||
+      nextPasswordError ||
+      nextConfirmPasswordError
+    ) {
+      return
+    }
+
     setIsLoading(true)
     window.setTimeout(() => setIsLoading(false), 800)
   }
@@ -35,65 +72,99 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
           <h2>Sign up</h2>
         </header>
 
-        <form className="signup-form" onSubmit={handleSubmit}>
+        <form className="signup-form" onSubmit={handleSubmit} noValidate>
           <div className="field-group">
             <label htmlFor="fullName">Your Full Name</label>
-            <div className="input-wrap">
+            <div className={`input-wrap ${fullNameError ? 'has-error' : ''}`}>
               <UserIcon />
               <input
                 id="fullName"
                 name="fullName"
                 type="text"
                 value={fullName}
-                onChange={handleInput(setFullName)}
+                onChange={handleInput(setFullName, (value) => {
+                  if (fullNameError) setFullNameError(validateFullName(value))
+                })}
                 placeholder="full name"
                 autoComplete="name"
+                aria-invalid={fullNameError ? 'true' : 'false'}
+                aria-describedby={fullNameError ? 'full-name-error' : undefined}
               />
             </div>
+            {fullNameError && (
+              <span id="full-name-error" className="field-error">
+                {fullNameError}
+              </span>
+            )}
           </div>
 
           <div className="field-group">
             <label htmlFor="signupEmail">Email Address</label>
-            <div className="input-wrap">
+            <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
                 id="signupEmail"
                 name="email"
                 type="email"
                 value={email}
-                onChange={handleInput(setEmail)}
+                onChange={handleInput(setEmail, (value) => {
+                  if (emailError) setEmailError(validateEmail(value))
+                })}
                 placeholder="name@company.com"
                 autoComplete="email"
+                aria-invalid={emailError ? 'true' : 'false'}
+                aria-describedby={emailError ? 'signup-email-error' : undefined}
               />
             </div>
+            {emailError && (
+              <span id="signup-email-error" className="field-error">
+                {emailError}
+              </span>
+            )}
           </div>
 
           <div className="field-group">
             <label htmlFor="phone">Phone Number</label>
-            <div className="input-wrap">
+            <div className={`input-wrap ${phoneError ? 'has-error' : ''}`}>
               <PhoneIcon />
               <input
                 id="phone"
                 name="phone"
                 type="tel"
                 value={phone}
-                onChange={handleInput(setPhone)}
+                onChange={handleInput(setPhone, (value) => {
+                  if (phoneError) setPhoneError(validatePhone(value))
+                })}
                 autoComplete="tel"
+                aria-invalid={phoneError ? 'true' : 'false'}
+                aria-describedby={phoneError ? 'phone-error' : undefined}
               />
             </div>
+            {phoneError && (
+              <span id="phone-error" className="field-error">
+                {phoneError}
+              </span>
+            )}
           </div>
 
           <div className="field-group">
             <label htmlFor="signupPassword">Password</label>
-            <div className="input-wrap">
+            <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
                 id="signupPassword"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={handleInput(setPassword)}
+                onChange={handleInput(setPassword, (value) => {
+                  if (passwordError) setPasswordError(validatePassword(value))
+                  if (confirmPasswordError) {
+                    setConfirmPasswordError(validateConfirmPassword(confirmPassword, value))
+                  }
+                })}
                 autoComplete="new-password"
+                aria-invalid={passwordError ? 'true' : 'false'}
+                aria-describedby={passwordError ? 'signup-password-error' : undefined}
               />
               <button
                 type="button"
@@ -104,19 +175,30 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 <EyeIcon />
               </button>
             </div>
+            {passwordError && (
+              <span id="signup-password-error" className="field-error">
+                {passwordError}
+              </span>
+            )}
           </div>
 
           <div className="field-group">
             <label htmlFor="confirmPassword">Confirm Password</label>
-            <div className="input-wrap">
+            <div className={`input-wrap ${confirmPasswordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
                 id="confirmPassword"
                 name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={handleInput(setConfirmPassword)}
+                onChange={handleInput(setConfirmPassword, (value) => {
+                  if (confirmPasswordError) {
+                    setConfirmPasswordError(validateConfirmPassword(value, password))
+                  }
+                })}
                 autoComplete="new-password"
+                aria-invalid={confirmPasswordError ? 'true' : 'false'}
+                aria-describedby={confirmPasswordError ? 'confirm-password-error' : undefined}
               />
               <button
                 type="button"
@@ -127,21 +209,17 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 <EyeIcon />
               </button>
             </div>
+            {confirmPasswordError && (
+              <span id="confirm-password-error" className="field-error">
+                {confirmPasswordError}
+              </span>
+            )}
           </div>
 
           <button type="submit" className="submit-button signup-submit" disabled={isLoading}>
             {isLoading ? 'Signing up' : 'Sign up'}
           </button>
         </form>
-
-        <div className="divider signup-divider">
-          <span>OR CONTINUE WITH</span>
-        </div>
-
-        <button type="button" className="google-button signup-google">
-          <GoogleIcon />
-          <span>Google</span>
-        </button>
 
         <p className="signup-copy signin-copy">
           Do you have an account?
