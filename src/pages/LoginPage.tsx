@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { AuthLayout } from '../components/layout/AuthLayout'
-import { EyeIcon, LockIcon, MailIcon } from '../components/icons/Icons'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '../components/icons/Icons'
 import { validateEmail, validateRequired } from '../features/auth/utils/validation'
 
 type LoginPageProps = {
@@ -109,7 +109,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowPassword((value) => !value)}
               >
-                <EyeIcon />
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
             {passwordError && (

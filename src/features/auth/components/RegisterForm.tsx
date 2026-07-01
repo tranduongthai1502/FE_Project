@@ -33,8 +33,8 @@ export function RegisterForm({
 
   const validatePhone = (val) => {
     if (!val.trim()) return 'Please enter your phone number.'
-    const phoneRegex = /^\d{10,11}$/
-    if (!phoneRegex.test(val.trim())) return 'Please enter a valid phone number (10-11 digits).'
+    const phoneRegex = /^0\d{9}$/
+    if (!phoneRegex.test(val.trim())) return 'Please enter a valid phone number starting with 0 and containing 10 digits.'
     return ''
   }
 
@@ -148,13 +148,15 @@ export function RegisterForm({
             type="tel"
             id="regPhone"
             className={`form-input form-input-with-icon ${phoneError ? 'has-error' : ''}`}
-            placeholder=""
+            placeholder="0xxxxxxxxx"
             value={phone}
             onChange={(e) => {
               setPhone(e.target.value)
               if (phoneError) setPhoneError(validatePhone(e.target.value))
             }}
             disabled={isLoading}
+            inputMode="numeric"
+            maxLength={10}
             required
           />
         </div>
@@ -172,7 +174,7 @@ export function RegisterForm({
             type={showPassword ? 'text' : 'password'}
             id="regPass"
             className={`form-input form-input-with-icon ${passwordError ? 'has-error' : ''}`}
-            placeholder=""
+            placeholder="********"
             value={password}
             onChange={(e) => {
               setPassword(e.target.value)
@@ -204,7 +206,7 @@ export function RegisterForm({
             type={showConfirmPassword ? 'text' : 'password'}
             id="regConfirmPass"
             className={`form-input form-input-with-icon ${confirmPasswordError ? 'has-error' : ''}`}
-            placeholder=""
+            placeholder="********"
             value={confirmPassword}
             onChange={(e) => {
               setConfirmPassword(e.target.value)

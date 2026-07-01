@@ -49,6 +49,17 @@ export function EyeIcon() {
   )
 }
 
+export function EyeOffIcon() {
+  return (
+    <svg className="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3.5 3.5l17 17" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9.2 5.05A9.45 9.45 0 0112 4.63c6 0 9.25 5.25 9.25 5.25a14.13 14.13 0 01-2.5 3.08" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M14.12 14.12A2.25 2.25 0 019.88 9.88" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M6.42 6.98A14.09 14.09 0 002.75 12S6 17.25 12 17.25a9.4 9.4 0 003.16-.52" />
+    </svg>
+  )
+}
+
 export function UserIcon() {
   return (
     <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { AuthLayout } from '../components/layout/AuthLayout'
-import { EyeIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons/Icons'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '../components/icons/Icons'
 import {
   validateConfirmPassword,
   validateEmail,
@@ -8,6 +8,7 @@ import {
   validatePassword,
   validatePhone,
 } from '../features/auth/utils/validation'
+import { getPasswordStrength } from '../features/auth/utils/passwordStrength'
 
 type SignupPageProps = {
   onGoToSignin: () => void
@@ -27,6 +28,8 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
   const [phoneError, setPhoneError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
+  const passwordStrength = getPasswordStrength(password)
+  const visibleStrengthScore = Math.max(passwordStrength.score, 1)
 
   const handleInput =
     (setter: (value: string) => void, clearError?: (value: string) => void) =>
@@ -135,7 +138,10 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 onChange={handleInput(setPhone, (value) => {
                   if (phoneError) setPhoneError(validatePhone(value))
                 })}
+                placeholder="0xxxxxxxxx"
                 autoComplete="tel"
+                inputMode="numeric"
+                maxLength={10}
                 aria-invalid={phoneError ? 'true' : 'false'}
                 aria-describedby={phoneError ? 'phone-error' : undefined}
               />
@@ -162,6 +168,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                     setConfirmPasswordError(validateConfirmPassword(confirmPassword, value))
                   }
                 })}
+                placeholder="********"
                 autoComplete="new-password"
                 aria-invalid={passwordError ? 'true' : 'false'}
                 aria-describedby={passwordError ? 'signup-password-error' : undefined}
@@ -172,7 +179,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowPassword((value) => !value)}
               >
-                <EyeIcon />
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
             {passwordError && (
@@ -180,6 +187,21 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 {passwordError}
               </span>
             )}
+            <div className="register-strength" aria-live="polite">
+              <div className="register-strength-header">
+                <span>PASSWORD STRENGTH</span>
+                <span className={`register-strength-label ${passwordStrength.strengthClass}`}>
+                  {passwordStrength.strengthLabel}
+                </span>
+              </div>
+              <div className="register-strength-segments" aria-hidden="true">
+                <span className={`register-strength-segment ${visibleStrengthScore >= 1 ? passwordStrength.strengthClass : ''}`} />
+                <span className={`register-strength-segment ${visibleStrengthScore >= 2 ? passwordStrength.strengthClass : ''}`} />
+                <span className={`register-strength-segment ${visibleStrengthScore >= 3 ? passwordStrength.strengthClass : ''}`} />
+                <span className={`register-strength-segment ${visibleStrengthScore >= 4 ? passwordStrength.strengthClass : ''}`} />
+              </div>
+              <p className="register-strength-hint">Hint: Use mixed case, numbers, and symbols.</p>
+            </div>
           </div>
 
           <div className="field-group">
@@ -196,6 +218,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                     setConfirmPasswordError(validateConfirmPassword(value, password))
                   }
                 })}
+                placeholder="********"
                 autoComplete="new-password"
                 aria-invalid={confirmPasswordError ? 'true' : 'false'}
                 aria-describedby={confirmPasswordError ? 'confirm-password-error' : undefined}
@@ -206,7 +229,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowConfirmPassword((value) => !value)}
               >
-                <EyeIcon />
+                {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
             {confirmPasswordError && (

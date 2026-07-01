@@ -34,8 +34,8 @@ export function validatePhone(value: string) {
     return 'Please enter your phone number.'
   }
 
-  if (!/^\d{10,11}$/.test(normalizedValue)) {
-    return 'Phone number must contain 10 to 11 digits.'
+  if (!/^0\d{9}$/.test(normalizedValue)) {
+    return 'Phone number must start with 0 and contain exactly 10 digits.'
   }
 
   return ''
