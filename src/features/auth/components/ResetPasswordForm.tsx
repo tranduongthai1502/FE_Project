@@ -53,17 +53,19 @@ export function ResetPasswordForm({
   return (
     <form onSubmit={handleResetPassword} noValidate className="auth-form-content">
       <div className="reset-icon-container">
-        <span className="fa-stack">
-          <i className="fa-solid fa-arrow-rotate-left fa-stack-2x"></i>
-          <i className="fa-solid fa-lock fa-stack-1x" style={{ fontSize: '0.58em', transform: 'translateY(1px)' }}></i>
-        </span>
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path className="reset-ring" d="M12 24a23 23 0 1 1 3 20" />
+          <path className="reset-arrow" d="M21 24H8V11" />
+          <g className="reset-lock-mark">
+            <path className="reset-lock-shackle" d="M29 34v-7a6 6 0 0 1 12 0v7" />
+            <path className="reset-lock-body" d="M26 34h18a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H26a3 3 0 0 1-3-3V37a3 3 0 0 1 3-3z" />
+          </g>
+        </svg>
       </div>
 
-      <h1 className="form-title" style={{ textAlign: 'center', marginBottom: '8px', fontSize: '24px' }}>
-        Reset Password
-      </h1>
+      <h1 className="form-title">Reset Password</h1>
 
-      <p className="form-desc" style={{ textAlign: 'center', marginBottom: '28px' }}>
+      <p className="form-desc">
         Secure your JobFusion account with a new, strong password.
       </p>
 
@@ -125,14 +127,7 @@ export function ResetPasswordForm({
 
       <div className="requirements-box">
         <div className="requirements-header">
-          <div className="requirements-header-title">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10 4Q10 12 18 12Q10 12 10 20Q10 12 2 12Q10 12 10 4Z" />
-              <path d="M18 2Q18 6 22 6Q18 6 18 10Q18 6 14 6Q18 6 18 2Z" />
-              <path d="M19 13Q19 17 23 17Q19 17 19 21Q19 17 15 17Q19 17 19 13Z" />
-            </svg>
-            <span>Password Requirements</span>
-          </div>
+          <div className="requirements-header-title">Password Strength</div>
           <span className={`strength-label ${strength.strengthClass}`}>
             {strength.strengthLabel}
           </span>
@@ -145,24 +140,7 @@ export function ResetPasswordForm({
           />
         </div>
 
-        <ul className="req-list">
-          <li className={`req-item ${strength.requirements.length ? 'met' : ''}`}>
-            <i className={strength.requirements.length ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>At least 8 characters</span>
-          </li>
-          <li className={`req-item ${strength.requirements.case ? 'met' : ''}`}>
-            <i className={strength.requirements.case ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>Uppercase & lowercase letters</span>
-          </li>
-          <li className={`req-item ${strength.requirements.number ? 'met' : ''}`}>
-            <i className={strength.requirements.number ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>At least one number</span>
-          </li>
-          <li className={`req-item ${strength.requirements.special ? 'met' : ''}`}>
-            <i className={strength.requirements.special ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}></i>
-            <span>At least one special character</span>
-          </li>
-        </ul>
+        <p className="requirements-hint">Hint: At least 8 characters, use mixed case, numbers, and symbols.</p>
       </div>
 
       <button type="submit" className="submit-btn" disabled={isLoading}>

@@ -19,7 +19,11 @@ import { authApi } from '../features/auth/services/authApi'
 
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = 'Account not found. Please check your email.'
+const forgotAccountNotFoundMessage = 'This email address is not registered in our system.'
+const forgotSystemErrorMessage = 'Error system. Please retry.'
 const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
+const expiredOtpMessage = 'OTP has expired. Please request a new one.'
+const invalidOtpMessage = 'Invalid OTP. Please retry.'
 type ForgotStep = 'email' | 'otp' | 'reset'
 
 function isAccountNotFoundError(message = '') {
@@ -32,6 +36,22 @@ function isAccountNotFoundError(message = '') {
     normalizedMessage.includes('not registered') ||
     normalizedMessage.includes('does not exist')
   )
+}
+
+function isExpiredOtpError(message = '') {
+  const normalizedMessage = message.toLowerCase()
+
+  return (
+    normalizedMessage.includes('otp expired') ||
+    normalizedMessage.includes('expired otp') ||
+    normalizedMessage.includes('code expired') ||
+    normalizedMessage.includes('expired') ||
+    normalizedMessage.includes('expire')
+  )
+}
+
+function getOtpErrorMessage(message = '') {
+  return isExpiredOtpError(message) ? expiredOtpMessage : invalidOtpMessage
 }
 
 type LoginPageProps = {
@@ -53,6 +73,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [showResetSuccess, setShowResetSuccess] = useState(false)
   const [forgotStep, setForgotStep] = useState<ForgotStep>('email')
   const [isLoading, setIsLoading] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
@@ -195,15 +216,15 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
         }
         onSignInSuccess(email, keepLoggedIn)
       } else if (isAccountNotFoundError(response?.message)) {
-        setPasswordError('')
-        setEmailError(accountNotFoundMessage)
+        setEmailError('')
+        setPasswordError(accountNotFoundMessage)
       } else {
         setPasswordError(incorrectPasswordMessage)
       }
     } catch (error: any) {
       if (isAccountNotFoundError(error.message)) {
-        setPasswordError('')
-        setEmailError(accountNotFoundMessage)
+        setEmailError('')
+        setPasswordError(accountNotFoundMessage)
       } else {
         setPasswordError(incorrectPasswordMessage)
       }
@@ -228,11 +249,17 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
       if (response && response.success) {
         setForgotStep('otp')
         setCountdown(59)
+      } else if (isAccountNotFoundError(response?.message)) {
+        setForgotEmailError(forgotAccountNotFoundMessage)
       } else {
-        setForgotEmailError(response.message || 'Failed to send OTP')
+        setForgotEmailError(forgotSystemErrorMessage)
       }
     } catch (error: any) {
-      setForgotEmailError(error.message || 'Failed to send OTP. Please try again.')
+      if (isAccountNotFoundError(error.message)) {
+        setForgotEmailError(forgotAccountNotFoundMessage)
+      } else {
+        setForgotEmailError(forgotSystemErrorMessage)
+      }
     } finally {
       setIsSendingCode(false)
     }
@@ -311,10 +338,10 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
       if (response && response.success) {
         setForgotStep('reset')
       } else {
-        setOtpError(response.message || 'Invalid OTP code')
+        setOtpError(getOtpErrorMessage(response?.message))
       }
     } catch (error: any) {
-      setOtpError(error.message || 'Verification failed. Please try again.')
+      setOtpError(getOtpErrorMessage(error.message))
     } finally {
       setIsSendingCode(false)
     }
@@ -328,13 +355,16 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     event.preventDefault()
     let hasError = false
 
-    if (strength.score < 4) {
+    if (!newPassword) {
+      setNewPasswordError('Please enter new password.')
+      hasError = true
+    } else if (strength.score < 4) {
       setNewPasswordError('Password does not meet requirements.')
       hasError = true
     }
 
     if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your new password.')
+      setConfirmPasswordError('Please confirm your password.')
       hasError = true
     } else if (newPassword !== confirmPassword) {
       setConfirmPasswordError('Passwords do not match.')
@@ -347,8 +377,11 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     try {
       const response: any = await authApi.resetPassword(forgotEmail, newPassword)
       if (response && response.success) {
-        alert('Password reset successful! Please log in.')
-        handleCloseForgotPassword()
+        setShowResetSuccess(true)
+        window.setTimeout(() => {
+          setShowResetSuccess(false)
+          handleCloseForgotPassword()
+        }, 1400)
       } else {
         setConfirmPasswordError(response.message || 'Password reset failed')
       }
@@ -456,6 +489,12 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
 
       {showForgotPassword && (
         <div className="auth-modal-overlay" role="presentation">
+          {showResetSuccess && (
+            <div className="auth-success-toast" role="alert" aria-live="polite">
+              <i className="fa-regular fa-square-check" aria-hidden="true"></i>
+              <span>Password reset successfully.</span>
+            </div>
+          )}
           <div
             className={`forgot-password-modal forgot-password-modal-${forgotStep}`}
             role="dialog"
