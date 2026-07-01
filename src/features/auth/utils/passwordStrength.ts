@@ -1,4 +1,19 @@
-export function getPasswordStrength(password) {
+export type PasswordStrength = {
+  requirements: {
+    length: boolean
+    case: boolean
+    number: boolean
+    special: boolean
+  }
+  score: number
+  strengthLabel: string
+  strengthClass: string
+  progressWidth: string
+}
+
+export type AdminPasswordStrength = Omit<PasswordStrength, 'progressWidth'>
+
+export function getPasswordStrength(password: string): PasswordStrength {
   const requirements = {
     length: password.length >= 8,
     case: /[a-z]/.test(password) && /[A-Z]/.test(password),
@@ -25,7 +40,7 @@ export function getPasswordStrength(password) {
   return { requirements, score, strengthLabel, strengthClass, progressWidth }
 }
 
-export function getAdminPasswordStrength(password) {
+export function getAdminPasswordStrength(password: string): AdminPasswordStrength {
   const { requirements, score, strengthLabel, strengthClass } = getPasswordStrength(password)
 
   if (!password) {

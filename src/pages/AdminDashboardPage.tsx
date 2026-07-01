@@ -127,7 +127,12 @@ export function AdminDashboardPage({
   const [tenantFilterPlan, setTenantFilterPlan] = React.useState('all')
   const [showPlanDropdown, setShowPlanDropdown] = React.useState(false)
   const [selectedTenant, setSelectedTenant] = React.useState(null)
-  const [currentRole, setCurrentRole] = React.useState('super_admin')
+  const [currentRole, setCurrentRole] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('jobfusion_admin_role') || 'super_admin'
+    }
+    return 'super_admin'
+  })
   const [isCreatingTenant, setIsCreatingTenant] = React.useState(false)
 
   const tenantsData = [
@@ -161,6 +166,9 @@ export function AdminDashboardPage({
             onChange={(e) => {
               const role = e.target.value;
               setCurrentRole(role);
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('jobfusion_admin_role', role);
+              }
               setActiveSidebarMenu('dashboard');
               setSelectedTenant(null);
               setIsCreatingTenant(false);
@@ -513,32 +521,6 @@ export function AdminDashboardPage({
                   </div>
                 </div>
 
-                {/* Password Strength segments indicator */}
-                <div style={{ marginBottom: '20px' }}>
-                  <div className="form-label-row">
-                    <span className="form-label" style={{ marginBottom: 0, textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px' }}>
-                      Password Strength
-                    </span>
-                    {adminNewPassword && (
-                      <span className={`strength-label ${adminStrength.strengthClass}`} style={{ fontSize: '12px' }}>
-                        {adminStrength.strengthLabel}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Segmented Strength Bar */}
-                  <div className="strength-segments-container">
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 1 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 2 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 3 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 4 ? `active-${adminStrength.strengthClass}` : ''}`} />
-                  </div>
-
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>
-                    Hint: Use mixed case, numbers, and symbols.
-                  </span>
-                </div>
-
                 {/* Confirm New Password */}
                 <div className="form-group" style={{ marginBottom: '20px' }}>
                   <div className="form-label-row">
@@ -571,6 +553,32 @@ export function AdminDashboardPage({
                       <i className={`fa-solid ${showAdminConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
+                </div>
+
+                {/* Password Strength segments indicator */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div className="form-label-row">
+                    <span className="form-label" style={{ marginBottom: 0, textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      Password Strength
+                    </span>
+                    {adminNewPassword && (
+                      <span className={`strength-label ${adminStrength.strengthClass}`} style={{ fontSize: '12px' }}>
+                        {adminStrength.strengthLabel}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Segmented Strength Bar */}
+                  <div className="strength-segments-container">
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 1 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 2 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 3 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                    <div className={`strength-segment ${adminNewPassword && adminStrength.score >= 4 ? `active-${adminStrength.strengthClass}` : ''}`} />
+                  </div>
+
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>
+                    Hint: Use mixed case, numbers, and symbols.
+                  </span>
                 </div>
 
                 {/* Cancel & Save Buttons */}

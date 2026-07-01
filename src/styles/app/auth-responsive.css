@@ -1,0 +1,99 @@
+@media (max-height: 760px) and (min-width: 1025px) {
+  .signup-page .form-panel {
+    align-items: center;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  .signup-page .signup-header {
+    margin-bottom: 14px;
+  }
+
+  .signup-page .signup-header h2 {
+    font-size: 24px;
+  }
+
+  .signup-page .signup-form {
+    gap: 12px;
+  }
+
+  .signup-page .field-group {
+    gap: 9px;
+  }
+
+  .signup-page .input-wrap {
+    height: auto;
+  }
+
+  .signup-page .input-wrap input {
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+
+  .signup-page .register-strength {
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .signup-page .register-strength-hint {
+    line-height: 1.05;
+  }
+
+  .signup-page .signup-submit {
+    height: 36px;
+    margin-top: 9px;
+  }
+
+  .signup-page .signup-copy {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel {
+    min-height: 430px;
+  }
+
+  .form-panel {
+    min-height: auto;
+    padding: 36px 24px 48px;
+  }
+
+  .signup-page .form-panel {
+    min-height: auto;
+    padding: 28px 24px 40px;
+  }
+
+  .signup-shell {
+    transform: none;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-panel {
+    padding: 28px 20px;
+  }
+
+  .hero-card {
+    min-height: 300px;
+    gap: 34px;
+    padding: 28px 22px;
+  }
+
+  .hero-card h1 {
+    font-size: 31px;
+  }
+
+  .form-header h2 {
+    font-size: 30px;
+  }
+
+  .submit-button {
+    width: 100%;
+  }
+}

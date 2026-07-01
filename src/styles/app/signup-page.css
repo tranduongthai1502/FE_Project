@@ -1,0 +1,178 @@
+.signup-page .form-panel {
+  align-items: center;
+  min-height: 100vh;
+  overflow-y: auto;
+  padding: clamp(30px, 5vh, 50px) clamp(28px, 5vw, 56px) clamp(30px, 4vh, 40px);
+}
+
+.signup-page .signup-shell {
+  width: min(620px, 100%);
+  transform: none;
+}
+
+.signup-page .signup-header {
+  margin-bottom: clamp(12px, 2.5vh, 22px);
+}
+
+.signup-page .signup-header h2 {
+  font-size: clamp(32px, 4.5vh, 38px);
+}
+
+.signup-page .signup-form {
+  gap: clamp(13px, 1.8vh, 17px);
+}
+
+.signup-page .field-group {
+  gap: clamp(10px, 1.4vh, 13px);
+}
+
+.signup-page .field-group label {
+  font-size: 12px;
+}
+
+.signup-page .input-wrap {
+  height: auto;
+  border-radius: 6px;
+}
+
+.signup-page .field-icon {
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.signup-page .input-wrap input {
+  padding-left: 39px;
+  padding-right: 45px;
+  padding-top: clamp(23px, 3vh, 32px);
+  padding-bottom: clamp(23px, 3vh, 32px);
+  font-size: 13px;
+  height: auto;
+}
+
+.signup-page .field-error {
+  font-size: 11px;
+  line-height: 1.12;
+}
+
+.signup-page .register-strength {
+  gap: clamp(4px, 0.8vh, 8px);
+  margin-top: clamp(2px, 0.5vh, 5px);
+}
+
+.signup-page .register-strength-header {
+  font-size: 11px;
+}
+
+.signup-page .register-strength-segments {
+  height: clamp(8px, 1.2vh, 12px);
+}
+
+.signup-page .register-strength-hint {
+  font-size: 11px;
+}
+
+.signup-page .icon-button {
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.signup-page .eye-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.signup-page .signup-submit {
+  width: 100%;
+  height: clamp(52px, 6.8vh, 60px);
+  margin-top: clamp(11px, 1.8vh, 17px);
+  font-size: 19px;
+}
+
+.signup-page .signup-copy {
+  margin-top: clamp(12px, 2.2vh, 22px);
+  font-size: 14px;
+}
+
+.signup-page .signup-copy button {
+  font-size: 14px;
+}
+
+.signup-page .signup-form:has(.field-error) {
+  gap: clamp(5px, 0.8vh, 10px);
+}
+
+.signup-page .signup-form:has(.field-error) .field-group {
+  gap: 4px;
+}
+
+
+
+.signup-page .signup-form:has(.field-error) .register-strength {
+  gap: 4px;
+}
+
+.signup-page .signup-form:has(.field-error) .signup-submit {
+  height: clamp(38px, 5vh, 44px);
+  margin-top: 4px;
+}
+
+@media (max-height: 860px) and (min-width: 1025px) {
+  .signup-page .form-panel {
+    align-items: center;
+    padding-top: clamp(12px, 2vh, 20px);
+    padding-bottom: clamp(12px, 2vh, 20px);
+  }
+
+  .signup-page .signup-shell {
+    transform: none;
+  }
+
+  .signup-page .signup-header {
+    margin-bottom: 14px;
+  }
+
+  .signup-page .signup-header h2 {
+    font-size: 26px;
+  }
+
+  .signup-page .signup-form {
+    gap: 12px;
+  }
+
+  .signup-page .field-group {
+    gap: 9px;
+  }
+
+  .signup-page .input-wrap {
+    height: auto;
+  }
+
+  .signup-page .input-wrap input {
+    padding-left: 39px;
+    padding-right: 45px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .signup-page .register-strength-segments {
+    height: 8px;
+  }
+
+  .signup-page .register-strength-hint {
+    line-height: 1.05;
+  }
+
+  .signup-page .signup-submit {
+    height: 38px;
+    margin-top: 9px;
+  }
+
+  .signup-page .signup-copy {
+    margin-top: 10px;
+  }
+}

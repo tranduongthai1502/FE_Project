@@ -1,0 +1,61 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-gradient-start: #f4f7fc;
+  --bg-gradient-end: #eef2f9;
+  --card-bg: #ffffff;
+  --card-border: rgba(216, 67, 21, 0.12); /* Subtle reddish-orange border matching mock */
+  --primary-color: #d84315; /* Warm deep orange/red matching button */
+  --primary-hover: #c63f17;
+  --primary-glow: rgba(216, 67, 21, 0.15);
+  
+  --text-main: #0b1a30; /* Dark deep slate/blue for headers */
+  --text-muted: #64748b; /* Slate gray for descriptions */
+  --text-label: #8c7e7a; /* Medium brown-gray for form labels */
+  --input-border: #f1e0dc; /* Pale warm border for inputs */
+  --input-border-hover: #e0bdaf;
+  --input-bg: #ffffff;
+  
+  --success-color: #10b981;
+  --error-color: #ef4444;
+
+  /* Typography */
+  --font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  
+  /* Transitions & Shadows */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s ease-out;
+  --card-shadow: 0 20px 40px rgba(11, 26, 48, 0.04), 0 1px 3px rgba(11, 26, 48, 0.02);
+  --button-shadow: 0 4px 14px rgba(216, 67, 21, 0.25);
+  --button-shadow-hover: 0 6px 20px rgba(216, 67, 21, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+}
+
+body {
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+

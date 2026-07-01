@@ -9,6 +9,7 @@ import {
   validatePhone,
 } from '../features/auth/utils/validation'
 import { getPasswordStrength } from '../features/auth/utils/passwordStrength'
+import { authApi } from '../features/auth/services/authApi'
 
 type SignupPageProps = {
   onGoToSignin: () => void
@@ -29,7 +30,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
   const [passwordError, setPasswordError] = useState('')
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const passwordStrength = getPasswordStrength(password)
-  const visibleStrengthScore = Math.max(passwordStrength.score, 1)
+  const visibleStrengthScore = password ? passwordStrength.score : 0
 
   const handleInput =
     (setter: (value: string) => void, clearError?: (value: string) => void) =>
@@ -39,7 +40,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
       clearError?.(nextValue)
     }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
     const nextFullNameError = validateFullName(fullName)
@@ -65,7 +66,19 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
     }
 
     setIsLoading(true)
-    window.setTimeout(() => setIsLoading(false), 800)
+    try {
+      const response: any = await authApi.register({ fullName, email, phone, password })
+      if (response && response.success) {
+        alert('Sign up successful! Please sign in.')
+        onGoToSignin()
+      } else {
+        setConfirmPasswordError(response.message || 'Registration failed')
+      }
+    } catch (error: any) {
+      setConfirmPasswordError(error.message || 'Registration failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -190,8 +203,8 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
             <div className="register-strength" aria-live="polite">
               <div className="register-strength-header">
                 <span>PASSWORD STRENGTH</span>
-                <span className={`register-strength-label ${passwordStrength.strengthClass}`}>
-                  {passwordStrength.strengthLabel}
+                <span className={`register-strength-label ${password ? passwordStrength.strengthClass : ''}`}>
+                  {password ? passwordStrength.strengthLabel : ''}
                 </span>
               </div>
               <div className="register-strength-segments" aria-hidden="true">
@@ -240,12 +253,12 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
           </div>
 
           <button type="submit" className="submit-button signup-submit" disabled={isLoading}>
-            {isLoading ? 'Signing up' : 'Sign up'}
+            {isLoading ? 'Signing up...' : 'Sign up'}
           </button>
         </form>
 
         <p className="signup-copy signin-copy">
-          Do you have an account?
+          Already have an account?
           <button type="button" onClick={onGoToSignin}>
             Sign in
           </button>

@@ -1,3 +1,5 @@
+import axiosClient from '../../../app/api/axiosClient'
+
 export type LoginPayload = {
   email: string
   password: string
@@ -11,23 +13,32 @@ export type RegisterPayload = {
 }
 
 export const authApi = {
-  async login(_payload: LoginPayload) {
-    return { ok: true }
+  async login(payload: LoginPayload) {
+    // Trả về định dạng phản hồi từ Backend AuthResponse
+    return axiosClient.post('/api/auth/signin', payload)
   },
 
-  async register(_payload: RegisterPayload) {
-    return { ok: true }
+  async register(payload: RegisterPayload) {
+    // Chuyển đổi sang snake_case cho trường full_name
+    const backendPayload = {
+      email: payload.email,
+      password: payload.password,
+      full_name: payload.fullName,
+      phone: payload.phone,
+    }
+    return axiosClient.post('/api/auth/signup', backendPayload)
   },
 
-  async sendResetCode(_email: string) {
-    return { ok: true }
+  async sendResetCode(email: string) {
+    return axiosClient.post('/api/auth/forgot-password', { email })
   },
 
-  async verifyOtp(_otp: string) {
-    return { ok: true }
+  async verifyOtp(email: string, otp: string) {
+    return axiosClient.post('/api/auth/check-otp', { email, otp })
   },
 
-  async resetPassword(_password: string) {
-    return { ok: true }
+  async resetPassword(email: string, password: string) {
+    return axiosClient.post('/api/auth/reset-password', { email, newPassword: password })
   },
 }
+

@@ -1,5 +1,15 @@
-import { useState } from 'react'
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { validateEmail } from '../utils/validation'
+
+type LoginStep = 'forgot' | 'register'
+
+type LoginFormProps = {
+  setStep: (step: LoginStep) => void
+  setEmail: Dispatch<SetStateAction<string>>
+  setEmailError: Dispatch<SetStateAction<string>>
+  isLoading: boolean
+  handleSignInSubmit: (event: FormEvent<HTMLFormElement>) => void
+}
 
 export function LoginForm({
   setStep,
@@ -7,7 +17,7 @@ export function LoginForm({
   setEmailError: setParentEmailError,
   isLoading,
   handleSignInSubmit,
-}) {
+}: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
 
@@ -17,7 +27,7 @@ export function LoginForm({
   const [localEmailError, setLocalEmailError] = useState('')
   const [localPasswordError, setLocalPasswordError] = useState('')
 
-  const onSubmit = (e) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
     const eErr = validateEmail(email)

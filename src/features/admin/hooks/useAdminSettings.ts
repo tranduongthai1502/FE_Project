@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { getAdminPasswordStrength } from '../../auth/utils/passwordStrength'
 
-export function useAdminSettings({ triggerToast }) {
+type UseAdminSettingsOptions = {
+  triggerToast: (message: string) => void
+}
+
+export function useAdminSettings({ triggerToast }: UseAdminSettingsOptions) {
   const [activeSidebarMenu, setActiveSidebarMenu] = useState('dashboard')
   const [activeSettingsTab, setActiveSettingsTab] = useState('change_password')
 
@@ -30,7 +34,7 @@ export function useAdminSettings({ triggerToast }) {
     setAdminConfirmPasswordError('')
   }
 
-  const handleAdminSaveChanges = (event) => {
+  const handleAdminSaveChanges = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     let hasError = false
 

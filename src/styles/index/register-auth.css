@@ -1,0 +1,181 @@
+﻿.centered-header {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.large-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.75px;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.font-bold {
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+
+.input-icon-left {
+  position: absolute;
+  left: 16px;
+  color: #a8a29e;
+  font-size: 15px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.form-input-with-icon {
+  padding-left: 44px !important;
+}
+
+.register-submit-btn {
+  background-color: #d84315;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 15px;
+  border-radius: 10px;
+  transition: var(--transition-smooth);
+}
+
+.google-center-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 16px 0 24px 0;
+}
+
+.google-signin-btn-narrow {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  max-width: 240px;
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.google-signin-btn-narrow:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.font-bold-red {
+  color: var(--primary-color) !important;
+  font-weight: 700 !important;
+}
+
+.footer-centered-text {
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Reduce margin between input groups in register form */
+.register-form-style .form-group {
+  margin-bottom: 12px;
+}
+
+/* Compact register card layout to fit viewport height and width */
+.auth-card.register-card {
+  max-width: 400px;
+  max-height: calc(100vh - 32px);
+  padding: 16px 28px;
+  overflow: visible;
+}
+
+.auth-card.register-card .large-title {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.auth-card.register-card .form-group {
+  margin-bottom: 4px;
+}
+
+.auth-card.register-card .form-label {
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+
+.auth-card.register-card .centered-header {
+  margin-bottom: 8px;
+}
+
+.auth-card.register-card .form-input {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  font-size: 16px;
+}
+
+.auth-card.register-card .form-input-with-icon {
+  padding-left: 40px !important;
+}
+
+.auth-card.register-card .input-icon-left {
+  left: 14px;
+  font-size: 14px;
+}
+
+.auth-card.register-card .google-center-wrapper {
+  margin: 8px 0 10px 0;
+}
+
+.auth-card.register-card .divider-text {
+  margin: 10px 0;
+}
+
+.auth-card.register-card .footer-centered-text {
+  margin-top: 10px;
+}
+
+.auth-card.register-card .register-submit-btn {
+  padding: 10px;
+  font-size: 14.5px;
+}
+
+.auth-card.register-card .google-signin-btn-narrow {
+  padding: 8px 20px;
+}
+
+.auth-card.register-card .error-text {
+  margin-top: 2px;
+  font-size: 10.5px;
+}
+
+/* Align auth card error messages to the right */
+.auth-card .error-text {
+  text-align: right;
+  font-size: 11.5px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Remove outer card wrap and make it wider to blend with background */
+.form-column {
+  overflow: hidden; /* Prevent bubble overflow */
+}
+
+.form-column .auth-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  max-width: 460px !important; /* Larger size */
+  width: 100%;
+}
+
