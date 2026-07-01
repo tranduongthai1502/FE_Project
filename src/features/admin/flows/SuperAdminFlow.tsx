@@ -1,4 +1,36 @@
-import React from 'react';
+import React, { type Dispatch, type SetStateAction } from 'react';
+
+export type TenantRecord = {
+  id: string
+  name: string
+  domain: string
+  initials: string
+  plan: string
+  expiration: string
+  expirationSub: string
+  expirationSubClass: string
+  quotaUsed: number
+  quotaMax: number
+  status: string
+  bgClass: string
+}
+
+type SuperAdminFlowProps = {
+  activeSidebarMenu: string
+  tenantSearch: string
+  setTenantSearch: Dispatch<SetStateAction<string>>
+  tenantFilterTab: string
+  setTenantFilterTab: Dispatch<SetStateAction<string>>
+  tenantFilterPlan: string
+  setTenantFilterPlan: Dispatch<SetStateAction<string>>
+  showPlanDropdown: boolean
+  setShowPlanDropdown: Dispatch<SetStateAction<boolean>>
+  selectedTenant: TenantRecord | null
+  setSelectedTenant: Dispatch<SetStateAction<TenantRecord | null>>
+  tenantsData: TenantRecord[]
+  isCreatingTenant: boolean
+  setIsCreatingTenant: Dispatch<SetStateAction<boolean>>
+}
 
 export default function SuperAdminFlow({
   activeSidebarMenu,
@@ -15,7 +47,7 @@ export default function SuperAdminFlow({
   tenantsData,
   isCreatingTenant,
   setIsCreatingTenant
-}) {
+}: SuperAdminFlowProps) {
   const [formCompany, setFormCompany] = React.useState('TTB Media');
   const [formPlan, setFormPlan] = React.useState('Professional - $499/mo');
   const [formDomain, setFormDomain] = React.useState('acme');

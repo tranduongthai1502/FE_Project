@@ -1,6 +1,11 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
-export default function HRFlow({ activeSidebarMenu, renderAnalyticsView }) {
+type HRFlowProps = {
+  activeSidebarMenu: string
+  renderAnalyticsView: () => ReactNode
+}
+
+export default function HRFlow({ activeSidebarMenu, renderAnalyticsView }: HRFlowProps) {
   const renderHRDashboard = () => (
     <div className="dashboard-view-content">
       <div className="stats-grid">

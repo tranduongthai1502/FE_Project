@@ -1,6 +1,11 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
-export default function CandidateFlow({ activeSidebarMenu, renderInterviewsView }) {
+type CandidateFlowProps = {
+  activeSidebarMenu: string
+  renderInterviewsView: () => ReactNode
+}
+
+export default function CandidateFlow({ activeSidebarMenu, renderInterviewsView }: CandidateFlowProps) {
   const renderCandidateDashboard = () => (
     <div className="dashboard-view-content">
       <div className="stats-grid">

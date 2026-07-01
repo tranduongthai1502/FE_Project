@@ -1,7 +1,23 @@
-import React from 'react';
+import React, { type FormEvent } from 'react';
 
-export default function TenantAdminFlow({ activeSidebarMenu, setActiveSidebarMenu }) {
-  const [staffData, setStaffData] = React.useState([
+type StaffAccount = {
+  id: string
+  name: string
+  email: string
+  roles: string[]
+  status: string
+  created: string
+  initials: string
+  bgClass: string
+}
+
+type TenantAdminFlowProps = {
+  activeSidebarMenu: string
+  setActiveSidebarMenu: (menu: string) => void
+}
+
+export default function TenantAdminFlow({ activeSidebarMenu, setActiveSidebarMenu }: TenantAdminFlowProps) {
+  const [staffData, setStaffData] = React.useState<StaffAccount[]>([
     { id: '1', name: 'Sarah Jenkins', email: 'sarah.jenkins@jobfusion.io', roles: ['HR', 'INTERVIEWER'], status: 'Active', created: 'Oct 12, 2023', initials: 'JS', bgClass: 'orange-avatar-bg' },
     { id: '2', name: 'Billie Chambers', email: 'b.chambers@jobfusion.io', roles: ['INTERVIEWER'], status: 'Active', created: 'Nov 04, 2023', initials: 'BC', bgClass: 'blue-avatar-bg' },
     { id: '3', name: 'Dianne Knight', email: 'dianne.k@jobfusion.io', roles: ['INTERVIEWER'], status: 'Inactive', created: 'Dec 20, 2023', initials: 'DK', bgClass: 'indigo-avatar-bg' },
@@ -21,13 +37,13 @@ export default function TenantAdminFlow({ activeSidebarMenu, setActiveSidebarMen
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [newName, setNewName] = React.useState('');
   const [newEmail, setNewEmail] = React.useState('');
-  const [newRoles, setNewRoles] = React.useState(['INTERVIEWER']);
+  const [newRoles, setNewRoles] = React.useState<string[]>(['INTERVIEWER']);
   const [newStatus, setNewStatus] = React.useState('Active');
 
-  const [editingStaff, setEditingStaff] = React.useState(null);
+  const [editingStaff, setEditingStaff] = React.useState<StaffAccount | null>(null);
   const [editName, setEditName] = React.useState('');
   const [editEmail, setEditEmail] = React.useState('');
-  const [editRoles, setEditRoles] = React.useState([]);
+  const [editRoles, setEditRoles] = React.useState<string[]>([]);
   const [editStatus, setEditStatus] = React.useState('');
 
   const renderTenantAdminDashboard = () => (
@@ -339,12 +355,12 @@ export default function TenantAdminFlow({ activeSidebarMenu, setActiveSidebarMen
     const paginatedStaff = filteredStaff.slice(currentPageIdx * itemsPerPage, (currentPageIdx + 1) * itemsPerPage);
 
     // Delete staff handler
-    const handleDeleteStaff = (id) => {
+    const handleDeleteStaff = (id: string) => {
       setStaffData(staffData.filter(item => item.id !== id));
     };
 
     // Add staff handler
-    const handleAddStaffSubmit = (e) => {
+    const handleAddStaffSubmit = (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (!newName || !newEmail) return;
       
@@ -370,7 +386,7 @@ export default function TenantAdminFlow({ activeSidebarMenu, setActiveSidebarMen
     };
 
     // Edit staff handler
-    const handleOpenEdit = (staff) => {
+    const handleOpenEdit = (staff: StaffAccount) => {
       setEditingStaff(staff);
       setEditName(staff.name);
       setEditEmail(staff.email);
@@ -378,9 +394,9 @@ export default function TenantAdminFlow({ activeSidebarMenu, setActiveSidebarMen
       setEditStatus(staff.status);
     };
 
-    const handleEditStaffSubmit = (e) => {
+    const handleEditStaffSubmit = (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!editName || !editEmail) return;
+      if (!editName || !editEmail || !editingStaff) return;
 
       setStaffData(staffData.map(item => {
         if (item.id === editingStaff.id) {

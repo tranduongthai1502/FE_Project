@@ -1,0 +1,41 @@
+﻿/* Custom Logout Dropdown & Trigger Styling */
+.logout-header-trigger {
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.logout-header-trigger:hover {
+  background-color: #f5f3ff;
+}
+
+.custom-logout-dropdown {
+  width: 180px !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.1), 0 8px 10px -6px rgba(139, 92, 246, 0.05) !important;
+}
+
+.custom-logout-dropdown .dropdown-item {
+  color: #1e293b !important;
+  padding: 10px 16px !important;
+  font-weight: 500 !important;
+}
+
+.custom-logout-dropdown .dropdown-item i {
+  color: #475569 !important;
+  font-size: 15px !important;
+}
+
+.custom-logout-dropdown .dropdown-item:hover {
+  background-color: #f5f3ff !important;
+  color: #8b5cf6 !important;
+}
+
+.custom-logout-dropdown .dropdown-item:hover i {
+  color: #8b5cf6 !important;
+}
+
+.custom-logout-dropdown .dropdown-divider {
+  background-color: #f3e8ff !important;
+}

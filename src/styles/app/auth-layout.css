@@ -1,0 +1,29 @@
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(460px, 50%) minmax(560px, 1fr);
+  background: #f4f6fb;
+  color: #10213a;
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.form-panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 54px;
+  background: #f7f8fd;
+}
+
+.form-shell {
+  width: min(596px, 100%);
+  padding-top: 0;
+}
+
+.signup-shell {
+  width: min(590px, 100%);
+  padding-top: 0;
+  transform: translateY(-24px);
+}

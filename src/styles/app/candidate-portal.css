@@ -1,0 +1,623 @@
+.candidate-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  background: #f4f5fb;
+  color: #14213d;
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+}
+
+.candidate-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 32px 16px 18px;
+  background: #fff;
+  border-right: 1px solid #eed8d2;
+}
+
+.candidate-brand strong {
+  display: block;
+  color: #df3100;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.candidate-brand span,
+.candidate-profile-card span {
+  color: #6b5b55;
+  font-size: 12px;
+}
+
+.candidate-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.candidate-nav-item {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  color: #4a3b36;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-nav-item.active,
+.candidate-nav-item:hover {
+  background: #dfe4ff;
+  color: #13243d;
+}
+
+.candidate-profile-card {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  background: #eef2ff;
+  border-radius: 10px;
+}
+
+.candidate-avatar,
+.candidate-mini-avatar,
+.application-logo {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #153b5b;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.candidate-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid #dd5a35;
+}
+
+.candidate-profile-card strong {
+  display: block;
+  font-size: 12px;
+}
+
+.candidate-profile-card button {
+  grid-column: 1 / -1;
+  height: 39px;
+  color: #fff;
+  background: #df3100;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.candidate-main {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.candidate-topbar {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 22px;
+  background: #fff;
+  border-bottom: 1px solid #eed8d2;
+}
+
+.candidate-search {
+  width: min(320px, 34vw);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: #6c7480;
+  background: #f3f6fd;
+  border-radius: 12px;
+}
+
+.candidate-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+
+.candidate-tabs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-left: auto;
+}
+
+.candidate-tabs button,
+.candidate-top-icons button,
+.active-app-header button,
+.application-row button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.candidate-tabs button {
+  height: 58px;
+  color: #493a35;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 2px solid transparent;
+}
+
+.candidate-tabs button.active {
+  color: #df3100;
+  border-bottom-color: #df3100;
+}
+
+.candidate-tabs .candidate-pill {
+  height: 34px;
+  padding: 0 14px;
+  color: #bf2b00;
+  border: 1px solid #e04414;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.ai-match-btn {
+  height: 48px;
+  min-width: 92px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #b32d08;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.candidate-top-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #493a35;
+}
+
+.candidate-mini-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.candidate-content {
+  padding: 28px 24px 34px;
+}
+
+.candidate-welcome {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.candidate-welcome h1 {
+  margin: 0 0 6px;
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.candidate-welcome p {
+  margin: 0;
+  color: #6b5b55;
+  font-size: 14px;
+}
+
+.profile-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: #1d4f91;
+  background: #d9ebff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.candidate-hero-grid,
+.candidate-lower-grid {
+  display: grid;
+  gap: 22px;
+}
+
+.candidate-hero-grid {
+  grid-template-columns: minmax(0, 1fr) 290px;
+  margin-bottom: 26px;
+}
+
+.candidate-lower-grid {
+  grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.15fr);
+}
+
+.application-status-card,
+.interview-card,
+.resume-insights-card,
+.active-applications-card {
+  background: #fff;
+  border: 1px solid #eed8d2;
+  border-radius: 10px;
+}
+
+.application-status-card {
+  padding: 24px;
+}
+
+.candidate-card-heading,
+.active-app-header,
+.insight-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.candidate-card-heading h2,
+.interview-card h2,
+.resume-insights-card h2,
+.active-applications-card h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.candidate-card-heading span {
+  padding: 8px 14px;
+  color: #fff;
+  background: #ca350b;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.status-timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 34px;
+  text-align: center;
+}
+
+.status-line {
+  position: absolute;
+  top: 19px;
+  left: 12%;
+  right: 12%;
+  height: 3px;
+  background: #e8eef7;
+}
+
+.status-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: #3b312e;
+}
+
+.status-step span {
+  width: 39px;
+  height: 39px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #c7330b;
+  border-radius: 50%;
+  box-shadow: 0 0 0 7px #fff;
+}
+
+.status-step.current span {
+  background: #ee4b1b;
+  box-shadow: 0 0 0 7px #ffe1d6;
+}
+
+.status-step.muted {
+  color: #b5bac3;
+}
+
+.status-step.muted span {
+  color: #b5bac3;
+  background: #eef1f5;
+}
+
+.status-step strong {
+  font-size: 12px;
+}
+
+.status-step small {
+  color: inherit;
+  font-size: 10px;
+}
+
+.interview-card {
+  padding: 18px;
+  color: #fff;
+  background: #b8320b;
+}
+
+.interview-card h2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 18px;
+}
+
+.interview-panel {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.interview-panel span {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.interview-panel strong {
+  font-size: 16px;
+}
+
+.interview-card button {
+  width: 100%;
+  height: 42px;
+  color: #b8320b;
+  background: #fff;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.resume-insights-card {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  background: linear-gradient(145deg, #ffd8d1, #f8cfc8);
+}
+
+.insight-title-row span {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  color: #b8320b;
+  background: #fff;
+  border: 4px solid #ee7b54;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.insight-note,
+.keyword-note {
+  margin-top: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  border-left: 4px solid #df3100;
+  border-radius: 7px;
+}
+
+.insight-note strong,
+.keyword-note strong {
+  color: #d02f05;
+  font-size: 12px;
+}
+
+.insight-note p {
+  margin: 8px 0 0;
+  color: #604740;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.keyword-note div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.keyword-note span {
+  padding: 5px 9px;
+  background: #fff;
+  border: 1px solid #e5c4bc;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.edit-resume-btn {
+  margin-top: auto;
+  width: max-content;
+  color: #a92b0b;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.active-applications-card {
+  overflow: hidden;
+}
+
+.active-app-header {
+  padding: 21px 24px;
+}
+
+.active-app-header button {
+  color: #df3100;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.application-list {
+  display: grid;
+}
+
+.application-row {
+  display: grid;
+  grid-template-columns: 40px minmax(120px, 1fr) minmax(120px, 0.8fr) 82px 22px;
+  align-items: center;
+  gap: 14px;
+  min-height: 87px;
+  padding: 14px 24px;
+  border-top: 1px solid #eed8d2;
+}
+
+.application-logo {
+  width: 40px;
+  height: 40px;
+  font-size: 12px;
+}
+
+.application-info,
+.application-status-text {
+  display: grid;
+  gap: 3px;
+}
+
+.application-info strong,
+.application-status-text strong {
+  font-size: 12px;
+}
+
+.application-info span,
+.application-status-text span {
+  color: #6b5b55;
+  font-size: 11px;
+}
+
+.application-progress {
+  height: 5px;
+  background: #edf1f6;
+  border-radius: 999px;
+}
+
+.application-progress span {
+  display: block;
+  height: 100%;
+  background: #b8320b;
+  border-radius: inherit;
+}
+
+.candidate-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 24px;
+  background: #fff;
+  border-top: 1px solid #eed8d2;
+}
+
+.candidate-footer div {
+  display: grid;
+  gap: 10px;
+}
+
+.candidate-footer strong {
+  color: #df3100;
+  font-size: 12px;
+}
+
+.candidate-footer span,
+.candidate-footer a {
+  color: #6b5b55;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.candidate-footer nav {
+  display: flex;
+  gap: 26px;
+}
+
+@media (max-width: 1100px) {
+  .candidate-page {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-sidebar {
+    display: none;
+  }
+
+  .candidate-tabs {
+    display: none;
+  }
+
+  .candidate-search {
+    width: min(420px, 50vw);
+  }
+}
+
+@media (max-width: 760px) {
+  .candidate-topbar,
+  .candidate-footer,
+  .candidate-welcome {
+    align-items: stretch;
+    flex-direction: column;
+    height: auto;
+  }
+
+  .candidate-topbar {
+    padding: 16px;
+  }
+
+  .candidate-search {
+    width: 100%;
+  }
+
+  .candidate-hero-grid,
+  .candidate-lower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .application-row {
+    grid-template-columns: 40px 1fr 22px;
+  }
+
+  .application-status-text,
+  .application-progress {
+    grid-column: 2 / -1;
+  }
+}

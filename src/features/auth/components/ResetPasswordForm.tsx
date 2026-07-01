@@ -1,3 +1,37 @@
+import type { Dispatch, FormEventHandler, SetStateAction } from 'react'
+
+type PasswordStrength = {
+  requirements: {
+    length: boolean
+    case: boolean
+    number: boolean
+    special: boolean
+  }
+  score: number
+  strengthLabel: string
+  strengthClass: string
+  progressWidth: string
+}
+
+type ResetPasswordFormProps = {
+  newPassword: string
+  setNewPassword: Dispatch<SetStateAction<string>>
+  confirmPassword: string
+  setConfirmPassword: Dispatch<SetStateAction<string>>
+  newPasswordError: string
+  setNewPasswordError: Dispatch<SetStateAction<string>>
+  confirmPasswordError: string
+  setConfirmPasswordError: Dispatch<SetStateAction<string>>
+  showNewPassword: boolean
+  setShowNewPassword: Dispatch<SetStateAction<boolean>>
+  showConfirmPassword: boolean
+  setShowConfirmPassword: Dispatch<SetStateAction<boolean>>
+  strength: PasswordStrength
+  isLoading: boolean
+  handleResetPassword: FormEventHandler<HTMLFormElement>
+  handleBackToLogin: () => void
+}
+
 export function ResetPasswordForm({
   newPassword,
   setNewPassword,
@@ -15,7 +49,7 @@ export function ResetPasswordForm({
   isLoading,
   handleResetPassword,
   handleBackToLogin,
-}) {
+}: ResetPasswordFormProps) {
   return (
     <form onSubmit={handleResetPassword} noValidate className="auth-form-content">
       <div className="reset-icon-container">

@@ -1,0 +1,421 @@
+﻿/* Split-Screen Auth Page Styles */
+.split-container {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: #f8fafc;
+}
+
+.hero-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+  overflow: hidden;
+  color: #ffffff;
+}
+
+.hero-gradient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #ff5e36 0%, #f12711 100%);
+  z-index: 1;
+}
+
+.hero-gradient-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%20600%22%20fill%3D%22none%22%20stroke%3D%22%2523ffebcc%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%3E%0A%20%20%3C!--%20Soft%20flowing%20wave%20lines%20--%3E%0A%20%20%3Cg%20stroke-width%3D%220.7%22%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%2040%20C%20200%2025%2C%20600%2080%2C%20900%2048%22%20stroke-opacity%3D%220.120%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%2062%20C%20200%2027%2C%20600%2072%2C%20900%2054%22%20stroke-opacity%3D%220.114%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%2084%20C%20200%2069%2C%20600%2094%2C%20900%2092%22%20stroke-opacity%3D%220.108%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20106%20C%20200%2071%2C%20600%20146%2C%20900%2098%22%20stroke-opacity%3D%220.102%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20128%20C%20200%20113%2C%20600%20138%2C%20900%20136%22%20stroke-opacity%3D%220.096%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20150%20C%20200%20115%2C%20600%20160%2C%20900%20142%22%20stroke-opacity%3D%220.090%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20172%20C%20200%20157%2C%20600%20212%2C%20900%20180%22%20stroke-opacity%3D%220.084%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20194%20C%20200%20159%2C%20600%20204%2C%20900%20186%22%20stroke-opacity%3D%220.078%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20216%20C%20200%20201%2C%20600%20226%2C%20900%20224%22%20stroke-opacity%3D%220.072%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20238%20C%20200%20203%2C%20600%20278%2C%20900%20230%22%20stroke-opacity%3D%220.066%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20260%20C%20200%20245%2C%20600%20270%2C%20900%20268%22%20stroke-opacity%3D%220.060%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20282%20C%20200%20247%2C%20600%20292%2C%20900%20274%22%20stroke-opacity%3D%220.054%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%2060%20C%20200%2095%2C%20600%2025%2C%20900%2050%22%20stroke-opacity%3D%220.080%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%2088%20C%20200%20123%2C%20600%2053%2C%20900%2078%22%20stroke-opacity%3D%220.075%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20116%20C%20200%20151%2C%20600%2081%2C%20900%20106%22%20stroke-opacity%3D%220.070%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20144%20C%20200%20179%2C%20600%20109%2C%20900%20134%22%20stroke-opacity%3D%220.065%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20172%20C%20200%20207%2C%20600%20137%2C%20900%20162%22%20stroke-opacity%3D%220.060%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20200%20C%20200%20235%2C%20600%20165%2C%20900%20190%22%20stroke-opacity%3D%220.055%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20228%20C%20200%20263%2C%20600%20193%2C%20900%20218%22%20stroke-opacity%3D%220.050%22%20%2F%3E%0A%20%20%3Cpath%20d%3D%22M%20-100%20256%20C%20200%20291%2C%20600%20221%2C%20900%20246%22%20stroke-opacity%3D%220.045%22%20%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3C!--%20Constellation%2FPlexus%20network%20connections%20--%3E%0A%20%20%3Cg%20stroke-width%3D%220.6%22%3E%0A%20%20%3Cline%20x1%3D%2250%22%20y1%3D%22110%22%20x2%3D%22120%22%20y2%3D%2290%22%20stroke-opacity%3D%220.113%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%2250%22%20y1%3D%22110%22%20x2%3D%22100%22%20y2%3D%22150%22%20stroke-opacity%3D%220.093%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22120%22%20y1%3D%2290%22%20x2%3D%22220%22%20y2%3D%22100%22%20stroke-opacity%3D%220.117%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22120%22%20y1%3D%2290%22%20x2%3D%22180%22%20y2%3D%22130%22%20stroke-opacity%3D%220.107%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22220%22%20y1%3D%22100%22%20x2%3D%22300%22%20y2%3D%2280%22%20stroke-opacity%3D%220.120%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22220%22%20y1%3D%22100%22%20x2%3D%22180%22%20y2%3D%22130%22%20stroke-opacity%3D%220.103%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22220%22%20y1%3D%22100%22%20x2%3D%22260%22%20y2%3D%22160%22%20stroke-opacity%3D%220.093%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22300%22%20y1%3D%2280%22%20x2%3D%22400%22%20y2%3D%2295%22%20stroke-opacity%3D%220.122%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22300%22%20y1%3D%2280%22%20x2%3D%22350%22%20y2%3D%22125%22%20stroke-opacity%3D%220.112%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22400%22%20y1%3D%2295%22%20x2%3D%22480%22%20y2%3D%2275%22%20stroke-opacity%3D%220.123%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22400%22%20y1%3D%2295%22%20x2%3D%22350%22%20y2%3D%22125%22%20stroke-opacity%3D%220.107%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22400%22%20y1%3D%2295%22%20x2%3D%22440%22%20y2%3D%22155%22%20stroke-opacity%3D%220.097%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22480%22%20y1%3D%2275%22%20x2%3D%22580%22%20y2%3D%2290%22%20stroke-opacity%3D%220.125%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22480%22%20y1%3D%2275%22%20x2%3D%22520%22%20y2%3D%22135%22%20stroke-opacity%3D%220.110%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22580%22%20y1%3D%2290%22%20x2%3D%22660%22%20y2%3D%2285%22%20stroke-opacity%3D%220.122%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22580%22%20y1%3D%2290%22%20x2%3D%22520%22%20y2%3D%22135%22%20stroke-opacity%3D%220.105%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22580%22%20y1%3D%2290%22%20x2%3D%22610%22%20y2%3D%22170%22%20stroke-opacity%3D%220.093%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22660%22%20y1%3D%2285%22%20x2%3D%22750%22%20y2%3D%22105%22%20stroke-opacity%3D%220.117%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22660%22%20y1%3D%2285%22%20x2%3D%22700%22%20y2%3D%22130%22%20stroke-opacity%3D%220.108%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22750%22%20y1%3D%22105%22%20x2%3D%22820%22%20y2%3D%2295%22%20stroke-opacity%3D%220.113%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22750%22%20y1%3D%22105%22%20x2%3D%22700%22%20y2%3D%22130%22%20stroke-opacity%3D%220.102%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22750%22%20y1%3D%22105%22%20x2%3D%22780%22%20y2%3D%22145%22%20stroke-opacity%3D%220.097%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22100%22%20y1%3D%22150%22%20x2%3D%22180%22%20y2%3D%22130%22%20stroke-opacity%3D%220.087%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22100%22%20y1%3D%22150%22%20x2%3D%22150%22%20y2%3D%22200%22%20stroke-opacity%3D%220.063%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22180%22%20y1%3D%22130%22%20x2%3D%22260%22%20y2%3D%22160%22%20stroke-opacity%3D%220.083%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22180%22%20y1%3D%22130%22%20x2%3D%22150%22%20y2%3D%22200%22%20stroke-opacity%3D%220.070%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22260%22%20y1%3D%22160%22%20x2%3D%22350%22%20y2%3D%22125%22%20stroke-opacity%3D%220.085%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22260%22%20y1%3D%22160%22%20x2%3D%22300%22%20y2%3D%22215%22%20stroke-opacity%3D%220.055%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22350%22%20y1%3D%22125%22%20x2%3D%22440%22%20y2%3D%22155%22%20stroke-opacity%3D%220.087%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22350%22%20y1%3D%22125%22%20x2%3D%22300%22%20y2%3D%22215%22%20stroke-opacity%3D%220.067%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22440%22%20y1%3D%22155%22%20x2%3D%22520%22%20y2%3D%22135%22%20stroke-opacity%3D%220.083%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22440%22%20y1%3D%22155%22%20x2%3D%22450%22%20y2%3D%22205%22%20stroke-opacity%3D%220.060%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22520%22%20y1%3D%22135%22%20x2%3D%22610%22%20y2%3D%22170%22%20stroke-opacity%3D%220.078%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22520%22%20y1%3D%22135%22%20x2%3D%22450%22%20y2%3D%22205%22%20stroke-opacity%3D%220.067%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22610%22%20y1%3D%22170%22%20x2%3D%22700%22%20y2%3D%22130%22%20stroke-opacity%3D%220.080%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22610%22%20y1%3D%22170%22%20x2%3D%22600%22%20y2%3D%22225%22%20stroke-opacity%3D%220.048%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22700%22%20y1%3D%22130%22%20x2%3D%22780%22%20y2%3D%22145%22%20stroke-opacity%3D%220.088%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22700%22%20y1%3D%22130%22%20x2%3D%22720%22%20y2%3D%22195%22%20stroke-opacity%3D%220.072%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22150%22%20y1%3D%22200%22%20x2%3D%22300%22%20y2%3D%22215%22%20stroke-opacity%3D%220.042%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22300%22%20y1%3D%22215%22%20x2%3D%22450%22%20y2%3D%22205%22%20stroke-opacity%3D%220.040%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22450%22%20y1%3D%22205%22%20x2%3D%22600%22%20y2%3D%22225%22%20stroke-opacity%3D%220.037%22%20%2F%3E%0A%20%20%3Cline%20x1%3D%22600%22%20y1%3D%22225%22%20x2%3D%22720%22%20y2%3D%22195%22%20stroke-opacity%3D%220.040%22%20%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3C!--%20Constellation%2FPlexus%20nodes%20--%3E%0A%20%20%3Cg%20fill%3D%22%2523ffebcc%22%20stroke%3D%22none%22%3E%0A%20%20%3Ccircle%20cx%3D%2250%22%20cy%3D%22110%22%20r%3D%222%22%20fill-opacity%3D%220.240%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22120%22%20cy%3D%2290%22%20r%3D%222%22%20fill-opacity%3D%220.260%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22220%22%20cy%3D%22100%22%20r%3D%222%22%20fill-opacity%3D%220.250%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22300%22%20cy%3D%2280%22%20r%3D%222%22%20fill-opacity%3D%220.270%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22400%22%20cy%3D%2295%22%20r%3D%222%22%20fill-opacity%3D%220.255%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22480%22%20cy%3D%2275%22%20r%3D%222%22%20fill-opacity%3D%220.275%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22580%22%20cy%3D%2290%22%20r%3D%222%22%20fill-opacity%3D%220.260%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22660%22%20cy%3D%2285%22%20r%3D%222%22%20fill-opacity%3D%220.265%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22750%22%20cy%3D%22105%22%20r%3D%222%22%20fill-opacity%3D%220.245%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22820%22%20cy%3D%2295%22%20r%3D%222%22%20fill-opacity%3D%220.255%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22100%22%20cy%3D%22150%22%20r%3D%222%22%20fill-opacity%3D%220.200%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22180%22%20cy%3D%22130%22%20r%3D%222%22%20fill-opacity%3D%220.220%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22260%22%20cy%3D%22160%22%20r%3D%222%22%20fill-opacity%3D%220.190%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22350%22%20cy%3D%22125%22%20r%3D%222%22%20fill-opacity%3D%220.225%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22440%22%20cy%3D%22155%22%20r%3D%222%22%20fill-opacity%3D%220.195%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22520%22%20cy%3D%22135%22%20r%3D%222%22%20fill-opacity%3D%220.215%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22610%22%20cy%3D%22170%22%20r%3D%222%22%20fill-opacity%3D%220.180%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22700%22%20cy%3D%22130%22%20r%3D%222%22%20fill-opacity%3D%220.220%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22780%22%20cy%3D%22145%22%20r%3D%222%22%20fill-opacity%3D%220.205%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22150%22%20cy%3D%22200%22%20r%3D%222%22%20fill-opacity%3D%220.150%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22300%22%20cy%3D%22215%22%20r%3D%222%22%20fill-opacity%3D%220.135%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22450%22%20cy%3D%22205%22%20r%3D%222%22%20fill-opacity%3D%220.145%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22600%22%20cy%3D%22225%22%20r%3D%222%22%20fill-opacity%3D%220.125%22%20%2F%3E%0A%20%20%3Ccircle%20cx%3D%22720%22%20cy%3D%22195%22%20r%3D%222%22%20fill-opacity%3D%220.155%22%20%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E");
+  background-size: cover;
+  background-position: center;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  opacity: 0.95;
+  z-index: 1;
+}
+
+/* Premium shape decorations in hero */
+.hero-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.shape-circle-1 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
+  top: -100px;
+  left: -100px;
+  animation: floatShape1 18s ease-in-out infinite;
+}
+
+.shape-circle-2 {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%);
+  bottom: -150px;
+  right: -150px;
+  animation: floatShape2 24s ease-in-out infinite;
+}
+
+@keyframes floatShape1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.05); }
+}
+
+@keyframes floatShape2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -40px) scale(0.95); }
+}
+
+.hero-card-container {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 540px;
+  animation: heroAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes heroAppear {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphic Card style */
+.hero-glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 48px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.15);
+}
+
+.hero-logo {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.hero-logo-dot {
+  font-size: 14px;
+  color: #ffffff;
+  animation: pulseWhite 2s infinite;
+}
+
+@keyframes pulseWhite {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.hero-title {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+}
+
+.hero-desc {
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+/* Form Column Styles */
+.form-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  overflow-y: auto;
+  position: relative;
+  background-color: #f8fafc;
+  width: 100%;
+  height: 100%;
+}
+
+.form-column .auth-card {
+  max-width: 440px;
+  margin: auto;
+}
+
+/* Google Sign-in Button style */
+.google-signin-btn {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-family: inherit;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  margin-bottom: 8px;
+}
+
+.google-signin-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.google-icon {
+  flex-shrink: 0;
+}
+
+/* Divider with text */
+.divider-text {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.divider-text::before,
+.divider-text::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #f1e0dc;
+  opacity: 0.7;
+}
+
+.divider-text:not(:empty)::before {
+  margin-right: .75em;
+}
+
+.divider-text:not(:empty)::after {
+  margin-left: .75em;
+}
+
+/* Form Header styles */
+.form-header {
+  margin-bottom: 28px;
+}
+
+.form-header-with-back {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.form-header-with-back .form-title {
+  margin-bottom: 0;
+}
+
+.form-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+
+.form-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Form options (checkbox + link) */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+}
+
+/* Custom Checkbox */
+.remember-me-checkbox {
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  padding-left: 24px;
+}
+
+.remember-me-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkbox-custom {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 16px;
+  width: 16px;
+  background-color: #ffffff;
+  border: 1.5px solid var(--input-border);
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.remember-me-checkbox:hover input ~ .checkbox-custom {
+  border-color: var(--input-border-hover);
+}
+
+.remember-me-checkbox input:checked ~ .checkbox-custom {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.checkbox-custom:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.remember-me-checkbox input:checked ~ .checkbox-custom:after {
+  display: block;
+}
+
+.remember-me-checkbox .checkbox-custom:after {
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid white;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-label {
+  color: var(--text-muted);
+  font-size: 15.5px;
+  font-weight: 500;
+}
+
+.forgot-password-link {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.forgot-password-link:hover {
+  color: var(--primary-hover);
+}
+
+/* Form Footer */
+.form-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  font-size: 14.5px;
+  color: var(--text-muted);
+}
+
+.footer-link-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  transition: var(--transition-fast);
+  padding: 0;
+}
+
+.footer-link-btn:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.footer-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+  font-size: 14.5px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.footer-back-link:hover {
+  color: var(--primary-hover);
+}
+
+.footer-back-link i {
+  transition: var(--transition-fast);
+}
+
+.footer-back-link:hover i {
+  transform: translateX(-3px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .split-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  
+  .hero-column {
+    display: none; /* Hide hero on small screens as planned in layout */
+  }
+  
+  .form-column {
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+}
+

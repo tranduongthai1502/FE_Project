@@ -1,21 +1,28 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react'
 import { getPasswordStrength } from '../utils/passwordStrength'
 import { validateEmail } from '../utils/validation'
 
 const emptyOtp = ['', '', '', '', '', '']
 
-export function useAuthFlow({ triggerToast, onSignInSuccess }) {
-  const [step, setStep] = useState('login')
+type AuthStep = 'login' | 'forgot' | 'register' | 'otp' | 'reset' | 'admin'
+
+type UseAuthFlowOptions = {
+  triggerToast?: (message?: string) => void
+  onSignInSuccess: () => void
+}
+
+export function useAuthFlow({ triggerToast, onSignInSuccess }: UseAuthFlowOptions) {
+  const [step, setStep] = useState<AuthStep>('login')
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [isAuthLoading, setIsAuthLoading] = useState(false)
 
-  const [otp, setOtp] = useState(emptyOtp)
+  const [otp, setOtp] = useState<string[]>(emptyOtp)
   const [otpError, setOtpError] = useState('')
-  const otpInputsRef = useRef([])
+  const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
 
   const [countdown, setCountdown] = useState(59)
-  const timerRef = useRef(null)
+  const timerRef = useRef<number | null>(null)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -27,12 +34,12 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
   const strength = getPasswordStrength(newPassword)
 
   const startTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current)
+    if (timerRef.current) window.clearInterval(timerRef.current)
     setCountdown(59)
-    timerRef.current = setInterval(() => {
+    timerRef.current = window.setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current)
+          if (timerRef.current) window.clearInterval(timerRef.current)
           return 0
         }
         return prev - 1
@@ -44,15 +51,15 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     if (step === 'otp') {
       startTimer()
     } else if (timerRef.current) {
-      clearInterval(timerRef.current)
+      window.clearInterval(timerRef.current)
     }
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
+      if (timerRef.current) window.clearInterval(timerRef.current)
     }
   }, [step])
 
-  const handleSendCode = (event) => {
+  const handleSendCode = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const error = validateEmail(email)
     if (error) {
@@ -69,7 +76,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     }, 1500)
   }
 
-  const handleOtpChange = (element, index) => {
+  const handleOtpChange = (element: HTMLInputElement, index: number) => {
     const value = element.value
     if (isNaN(Number(value))) return
 
@@ -79,18 +86,18 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     setOtpError('')
 
     if (value && index < 5) {
-      otpInputsRef.current[index + 1].focus()
+      otpInputsRef.current[index + 1]?.focus()
     }
   }
 
-  const handleOtpKeyDown = (event, index) => {
+  const handleOtpKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
     if (event.key === 'Backspace') {
       const newOtp = [...otp]
 
       if (!otp[index] && index > 0) {
         newOtp[index - 1] = ''
         setOtp(newOtp)
-        otpInputsRef.current[index - 1].focus()
+        otpInputsRef.current[index - 1]?.focus()
       } else {
         newOtp[index] = ''
         setOtp(newOtp)
@@ -99,7 +106,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     }
   }
 
-  const handleOtpPaste = (event) => {
+  const handleOtpPaste = (event: ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault()
     const pastedData = event.clipboardData.getData('text').trim()
     if (!/^\d+$/.test(pastedData)) return
@@ -118,11 +125,11 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
 
     const focusIndex = Math.min(pastedDigits.length, 5)
     if (otpInputsRef.current[focusIndex]) {
-      otpInputsRef.current[focusIndex].focus()
+      otpInputsRef.current[focusIndex]?.focus()
     }
   }
 
-  const handleVerifyOtp = (event) => {
+  const handleVerifyOtp = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const otpCode = otp.join('')
 
@@ -140,7 +147,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     }, 1500)
   }
 
-  const handleResetPassword = (event) => {
+  const handleResetPassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     let hasError = false
 
@@ -172,7 +179,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
       setConfirmPassword('')
       setEmail('')
       setOtp(emptyOtp)
-      triggerToast()
+      triggerToast?.()
     }, 1500)
   }
 
@@ -186,7 +193,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     setConfirmPasswordError('')
   }
 
-  const handleSignInSubmit = (event) => {
+  const handleSignInSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsAuthLoading(true)
 
@@ -194,9 +201,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
       setIsAuthLoading(false)
       setStep('admin')
       onSignInSuccess()
-      if (triggerToast) {
-        triggerToast("Logged in successfully.")
-      }
+      triggerToast?.('Logged in successfully.')
     }, 1000)
   }
 

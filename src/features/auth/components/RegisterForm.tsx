@@ -1,12 +1,25 @@
-import { useState } from 'react'
-import { validateEmail } from '../utils/validation'
+import { useState, type FormEvent } from 'react'
+import {
+  validateConfirmPassword,
+  validateEmail,
+  validateFullName,
+  validatePassword,
+  validatePhone,
+} from '../utils/validation'
+
+type RegisterFormProps = {
+  setStep: (step: 'login' | 'register' | 'forgot' | 'otp' | 'reset') => void
+  isLoading?: boolean
+  handleSignUpSubmit?: (event: FormEvent<HTMLFormElement>) => void
+  triggerToast?: (message: string) => void
+}
 
 export function RegisterForm({
   setStep,
-  isLoading: parentIsLoading,
+  isLoading: parentIsLoading = false,
   handleSignUpSubmit,
   triggerToast,
-}) {
+}: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
@@ -25,35 +38,10 @@ export function RegisterForm({
   const [localIsLoading, setLocalIsLoading] = useState(false)
   const isLoading = parentIsLoading || localIsLoading
 
-  const validateName = (val) => {
-    if (!val.trim()) return 'Please enter your full name.'
-    if (val.trim().length < 2) return 'Name must be at least 2 characters.'
-    return ''
-  }
-
-  const validatePhone = (val) => {
-    if (!val.trim()) return 'Please enter your phone number.'
-    const phoneRegex = /^0\d{9}$/
-    if (!phoneRegex.test(val.trim())) return 'Please enter a valid phone number starting with 0 and containing 10 digits.'
-    return ''
-  }
-
-  const validatePassword = (val) => {
-    if (!val) return 'Please enter a password.'
-    if (val.length < 8) return 'Password must be at least 8 characters.'
-    return ''
-  }
-
-  const validateConfirmPassword = (val, pass) => {
-    if (!val) return 'Please confirm your password.'
-    if (val !== pass) return 'Passwords do not match.'
-    return ''
-  }
-
-  const onSubmit = (e) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
-    const nErr = validateName(fullName)
+    const nErr = validateFullName(fullName)
     const eErr = validateEmail(email)
     const pErr = validatePhone(phone)
     const passErr = validatePassword(password)
@@ -104,7 +92,7 @@ export function RegisterForm({
             value={fullName}
             onChange={(e) => {
               setFullName(e.target.value)
-              if (nameError) setNameError(validateName(e.target.value))
+              if (nameError) setNameError(validateFullName(e.target.value))
             }}
             disabled={isLoading}
             required

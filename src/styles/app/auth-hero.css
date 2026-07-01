@@ -1,0 +1,49 @@
+.hero-panel {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  overflow: hidden;
+  background-color: #d82d00;
+  background-position: center bottom;
+  background-size: cover;
+}
+
+.hero-card {
+  position: relative;
+  z-index: 1;
+  width: min(476px, 100%);
+  min-height: 370px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 52px;
+  padding: 40px 22px 40px;
+  text-align: center;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 28px 60px rgba(111, 24, 0, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+.hero-card h1 {
+  margin: 0;
+  color: white;
+  font-size: 35px;
+  line-height: 1.06;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.hero-card p {
+  max-width: 340px;
+  margin: 0 auto;
+  color: white;
+  font-size: 14px;
+  line-height: 1.42;
+  font-weight: 500;
+}

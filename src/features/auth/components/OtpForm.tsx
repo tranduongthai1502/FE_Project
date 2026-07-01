@@ -1,3 +1,28 @@
+import type {
+  ClipboardEvent,
+  Dispatch,
+  FormEventHandler,
+  KeyboardEvent,
+  MutableRefObject,
+  SetStateAction,
+} from 'react'
+
+type OtpFormProps = {
+  otp: string[]
+  setOtp: Dispatch<SetStateAction<string[]>>
+  otpError: string
+  setOtpError: Dispatch<SetStateAction<string>>
+  otpInputsRef: MutableRefObject<Array<HTMLInputElement | null>>
+  countdown: number
+  isLoading: boolean
+  handleOtpChange: (element: HTMLInputElement, index: number) => void
+  handleOtpKeyDown: (event: KeyboardEvent<HTMLInputElement>, index: number) => void
+  handleOtpPaste: (event: ClipboardEvent<HTMLDivElement>) => void
+  handleVerifyOtp: FormEventHandler<HTMLFormElement>
+  handleBackToLogin: () => void
+  startTimer: () => void
+}
+
 export function OtpForm({
   otp,
   setOtp,
@@ -12,7 +37,7 @@ export function OtpForm({
   handleVerifyOtp,
   handleBackToLogin,
   startTimer,
-}) {
+}: OtpFormProps) {
   return (
     <form onSubmit={handleVerifyOtp} noValidate className="auth-form-content">
       <div className="shield-icon-container">
@@ -36,7 +61,9 @@ export function OtpForm({
               maxLength={1}
               className={`otp-input ${otpError ? 'has-error' : ''}`}
               value={digit}
-              ref={(el) => (otpInputsRef.current[idx] = el)}
+              ref={(el) => {
+                otpInputsRef.current[idx] = el
+              }}
               onChange={(e) => handleOtpChange(e.target, idx)}
               onKeyDown={(e) => handleOtpKeyDown(e, idx)}
               disabled={isLoading}

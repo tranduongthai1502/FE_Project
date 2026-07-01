@@ -1,3 +1,16 @@
+import type { Dispatch, FormEventHandler, SetStateAction } from 'react'
+
+type ForgotPasswordFormProps = {
+  email: string
+  setEmail: Dispatch<SetStateAction<string>>
+  emailError: string
+  setEmailError: Dispatch<SetStateAction<string>>
+  isLoading: boolean
+  validateEmail: (value: string) => string
+  handleSendCode: FormEventHandler<HTMLFormElement>
+  handleBackToLogin: () => void
+}
+
 export function ForgotPasswordForm({
   email,
   setEmail,
@@ -7,7 +20,7 @@ export function ForgotPasswordForm({
   validateEmail,
   handleSendCode,
   handleBackToLogin,
-}) {
+}: ForgotPasswordFormProps) {
   return (
     <form onSubmit={handleSendCode} noValidate className="auth-form-content">
       <div className="form-header-with-back">
@@ -20,7 +33,7 @@ export function ForgotPasswordForm({
         >
           <i className="fa-solid fa-arrow-left"></i>
         </button>
-        <h1 className="form-title">Forgot Password</h1>
+        <h1 id="forgot-title" className="form-title">Forgot Password</h1>
       </div>
 
       <p className="form-desc" style={{ marginTop: '8px' }}>
@@ -44,6 +57,9 @@ export function ForgotPasswordForm({
             autoComplete="email"
             required
           />
+          {emailError && (
+            <i className="fa-solid fa-circle-exclamation forgot-error-icon" aria-hidden="true"></i>
+          )}
         </div>
         {emailError && <span className="error-text">{emailError}</span>}
       </div>

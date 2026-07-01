@@ -1,6 +1,11 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
-export default function InterviewerFlow({ activeSidebarMenu, renderCandidatesView }) {
+type InterviewerFlowProps = {
+  activeSidebarMenu: string
+  renderCandidatesView: () => ReactNode
+}
+
+export default function InterviewerFlow({ activeSidebarMenu, renderCandidatesView }: InterviewerFlowProps) {
   const renderInterviewerDashboard = () => (
     <div className="dashboard-view-content">
       <div className="stats-grid">
@@ -38,8 +43,8 @@ export default function InterviewerFlow({ activeSidebarMenu, renderCandidatesVie
             <tr><th>Candidate</th><th>Position</th><th>Date / Time</th><th>Link</th></tr>
           </thead>
           <tbody>
-            <tr><td className="font-semibold">John Doe</td><td>React Tech Lead</td><td>Today, 2:00 PM</td><td><a href="#zoom" onClick={e => e.preventDefault()}>Join Zoom Room</a></td></tr>
-            <tr><td className="font-semibold">Alice Vance</td><td>UI/UX Designer</td><td>Tomorrow, 10:00 AM</td><td><a href="#zoom" onClick={e => e.preventDefault()}>Join Zoom Room</a></td></tr>
+            <tr><td className="font-semibold">John Doe</td><td>React Tech Lead</td><td>Today, 2:00 PM</td><td><a href="#zoom" onClick={(event) => event.preventDefault()}>Join Zoom Room</a></td></tr>
+            <tr><td className="font-semibold">Alice Vance</td><td>UI/UX Designer</td><td>Tomorrow, 10:00 AM</td><td><a href="#zoom" onClick={(event) => event.preventDefault()}>Join Zoom Room</a></td></tr>
           </tbody>
         </table>
       </div>

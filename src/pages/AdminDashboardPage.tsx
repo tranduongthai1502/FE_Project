@@ -127,7 +127,12 @@ export function AdminDashboardPage({
   const [tenantFilterPlan, setTenantFilterPlan] = React.useState('all')
   const [showPlanDropdown, setShowPlanDropdown] = React.useState(false)
   const [selectedTenant, setSelectedTenant] = React.useState(null)
-  const [currentRole, setCurrentRole] = React.useState('super_admin')
+  const [currentRole, setCurrentRole] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('jobfusion_admin_role') || 'super_admin'
+    }
+    return 'super_admin'
+  })
   const [isCreatingTenant, setIsCreatingTenant] = React.useState(false)
 
   const tenantsData = [
@@ -161,6 +166,9 @@ export function AdminDashboardPage({
             onChange={(e) => {
               const role = e.target.value;
               setCurrentRole(role);
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('jobfusion_admin_role', role);
+              }
               setActiveSidebarMenu('dashboard');
               setSelectedTenant(null);
               setIsCreatingTenant(false);
