@@ -48,7 +48,7 @@ export function OtpForm({
           ))}
         </div>
         {otpError && (
-          <span className="error-text" style={{ display: 'block', margin: '8px 0 0', textAlign: 'center' }}>
+          <span className="error-text" style={{ display: 'block', margin: '8px 0 0', textAlign: 'right' }}>
             {otpError}
           </span>
         )}

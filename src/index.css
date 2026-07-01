@@ -135,7 +135,7 @@ body {
 
 /* Forms & Inputs */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
   display: flex;
   flex-direction: column;
   text-align: left;
@@ -215,6 +215,7 @@ body {
   font-size: 13.5px;
   font-weight: 500;
   margin-top: 6px;
+  
   animation: fadeIn 0.2s ease-out forwards;
 }
 
@@ -1479,8 +1480,8 @@ body {
 }
 
 .form-title {
-  font-size: 42px;
-  font-weight: 800;
+  font-size: 32px;
+  font-weight: 600;
   color: var(--text-main);
   letter-spacing: -0.8px;
   margin-bottom: 8px;
@@ -1946,8 +1947,10 @@ body {
 }
 
 
-/* Align auth card error messages to the right */
-.auth-card .error-text {
+/* Align auth card, recovery popup, and settings card error messages to the right */
+.auth-card .error-text,
+.recovery-popup-card .error-text,
+.settings-form-card .error-text {
   text-align: right;
   font-size: 13px;
   font-weight: 500;

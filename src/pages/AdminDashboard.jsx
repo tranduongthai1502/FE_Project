@@ -237,9 +237,6 @@ export function AdminDashboard({
                     <label htmlFor="adminCurrentPass" className="form-label" style={{ marginBottom: 0 }}>
                       Current Password <span style={{ color: 'var(--error-color)' }}>*</span>
                     </label>
-                    {adminCurrentPasswordError && (
-                      <span className="form-label-error">{adminCurrentPasswordError}</span>
-                    )}
                   </div>
                   <div className="input-wrapper">
                     <input
@@ -263,6 +260,9 @@ export function AdminDashboard({
                       <i className={`fa-solid ${showAdminCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
+                  {adminCurrentPasswordError && (
+                    <span className="error-text">{adminCurrentPasswordError}</span>
+                  )}
                 </div>
 
                 {/* New Password */}
@@ -271,9 +271,6 @@ export function AdminDashboard({
                     <label htmlFor="adminNewPass" className="form-label" style={{ marginBottom: 0 }}>
                       New Password <span style={{ color: 'var(--error-color)' }}>*</span>
                     </label>
-                    {adminNewPasswordError && (
-                      <span className="form-label-error">{adminNewPasswordError}</span>
-                    )}
                   </div>
                   <div className="input-wrapper">
                     <input
@@ -297,6 +294,9 @@ export function AdminDashboard({
                       <i className={`fa-solid ${showAdminNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
+                  {adminNewPasswordError && (
+                    <span className="error-text">{adminNewPasswordError}</span>
+                  )}
                 </div>
 
                 {/* Password Strength segments indicator */}
@@ -331,9 +331,6 @@ export function AdminDashboard({
                     <label htmlFor="adminConfirmPass" className="form-label" style={{ marginBottom: 0 }}>
                       Confirm New Password <span style={{ color: 'var(--error-color)' }}>*</span>
                     </label>
-                    {adminConfirmPasswordError && (
-                      <span className="form-label-error">{adminConfirmPasswordError}</span>
-                    )}
                   </div>
                   <div className="input-wrapper">
                     <input
@@ -357,6 +354,9 @@ export function AdminDashboard({
                       <i className={`fa-solid ${showAdminConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                   </div>
+                  {adminConfirmPasswordError && (
+                    <span className="error-text">{adminConfirmPasswordError}</span>
+                  )}
                 </div>
 
                 {/* Cancel & Save Buttons */}

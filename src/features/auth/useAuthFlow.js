@@ -144,7 +144,10 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     event.preventDefault()
     let hasError = false
 
-    if (strength.score < 4) {
+    if (!newPassword) {
+      setNewPasswordError('Please enter your new password.')
+      hasError = true
+    } else if (strength.score < 4) {
       setNewPasswordError('Password does not meet requirements.')
       hasError = true
     } else {
@@ -152,7 +155,7 @@ export function useAuthFlow({ triggerToast, onSignInSuccess }) {
     }
 
     if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your new password.')
+      setConfirmPasswordError('Please enter your confirm password.')
       hasError = true
     } else if (newPassword !== confirmPassword) {
       setConfirmPasswordError('Passwords do not match.')

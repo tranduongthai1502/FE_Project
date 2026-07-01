@@ -38,13 +38,10 @@ export function ResetPasswordForm({
       <div className="form-group">
         <label htmlFor="newPassword" className="form-label font-bold">New Password</label>
         <div className="input-wrapper">
-          <span className="input-icon-left">
-            <i className="fa-solid fa-lock"></i>
-          </span>
           <input
             type={showNewPassword ? 'text' : 'password'}
             id="newPassword"
-            className={`form-input form-input-with-icon ${newPasswordError ? 'has-error' : ''}`}
+            className={`form-input ${newPasswordError ? 'has-error' : ''}`}
             placeholder="Enter new password"
             value={newPassword}
             onChange={(e) => {
@@ -69,13 +66,10 @@ export function ResetPasswordForm({
       <div className="form-group">
         <label htmlFor="confirmPassword" className="form-label font-bold">Confirm New Password</label>
         <div className="input-wrapper">
-          <span className="input-icon-left">
-            <i className="fa-solid fa-lock"></i>
-          </span>
           <input
             type={showConfirmPassword ? 'text' : 'password'}
             id="confirmPassword"
-            className={`form-input form-input-with-icon ${confirmPasswordError ? 'has-error' : ''}`}
+            className={`form-input ${confirmPasswordError ? 'has-error' : ''}`}
             placeholder="Re-type new password"
             value={confirmPassword}
             onChange={(e) => {
@@ -102,7 +96,7 @@ export function ResetPasswordForm({
         <div className="strength-header-row">
           <span className="strength-title-label">PASSWORD STRENGTH</span>
           <span className={`strength-value-label ${strength.strengthClass}`}>
-            {strength.strengthLabel === 'Weak' ? 'Week' : strength.strengthLabel}
+            {strength.strengthLabel === 'Weak' ? 'Weak' : strength.strengthLabel}
           </span>
         </div>
         <div className="strength-segments-container">
@@ -111,7 +105,7 @@ export function ResetPasswordForm({
           <div className={`strength-segment ${newPassword && strength.score >= 3 ? `active-${strength.strengthClass}` : ''}`} />
           <div className={`strength-segment ${newPassword && strength.score >= 4 ? `active-${strength.strengthClass}` : ''}`} />
         </div>
-        <p className="strength-hint-text">Hint: Use mixed case, numbers, and symbols.</p>
+        <p className="strength-hint-text">Hint: At least 8 character, use mixed case, numbers, and symbols.</p>
       </div>
 
       <button type="submit" className="submit-btn" disabled={isLoading}>

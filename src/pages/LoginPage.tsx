@@ -55,7 +55,7 @@ export function LoginPage({ onGoToSignup }: LoginPageProps) {
                 type="email"
                 value={email}
                 onChange={handleEmailChange}
-                placeholder="name@company.com"
+                placeholder="Enter your email"
                 autoComplete="email"
               />
             </div>

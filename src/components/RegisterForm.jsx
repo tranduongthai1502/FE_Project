@@ -239,7 +239,7 @@ export function RegisterForm({
         <div className="strength-header-row">
           <span className="strength-title-label">PASSWORD STRENGTH</span>
           <span className={`strength-value-label ${strength.strengthClass}`}>
-            {strength.strengthLabel === 'Weak' ? 'Week' : strength.strengthLabel}
+            {strength.strengthLabel === 'Weak' ? 'Weak' : strength.strengthLabel}
           </span>
         </div>
         <div className="strength-segments-container">
@@ -248,7 +248,7 @@ export function RegisterForm({
           <div className={`strength-segment ${password && strength.score >= 3 ? `active-${strength.strengthClass}` : ''}`} />
           <div className={`strength-segment ${password && strength.score >= 4 ? `active-${strength.strengthClass}` : ''}`} />
         </div>
-        <p className="strength-hint-text">Hint: Use mixed case, numbers, and symbols.</p>
+        <p className="strength-hint-text">Hint: At least 8 character, use mixed case, numbers, and symbols.</p>
       </div>
 
       <button type="submit" className="submit-btn register-submit-btn" disabled={isLoading}>

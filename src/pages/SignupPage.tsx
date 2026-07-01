@@ -119,7 +119,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 style={{ width: password ? passwordStrength.progressWidth : '15%' }}
               />
             </div>
-            <p className="password-hint">Hint: Use mixed case, numbers, and symbols.</p>
+            <p className="password-hint">Hint: At least 8 character, use mixed case, numbers, and symbols.</p>
           </div>
 
           <div className="field-group">

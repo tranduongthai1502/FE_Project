@@ -51,7 +51,7 @@ export function LoginForm({
             type="email"
             id="loginEmail"
             className={`form-input form-input-with-icon ${localEmailError ? 'has-error' : ''}`}
-            placeholder="name@company.com"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)

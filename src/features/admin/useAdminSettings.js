@@ -45,14 +45,14 @@ export function useAdminSettings({ triggerToast }) {
       setAdminNewPasswordError('Please enter new password.')
       hasError = true
     } else if (adminStrength.score < 4) {
-      setAdminNewPasswordError('Password does not meet requirements.')
+      setAdminNewPasswordError('Please enter your new password.')
       hasError = true
     } else {
       setAdminNewPasswordError('')
     }
 
     if (!adminConfirmPassword) {
-      setAdminConfirmPasswordError('Please enter confirm password.')
+      setAdminConfirmPasswordError('Please confirm your  password.')
       hasError = true
     } else if (adminNewPassword !== adminConfirmPassword) {
       setAdminConfirmPasswordError('Passwords do not match.')
