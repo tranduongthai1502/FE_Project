@@ -2,7 +2,7 @@
   min-height: 100vh;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(460px, 50%) minmax(560px, 1fr);
+  grid-template-columns: minmax(420px, 50%) minmax(520px, 1fr);
   background: #f4f6fb;
   color: #10213a;
   font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -18,7 +18,7 @@
 }
 
 .form-shell {
-  width: min(596px, 100%);
+  width: min(600px, 100%);
   padding-top: 0;
 }
 

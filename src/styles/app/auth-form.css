@@ -39,40 +39,50 @@
 }
 
 .login-page:not(.signup-page) .form-panel {
-  padding: clamp(24px, 4vh, 48px) clamp(32px, 5vw, 54px);
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: clamp(30px, 4.7vh, 38px) clamp(24px, 2.4vw, 34px) 28px clamp(24px, 2vw, 32px);
 }
 
 .login-page:not(.signup-page) .form-header {
-  margin-bottom: clamp(70px, 8vh, 82px);
+  margin-bottom: clamp(108px, 15vh, 128px);
+}
+
+.login-page:not(.signup-page) .form-header h2 {
+  font-size: 34px;
+}
+
+.login-page:not(.signup-page) .form-header p {
+  font-size: 13px;
 }
 
 .login-page:not(.signup-page) .login-form {
-  gap: clamp(16px, 2vh, 22px);
+  gap: 18px;
 }
 
 .login-page:not(.signup-page) .form-shell {
-  width: min(660px, 100%);
+  width: min(620px, 100%);
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap {
-  height: 50px;
-  border-radius: 8px;
+  height: 42px;
+  border-radius: 4px;
 }
 
 .login-page:not(.signup-page) .login-form .field-icon {
-  left: 15px;
-  width: 16px;
-  height: 16px;
+  left: 12px;
+  width: 13px;
+  height: 13px;
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap input {
-  padding-left: 46px;
+  padding-left: 34px;
   padding-right: 48px;
-  font-size: 15px;
+  font-size: 11px;
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap:has(.icon-button) input {
-  padding-right: 58px;
+  padding-right: 48px;
 }
 
 .login-page:not(.signup-page) .login-form .icon-button {
@@ -87,6 +97,10 @@
 .field-group {
   display: grid;
   gap: 10px;
+}
+
+.login-page:not(.signup-page) .field-group {
+  gap: 7px;
 }
 
 .field-group label,
@@ -317,6 +331,11 @@
   cursor: pointer;
 }
 
+.login-page:not(.signup-page) .check-row {
+  margin-top: 16px;
+  font-size: 11px;
+}
+
 .check-row input {
   width: 11px;
   height: 11px;
@@ -341,6 +360,14 @@
   cursor: pointer;
 }
 
+.login-page:not(.signup-page) .submit-button {
+  width: 100%;
+  height: 52px;
+  margin-top: 20px;
+  border-radius: 5px;
+  font-size: 17px;
+}
+
 .signup-submit {
   width: 460px;
   margin-top: 17px;
@@ -358,6 +385,15 @@
   font-size: 16px;
   line-height: 1.4;
   font-weight: 500;
+}
+
+.login-page:not(.signup-page) .signup-copy {
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.login-page:not(.signup-page) .signup-copy button {
+  font-size: 13px;
 }
 
 .signup-copy a {

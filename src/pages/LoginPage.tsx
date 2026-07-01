@@ -18,7 +18,21 @@ import { validateEmail, validateRequired } from '../features/auth/utils/validati
 import { authApi } from '../features/auth/services/authApi'
 
 const emptyOtp = ['', '', '', '', '', '']
+const accountNotFoundMessage = 'Account not found. Please check your email.'
+const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
 type ForgotStep = 'email' | 'otp' | 'reset'
+
+function isAccountNotFoundError(message = '') {
+  const normalizedMessage = message.toLowerCase()
+
+  return (
+    normalizedMessage.includes('account not found') ||
+    normalizedMessage.includes('user not found') ||
+    normalizedMessage.includes('email not found') ||
+    normalizedMessage.includes('not registered') ||
+    normalizedMessage.includes('does not exist')
+  )
+}
 
 type LoginPageProps = {
   onGoToSignup: () => void
@@ -30,6 +44,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
   const [password, setPassword] = useState('')
   const [forgotEmail, setForgotEmail] = useState('')
   const [otp, setOtp] = useState(emptyOtp)
+  const passwordInputRef = useRef<HTMLInputElement | null>(null)
   const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -70,12 +85,86 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     }
   }
 
-  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextPassword = event.target.value
+  const updatePassword = (nextPassword: string) => {
     setPassword(nextPassword)
     if (passwordError) {
       setPasswordError(validateRequired(nextPassword, 'Please enter your password.'))
     }
+  }
+
+  const setPasswordCaret = (position: number) => {
+    window.requestAnimationFrame(() => {
+      passwordInputRef.current?.setSelectionRange(position, position)
+    })
+  }
+
+  const replacePasswordSelection = (value: string) => {
+    const input = passwordInputRef.current
+    const start = input?.selectionStart ?? password.length
+    const end = input?.selectionEnd ?? start
+    const nextPassword = `${password.slice(0, start)}${value}${password.slice(end)}`
+
+    updatePassword(nextPassword)
+    setPasswordCaret(start + value.length)
+  }
+
+  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (showPassword) {
+      updatePassword(event.target.value)
+      return
+    }
+
+    if (event.target.value.replace(/\*/g, '')) {
+      updatePassword(event.target.value)
+    }
+  }
+
+  const handlePasswordKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (showPassword || event.ctrlKey || event.metaKey || event.altKey) return
+
+    if (event.key.length === 1) {
+      event.preventDefault()
+      replacePasswordSelection(event.key)
+      return
+    }
+
+    const input = event.currentTarget
+    const start = input.selectionStart ?? password.length
+    const end = input.selectionEnd ?? start
+
+    if (event.key === 'Backspace') {
+      event.preventDefault()
+      if (start !== end) {
+        replacePasswordSelection('')
+        return
+      }
+      if (start > 0) {
+        const nextPassword = `${password.slice(0, start - 1)}${password.slice(end)}`
+        updatePassword(nextPassword)
+        setPasswordCaret(start - 1)
+      }
+      return
+    }
+
+    if (event.key === 'Delete') {
+      event.preventDefault()
+      if (start !== end) {
+        replacePasswordSelection('')
+        return
+      }
+      if (start < password.length) {
+        const nextPassword = `${password.slice(0, start)}${password.slice(start + 1)}`
+        updatePassword(nextPassword)
+        setPasswordCaret(start)
+      }
+    }
+  }
+
+  const handlePasswordPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    if (showPassword) return
+
+    event.preventDefault()
+    replacePasswordSelection(event.clipboardData.getData('text'))
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -105,11 +194,19 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
           storage.setItem('user_info', JSON.stringify(user))
         }
         onSignInSuccess(email, keepLoggedIn)
+      } else if (isAccountNotFoundError(response?.message)) {
+        setPasswordError('')
+        setEmailError(accountNotFoundMessage)
       } else {
-        setPasswordError(response.message || 'Login failed')
+        setPasswordError(incorrectPasswordMessage)
       }
     } catch (error: any) {
-      setPasswordError(error.message || 'Login failed. Please check your credentials.')
+      if (isAccountNotFoundError(error.message)) {
+        setPasswordError('')
+        setEmailError(accountNotFoundMessage)
+      } else {
+        setPasswordError(incorrectPasswordMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -304,11 +401,14 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
+                ref={passwordInputRef}
                 id="password"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
+                type="text"
+                value={showPassword ? password : '*'.repeat(password.length)}
                 onChange={handlePasswordChange}
+                onKeyDown={handlePasswordKeyDown}
+                onPaste={handlePasswordPaste}
                 placeholder="********"
                 autoComplete="current-password"
                 aria-invalid={passwordError ? 'true' : 'false'}
@@ -342,7 +442,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
           </label>
 
           <button type="submit" className="submit-button" disabled={isLoading}>
-            {isLoading ? 'Signing in' : 'Sign in'}
+            {isLoading ? 'Logging in' : 'Login'}
           </button>
         </form>
 
