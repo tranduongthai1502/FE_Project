@@ -41,18 +41,19 @@ export function OtpForm({
   return (
     <form onSubmit={handleVerifyOtp} noValidate className="auth-form-content">
       <div className="shield-icon-container">
-        <i className="fa-solid fa-shield-halved"></i>
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M32 6L10 15v17c0 14.7 9.4 25.4 22 30 12.6-4.6 22-15.3 22-30V15L32 6z" />
+          <path d="M23.7 31.5l5.7 5.7 12.1-13.1" />
+        </svg>
       </div>
 
-      <h1 className="form-title" style={{ textAlign: 'center', marginBottom: '8px', fontSize: '24px' }}>
-        {otpError ? 'OTP Verification Error - Invalid' : 'Verify Your Email'}
-      </h1>
+      <h1 className="form-title">Verify Your Email</h1>
 
-      <p className="form-desc" style={{ textAlign: 'center', marginBottom: '28px' }}>
+      <p className="form-desc">
         We've sent a 6-digit code to your email.<br />Enter it below to continue.
       </p>
 
-      <div className="form-group" style={{ textAlign: 'center' }}>
+      <div className="form-group otp-group">
         <div className="otp-container" onPaste={handleOtpPaste}>
           {otp.map((digit, idx) => (
             <input
@@ -73,13 +74,13 @@ export function OtpForm({
           ))}
         </div>
         {otpError && (
-          <span className="error-text" style={{ display: 'block', margin: '8px 0 0', textAlign: 'center' }}>
+          <span className="error-text otp-error-text">
             {otpError}
           </span>
         )}
       </div>
 
-      <button type="submit" className="submit-btn" disabled={isLoading} style={{ marginTop: '8px' }}>
+      <button type="submit" className="submit-btn" disabled={isLoading}>
         {isLoading ? (
           <>
             <div className="spinner" aria-hidden="true" />
@@ -90,7 +91,7 @@ export function OtpForm({
         )}
       </button>
 
-      <div className="resend-text" style={{ textAlign: 'center', marginTop: '20px' }}>
+      <div className="resend-text">
         Didn't receive the code? 
         <button 
           type="button" 
