@@ -53,14 +53,10 @@ export function ResetPasswordForm({
   return (
     <form onSubmit={handleResetPassword} noValidate className="auth-form-content">
       <div className="reset-icon-container">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path className="reset-ring" d="M12 24a23 23 0 1 1 3 20" />
-          <path className="reset-arrow" d="M21 24H8V11" />
-          <g className="reset-lock-mark">
-            <path className="reset-lock-shackle" d="M29 34v-7a6 6 0 0 1 12 0v7" />
-            <path className="reset-lock-body" d="M26 34h18a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H26a3 3 0 0 1-3-3V37a3 3 0 0 1 3-3z" />
-          </g>
-        </svg>
+        <span className="fa-stack reset-password-icon" aria-hidden="true">
+          <i className="fa-solid fa-arrow-rotate-left fa-stack-2x reset-rotate-icon "></i>
+          <i className="fa-solid fa-lock fa-stack-1x reset-lock-icon"></i>
+        </span>
       </div>
 
       <h1 className="form-title">Reset Password</h1>

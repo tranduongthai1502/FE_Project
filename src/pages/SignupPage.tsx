@@ -13,9 +13,10 @@ import { authApi } from '../features/auth/services/authApi'
 
 type SignupPageProps = {
   onGoToSignin: () => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
-export function SignupPage({ onGoToSignin }: SignupPageProps) {
+export function SignupPage({ onGoToSignin, triggerToast }: SignupPageProps) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -69,13 +70,13 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
     try {
       const response: any = await authApi.register({ fullName, email, phone, password })
       if (response && response.success) {
-        alert('Sign up successful! Please sign in.')
+        triggerToast?.('Register successed. Please log in.', 'success')
         onGoToSignin()
       } else {
-        setConfirmPasswordError(response.message || 'Registration failed')
+        triggerToast?.(response?.message || 'Error system. Please try again.', 'error')
       }
     } catch (error: any) {
-      setConfirmPasswordError(error.message || 'Registration failed. Please try again.')
+      triggerToast?.(error?.message || 'Error system. Please try again.', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -90,7 +91,9 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
 
         <form className="signup-form" onSubmit={handleSubmit} noValidate>
           <div className="field-group">
-            <label htmlFor="fullName">Your Full Name</label>
+            <label htmlFor="fullName">
+              Your Full Name <span className="required-star">*</span>
+            </label>
             <div className={`input-wrap ${fullNameError ? 'has-error' : ''}`}>
               <UserIcon />
               <input
@@ -101,7 +104,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 onChange={handleInput(setFullName, (value) => {
                   if (fullNameError) setFullNameError(validateFullName(value))
                 })}
-                placeholder="full name"
+                placeholder="Full name"
                 autoComplete="name"
                 aria-invalid={fullNameError ? 'true' : 'false'}
                 aria-describedby={fullNameError ? 'full-name-error' : undefined}
@@ -115,7 +118,9 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
           </div>
 
           <div className="field-group">
-            <label htmlFor="signupEmail">Email Address</label>
+            <label htmlFor="signupEmail">
+              Email Address <span className="required-star">*</span>
+            </label>
             <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
@@ -140,7 +145,9 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
           </div>
 
           <div className="field-group">
-            <label htmlFor="phone">Phone Number</label>
+            <label htmlFor="phone">
+              Phone Number <span className="required-star">*</span>
+            </label>
             <div className={`input-wrap ${phoneError ? 'has-error' : ''}`}>
               <PhoneIcon />
               <input
@@ -167,7 +174,9 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
           </div>
 
           <div className="field-group">
-            <label htmlFor="signupPassword">Password</label>
+            <label htmlFor="signupPassword">
+              Password <span className="required-star">*</span>
+            </label>
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
@@ -181,7 +190,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                     setConfirmPasswordError(validateConfirmPassword(confirmPassword, value))
                   }
                 })}
-                placeholder="********"
+                placeholder="************"
                 autoComplete="new-password"
                 aria-invalid={passwordError ? 'true' : 'false'}
                 aria-describedby={passwordError ? 'signup-password-error' : undefined}
@@ -200,25 +209,12 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                 {passwordError}
               </span>
             )}
-            <div className="register-strength" aria-live="polite">
-              <div className="register-strength-header">
-                <span>PASSWORD STRENGTH</span>
-                <span className={`register-strength-label ${password ? passwordStrength.strengthClass : ''}`}>
-                  {password ? passwordStrength.strengthLabel : ''}
-                </span>
-              </div>
-              <div className="register-strength-segments" aria-hidden="true">
-                <span className={`register-strength-segment ${visibleStrengthScore >= 1 ? passwordStrength.strengthClass : ''}`} />
-                <span className={`register-strength-segment ${visibleStrengthScore >= 2 ? passwordStrength.strengthClass : ''}`} />
-                <span className={`register-strength-segment ${visibleStrengthScore >= 3 ? passwordStrength.strengthClass : ''}`} />
-                <span className={`register-strength-segment ${visibleStrengthScore >= 4 ? passwordStrength.strengthClass : ''}`} />
-              </div>
-              <p className="register-strength-hint">Hint: Use mixed case, numbers, and symbols.</p>
-            </div>
           </div>
 
           <div className="field-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">
+              Confirm password <span className="required-star">*</span>
+            </label>
             <div className={`input-wrap ${confirmPasswordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
@@ -231,7 +227,7 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
                     setConfirmPasswordError(validateConfirmPassword(value, password))
                   }
                 })}
-                placeholder="********"
+                placeholder="************"
                 autoComplete="new-password"
                 aria-invalid={confirmPasswordError ? 'true' : 'false'}
                 aria-describedby={confirmPasswordError ? 'confirm-password-error' : undefined}
@@ -252,15 +248,31 @@ export function SignupPage({ onGoToSignin }: SignupPageProps) {
             )}
           </div>
 
+          <div className="register-strength" aria-live="polite">
+            <div className="register-strength-header">
+              <span>PASSWORD STRENGTH</span>
+              <span className={`register-strength-label ${password ? passwordStrength.strengthClass : ''}`}>
+                {password ? passwordStrength.strengthLabel : ''}
+              </span>
+            </div>
+            <div className="register-strength-segments" aria-hidden="true">
+              <span className={`register-strength-segment ${visibleStrengthScore >= 1 ? passwordStrength.strengthClass : ''}`} />
+              <span className={`register-strength-segment ${visibleStrengthScore >= 2 ? passwordStrength.strengthClass : ''}`} />
+              <span className={`register-strength-segment ${visibleStrengthScore >= 3 ? passwordStrength.strengthClass : ''}`} />
+              <span className={`register-strength-segment ${visibleStrengthScore >= 4 ? passwordStrength.strengthClass : ''}`} />
+            </div>
+            <p className="register-strength-hint">Hint: At least 8 character, use mixed case, numbers, and symbols.</p>
+          </div>
+
           <button type="submit" className="submit-button signup-submit" disabled={isLoading}>
             {isLoading ? 'Signing up...' : 'Sign up'}
           </button>
         </form>
 
         <p className="signup-copy signin-copy">
-          Already have an account?
+          Do you have an account?
           <button type="button" onClick={onGoToSignin}>
-            Sign in
+            Log in
           </button>
         </p>
       </div>

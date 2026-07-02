@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react'
-import { getPasswordStrength } from '../features/auth/utils/passwordStrength'
+import { useState, useRef, useEffect } from 'react'
 
 type CandidatePortalPageProps = {
   onLogout: () => void
@@ -42,84 +41,7 @@ const navItems = [
 
 export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
   const [showDropdown, setShowDropdown] = useState(false)
-  const [activePanel, setActivePanel] = useState<'dashboard' | 'changePassword'>('dashboard')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [currentPasswordError, setCurrentPasswordError] = useState('')
-  const [newPasswordError, setNewPasswordError] = useState('')
-  const [confirmPasswordError, setConfirmPasswordError] = useState('')
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isSavingPassword, setIsSavingPassword] = useState(false)
-  const [passwordSaveMessage, setPasswordSaveMessage] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const passwordStrength = getPasswordStrength(newPassword)
-
-  const resetPasswordForm = () => {
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setCurrentPasswordError('')
-    setNewPasswordError('')
-    setConfirmPasswordError('')
-    setShowCurrentPassword(false)
-    setShowNewPassword(false)
-    setShowConfirmPassword(false)
-    setPasswordSaveMessage('')
-  }
-
-  const closeChangePasswordPanel = () => {
-    resetPasswordForm()
-    setActivePanel('dashboard')
-  }
-
-  const handleChangePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setPasswordSaveMessage('')
-
-    let hasError = false
-
-    if (!currentPassword.trim()) {
-      setCurrentPasswordError('Please enter current password.')
-      hasError = true
-    } else {
-      setCurrentPasswordError('')
-    }
-
-    if (!newPassword) {
-      setNewPasswordError('Please enter new password.')
-      hasError = true
-    } else if (newPassword === currentPassword) {
-      setNewPasswordError('New password must be different from current password.')
-      hasError = true
-    } else if (passwordStrength.score < 4) {
-      setNewPasswordError('Password does not meet requirements.')
-      hasError = true
-    } else {
-      setNewPasswordError('')
-    }
-
-    if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your password.')
-      hasError = true
-    } else if (confirmPassword !== newPassword) {
-      setConfirmPasswordError('Passwords do not match.')
-      hasError = true
-    } else {
-      setConfirmPasswordError('')
-    }
-
-    if (hasError) return
-
-    setIsSavingPassword(true)
-    window.setTimeout(() => {
-      resetPasswordForm()
-      setIsSavingPassword(false)
-      setPasswordSaveMessage('Password changed successfully.')
-    }, 800)
-  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -199,16 +121,18 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
               
               {showDropdown && (
                 <div className="candidate-user-dropdown" onClick={(e) => e.stopPropagation()}>
+                  <div className="dropdown-header">
+                    <strong>Alex Nguyen</strong>
+                    <span>alex.nguyen@example.com</span>
+                  </div>
+                  <div className="dropdown-divider"></div>
                   <button type="button" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                    <i className="fa-regular fa-user"></i>
-                    <span>Profile</span>
+                    <i className="fa-solid fa-user"></i>
+                    <span>Thông tin cá nhân</span>
                   </button>
-                  <button type="button" className="dropdown-item" onClick={() => {
-                    setActivePanel('changePassword')
-                    setShowDropdown(false)
-                  }}>
-                    <i className="fa-solid fa-lock"></i>
-                    <span>Change password</span>
+                  <button type="button" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                    <i className="fa-solid fa-gear"></i>
+                    <span>Cài đặt tài khoản</span>
                   </button>
                   <div className="dropdown-divider"></div>
                   <button type="button" className="dropdown-item logout" onClick={() => {
@@ -216,7 +140,7 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
                     onLogout()
                   }}>
                     <i className="fa-solid fa-arrow-right-from-bracket"></i>
-                    <span>Log out</span>
+                    <span>Đăng xuất</span>
                   </button>
                 </div>
               )}
@@ -225,141 +149,6 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
         </header>
 
         <div className="candidate-content">
-          {activePanel === 'changePassword' ? (
-            <section className="candidate-settings-screen">
-              <button type="button" className="candidate-back-home" onClick={closeChangePasswordPanel}>
-                <i className="fa-solid fa-arrow-left"></i>
-                <span>Back to Home</span>
-              </button>
-
-              <h1>Account Settings</h1>
-
-              <div className="candidate-settings-layout">
-                <aside className="security-tabs-card" aria-label="Security tabs">
-                  <strong>Security Tabs</strong>
-                  <button type="button">
-                    <i className="fa-regular fa-user"></i>
-                    <span>Profile Information</span>
-                  </button>
-                  <button type="button" className="active">
-                    <i className="fa-solid fa-lock"></i>
-                    <span>Change Password</span>
-                  </button>
-                </aside>
-
-                <section className="change-password-card">
-                  <button type="button" className="change-password-close" aria-label="Close" onClick={closeChangePasswordPanel}>
-                    <i className="fa-solid fa-xmark"></i>
-                  </button>
-
-                  <div className="change-password-heading">
-                    <h2>Change Password</h2>
-                    <p>Update your account password to maintain security. We recommend using a unique password you don't use elsewhere.</p>
-                  </div>
-
-                  <form className="change-password-form" onSubmit={handleChangePasswordSubmit} noValidate>
-                    <label>
-                      <span>Current Password <em>*</em></span>
-                      <div className={`password-input-row ${currentPasswordError ? 'has-error' : ''}`}>
-                        <input
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          value={currentPassword}
-                          onChange={(event) => {
-                            setCurrentPassword(event.target.value)
-                            if (currentPasswordError) setCurrentPasswordError('')
-                            if (passwordSaveMessage) setPasswordSaveMessage('')
-                          }}
-                          autoComplete="current-password"
-                        />
-                        <button
-                          type="button"
-                          className="password-eye-btn"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
-                        >
-                          <i className={`fa-regular ${showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                        </button>
-                      </div>
-                      {currentPasswordError && <small className="password-error">{currentPasswordError}</small>}
-                    </label>
-
-                    <label>
-                      <span>New Password <em>*</em></span>
-                      <div className={`password-input-row ${newPasswordError ? 'has-error' : ''}`}>
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={newPassword}
-                          onChange={(event) => {
-                            setNewPassword(event.target.value)
-                            if (newPasswordError) setNewPasswordError('')
-                            if (confirmPasswordError && confirmPassword === event.target.value) setConfirmPasswordError('')
-                            if (passwordSaveMessage) setPasswordSaveMessage('')
-                          }}
-                          autoComplete="new-password"
-                        />
-                        <button
-                          type="button"
-                          className="password-eye-btn"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
-                        >
-                          <i className={`fa-regular ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                        </button>
-                      </div>
-                      {newPasswordError && <small className="password-error">{newPasswordError}</small>}
-                    </label>
-
-                    <div className="password-strength-row">
-                      <div>
-                        <span>Password Strength</span>
-                        <strong className={passwordStrength.strengthClass}>{newPassword ? passwordStrength.strengthLabel : 'Weak'}</strong>
-                      </div>
-                      <div className="password-strength-meter">
-                        <span className={passwordStrength.strengthClass} style={{ width: newPassword ? passwordStrength.progressWidth : '0%' }}></span>
-                      </div>
-                      <small>Hint: At least 8 characters, use mixed case, numbers, and symbols.</small>
-                    </div>
-
-                    <label>
-                      <span>Confirm New Password <em>*</em></span>
-                      <div className={`password-input-row ${confirmPasswordError ? 'has-error' : ''}`}>
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(event) => {
-                            setConfirmPassword(event.target.value)
-                            if (confirmPasswordError) setConfirmPasswordError('')
-                            if (passwordSaveMessage) setPasswordSaveMessage('')
-                          }}
-                          placeholder="Re-type your new password"
-                          autoComplete="new-password"
-                        />
-                        <button
-                          type="button"
-                          className="password-eye-btn"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                        >
-                          <i className={`fa-regular ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                        </button>
-                      </div>
-                      {confirmPasswordError && <small className="password-error">{confirmPasswordError}</small>}
-                    </label>
-
-                    {passwordSaveMessage && <p className="password-success-message">{passwordSaveMessage}</p>}
-
-                    <div className="change-password-actions">
-                      <button type="button" className="password-cancel-btn" onClick={resetPasswordForm} disabled={isSavingPassword}>Cancel</button>
-                      <button type="submit" className="password-save-btn" disabled={isSavingPassword}>
-                        {isSavingPassword ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
-                  </form>
-                </section>
-              </div>
-            </section>
-          ) : (
-            <>
           <section className="candidate-welcome">
             <div>
               <h1>Welcome back, Alex!</h1>
@@ -466,8 +255,6 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
               </div>
             </article>
           </section>
-            </>
-          )}
         </div>
 
         <footer className="candidate-footer">

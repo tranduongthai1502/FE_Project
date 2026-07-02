@@ -17,7 +17,7 @@ export function useToast() {
     }
   }, [])
 
-  const triggerToast = (message = "Password reset successful.", type: ToastType = 'success') => {
+  const triggerToast = (message = "Password reset successfully.", type: ToastType = 'success') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
 
