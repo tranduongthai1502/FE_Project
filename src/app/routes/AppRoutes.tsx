@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Toast } from '../../components/common/Toast'
-import { useAdminSettings } from '../../features/admin/hooks/useAdminSettings'
 import { useToast } from '../../hooks/useToast'
-import { AdminDashboardPage } from '../../pages/AdminDashboardPage'
 import { CandidatePortalPage } from '../../pages/CandidatePortalPage'
 import { LoginPage } from '../../pages/LoginPage'
 import { SignupPage } from '../../pages/SignupPage'
 
-type AppPage = 'login' | 'signup' | 'admin' | 'candidate'
+type AppPage = 'login' | 'signup' | 'candidate'
 const AUTH_PAGE_STORAGE_KEY = 'jobfusion_auth_page'
 
 function getSavedPage(): AppPage | null {
@@ -15,7 +13,7 @@ function getSavedPage(): AppPage | null {
     return null
   }
   const savedPage = window.localStorage.getItem(AUTH_PAGE_STORAGE_KEY) || window.sessionStorage.getItem(AUTH_PAGE_STORAGE_KEY)
-  return savedPage === 'candidate' || savedPage === 'admin' ? savedPage : null
+  return savedPage === 'candidate' ? savedPage : null
 }
 
 function getPageFromHash(): AppPage {
@@ -24,7 +22,6 @@ function getPageFromHash(): AppPage {
   }
   const hash = window.location.hash
   if (hash === '#/signup') return 'signup'
-  if (hash === '#/admin') return 'admin'
   if (hash === '#/candidate') return 'candidate'
   return 'login'
 }
@@ -48,37 +45,6 @@ export function AppRoutes() {
   })
 
   const { showToast, toastFadeOut, toastMessage, toastType, triggerToast } = useToast()
-  const {
-    activeSidebarMenu,
-    setActiveSidebarMenu,
-    activeSettingsTab,
-    setActiveSettingsTab,
-    adminCurrentPassword,
-    setAdminCurrentPassword,
-    adminNewPassword,
-    setAdminNewPassword,
-    adminConfirmPassword,
-    setAdminConfirmPassword,
-    adminCurrentPasswordError,
-    setAdminCurrentPasswordError,
-    adminNewPasswordError,
-    setAdminNewPasswordError,
-    adminConfirmPasswordError,
-    setAdminConfirmPasswordError,
-    showAdminCurrentPassword,
-    setShowAdminCurrentPassword,
-    showAdminNewPassword,
-    setShowAdminNewPassword,
-    showAdminConfirmPassword,
-    setShowAdminConfirmPassword,
-    adminStrength,
-    isAdminSaving,
-    showConfirmSave,
-    setShowConfirmSave,
-    handleAdminSaveChanges,
-    executeAdminSaveChanges,
-    handleAdminCancel,
-  } = useAdminSettings({ triggerToast })
 
   useEffect(() => {
     const currentHashPage = getPageFromHash()
@@ -110,12 +76,8 @@ export function AppRoutes() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [page])
 
-  const handleSignInSuccess = (email: string, keepLoggedIn: boolean) => {
-    handleAdminCancel()
-    const isAdmin = email.toLowerCase().includes('admin') || 
-                    email.toLowerCase().includes('hr') || 
-                    email.toLowerCase().includes('interviewer')
-    const targetPage = isAdmin ? 'admin' : 'candidate'
+  const handleSignInSuccess = (_email: string, keepLoggedIn: boolean) => {
+    const targetPage = 'candidate'
 
     const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
     storage.setItem(AUTH_PAGE_STORAGE_KEY, targetPage)
@@ -138,46 +100,6 @@ export function AppRoutes() {
         <SignupPage
           onGoToSignin={() => { window.location.hash = '#/login' }}
           triggerToast={triggerToast}
-        />
-      </>
-    )
-  }
-
-  if (page === 'admin') {
-    return (
-      <>
-        <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
-        <AdminDashboardPage
-          activeSidebarMenu={activeSidebarMenu}
-          setActiveSidebarMenu={setActiveSidebarMenu}
-          activeSettingsTab={activeSettingsTab}
-          setActiveSettingsTab={setActiveSettingsTab}
-          adminCurrentPassword={adminCurrentPassword}
-          setAdminCurrentPassword={setAdminCurrentPassword}
-          adminNewPassword={adminNewPassword}
-          setAdminNewPassword={setAdminNewPassword}
-          adminConfirmPassword={adminConfirmPassword}
-          setAdminConfirmPassword={setAdminConfirmPassword}
-          adminCurrentPasswordError={adminCurrentPasswordError}
-          setAdminCurrentPasswordError={setAdminCurrentPasswordError}
-          adminNewPasswordError={adminNewPasswordError}
-          setAdminNewPasswordError={setAdminNewPasswordError}
-          adminConfirmPasswordError={adminConfirmPasswordError}
-          setAdminConfirmPasswordError={setAdminConfirmPasswordError}
-          showAdminCurrentPassword={showAdminCurrentPassword}
-          setShowAdminCurrentPassword={setShowAdminCurrentPassword}
-          showAdminNewPassword={showAdminNewPassword}
-          setShowAdminNewPassword={setShowAdminNewPassword}
-          showAdminConfirmPassword={showAdminConfirmPassword}
-          setShowAdminConfirmPassword={setShowAdminConfirmPassword}
-          adminStrength={adminStrength}
-          isLoading={isAdminSaving}
-          showConfirmSave={showConfirmSave}
-          setShowConfirmSave={setShowConfirmSave}
-          handleAdminSaveChanges={handleAdminSaveChanges}
-          executeAdminSaveChanges={executeAdminSaveChanges}
-          handleAdminCancel={handleAdminCancel}
-          handleLogout={handleLogout}
         />
       </>
     )

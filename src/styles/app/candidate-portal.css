@@ -1,4 +1,5 @@
 .candidate-page {
+  width: 100%;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
@@ -10,7 +11,7 @@
 .candidate-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  /* gap: 26px; */
   padding: 32px 16px 18px;
   background: #fff;
   border-right: 1px solid #eed8d2;
@@ -104,6 +105,7 @@
 }
 
 .candidate-main {
+  width: 100%;
   min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -210,6 +212,294 @@
 
 .candidate-content {
   padding: 28px 24px 34px;
+}
+
+.candidate-content-settings {
+  padding: 24px 24px 20px;
+}
+
+.candidate-settings-screen {
+  min-height: 100%;
+}
+
+.candidate-back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  color: #d33205;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.candidate-settings-screen h1 {
+  margin: 0 0 42px;
+  color: #0b1c30;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.candidate-settings-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+  margin: 0;
+}
+
+.security-tabs-card,
+.candidate-change-password-card {
+  background: #ffffff;
+  border: 1px solid #e4beb4;
+  border-radius: 8px;
+}
+
+.security-tabs-card {
+  min-height: 150px;
+  display: grid;
+  gap: 12px;
+  padding: 20px 17px;
+  margin:0px 20px;
+}
+
+.security-tabs-title {
+  color: #5f514c;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.security-tab {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 11px;
+  color: #526176;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.security-tab.active {
+  color: #d33205;
+  background: #fae8e2;
+}
+
+.candidate-change-password-card {
+  position: relative;
+  min-height: 385px;
+  padding: 28px 34px 24px;
+  margin:0px 50px;
+}
+
+.candidate-change-password-close {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  width: 24px;
+  height: 24px;
+  color: #e0a79a;
+  background: transparent;
+  border: 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.candidate-change-password-heading {
+  margin-bottom: 20px;
+}
+
+.candidate-change-password-heading h2 {
+  margin: 0 0 5px;
+  color: #0b1c30;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.candidate-change-password-heading p {
+  max-width: 520px;
+  margin: 0;
+  color: #5a4038;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.candidate-change-password-form {
+  width: min(100%, 500px);
+  display: grid;
+  gap: 14px;
+  margin: 0 auto;
+}
+
+.candidate-password-field {
+  display: grid;
+  gap: 6px;
+}
+
+.candidate-password-field label {
+  color: #5a4038;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.candidate-password-field label span {
+  color: #d33205;
+}
+
+.candidate-password-input {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  background: #f7f8fd;
+  border: 1px solid #e4beb4;
+  border-radius: 6px;
+}
+
+.candidate-password-input.has-error {
+  border-color: #dc2626;
+}
+
+.candidate-password-input input {
+  width: 100%;
+  min-width: 0;
+  color: #0b1c30;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 11px;
+}
+
+.candidate-password-input input::placeholder {
+  color: #c0c6d2;
+}
+
+.candidate-password-input button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: #604740;
+  background: transparent;
+  border: 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.candidate-password-error {
+  color: #dc2626;
+  font-size: 9px;
+  text-align: right;
+}
+
+.candidate-password-strength {
+  display: grid;
+  gap: 5px;
+  margin-top: -4px;
+}
+
+.candidate-password-strength div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #0b1c30;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.candidate-password-strength strong {
+  color: #dc2626;
+  font-size: 9px;
+  text-transform: none;
+}
+
+.candidate-password-strength strong.medium {
+  color: #b7791f;
+}
+
+.candidate-password-strength strong.strong {
+  color: #16a34a;
+}
+
+.candidate-strength-track {
+  height: 4px;
+  overflow: hidden;
+  background: #d9e7ff;
+  border-radius: 999px;
+}
+
+.candidate-strength-track span {
+  display: block;
+  height: 100%;
+  background: #c91f1f;
+}
+
+.candidate-strength-track span.medium {
+  background: #d89b13;
+}
+
+.candidate-strength-track span.strong {
+  background: #16a34a;
+}
+
+.candidate-password-strength small {
+  color: #5a4038;
+  font-size: 9px;
+  font-style: italic;
+}
+
+.candidate-password-success {
+  margin: -4px 0 0;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.candidate-change-password-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid #e4beb4;
+}
+
+.candidate-password-cancel,
+.candidate-password-save {
+  min-width: 88px;
+  height: 30px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.candidate-password-cancel {
+  color: #df3100;
+  background: #ffffff;
+  border: 1px solid #df3100;
+}
+
+.candidate-password-save {
+  min-width: 118px;
+  color: #ffffff;
+  background: #df3100;
+  border: 1px solid #df3100;
 }
 
 .candidate-welcome {
@@ -717,16 +1007,117 @@
   text-align: center;
 }
 
+.candidate-user-dropdown .dropdown-item svg {
+  flex: 0 0 24px;
+}
+
 .candidate-user-dropdown .dropdown-item.logout {
-  color: #dc2626;
+  color: #000000;
 }
 
 .candidate-user-dropdown .dropdown-item.logout:hover {
-  background: #fef2f2;
+  background: #f1f5f9;
 }
 
 .candidate-user-dropdown .dropdown-item.logout i {
-  color: #ef4444;
+  color: #000000;
+}
+
+.candidate-logout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.08);
+  z-index: 1000;
+}
+
+.candidate-logout-modal {
+  box-sizing: border-box;
+  position: relative;
+  width: min(448px, calc(100vw - 32px));
+  height: min(278px, calc(100dvh - 32px));
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e4beb4;
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+}
+
+.candidate-logout-modal-body {
+  min-height: 0;
+  padding: clamp(24px, 5vw, 34px) clamp(24px, 5vw, 38px) 18px;
+}
+
+.candidate-logout-modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.candidate-logout-modal-heading h2 {
+  margin: 0;
+  color: #0b1c30;
+  font-size: 25px;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.candidate-logout-modal-close {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #5a4038;
+  background: transparent;
+  border: 0;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.candidate-logout-modal-body p {
+  margin: 12px 0 0;
+  color: #5a4038;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.candidate-logout-modal-footer {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px clamp(22px, 5vw, 38px);
+  background: #eef4ff;
+  border-top: 1px solid #e4beb4;
+}
+
+.candidate-logout-cancel,
+.candidate-logout-confirm {
+  min-width: min(112px, 38vw);
+  height: 48px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.candidate-logout-cancel {
+  color: #dc2f00;
+  background: #ffffff;
+  border: 2px solid #dc2f00;
+}
+
+.candidate-logout-confirm {
+  color: #ffffff;
+  background: #df3100;
+  border: 2px solid #df3100;
 }
 
 @media (max-width: 1100px) {
@@ -745,6 +1136,16 @@
   .candidate-search {
     width: min(420px, 50vw);
   }
+
+  .candidate-settings-layout {
+    grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+    gap: 24px;
+    padding: 0px 30px;
+  }
+
+  .candidate-change-password-card {
+    padding: 26px 24px 24px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -758,6 +1159,26 @@
 
   .candidate-topbar {
     padding: 16px;
+  }
+
+  .candidate-settings-screen h1 {
+    margin-bottom: 24px;
+  }
+
+  .candidate-settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .security-tabs-card {
+    min-height: auto;
+  }
+
+  .candidate-change-password-card {
+    padding: 24px 18px 22px;
+  }
+
+  .candidate-change-password-actions {
+    flex-wrap: wrap;
   }
 
   .candidate-search {
