@@ -135,7 +135,10 @@ export function AppRoutes() {
     return (
       <>
         <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
-        <SignupPage onGoToSignin={() => { window.location.hash = '#/login' }} />
+        <SignupPage
+          onGoToSignin={() => { window.location.hash = '#/login' }}
+          triggerToast={triggerToast}
+        />
       </>
     )
   }

@@ -19,7 +19,7 @@
 .signup-header h2 {
   margin: 0;
   color: #11243c;
-  font-size: 34px;
+  font-size: 48px;
   line-height: 1.15;
   font-weight: 800;
   letter-spacing: 0;
@@ -176,12 +176,14 @@
 
 .input-wrap input {
   width: 100%;
+  min-width: 0;
   height: 100%;
   padding: 0 40px 0 33px;
   color: #10213a;
   background: transparent;
   border: 0;
   outline: 0;
+  box-sizing: border-box;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -305,6 +307,7 @@
   right: 8px;
   width: 28px;
   height: 28px;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   padding: 0;
@@ -346,7 +349,7 @@
 
 .login-page:not(.signup-page) .check-row {
   margin-top: 16px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .check-row input {
@@ -378,7 +381,7 @@
   height: 52px;
   margin-top: 20px;
   border-radius: 5px;
-  font-size: 17px;
+  font-size: 25px;
 }
 
 .signup-submit {
@@ -402,11 +405,11 @@
 
 .login-page:not(.signup-page) .signup-copy {
   margin-top: 20px;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .login-page:not(.signup-page) .signup-copy button {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .signup-copy a {
@@ -979,8 +982,8 @@
 }
 
 .forgot-password-modal-reset .reset-icon-container {
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   display: grid;
   place-items: center;
   margin: 0 auto 4px;
@@ -989,36 +992,24 @@
   border-radius: 999px;
 }
 
-.forgot-password-modal-reset .reset-icon-container svg {
-  width: 36px;
-  height: 36px;
+.forgot-password-modal-reset .reset-password-icon {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
 }
 
-.forgot-password-modal-reset .reset-icon-container svg path {
-  stroke: #b83000;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.forgot-password-modal-reset .reset-rotate-icon {
+  color: #b83000;
+  font-size: 35px;
+  margin-right: 5px;
+  line-height: 28px;
 }
 
-.forgot-password-modal-reset .reset-icon-container .reset-ring,
-.forgot-password-modal-reset .reset-icon-container .reset-arrow {
-  fill: none;
-  stroke-width: 5.5;
-}
-
-.forgot-password-modal-reset .reset-icon-container .reset-lock-body {
-  fill: #b83000;
-  stroke: none;
-}
-
-.forgot-password-modal-reset .reset-icon-container .reset-lock-mark {
-  transform: translate(8px, 5px) scale(0.5);
-  transform-origin: center;
-}
-
-.forgot-password-modal-reset .reset-icon-container .reset-lock-shackle {
-  fill: none;
-  stroke-width: 4;
+.forgot-password-modal-reset .reset-lock-icon {
+  color: #b83000;
+  font-size: 10px;
+  line-height: 28px;
+  transform: translate(2px, 2px);
 }
 
 @media (max-width: 640px) {

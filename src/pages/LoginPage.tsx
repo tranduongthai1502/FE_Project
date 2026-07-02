@@ -64,7 +64,6 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
   const [password, setPassword] = useState('')
   const [forgotEmail, setForgotEmail] = useState('')
   const [otp, setOtp] = useState(emptyOtp)
-  const passwordInputRef = useRef<HTMLInputElement | null>(null)
   const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -113,79 +112,8 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     }
   }
 
-  const setPasswordCaret = (position: number) => {
-    window.requestAnimationFrame(() => {
-      passwordInputRef.current?.setSelectionRange(position, position)
-    })
-  }
-
-  const replacePasswordSelection = (value: string) => {
-    const input = passwordInputRef.current
-    const start = input?.selectionStart ?? password.length
-    const end = input?.selectionEnd ?? start
-    const nextPassword = `${password.slice(0, start)}${value}${password.slice(end)}`
-
-    updatePassword(nextPassword)
-    setPasswordCaret(start + value.length)
-  }
-
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (showPassword) {
-      updatePassword(event.target.value)
-      return
-    }
-
-    if (event.target.value.replace(/\*/g, '')) {
-      updatePassword(event.target.value)
-    }
-  }
-
-  const handlePasswordKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (showPassword || event.ctrlKey || event.metaKey || event.altKey) return
-
-    if (event.key.length === 1) {
-      event.preventDefault()
-      replacePasswordSelection(event.key)
-      return
-    }
-
-    const input = event.currentTarget
-    const start = input.selectionStart ?? password.length
-    const end = input.selectionEnd ?? start
-
-    if (event.key === 'Backspace') {
-      event.preventDefault()
-      if (start !== end) {
-        replacePasswordSelection('')
-        return
-      }
-      if (start > 0) {
-        const nextPassword = `${password.slice(0, start - 1)}${password.slice(end)}`
-        updatePassword(nextPassword)
-        setPasswordCaret(start - 1)
-      }
-      return
-    }
-
-    if (event.key === 'Delete') {
-      event.preventDefault()
-      if (start !== end) {
-        replacePasswordSelection('')
-        return
-      }
-      if (start < password.length) {
-        const nextPassword = `${password.slice(0, start)}${password.slice(start + 1)}`
-        updatePassword(nextPassword)
-        setPasswordCaret(start)
-      }
-    }
-  }
-
-  const handlePasswordPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    if (showPassword) return
-
-    event.preventDefault()
-    replacePasswordSelection(event.clipboardData.getData('text'))
+    updatePassword(event.target.value)
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -434,14 +362,11 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
-                ref={passwordInputRef}
                 id="password"
                 name="password"
-                type="text"
-                value={showPassword ? password : '*'.repeat(password.length)}
+                type={showPassword ? 'text' : 'password'}
+                value={password}
                 onChange={handlePasswordChange}
-                onKeyDown={handlePasswordKeyDown}
-                onPaste={handlePasswordPaste}
                 placeholder="********"
                 autoComplete="current-password"
                 aria-invalid={passwordError ? 'true' : 'false'}
