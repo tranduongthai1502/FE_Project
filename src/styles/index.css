@@ -1,12 +1,3 @@
-﻿@import './index/foundation.css';
-@import './index/auth-card.css';
+@import './index/foundation.css';
 @import './index/toast.css';
-@import './index/admin-shell.css';
-@import './index/split-auth.css';
-@import './index/overlays-dropdown.css';
-@import './index/register-auth.css';
-@import './index/confirm-modal.css';
-@import './index/dashboard.css';
-@import './index/tenant-management.css';
-@import './index/admin-controls.css';
-@import './index/logout-dropdown.css';
+

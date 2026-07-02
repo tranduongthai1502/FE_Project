@@ -26,6 +26,55 @@ const expiredOtpMessage = 'OTP has expired. Please request a new one.'
 const invalidOtpMessage = 'Invalid OTP. Please retry.'
 type ForgotStep = 'email' | 'otp' | 'reset'
 
+function getAuthResponsePayload(response: any) {
+  return response?.data && typeof response.data === 'object' ? response.data : response
+}
+
+function isLoginSuccessResponse(response: any) {
+  const payload = getAuthResponsePayload(response)
+  const success = response?.success ?? payload?.success
+  const status = String(response?.status ?? payload?.status ?? '').toLowerCase()
+  const message = String(response?.message ?? payload?.message ?? '').toLowerCase()
+  const code = response?.httpStatus ?? payload?.httpStatus ?? response?.code ?? payload?.code ?? response?.statusCode ?? payload?.statusCode
+
+  const hasFailureMessage =
+    message.includes('invalid credentials') ||
+    message.includes('bad credentials') ||
+    message.includes('incorrect password') ||
+    message.includes('wrong password') ||
+    message.includes('password is incorrect') ||
+    message.includes('authentication failed') ||
+    message.includes('login failed') ||
+    message.includes('unauthorized')
+
+  if (success === false || status === 'error' || status === 'failed' || status === 'failure' || hasFailureMessage) {
+    return false
+  }
+
+  return Boolean(
+    success === true ||
+    status === 'success' ||
+    status === 'ok' ||
+    code === 200 ||
+    message.includes('login successful') ||
+    message.includes('logged in') ||
+    message.includes('success') ||
+    payload?.token ||
+    payload?.access_token ||
+    payload?.accessToken ||
+    payload?.jwt ||
+    response
+  )
+}
+
+function getAuthToken(payload: any) {
+  return payload?.token || payload?.access_token || payload?.accessToken || payload?.jwt || ''
+}
+
+function getRefreshToken(payload: any) {
+  return payload?.refresh_token || payload?.refreshToken || ''
+}
+
 function isAccountNotFoundError(message = '') {
   const normalizedMessage = message.toLowerCase()
 
@@ -132,20 +181,26 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
     setIsLoading(true)
     try {
       const response: any = await authApi.login({ email, password })
-      if (response && response.success) {
-        const { token, refresh_token, user } = response.data
+      const payload = getAuthResponsePayload(response)
+      const responseMessage = response?.message || payload?.message || ''
+      if (isAccountNotFoundError(responseMessage)) {
+        setEmailError('')
+        setPasswordError(accountNotFoundMessage)
+      } else if (isLoginSuccessResponse(response)) {
+        const token = getAuthToken(payload)
+        const refreshToken = getRefreshToken(payload)
+        const user = payload?.user || payload?.user_info || payload?.userInfo
         const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
-        storage.setItem('access_token', token)
-        if (refresh_token) {
-          storage.setItem('refresh_token', refresh_token)
+        if (token) {
+          storage.setItem('access_token', token)
+        }
+        if (refreshToken) {
+          storage.setItem('refresh_token', refreshToken)
         }
         if (user) {
           storage.setItem('user_info', JSON.stringify(user))
         }
         onSignInSuccess(email, keepLoggedIn)
-      } else if (isAccountNotFoundError(response?.message)) {
-        setEmailError('')
-        setPasswordError(accountNotFoundMessage)
       } else {
         setPasswordError(incorrectPasswordMessage)
       }

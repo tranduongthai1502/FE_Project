@@ -9,7 +9,6 @@ const axiosClient = axios.create({
   },
 })
 
-// Request Interceptor: Tự động đính kèm JWT Token vào Header của các request tiếp theo
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token')
@@ -23,22 +22,33 @@ axiosClient.interceptors.request.use(
   }
 )
 
-// Response Interceptor: Xử lý tập trung lỗi hoặc cấu trúc dữ liệu trả về
 axiosClient.interceptors.response.use(
   (response) => {
-    // Trả về dữ liệu chính từ phản hồi của server
-    return response.data
+    const responseData = response.data
+
+    if (responseData && typeof responseData === 'object') {
+      Object.defineProperty(responseData, 'httpStatus', {
+        value: response.status,
+        enumerable: false,
+        configurable: true,
+      })
+
+      return responseData
+    }
+
+    return {
+      data: responseData,
+      httpStatus: response.status,
+    }
   },
   (error) => {
-    // Xử lý các lỗi HTTP chung (ví dụ: 401 Unauthorized, 403 Forbidden...)
-    const message = error.response?.data?.message || error.message || 'Đã có lỗi xảy ra'
-    
+    const message = error.response?.data?.message || error.message || 'An error occurred'
+
     if (error.response?.status === 401) {
-      // Có thể xử lý logout hoặc làm mới token tại đây
       localStorage.removeItem('access_token')
       sessionStorage.removeItem('access_token')
     }
-    
+
     return Promise.reject(new Error(message))
   }
 )
