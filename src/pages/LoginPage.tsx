@@ -422,7 +422,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={handlePasswordChange}
-                placeholder="********"
+                placeholder=".........."
                 autoComplete="current-password"
                 aria-invalid={passwordError ? 'true' : 'false'}
                 aria-describedby={passwordError ? 'password-error' : undefined}

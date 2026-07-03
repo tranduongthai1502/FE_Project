@@ -71,6 +71,7 @@
 }
 
 .signup-page .input-wrap:focus-within {
+  background: #fffefe;
   border-color: #dd6b4c;
   box-shadow: 0 0 0 3px rgba(221, 107, 76, 0.08);
 }
@@ -108,6 +109,21 @@
   font-size: 13px;
   font-weight: 500;
   box-sizing: border-box;
+}
+
+.signup-page .input-wrap input:valid,
+.signup-page .input-wrap input:invalid {
+  background: transparent;
+  box-shadow: none;
+}
+
+.signup-page .input-wrap input:-webkit-autofill,
+.signup-page .input-wrap input:-webkit-autofill:hover,
+.signup-page .input-wrap input:-webkit-autofill:focus,
+.signup-page .input-wrap input:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px #fffefe inset;
+  -webkit-box-shadow: 0 0 0 1000px #fffefe inset;
+  transition: background-color 9999s ease-out;
 }
 
 .signup-page .input-wrap input::placeholder {
