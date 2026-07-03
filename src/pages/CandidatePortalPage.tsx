@@ -42,6 +42,13 @@ const navItems = [
 
 type CandidatePanel = 'dashboard' | 'changePassword'
 
+const passwordRequirementLabels = {
+  length: 'At least 8 characters',
+  case: 'Uppercase and lowercase letters',
+  number: 'At least 1 number',
+  special: 'At least 1 symbol',
+}
+
 function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -53,7 +60,27 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
   const [newPasswordError, setNewPasswordError] = useState('')
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false)
   const strength = getPasswordStrength(newPassword)
+  const passwordRequirements = Object.entries(strength.requirements) as Array<[
+    keyof typeof strength.requirements,
+    boolean,
+  ]>
+  const missingRequirements = passwordRequirements
+    .filter(([, isMet]) => !isMet)
+    .map(([requirement]) => passwordRequirementLabels[requirement])
+  const visibleStrengthClass = newPassword ? strength.strengthClass : ''
+  const visibleStrengthLabel = newPassword ? strength.strengthLabel : 'Not entered'
+
+  useEffect(() => {
+    if (!saveMessage) return undefined
+
+    const hideToastTimer = window.setTimeout(() => {
+      setSaveMessage('')
+    }, 3000)
+
+    return () => window.clearTimeout(hideToastTimer)
+  }, [saveMessage])
 
   const resetForm = () => {
     setCurrentPassword('')
@@ -63,6 +90,16 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
     setNewPasswordError('')
     setConfirmPasswordError('')
     setSaveMessage('')
+    setShowSaveConfirm(false)
+  }
+
+  const closeSaveConfirm = () => {
+    setShowSaveConfirm(false)
+  }
+
+  const confirmSavePassword = () => {
+    setShowSaveConfirm(false)
+    setSaveMessage('Password changed successfully.')
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -82,8 +119,8 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
     } else if (newPassword === currentPassword) {
       setNewPasswordError('New password duplicates current password.')
       hasError = true
-    } else if (strength.score < 4) {
-      setNewPasswordError('Password does not meet requirements.')
+    } else if (missingRequirements.length > 0) {
+      setNewPasswordError(`Password is missing: ${missingRequirements.join(', ')}.`)
       hasError = true
     } else {
       setNewPasswordError('')
@@ -104,11 +141,20 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
       return
     }
 
-    setSaveMessage('Password changed successfully.')
+    setSaveMessage('')
+    setShowSaveConfirm(true)
   }
 
   return (
-    <section className="candidate-settings-screen">
+    <>
+      <section className="candidate-settings-screen">
+        {saveMessage && (
+          <div className="candidate-password-toast" role="alert" aria-live="polite">
+            <i className="fa-regular fa-square-check"></i>
+            <span>{saveMessage}</span>
+          </div>
+        )}
+
       <button type="button" className="candidate-back-home" onClick={onBack}>
         <i className="fa-solid fa-arrow-left"></i>
         <span>Back to Home</span>
@@ -151,8 +197,12 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                   placeholder="Enter current password"
                   value={currentPassword}
                   onChange={(event) => {
-                    setCurrentPassword(event.target.value)
+                    const nextCurrentPassword = event.target.value
+                    setCurrentPassword(nextCurrentPassword)
                     if (currentPasswordError) setCurrentPasswordError('')
+                    if (newPasswordError && newPassword !== nextCurrentPassword && missingRequirements.length === 0) {
+                      setNewPasswordError('')
+                    }
                     if (saveMessage) setSaveMessage('')
                   }}
                 />
@@ -172,8 +222,26 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                   placeholder="Enter at least 8 characters"
                   value={newPassword}
                   onChange={(event) => {
-                    setNewPassword(event.target.value)
-                    if (newPasswordError) setNewPasswordError('')
+                    const nextPassword = event.target.value
+                    const nextStrength = getPasswordStrength(nextPassword)
+                    const nextMissingRequirements = (Object.entries(nextStrength.requirements) as Array<[
+                      keyof typeof nextStrength.requirements,
+                      boolean,
+                    ]>)
+                      .filter(([, isMet]) => !isMet)
+                      .map(([requirement]) => passwordRequirementLabels[requirement])
+
+                    setNewPassword(nextPassword)
+                    if (!nextPassword) {
+                      setNewPasswordError('')
+                    } else if (nextPassword === currentPassword) {
+                      setNewPasswordError('New password duplicates current password.')
+                    } else if (newPasswordError && nextMissingRequirements.length === 0) {
+                      setNewPasswordError('')
+                    }
+                    if (confirmPasswordError && confirmPassword === nextPassword) {
+                      setConfirmPasswordError('')
+                    }
                     if (saveMessage) setSaveMessage('')
                   }}
                 />
@@ -187,10 +255,17 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
             <div className="candidate-password-strength">
               <div>
                 <span>Password Strength</span>
-                <strong className={strength.strengthClass}>{strength.strengthLabel}</strong>
+                <strong className={visibleStrengthClass}>{visibleStrengthLabel}</strong>
               </div>
-              <div className="candidate-strength-track">
-                <span className={strength.strengthClass} style={{ width: newPassword ? strength.progressWidth : '25%' }}></span>
+              <div
+                className="candidate-strength-track"
+                aria-label={`Password strength: ${visibleStrengthLabel}`}
+                aria-valuemin={0}
+                aria-valuemax={4}
+                aria-valuenow={newPassword ? strength.score : 0}
+                role="progressbar"
+              >
+                <span className={visibleStrengthClass} style={{ width: newPassword ? strength.progressWidth : '0%' }}></span>
               </div>
               <small>Hint: At least 8 character, use mixed case, numbers, and symbols.</small>
             </div>
@@ -216,8 +291,6 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
               {confirmPasswordError && <span className="candidate-password-error">{confirmPasswordError}</span>}
             </div>
 
-            {saveMessage && <p className="candidate-password-success">{saveMessage}</p>}
-
             <div className="candidate-change-password-actions">
               <button type="button" className="candidate-password-cancel" onClick={resetForm}>Cancel</button>
               <button type="submit" className="candidate-password-save">Save Changes</button>
@@ -225,7 +298,37 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
           </form>
         </section>
       </div>
-    </section>
+      </section>
+
+      {showSaveConfirm && (
+        <div className="candidate-change-confirm-backdrop" role="presentation">
+          <section className="candidate-change-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="candidate-change-confirm-title">
+            <div className="candidate-change-confirm-body">
+              <div className="candidate-change-confirm-heading">
+                <h2 id="candidate-change-confirm-title">Confirm Action</h2>
+                <button
+                  type="button"
+                  className="candidate-change-confirm-close"
+                  onClick={closeSaveConfirm}
+                  aria-label="Close change password confirmation"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <p>Are you sure you want to proceed? This action will trigger the next step in the recruitment workflow. Your changes will not be saved.</p>
+            </div>
+            <div className="candidate-change-confirm-footer">
+              <button type="button" className="candidate-change-confirm-cancel" onClick={closeSaveConfirm}>
+                Cancel
+              </button>
+              <button type="button" className="candidate-change-confirm-action" onClick={confirmSavePassword}>
+                Confirm
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
   )
 }
 

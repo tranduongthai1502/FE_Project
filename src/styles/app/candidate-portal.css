@@ -461,11 +461,32 @@
   font-style: italic;
 }
 
-.candidate-password-success {
-  margin: -4px 0 0;
-  color: #15803d;
-  font-size: 10px;
-  font-weight: 800;
+.candidate-password-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(290px, calc(100vw - 48px));
+  min-height: 40px;
+  padding: 14px 16px;
+  color: #16a34a;
+  background: #f1fbf5;
+  border-top: 2px solid #16a34a;
+  border-left: 5px solid #16a34a;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.candidate-password-toast i {
+  font-size: 21px;
+}
+
+.candidate-password-toast span {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .candidate-change-password-actions {
@@ -1118,6 +1139,100 @@
   color: #ffffff;
   background: #df3100;
   border: 2px solid #df3100;
+}
+
+.candidate-change-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.08);
+  z-index: 1050;
+}
+
+.candidate-change-confirm-modal {
+  box-sizing: border-box;
+  width: min(418px, calc(100vw - 32px));
+  min-height: 260px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e4beb4;
+  border-radius: 10px;
+}
+
+.candidate-change-confirm-body {
+  padding: 24px 22px 20px;
+}
+
+.candidate-change-confirm-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.candidate-change-confirm-heading h2 {
+  margin: 0;
+  color: #0b1c30;
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.candidate-change-confirm-close {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #5a4038;
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.candidate-change-confirm-body p {
+  margin: 18px 0 0;
+  color: #5a4038;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.candidate-change-confirm-footer {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 16px 22px;
+  background: #eef4ff;
+  border-top: 1px solid #e4beb4;
+}
+
+.candidate-change-confirm-cancel,
+.candidate-change-confirm-action {
+  min-width: 106px;
+  height: 47px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.candidate-change-confirm-cancel {
+  color: #dc2f00;
+  background: #ffffff;
+  border: 1px solid #dc2f00;
+}
+
+.candidate-change-confirm-action {
+  color: #ffffff;
+  background: #df3100;
+  border: 1px solid #df3100;
 }
 
 @media (max-width: 1100px) {
