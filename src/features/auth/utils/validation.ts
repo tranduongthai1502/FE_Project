@@ -1,11 +1,15 @@
 export function validateEmail(value: string) {
-  if (!value) {
-    return 'Please enter your email address.'
+  const normalizedValue = value.trim()
+
+  if (!normalizedValue) {
+    return 'Please enter your email.'
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(value)) {
-    return 'Invalid email address. Please retry'
+  const emailRegex =
+    /^(?=.{1,254}$)(?=.{1,64}@)[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/
+
+  if (normalizedValue !== value || !emailRegex.test(normalizedValue)) {
+    return 'Invalid email address. Please retry.'
   }
 
   return ''

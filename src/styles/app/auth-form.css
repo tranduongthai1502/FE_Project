@@ -67,10 +67,12 @@
 .login-page:not(.signup-page) .login-form .input-wrap {
   height: 42px;
   box-sizing: border-box;
+  background: #fffdfd;
   border-radius: 4px;
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap:focus-within {
+  background: #fffdfd;
   border: 2px solid #dd6b4c;
   box-shadow: none;
 }
@@ -91,7 +93,17 @@
 .login-page:not(.signup-page) .login-form .input-wrap input {
   padding-left: 34px;
   padding-right: 48px;
+  background: transparent;
   font-size: 11px;
+}
+
+.login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill,
+.login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill:hover,
+.login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill:focus,
+.login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px #fffdfd inset;
+  -webkit-box-shadow: 0 0 0 1000px #fffdfd inset;
+  transition: background-color 9999s ease-out;
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap:has(.icon-button) input {
