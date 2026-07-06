@@ -25,7 +25,7 @@ const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
 const expiredOtpMessage = 'OTP has expired. Please request a new one.'
 const invalidOtpMessage = 'Invalid OTP. Please retry.'
 const rememberedEmailStorageKey = 'jobfusion_remembered_email'
-const resendOtpCountdownSeconds = 30
+const resendOtpCountdownSeconds = 59
 type ForgotStep = 'email' | 'otp' | 'reset'
 
 function getAuthResponsePayload(response: any) {
@@ -81,6 +81,11 @@ function isAccountNotFoundError(message = '') {
     normalizedMessage.includes('account not found') ||
     normalizedMessage.includes('user not found') ||
     normalizedMessage.includes('email not found') ||
+    normalizedMessage.includes('email not registered') ||
+    normalizedMessage.includes('email_not_registered') ||
+    normalizedMessage.includes('account_not_found') ||
+    normalizedMessage.includes('user_not_found') ||
+    normalizedMessage.includes('email_not_found') ||
     normalizedMessage.includes('not registered') ||
     normalizedMessage.includes('does not exist')
   )
@@ -93,13 +98,21 @@ function isExpiredOtpError(message = '') {
     normalizedMessage.includes('otp expired') ||
     normalizedMessage.includes('expired otp') ||
     normalizedMessage.includes('code expired') ||
+    normalizedMessage.includes('old otp') ||
+    normalizedMessage.includes('old code') ||
+    normalizedMessage.includes('previous otp') ||
+    normalizedMessage.includes('previous code') ||
+    normalizedMessage.includes('invalidated') ||
+    normalizedMessage.includes('not latest') ||
+    normalizedMessage.includes('new otp') ||
+    normalizedMessage.includes('new code') ||
     normalizedMessage.includes('expired') ||
     normalizedMessage.includes('expire')
   )
 }
 
-function getOtpErrorMessage(message = '') {
-  return isExpiredOtpError(message) ? expiredOtpMessage : invalidOtpMessage
+function getOtpErrorMessage(message = '', isKnownExpiredOtp = false) {
+  return isKnownExpiredOtp || isExpiredOtpError(message) ? expiredOtpMessage : invalidOtpMessage
 }
 
 function isSystemApiError(error: any) {
@@ -120,6 +133,8 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
   const [forgotEmail, setForgotEmail] = useState('')
   const [otp, setOtp] = useState(emptyOtp)
   const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
+  const attemptedOtpCodesRef = useRef<Set<string>>(new Set())
+  const expiredOtpCodesRef = useRef<Set<string>>(new Set())
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(Boolean(rememberedEmail))
@@ -249,16 +264,18 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
       if (response && response.success) {
         setForgotStep('otp')
         setCountdown(resendOtpCountdownSeconds)
+        attemptedOtpCodesRef.current.clear()
+        expiredOtpCodesRef.current.clear()
       } else if (isAccountNotFoundError(response?.message)) {
         setForgotEmailError(forgotAccountNotFoundMessage)
       } else {
         triggerToast?.(systemErrorMessage, 'error')
       }
     } catch (error: any) {
-      if (isSystemApiError(error)) {
-        triggerToast?.(systemErrorMessage, 'error')
-      } else if (isAccountNotFoundError(error.message)) {
+      if (isAccountNotFoundError(error.message)) {
         setForgotEmailError(forgotAccountNotFoundMessage)
+      } else if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
       } else {
         triggerToast?.(systemErrorMessage, 'error')
       }
@@ -279,6 +296,8 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
     setNewPasswordError('')
     setConfirmPasswordError('')
     setOtp(emptyOtp)
+    attemptedOtpCodesRef.current.clear()
+    expiredOtpCodesRef.current.clear()
     setNewPassword('')
     setConfirmPassword('')
   }
@@ -334,19 +353,25 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
       return
     }
 
+    if (expiredOtpCodesRef.current.has(otpCode)) {
+      setOtpError(expiredOtpMessage)
+      return
+    }
+
+    attemptedOtpCodesRef.current.add(otpCode)
     setIsSendingCode(true)
     try {
       const response: any = await authApi.verifyOtp(forgotEmail, otpCode)
       if (response && response.success) {
         setForgotStep('reset')
       } else {
-        setOtpError(getOtpErrorMessage(response?.message))
+        setOtpError(getOtpErrorMessage(response?.message, expiredOtpCodesRef.current.has(otpCode)))
       }
     } catch (error: any) {
       if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        setOtpError(getOtpErrorMessage(error.message))
+        setOtpError(getOtpErrorMessage(error.message, expiredOtpCodesRef.current.has(otpCode)))
       }
     } finally {
       setIsSendingCode(false)
@@ -366,6 +391,12 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
     try {
       const response: any = await authApi.sendResetCode(forgotEmail)
       if (response && response.success) {
+        const currentOtpCode = otp.join('')
+        if (currentOtpCode.length === 6) {
+          expiredOtpCodesRef.current.add(currentOtpCode)
+        }
+        attemptedOtpCodesRef.current.forEach((code) => expiredOtpCodesRef.current.add(code))
+        attemptedOtpCodesRef.current.clear()
         setOtp(emptyOtp)
         setOtpError('')
         startTimer()
@@ -376,10 +407,10 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
         triggerToast?.(systemErrorMessage, 'error')
       }
     } catch (error: any) {
-      if (isSystemApiError(error)) {
-        triggerToast?.(systemErrorMessage, 'error')
-      } else if (isAccountNotFoundError(error.message)) {
+      if (isAccountNotFoundError(error.message)) {
         setOtpError(forgotAccountNotFoundMessage)
+      } else if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
       } else {
         triggerToast?.(systemErrorMessage, 'error')
       }
