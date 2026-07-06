@@ -25,6 +25,7 @@ const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
 const expiredOtpMessage = 'OTP has expired. Please request a new one.'
 const invalidOtpMessage = 'Invalid OTP. Please retry.'
 const rememberedEmailStorageKey = 'jobfusion_remembered_email'
+const resendOtpCountdownSeconds = 30
 type ForgotStep = 'email' | 'otp' | 'reset'
 
 function getAuthResponsePayload(response: any) {
@@ -129,6 +130,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
   const [forgotStep, setForgotStep] = useState<ForgotStep>('email')
   const [isLoading, setIsLoading] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
+  const [isResendingCode, setIsResendingCode] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [forgotEmailError, setForgotEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -246,7 +248,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
       const response: any = await authApi.sendResetCode(forgotEmail)
       if (response && response.success) {
         setForgotStep('otp')
-        setCountdown(59)
+        setCountdown(resendOtpCountdownSeconds)
       } else if (isAccountNotFoundError(response?.message)) {
         setForgotEmailError(forgotAccountNotFoundMessage)
       } else {
@@ -266,7 +268,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
   }
 
   const handleCloseForgotPassword = () => {
-    if (isSendingCode) {
+    if (isSendingCode || isResendingCode) {
       return
     }
 
@@ -352,7 +354,38 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
   }
 
   const startTimer = () => {
-    setCountdown(59)
+    setCountdown(resendOtpCountdownSeconds)
+  }
+
+  const handleResendCode = async () => {
+    if (countdown > 0 || isResendingCode) {
+      return
+    }
+
+    setIsResendingCode(true)
+    try {
+      const response: any = await authApi.sendResetCode(forgotEmail)
+      if (response && response.success) {
+        setOtp(emptyOtp)
+        setOtpError('')
+        startTimer()
+        otpInputsRef.current[0]?.focus()
+      } else if (isAccountNotFoundError(response?.message)) {
+        setOtpError(forgotAccountNotFoundMessage)
+      } else {
+        triggerToast?.(systemErrorMessage, 'error')
+      }
+    } catch (error: any) {
+      if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
+      } else if (isAccountNotFoundError(error.message)) {
+        setOtpError(forgotAccountNotFoundMessage)
+      } else {
+        triggerToast?.(systemErrorMessage, 'error')
+      }
+    } finally {
+      setIsResendingCode(false)
+    }
   }
 
   const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
@@ -513,9 +546,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
             {forgotStep === 'otp' && (
               <OtpForm
                 otp={otp}
-                setOtp={setOtp}
                 otpError={otpError}
-                setOtpError={setOtpError}
                 otpInputsRef={otpInputsRef}
                 countdown={countdown}
                 isLoading={isSendingCode}
@@ -524,7 +555,8 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
                 handleOtpPaste={handleOtpPaste}
                 handleVerifyOtp={handleVerifyOtp}
                 handleBackToLogin={handleCloseForgotPassword}
-                startTimer={startTimer}
+                handleResendCode={handleResendCode}
+                isResendingCode={isResendingCode}
               />
             )}
 

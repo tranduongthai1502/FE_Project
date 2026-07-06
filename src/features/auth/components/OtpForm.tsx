@@ -1,17 +1,13 @@
 import type {
   ClipboardEvent,
-  Dispatch,
   FormEventHandler,
   KeyboardEvent,
   MutableRefObject,
-  SetStateAction,
 } from 'react'
 
 type OtpFormProps = {
   otp: string[]
-  setOtp: Dispatch<SetStateAction<string[]>>
   otpError: string
-  setOtpError: Dispatch<SetStateAction<string>>
   otpInputsRef: MutableRefObject<Array<HTMLInputElement | null>>
   countdown: number
   isLoading: boolean
@@ -20,14 +16,13 @@ type OtpFormProps = {
   handleOtpPaste: (event: ClipboardEvent<HTMLDivElement>) => void
   handleVerifyOtp: FormEventHandler<HTMLFormElement>
   handleBackToLogin: () => void
-  startTimer: () => void
+  handleResendCode: () => void
+  isResendingCode: boolean
 }
 
 export function OtpForm({
   otp,
-  setOtp,
   otpError,
-  setOtpError,
   otpInputsRef,
   countdown,
   isLoading,
@@ -36,7 +31,8 @@ export function OtpForm({
   handleOtpPaste,
   handleVerifyOtp,
   handleBackToLogin,
-  startTimer,
+  handleResendCode,
+  isResendingCode,
 }: OtpFormProps) {
   return (
     <form onSubmit={handleVerifyOtp} noValidate className="auth-form-content">
@@ -96,15 +92,10 @@ export function OtpForm({
         <button 
           type="button" 
           className="resend-link"
-          disabled={countdown > 0 || isLoading}
-          onClick={() => {
-            alert('Verification code resent successfully!');
-            setOtp(['', '', '', '', '', '']);
-            setOtpError('');
-            startTimer();
-          }}
+          disabled={countdown > 0 || isLoading || isResendingCode}
+          onClick={handleResendCode}
         >
-          Resend Code {countdown > 0 ? `(${countdown}s)` : ''}
+          {isResendingCode ? 'Resending...' : `Resend Code ${countdown > 0 ? `(${countdown}s)` : ''}`}
         </button>
       </div>
 
