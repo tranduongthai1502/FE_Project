@@ -76,7 +76,11 @@ export function SignupPage({ onGoToSignin, triggerToast }: SignupPageProps) {
         triggerToast?.(response?.message || 'Error system. Please try again.', 'error')
       }
     } catch (error: any) {
-      triggerToast?.(error?.message || 'Error system. Please try again.', 'error')
+      const status = Number(error?.status ?? 0)
+      const message = status === 0 || status >= 500
+        ? 'Error system. Please try again.'
+        : error?.message || 'Error system. Please try again.'
+      triggerToast?.(message, 'error')
     } finally {
       setIsLoading(false)
     }
