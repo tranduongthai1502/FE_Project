@@ -483,7 +483,7 @@
 }
 
 .forgot-password-modal-reset {
-  width: min(344px, 100%);
+  width: min(536px, 100%);
   min-height: 580px;
   padding: 28px 24px;
 }
