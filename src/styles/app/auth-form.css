@@ -826,6 +826,7 @@
   font-size: 12px;
 }
 
+
 .forgot-password-modal-otp .resend-link {
   padding: 0;
   color: #dd6b4c;
@@ -833,6 +834,7 @@
   border: 0;
   font: inherit;
   cursor: pointer;
+  margin-left:5px
 }
 
 .forgot-password-modal-otp .resend-link:disabled {

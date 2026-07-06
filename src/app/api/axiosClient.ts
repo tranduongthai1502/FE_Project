@@ -10,9 +10,66 @@ const axiosClient = axios.create({
   },
 })
 
+const refreshClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+function getStoredToken(key: 'access_token' | 'refresh_token') {
+  return localStorage.getItem(key) || sessionStorage.getItem(key)
+}
+
+function getAuthStorage() {
+  return localStorage.getItem('refresh_token') ? localStorage : sessionStorage
+}
+
+function clearAuthTokens() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  sessionStorage.removeItem('access_token')
+  sessionStorage.removeItem('refresh_token')
+}
+
+function getAuthResponsePayload(response: any) {
+  return response?.data && typeof response.data === 'object' ? response.data : response
+}
+
+function getAccessToken(payload: any) {
+  return payload?.token || payload?.access_token || payload?.accessToken || payload?.jwt || ''
+}
+
+function getRefreshToken(payload: any) {
+  return payload?.refresh_token || payload?.refreshToken || ''
+}
+
+async function refreshAccessToken() {
+  const refreshToken = getStoredToken('refresh_token')
+  if (!refreshToken) return ''
+
+  const response = await refreshClient.post('/api/auth/refresh-token', {
+    refresh_token: refreshToken,
+    refreshToken,
+  })
+  const payload = getAuthResponsePayload(response.data)
+  const nextAccessToken = getAccessToken(payload)
+  const nextRefreshToken = getRefreshToken(payload)
+
+  if (!nextAccessToken) return ''
+
+  const storage = getAuthStorage()
+  storage.setItem('access_token', nextAccessToken)
+  if (nextRefreshToken) {
+    storage.setItem('refresh_token', nextRefreshToken)
+  }
+
+  return nextAccessToken
+}
+
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token')
+    const token = getStoredToken('access_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -42,13 +99,25 @@ axiosClient.interceptors.response.use(
       httpStatus: response.status,
     }
   },
-  (error) => {
+  async (error) => {
     const message = error.response?.data?.message || error.message || 'An error occurred'
     const status = error.response?.status ?? 0
+    const originalRequest = error.config
 
-    if (status === 401) {
-      localStorage.removeItem('access_token')
-      sessionStorage.removeItem('access_token')
+    if (status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      try {
+        const token = await refreshAccessToken()
+        if (token) {
+          originalRequest.headers.Authorization = `Bearer ${token}`
+          return axiosClient(originalRequest)
+        }
+      } catch {
+        // Fall through to clearing tokens and returning the original auth error.
+      }
+
+      clearAuthTokens()
     }
 
     return Promise.reject(Object.assign(new Error(message), { status }))
