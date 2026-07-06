@@ -12,6 +12,11 @@ export type RegisterPayload = {
   password: string
 }
 
+export type ChangePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+}
+
 export const authApi = {
   async login(payload: LoginPayload) {
     // Trả về định dạng phản hồi từ Backend AuthResponse
@@ -37,8 +42,14 @@ export const authApi = {
     return axiosClient.post('/api/auth/check-otp', { email, otp })
   },
 
-  async resetPassword(email: string, password: string) {
-    return axiosClient.post('/api/auth/reset-password', { email, newPassword: password })
+  async resetPassword(email: string, otp: string, password: string) {
+    return axiosClient.post('/api/auth/reset-password', { email, otp, newPassword: password })
+  },
+
+  async changePassword(payload: ChangePasswordPayload) {
+    return axiosClient.post('/api/auth/change-password', {
+      oldPassword: payload.currentPassword,
+      newPassword: payload.newPassword,
+    })
   },
 }
-

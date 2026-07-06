@@ -435,23 +435,30 @@
 }
 
 .candidate-strength-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
   height: 4px;
   overflow: hidden;
-  background: #d9e7ff;
   border-radius: 999px;
 }
 
-.candidate-strength-track span {
+.candidate-strength-track .candidate-strength-segment {
   display: block;
   height: 100%;
+  background: #d9e7ff;
+  transition: background-color 0.2s ease;
+}
+
+.candidate-strength-track .candidate-strength-segment.active.weak {
   background: #c91f1f;
 }
 
-.candidate-strength-track span.medium {
+.candidate-strength-track .candidate-strength-segment.active.medium {
   background: #d89b13;
 }
 
-.candidate-strength-track span.strong {
+.candidate-strength-track .candidate-strength-segment.active.strong {
   background: #16a34a;
 }
 
