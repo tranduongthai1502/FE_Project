@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/useToast'
 import { CandidatePortalPage } from '../../pages/CandidatePortalPage'
 import { LoginPage } from '../../pages/LoginPage'
 import { SignupPage } from '../../pages/SignupPage'
+import { authApi } from '../../features/auth/services/authApi'
 
 type AppPage = 'login' | 'signup' | 'candidate'
 const AUTH_PAGE_STORAGE_KEY = 'jobfusion_auth_page'
@@ -86,7 +87,7 @@ export function AppRoutes() {
     triggerToast('Logged in successfully.')
   }
 
-  const handleLogout = () => {
+  const clearAuthStorage = () => {
     window.localStorage.removeItem(AUTH_PAGE_STORAGE_KEY)
     window.sessionStorage.removeItem(AUTH_PAGE_STORAGE_KEY)
     window.localStorage.removeItem('access_token')
@@ -95,8 +96,20 @@ export function AppRoutes() {
     window.sessionStorage.removeItem('access_token')
     window.sessionStorage.removeItem('refresh_token')
     window.sessionStorage.removeItem('user_info')
-    window.location.hash = '#/login'
-    triggerToast('Logged out successfully.')
+  }
+
+  const handleLogout = async () => {
+    const refreshToken = window.localStorage.getItem('refresh_token') || window.sessionStorage.getItem('refresh_token') || undefined
+
+    try {
+      await authApi.logout(refreshToken)
+    } catch {
+      // Local logout should still complete if the server token is already invalid.
+    } finally {
+      clearAuthStorage()
+      window.location.hash = '#/login'
+      triggerToast('Logged out successfully.')
+    }
   }
 
   if (page === 'signup') {

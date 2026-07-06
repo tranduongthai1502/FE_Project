@@ -44,6 +44,60 @@ const navItems = [
 
 type CandidatePanel = 'dashboard' | 'changePassword'
 
+type StoredUser = {
+  full_name?: string | null
+  fullName?: string | null
+  name?: string | null
+  email?: string | null
+  avatar?: string | null
+  job_title?: string | null
+  jobTitle?: string | null
+  headline?: string | null
+  user_role?: string | null
+  type?: string | null
+}
+
+function getStoredUser(): StoredUser | null {
+  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
+  if (!rawUser) return null
+
+  try {
+    return JSON.parse(rawUser)
+  } catch {
+    return null
+  }
+}
+
+function getUserDisplayName(user: StoredUser | null) {
+  return user?.full_name || user?.fullName || user?.name || user?.email || 'Candidate'
+}
+
+function getUserInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return 'C'
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase()
+}
+
+function getUserSubtitle(user: StoredUser | null) {
+  return user?.job_title || user?.jobTitle || user?.headline || user?.user_role || user?.type || 'Candidate'
+}
+
+function UserAvatar({ user, className }: { user: StoredUser | null; className: string }) {
+  const displayName = getUserDisplayName(user)
+  const initials = getUserInitials(displayName)
+
+  if (user?.avatar) {
+    return (
+      <div className={className} aria-label={displayName}>
+        <img src={user.avatar} alt="" />
+      </div>
+    )
+  }
+
+  return <div className={className}>{initials}</div>
+}
+
 const passwordRequirementLabels = {
   length: 'At least 8 characters',
   case: 'Uppercase and lowercase letters',
@@ -383,7 +437,11 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
   const [showDropdown, setShowDropdown] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [activePanel, setActivePanel] = useState<CandidatePanel>('dashboard')
+  const [user] = useState<StoredUser | null>(() => getStoredUser())
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const displayName = getUserDisplayName(user)
+  const firstName = displayName.trim().split(/\s+/)[0] || displayName
+  const userSubtitle = getUserSubtitle(user)
 
   const openLogoutConfirm = () => {
     setShowDropdown(false)
@@ -434,10 +492,10 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
         </nav>
 
         <div className="candidate-profile-card">
-          <div className="candidate-avatar">A</div>
+          <UserAvatar user={user} className="candidate-avatar" />
           <div>
-            <strong>Alex Nguyen</strong>
-            <span>Senior Developer</span>
+            <strong>{displayName}</strong>
+            <span>{userSubtitle}</span>
           </div>
           <button type="button" onClick={openLogoutConfirm} className="candidate-logout-btn">
             <i className="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
@@ -475,8 +533,8 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
                 aria-label="User menu"
                 aria-expanded={showDropdown}
               >
-                <div className="candidate-mini-avatar">A</div>
-                <span className="candidate-user-name">Alex Nguyen</span>
+                <UserAvatar user={user} className="candidate-mini-avatar" />
+                <span className="candidate-user-name">{displayName}</span>
                 <i className={`fa-solid fa-chevron-down candidate-chevron ${showDropdown ? 'open' : ''}`}></i>
               </button>
               
@@ -520,7 +578,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
             <>
           <section className="candidate-welcome">
             <div>
-              <h1>Welcome back, Alex!</h1>
+              <h1>Welcome back, {firstName}!</h1>
               <p>Here is your application progress and personalized AI recommendations.</p>
             </div>
             <span className="profile-views">

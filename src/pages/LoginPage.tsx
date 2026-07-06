@@ -37,6 +37,7 @@ function isLoginSuccessResponse(response: any) {
   const status = String(response?.status ?? payload?.status ?? '').toLowerCase()
   const message = String(response?.message ?? payload?.message ?? '').toLowerCase()
   const code = response?.httpStatus ?? payload?.httpStatus ?? response?.code ?? payload?.code ?? response?.statusCode ?? payload?.statusCode
+  const token = getAuthToken(payload)
 
   const hasFailureMessage =
     message.includes('invalid credentials') ||
@@ -56,15 +57,11 @@ function isLoginSuccessResponse(response: any) {
     success === true ||
     status === 'success' ||
     status === 'ok' ||
-    code === 200 ||
+    (code >= 200 && code < 300) ||
     message.includes('login successful') ||
     message.includes('logged in') ||
     message.includes('success') ||
-    payload?.token ||
-    payload?.access_token ||
-    payload?.accessToken ||
-    payload?.jwt ||
-    response
+    token
   )
 }
 
@@ -198,6 +195,10 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
         const refreshToken = getRefreshToken(payload)
         const user = payload?.user || payload?.user_info || payload?.userInfo
         const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
+        const inactiveStorage = keepLoggedIn ? window.sessionStorage : window.localStorage
+        inactiveStorage.removeItem('access_token')
+        inactiveStorage.removeItem('refresh_token')
+        inactiveStorage.removeItem('user_info')
         if (token) {
           storage.setItem('access_token', token)
         }
