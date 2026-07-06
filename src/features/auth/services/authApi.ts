@@ -23,6 +23,17 @@ export const authApi = {
     return axiosClient.post('/api/auth/signin', payload)
   },
 
+  async logout(refreshToken?: string) {
+    return axiosClient.post('/api/auth/logout', refreshToken ? { refresh_token: refreshToken } : {})
+  },
+
+  async refreshToken(refreshToken: string) {
+    return axiosClient.post('/api/auth/refresh-token', {
+      refresh_token: refreshToken,
+      refreshToken,
+    })
+  },
+
   async register(payload: RegisterPayload) {
     // Chuyển đổi sang snake_case cho trường full_name
     const backendPayload = {

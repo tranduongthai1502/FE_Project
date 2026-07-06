@@ -92,7 +92,7 @@ export function OtpForm({
       </button>
 
       <div className="resend-text">
-        Didn't receive the code? 
+        Didn't receive the code?  
         <button 
           type="button" 
           className="resend-link"
