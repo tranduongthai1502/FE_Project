@@ -252,12 +252,12 @@
 }
 
 .candidate-settings-layout {
-  width: 100%;
+  width: 75%;
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
-  gap: 32px;
+  gap: 10px;
   align-items: start;
-  margin: 0;
+  margin: 0 auto;
 }
 
 .security-tabs-card,
@@ -305,9 +305,9 @@
 
 .candidate-change-password-card {
   position: relative;
-  min-height: 385px;
+  min-height: 350px;
   padding: 28px 34px 24px;
-  margin:0px 50px;
+  margin:0px 30px;
 }
 
 .candidate-change-password-close {
