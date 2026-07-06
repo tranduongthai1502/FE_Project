@@ -18,7 +18,7 @@ export function getPasswordStrength(password: string): PasswordStrength {
     length: password.length >= 8,
     case: /[a-z]/.test(password) && /[A-Z]/.test(password),
     number: /\d/.test(password),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    special: /[^\p{L}\p{N}\s]/u.test(password),
   }
 
   const score = Object.values(requirements).filter(Boolean).length

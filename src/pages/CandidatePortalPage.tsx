@@ -122,6 +122,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const strength = getPasswordStrength(newPassword)
   const passwordRequirements = Object.entries(strength.requirements) as Array<[
@@ -157,6 +158,19 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
 
   const closeSaveConfirm = () => {
     setShowSaveConfirm(false)
+  }
+
+  const openCancelConfirm = () => {
+    setShowCancelConfirm(true)
+  }
+
+  const closeCancelConfirm = () => {
+    setShowCancelConfirm(false)
+  }
+
+  const confirmCancelChanges = () => {
+    setShowCancelConfirm(false)
+    onBack()
   }
 
   const confirmSavePassword = async () => {
@@ -247,7 +261,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
           </div>
         )}
 
-      <button type="button" className="candidate-back-home" onClick={onBack}>
+      <button type="button" className="candidate-back-home" onClick={openCancelConfirm}>
         <i className="fa-solid fa-arrow-left"></i>
         <span>Back to Home</span>
       </button>
@@ -270,7 +284,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
         </aside>
 
         <section className="candidate-change-password-card">
-          <button type="button" className="candidate-change-password-close" onClick={onBack} aria-label="Close change password">
+          <button type="button" className="candidate-change-password-close" onClick={openCancelConfirm} aria-label="Close change password">
             <i className="fa-solid fa-xmark"></i>
           </button>
 
@@ -366,7 +380,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
                   />
                 ))}
               </div>
-              <small>Hint: At least 8 character, use mixed case, numbers, and symbols.</small>
+              <small>Hint: At least 8 characters, use mixed case, numbers, and symbols.</small>
             </div>
 
             <div className="candidate-password-field">
@@ -424,6 +438,35 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
               </button>
               <button type="button" className="candidate-change-confirm-action" onClick={confirmSavePassword} disabled={isSaving}>
                 {isSaving ? 'Saving...' : 'Confirm'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {showCancelConfirm && (
+        <div className="candidate-change-confirm-backdrop" role="presentation">
+          <section className="candidate-change-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="candidate-cancel-confirm-title">
+            <div className="candidate-change-confirm-body">
+              <div className="candidate-change-confirm-heading">
+                <h2 id="candidate-cancel-confirm-title">Confirm Action</h2>
+                <button
+                  type="button"
+                  className="candidate-change-confirm-close"
+                  onClick={closeCancelConfirm}
+                  aria-label="Close cancel confirmation"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <p>Are you sure you want to cancel? Your changes will not be saved.</p>
+            </div>
+            <div className="candidate-change-confirm-footer">
+              <button type="button" className="candidate-change-confirm-cancel" onClick={closeCancelConfirm}>
+                Cancel
+              </button>
+              <button type="button" className="candidate-change-confirm-action" onClick={confirmCancelChanges}>
+                Confirm
               </button>
             </div>
           </section>

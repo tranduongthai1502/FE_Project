@@ -100,7 +100,14 @@ axiosClient.interceptors.response.use(
     }
   },
   async (error) => {
-    const message = error.response?.data?.message || error.message || 'An error occurred'
+    const errorData = error.response?.data
+    const message =
+      errorData?.message ||
+      errorData?.error ||
+      errorData?.code ||
+      errorData?.data?.message ||
+      error.message ||
+      'An error occurred'
     const status = error.response?.status ?? 0
     const originalRequest = error.config
 
