@@ -456,31 +456,6 @@
   overflow-y: auto;
 }
 
-.auth-success-toast {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  z-index: 60;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 240px;
-  padding: 14px 18px;
-  color: #16a34a;
-  background: #f3fbf6;
-  border: 1px solid rgba(22, 163, 74, 0.16);
-  border-left: 4px solid #16a34a;
-  border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.08);
-  font-size: 14px;
-  font-weight: 500;
-  transform: translateX(-50%);
-}
-
-.auth-success-toast i {
-  font-size: 18px;
-}
-
 .forgot-password-modal {
   width: min(536px, 100%);
   min-height: 520px;
@@ -920,17 +895,43 @@
   font-weight: 800;
 }
 
+.forgot-password-modal-reset .strength-label.weak {
+  color: #df3100;
+}
+
+.forgot-password-modal-reset .strength-label.medium {
+  color: #d97706;
+}
+
+.forgot-password-modal-reset .strength-label.strong {
+  color: #16a34a;
+}
+
 .forgot-password-modal-reset .strength-bar-outer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
   height: 4px;
   overflow: hidden;
-  background: #dbe8ff;
   border-radius: 999px;
 }
 
-.forgot-password-modal-reset .strength-bar-inner {
+.forgot-password-modal-reset .strength-bar-segment {
   height: 100%;
+  background: #dbe8ff;
+  transition: background-color 0.2s ease;
+}
+
+.forgot-password-modal-reset .strength-bar-segment.active.weak {
   background: #df3100;
-  border-radius: inherit;
+}
+
+.forgot-password-modal-reset .strength-bar-segment.active.medium {
+  background: #d97706;
+}
+
+.forgot-password-modal-reset .strength-bar-segment.active.strong {
+  background: #16a34a;
 }
 
 .forgot-password-modal-reset .requirements-hint {

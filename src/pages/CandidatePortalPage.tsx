@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react'
+import { authApi } from '../features/auth/services/authApi'
 import { getPasswordStrength } from '../features/auth/utils/passwordStrength'
 
 type CandidatePortalPageProps = {
   onLogout: () => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
 const applications = [
@@ -49,7 +51,12 @@ const passwordRequirementLabels = {
   special: 'At least 1 symbol',
 }
 
-function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
+type CandidateChangePasswordViewProps = {
+  onBack: () => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
+}
+
+function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePasswordViewProps) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -61,6 +68,7 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const strength = getPasswordStrength(newPassword)
   const passwordRequirements = Object.entries(strength.requirements) as Array<[
     keyof typeof strength.requirements,
@@ -97,9 +105,39 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
     setShowSaveConfirm(false)
   }
 
-  const confirmSavePassword = () => {
-    setShowSaveConfirm(false)
-    setSaveMessage('Password changed successfully.')
+  const confirmSavePassword = async () => {
+    setIsSaving(true)
+    try {
+      const response: any = await authApi.changePassword({ currentPassword, newPassword })
+      const status = Number(response?.httpStatus ?? 0)
+      const isSuccess = response?.success === true || (status >= 200 && status < 300)
+
+      if (!isSuccess) {
+        triggerToast?.('Error system. Please try again.', 'error')
+        return
+      }
+
+      setShowSaveConfirm(false)
+      resetForm()
+      setSaveMessage('Password changed successfully.')
+    } catch (error: any) {
+      const status = Number(error?.status ?? 0)
+      if (status === 0 || status >= 500) {
+        triggerToast?.('Error system. Please try again.', 'error')
+      } else {
+        setShowSaveConfirm(false)
+        const errMsg = error?.message || ''
+        if (errMsg.includes('wrong_password')) {
+          setCurrentPasswordError('Current password is incorrect.')
+        } else if (errMsg.includes('old_password_can_not_be_the_same_with_new_password')) {
+          setNewPasswordError('New password cannot be the same as the current password.')
+        } else {
+          setCurrentPasswordError(errMsg || 'Current password is incorrect.')
+        }
+      }
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -196,6 +234,7 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                   type={showCurrentPassword ? 'text' : 'password'}
                   placeholder="Enter current password"
                   value={currentPassword}
+                  autoComplete="current-password"
                   onChange={(event) => {
                     const nextCurrentPassword = event.target.value
                     setCurrentPassword(nextCurrentPassword)
@@ -221,6 +260,7 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                   type={showNewPassword ? 'text' : 'password'}
                   placeholder="Enter at least 8 characters"
                   value={newPassword}
+                  autoComplete="new-password"
                   onChange={(event) => {
                     const nextPassword = event.target.value
                     const nextStrength = getPasswordStrength(nextPassword)
@@ -265,7 +305,12 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                 aria-valuenow={newPassword ? strength.score : 0}
                 role="progressbar"
               >
-                <span className={visibleStrengthClass} style={{ width: newPassword ? strength.progressWidth : '0%' }}></span>
+                {Array.from({ length: 4 }, (_, index) => (
+                  <span
+                    key={index}
+                    className={`candidate-strength-segment ${index < strength.score ? `active ${strength.strengthClass}` : ''}`}
+                  />
+                ))}
               </div>
               <small>Hint: At least 8 character, use mixed case, numbers, and symbols.</small>
             </div>
@@ -278,6 +323,7 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="Re-type your new password"
                   value={confirmPassword}
+                  autoComplete="new-password"
                   onChange={(event) => {
                     setConfirmPassword(event.target.value)
                     if (confirmPasswordError) setConfirmPasswordError('')
@@ -311,18 +357,19 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
                   className="candidate-change-confirm-close"
                   onClick={closeSaveConfirm}
                   aria-label="Close change password confirmation"
+                  disabled={isSaving}
                 >
                   <i className="fa-solid fa-xmark"></i>
                 </button>
               </div>
-              <p>Are you sure you want to proceed? This action will trigger the next step in the recruitment workflow. Your changes will not be saved.</p>
+              <p>Are you sure you want to change your password? You will need to use the new password the next time you sign in.</p>
             </div>
             <div className="candidate-change-confirm-footer">
-              <button type="button" className="candidate-change-confirm-cancel" onClick={closeSaveConfirm}>
+              <button type="button" className="candidate-change-confirm-cancel" onClick={closeSaveConfirm} disabled={isSaving}>
                 Cancel
               </button>
-              <button type="button" className="candidate-change-confirm-action" onClick={confirmSavePassword}>
-                Confirm
+              <button type="button" className="candidate-change-confirm-action" onClick={confirmSavePassword} disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Confirm'}
               </button>
             </div>
           </section>
@@ -332,7 +379,7 @@ function CandidateChangePasswordView({ onBack }: { onBack: () => void }) {
   )
 }
 
-export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
+export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalPageProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [activePanel, setActivePanel] = useState<CandidatePanel>('dashboard')
@@ -465,7 +512,10 @@ export function CandidatePortalPage({ onLogout }: CandidatePortalPageProps) {
 
         <div className={`candidate-content ${activePanel === 'changePassword' ? 'candidate-content-settings' : ''}`}>
           {activePanel === 'changePassword' ? (
-            <CandidateChangePasswordView onBack={() => setActivePanel('dashboard')} />
+            <CandidateChangePasswordView
+              onBack={() => setActivePanel('dashboard')}
+              triggerToast={triggerToast}
+            />
           ) : (
             <>
           <section className="candidate-welcome">

@@ -20,10 +20,11 @@ import { authApi } from '../features/auth/services/authApi'
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = 'Account not found. Please check your email.'
 const forgotAccountNotFoundMessage = 'This email address is not registered in our system.'
-const forgotSystemErrorMessage = 'Error system. Please retry.'
+const systemErrorMessage = 'Error system. Please try again.'
 const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
 const expiredOtpMessage = 'OTP has expired. Please request a new one.'
 const invalidOtpMessage = 'Invalid OTP. Please retry.'
+const rememberedEmailStorageKey = 'jobfusion_remembered_email'
 type ForgotStep = 'email' | 'otp' | 'reset'
 
 function getAuthResponsePayload(response: any) {
@@ -103,25 +104,31 @@ function getOtpErrorMessage(message = '') {
   return isExpiredOtpError(message) ? expiredOtpMessage : invalidOtpMessage
 }
 
+function isSystemApiError(error: any) {
+  const status = Number(error?.status ?? 0)
+  return status === 0 || status >= 500
+}
+
 type LoginPageProps = {
   onGoToSignup: () => void
   onSignInSuccess: (email: string, keepLoggedIn: boolean) => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
-export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
-  const [email, setEmail] = useState('')
+export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: LoginPageProps) {
+  const rememberedEmail = window.localStorage.getItem(rememberedEmailStorageKey) || ''
+  const [email, setEmail] = useState(rememberedEmail)
   const [password, setPassword] = useState('')
   const [forgotEmail, setForgotEmail] = useState('')
   const [otp, setOtp] = useState(emptyOtp)
   const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [keepLoggedIn, setKeepLoggedIn] = useState(false)
+  const [keepLoggedIn, setKeepLoggedIn] = useState(Boolean(rememberedEmail))
   const [showPassword, setShowPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [showResetSuccess, setShowResetSuccess] = useState(false)
   const [forgotStep, setForgotStep] = useState<ForgotStep>('email')
   const [isLoading, setIsLoading] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
@@ -200,12 +207,19 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
         if (user) {
           storage.setItem('user_info', JSON.stringify(user))
         }
+        if (keepLoggedIn) {
+          window.localStorage.setItem(rememberedEmailStorageKey, email)
+        } else {
+          window.localStorage.removeItem(rememberedEmailStorageKey)
+        }
         onSignInSuccess(email, keepLoggedIn)
       } else {
         setPasswordError(incorrectPasswordMessage)
       }
     } catch (error: any) {
-      if (isAccountNotFoundError(error.message)) {
+      if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
+      } else if (isAccountNotFoundError(error.message)) {
         setEmailError('')
         setPasswordError(accountNotFoundMessage)
       } else {
@@ -235,13 +249,15 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
       } else if (isAccountNotFoundError(response?.message)) {
         setForgotEmailError(forgotAccountNotFoundMessage)
       } else {
-        setForgotEmailError(forgotSystemErrorMessage)
+        triggerToast?.(systemErrorMessage, 'error')
       }
     } catch (error: any) {
-      if (isAccountNotFoundError(error.message)) {
+      if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
+      } else if (isAccountNotFoundError(error.message)) {
         setForgotEmailError(forgotAccountNotFoundMessage)
       } else {
-        setForgotEmailError(forgotSystemErrorMessage)
+        triggerToast?.(systemErrorMessage, 'error')
       }
     } finally {
       setIsSendingCode(false)
@@ -324,7 +340,11 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
         setOtpError(getOtpErrorMessage(response?.message))
       }
     } catch (error: any) {
-      setOtpError(getOtpErrorMessage(error.message))
+      if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
+      } else {
+        setOtpError(getOtpErrorMessage(error.message))
+      }
     } finally {
       setIsSendingCode(false)
     }
@@ -358,18 +378,19 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
 
     setIsSendingCode(true)
     try {
-      const response: any = await authApi.resetPassword(forgotEmail, newPassword)
+      const response: any = await authApi.resetPassword(forgotEmail, otp.join(''), newPassword)
       if (response && response.success) {
-        setShowResetSuccess(true)
-        window.setTimeout(() => {
-          setShowResetSuccess(false)
-          handleCloseForgotPassword()
-        }, 1400)
+        handleCloseForgotPassword()
+        triggerToast?.('Password reset successfully.', 'success')
       } else {
-        setConfirmPasswordError(response.message || 'Password reset failed')
+        triggerToast?.(systemErrorMessage, 'error')
       }
     } catch (error: any) {
-      setConfirmPasswordError(error.message || 'Password reset failed. Please try again.')
+      if (isSystemApiError(error)) {
+        triggerToast?.(systemErrorMessage, 'error')
+      } else {
+        setConfirmPasswordError(error.message || 'Password reset failed. Please try again.')
+      }
     } finally {
       setIsSendingCode(false)
     }
@@ -383,7 +404,7 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
           <p>Enter your credentials to access your dashboard.</p>
         </header>
 
-        <form className="login-form" onSubmit={handleSubmit} noValidate>
+        <form className="login-form" onSubmit={handleSubmit} autoComplete="on" noValidate>
           <div className="field-group">
             <label htmlFor="email">Email Address</label>
             <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
@@ -469,12 +490,6 @@ export function LoginPage({ onGoToSignup, onSignInSuccess }: LoginPageProps) {
 
       {showForgotPassword && (
         <div className="auth-modal-overlay" role="presentation">
-          {showResetSuccess && (
-            <div className="auth-success-toast" role="alert" aria-live="polite">
-              <i className="fa-regular fa-square-check" aria-hidden="true"></i>
-              <span>Password reset successfully.</span>
-            </div>
-          )}
           <div
             className={`forgot-password-modal forgot-password-modal-${forgotStep}`}
             role="dialog"

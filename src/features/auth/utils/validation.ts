@@ -1,15 +1,49 @@
 export function validateEmail(value: string) {
   const normalizedValue = value.trim()
+  const invalidEmailMessage = 'Invalid email address. Please retry.'
 
   if (!normalizedValue) {
     return 'Please enter your email.'
   }
 
-  const emailRegex =
-    /^(?=.{1,254}$)(?=.{1,64}@)[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/
+  // Sign-up emails must use plain ASCII characters. This explicitly rejects
+  // Vietnamese diacritics and other Unicode characters that can resemble ASCII.
+  if (
+    normalizedValue !== value ||
+    normalizedValue.length > 254 ||
+    !/^[\p{ASCII}]+$/u.test(normalizedValue)
+  ) {
+    return invalidEmailMessage
+  }
 
-  if (normalizedValue !== value || !emailRegex.test(normalizedValue)) {
-    return 'Invalid email address. Please retry.'
+  const parts = normalizedValue.split('@')
+  if (parts.length !== 2) return invalidEmailMessage
+
+  const [localPart, domain] = parts
+  if (
+    !localPart ||
+    localPart.length > 64 ||
+    !/^[A-Za-z0-9._%+-]+$/.test(localPart) ||
+    localPart.startsWith('.') ||
+    localPart.endsWith('.') ||
+    localPart.includes('..')
+  ) {
+    return invalidEmailMessage
+  }
+
+  const domainLabels = domain.split('.')
+  const topLevelDomain = domainLabels.at(-1) ?? ''
+  const hasInvalidDomainLabel = domainLabels.some(
+    (label) =>
+      !label ||
+      label.length > 63 ||
+      !/^[A-Za-z0-9-]+$/.test(label) ||
+      label.startsWith('-') ||
+      label.endsWith('-'),
+  )
+
+  if (domainLabels.length < 2 || hasInvalidDomainLabel || !/^[A-Za-z]{2,}$/.test(topLevelDomain)) {
+    return invalidEmailMessage
   }
 
   return ''

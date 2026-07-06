@@ -89,6 +89,12 @@ export function AppRoutes() {
   const handleLogout = () => {
     window.localStorage.removeItem(AUTH_PAGE_STORAGE_KEY)
     window.sessionStorage.removeItem(AUTH_PAGE_STORAGE_KEY)
+    window.localStorage.removeItem('access_token')
+    window.localStorage.removeItem('refresh_token')
+    window.localStorage.removeItem('user_info')
+    window.sessionStorage.removeItem('access_token')
+    window.sessionStorage.removeItem('refresh_token')
+    window.sessionStorage.removeItem('user_info')
     window.location.hash = '#/login'
     triggerToast('Logged out successfully.')
   }
@@ -109,7 +115,7 @@ export function AppRoutes() {
     return (
       <>
         <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
-        <CandidatePortalPage onLogout={handleLogout} />
+        <CandidatePortalPage onLogout={handleLogout} triggerToast={triggerToast} />
       </>
     )
   }
@@ -120,6 +126,7 @@ export function AppRoutes() {
       <LoginPage
         onGoToSignup={() => { window.location.hash = '#/signup' }}
         onSignInSuccess={handleSignInSuccess}
+        triggerToast={triggerToast}
       />
     </>
   )

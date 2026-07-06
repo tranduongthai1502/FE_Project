@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-const API_URL = 'https://modifications-casting-discover-mesh.trycloudflare.com'
-// const API_URL = 'http://localhost:8080'
+//const API_URL = 'https://modifications-casting-discover-mesh.trycloudflare.com'
+ const API_URL = 'http://localhost:8080'
 
 const axiosClient = axios.create({
   baseURL: API_URL,
@@ -44,13 +44,14 @@ axiosClient.interceptors.response.use(
   },
   (error) => {
     const message = error.response?.data?.message || error.message || 'An error occurred'
+    const status = error.response?.status ?? 0
 
-    if (error.response?.status === 401) {
+    if (status === 401) {
       localStorage.removeItem('access_token')
       sessionStorage.removeItem('access_token')
     }
 
-    return Promise.reject(new Error(message))
+    return Promise.reject(Object.assign(new Error(message), { status }))
   }
 )
 

@@ -73,6 +73,7 @@ export function ResetPasswordForm({
             className={`form-input ${newPasswordError ? 'has-error' : ''}`}
             placeholder="Enter new password"
             value={newPassword}
+            autoComplete="new-password"
             onChange={(e) => {
               setNewPassword(e.target.value)
               if (newPasswordError) setNewPasswordError('')
@@ -101,6 +102,7 @@ export function ResetPasswordForm({
             className={`form-input ${confirmPasswordError ? 'has-error' : ''}`}
             placeholder="Re-type new password"
             value={confirmPassword}
+            autoComplete="new-password"
             onChange={(e) => {
               setConfirmPassword(e.target.value)
               if (confirmPasswordError) setConfirmPasswordError('')
@@ -128,11 +130,20 @@ export function ResetPasswordForm({
           </span>
         </div>
 
-        <div className="strength-bar-outer">
-          <div 
-            className={`strength-bar-inner ${strength.strengthClass}`} 
-            style={{ width: newPassword ? strength.progressWidth : '25%' }}
-          />
+        <div
+          className="strength-bar-outer"
+          role="progressbar"
+          aria-label="Password strength"
+          aria-valuemin={0}
+          aria-valuemax={4}
+          aria-valuenow={newPassword ? strength.score : 0}
+        >
+          {Array.from({ length: 4 }, (_, index) => (
+            <span
+              key={index}
+              className={`strength-bar-segment ${index < strength.score ? `active ${strength.strengthClass}` : ''}`}
+            />
+          ))}
         </div>
 
         <p className="requirements-hint">Hint: At least 8 characters, use mixed case, numbers, and symbols.</p>
