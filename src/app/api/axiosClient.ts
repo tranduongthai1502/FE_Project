@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 //const API_URL = 'https://modifications-casting-discover-mesh.trycloudflare.com'
-const API_URL = 'https://breakfast-town-html-integrity.trycloudflare.com'
+const API_URL = import.meta.env.VITE_BACKEND_API_URL || 'https://breakfast-town-html-integrity.trycloudflare.com'
 
 const axiosClient = axios.create({
   baseURL: API_URL,
