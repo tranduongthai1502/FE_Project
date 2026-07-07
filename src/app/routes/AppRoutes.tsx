@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { Toast } from '../../components/common/Toast'
 import { useToast } from '../../hooks/useToast'
 import { CandidatePortalPage } from '../../pages/CandidatePortalPage'
+import { LandingPage } from '../../pages/LandingPage'
 import { LoginPage } from '../../pages/LoginPage'
 import { SignupPage } from '../../pages/SignupPage'
 import { authApi } from '../../features/auth/services/authApi'
 
-type AppPage = 'login' | 'signup' | 'candidate'
+type AppPage = 'landing' | 'login' | 'signup' | 'candidate'
 const AUTH_PAGE_STORAGE_KEY = 'jobfusion_auth_page'
 
 function getSavedPage(): AppPage | null {
@@ -19,11 +20,14 @@ function getSavedPage(): AppPage | null {
 
 function getPageFromHash(): AppPage {
   if (typeof window === 'undefined') {
-    return 'login'
+    return 'landing'
   }
   const hash = window.location.hash
   if (hash === '#/signup') return 'signup'
   if (hash === '#/candidate') return 'candidate'
+  if (hash === '#/login') return 'login'
+  if (hash === '#/landingpage') return 'landing'
+  if (window.location.pathname === '/landingpage') return 'landing'
   return 'login'
 }
 
@@ -31,6 +35,11 @@ export function AppRoutes() {
   const [page, setPage] = useState<AppPage>(() => {
     const hashPage = getPageFromHash()
     const savedPage = getSavedPage()
+    const hasAuthHash = ['#/login', '#/signup', '#/candidate'].includes(window.location.hash)
+
+    if (!hasAuthHash && (window.location.pathname === '/' || window.location.pathname === '/landingpage')) {
+      return 'landing'
+    }
 
     if (savedPage) {
       if (hashPage === 'login' || hashPage === 'signup') {
@@ -49,13 +58,22 @@ export function AppRoutes() {
 
   useEffect(() => {
     const currentHashPage = getPageFromHash()
-    if (page !== currentHashPage) {
+    if (page === 'landing') {
+      if (window.location.pathname !== '/landingpage') {
+        window.history.replaceState(null, '', '/landingpage')
+      }
+    } else if (page !== currentHashPage) {
       window.location.hash = `#/${page}`
     }
 
     const handleHashChange = () => {
       const hashPage = getPageFromHash()
       const savedPage = getSavedPage()
+
+      if (hashPage === 'landing') {
+        setPage('landing')
+        return
+      }
 
       if (savedPage) {
         if (hashPage === 'login' || hashPage === 'signup') {
@@ -76,6 +94,14 @@ export function AppRoutes() {
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [page])
+
+  const navigateToAuthPage = (targetPage: 'login' | 'signup') => {
+    if (window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/')
+    }
+    window.location.hash = `#/${targetPage}`
+    setPage(targetPage)
+  }
 
   const handleSignInSuccess = (_email: string, keepLoggedIn: boolean) => {
     const targetPage = 'candidate'
@@ -112,12 +138,24 @@ export function AppRoutes() {
     }
   }
 
+  if (page === 'landing') {
+    return (
+      <>
+        <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
+        <LandingPage
+          onGoToLogin={() => navigateToAuthPage('login')}
+          onGoToSignup={() => navigateToAuthPage('signup')}
+        />
+      </>
+    )
+  }
+
   if (page === 'signup') {
     return (
       <>
         <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
         <SignupPage
-          onGoToSignin={() => { window.location.hash = '#/login' }}
+          onGoToSignin={() => navigateToAuthPage('login')}
           triggerToast={triggerToast}
         />
       </>
@@ -137,7 +175,7 @@ export function AppRoutes() {
     <>
       <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
       <LoginPage
-        onGoToSignup={() => { window.location.hash = '#/signup' }}
+        onGoToSignup={() => navigateToAuthPage('signup')}
         onSignInSuccess={handleSignInSuccess}
         triggerToast={triggerToast}
       />
