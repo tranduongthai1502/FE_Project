@@ -117,4 +117,4 @@ npm run preview
 
 - tài khoản demo 
 email: anhquocps@gmail.com
-mật khẩu: Anhquocps*1
+mật khẩu: Quoc12345*
