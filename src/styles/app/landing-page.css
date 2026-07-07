@@ -44,10 +44,18 @@
   font-weight: 800;
 }
 
+.footer-brand{
+  
+}
+
 .landing-brand strong,
 .footer-brand strong {
   font-size: 18px;
   font-weight: 800;
+}
+
+.footer-brand strong{
+  margin-left:10px;
 }
 
 .landing-nav-links {
@@ -167,6 +175,7 @@
   border-radius: 12px;
   background: #ffffff;
   color: #93260f;
+  font-weight: 900;
 }
 
 .landing-cta span {
@@ -180,6 +189,7 @@
   border-radius: 12px;
   background: transparent;
   color: #ffffff;
+  font-weight: 900;
 }
 
 .landing-demo span {

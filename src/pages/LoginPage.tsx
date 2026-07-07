@@ -32,6 +32,18 @@ function getAuthResponsePayload(response: any) {
   return response?.data && typeof response.data === 'object' ? response.data : response
 }
 
+function getAuthUser(payload: any) {
+  return payload?.user || payload?.user_info || payload?.userInfo || null
+}
+
+function normalizeUserRole(value?: string | null) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function getAuthUserRole(user: any) {
+  return normalizeUserRole(user?.user_role || user?.type)
+}
+
 function isLoginSuccessResponse(response: any) {
   const payload = getAuthResponsePayload(response)
   const success = response?.success ?? payload?.success
@@ -122,7 +134,7 @@ function isSystemApiError(error: any) {
 
 type LoginPageProps = {
   onGoToSignup: () => void
-  onSignInSuccess: (email: string, keepLoggedIn: boolean) => void
+  onSignInSuccess: (email: string, keepLoggedIn: boolean, userRole: string) => boolean
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
@@ -210,7 +222,13 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
       } else if (isLoginSuccessResponse(response)) {
         const token = getAuthToken(payload)
         const refreshToken = getRefreshToken(payload)
-        const user = payload?.user || payload?.user_info || payload?.userInfo
+        const user = getAuthUser(payload)
+        const userRole = getAuthUserRole(user)
+
+        if (!onSignInSuccess(email, keepLoggedIn, userRole)) {
+          return
+        }
+
         const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
         const inactiveStorage = keepLoggedIn ? window.sessionStorage : window.localStorage
         inactiveStorage.removeItem('access_token')
@@ -230,7 +248,6 @@ export function LoginPage({ onGoToSignup, onSignInSuccess, triggerToast }: Login
         } else {
           window.localStorage.removeItem(rememberedEmailStorageKey)
         }
-        onSignInSuccess(email, keepLoggedIn)
       } else {
         setPasswordError(incorrectPasswordMessage)
       }

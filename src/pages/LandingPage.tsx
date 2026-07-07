@@ -224,21 +224,27 @@ export function LandingPage({ onGoToLogin, onGoToSignup }: LandingPageProps) {
           <h2>Save up to 70% of hiring time</h2>
           <div className="benefit-list">
             <article>
-              <span>-&gt;</span>
+              <span aria-hidden="true">
+                <i className="fa-solid fa-arrow-right"></i>
+              </span>
               <div>
                 <h3>HR focuses on people</h3>
                 <p>AI handles repetitive work so your team can make the final decisions that matter.</p>
               </div>
             </article>
             <article>
-              <span>-&gt;</span>
+              <span aria-hidden="true">
+                <i className="fa-solid fa-arrow-right"></i>
+              </span>
               <div>
                 <h3>Higher-quality candidates</h3>
                 <p>Screen resumes accurately and run deeper pre-screening before interviews.</p>
               </div>
             </article>
             <article>
-              <span>-&gt;</span>
+              <span aria-hidden="true">
+                <i className="fa-solid fa-arrow-right"></i>
+              </span>
               <div>
                 <h3>Multi-tenant SaaS</h3>
                 <p>Manage multiple companies easily with detailed role-based permissions.</p>
