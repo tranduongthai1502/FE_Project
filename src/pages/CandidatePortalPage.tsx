@@ -50,6 +50,8 @@ type StoredUser = {
   name?: string | null
   email?: string | null
   avatar?: string | null
+  role?: string | null
+  userRole?: string | null
   job_title?: string | null
   jobTitle?: string | null
   headline?: string | null
@@ -80,7 +82,7 @@ function getUserInitials(name: string) {
 }
 
 function getUserSubtitle(user: StoredUser | null) {
-  return user?.job_title || user?.jobTitle || user?.headline || user?.user_role || user?.type || 'Candidate'
+  return user?.job_title || user?.jobTitle || user?.headline || user?.role || user?.userRole || user?.user_role || user?.type || 'Candidate'
 }
 
 function UserAvatar({ user, className }: { user: StoredUser | null; className: string }) {
