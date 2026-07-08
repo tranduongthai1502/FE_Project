@@ -73,7 +73,7 @@ npm install
 npm run dev
 ```
 
-Sau khi chay, Vite se hien thi URL dang nhu:
+Sau khi chay, Vite se hien thi URL dang nhu nay:
 
 ```text
 http://localhost:5173/
