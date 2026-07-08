@@ -24,7 +24,7 @@ export const authApi = {
   },
 
   async logout(refreshToken?: string) {
-    return axiosClient.post('/api/auth/logout', refreshToken ? { refresh_token: refreshToken } : {})
+    return axiosClient.post('/api/auth/logout', refreshToken ? { refresh_token: refreshToken, refreshToken } : {})
   },
 
   async refreshToken(refreshToken: string) {
@@ -35,11 +35,10 @@ export const authApi = {
   },
 
   async register(payload: RegisterPayload) {
-    // Chuyển đổi sang snake_case cho trường full_name
     const backendPayload = {
       email: payload.email,
       password: payload.password,
-      full_name: payload.fullName,
+      fullName: payload.fullName,
       phone: payload.phone,
     }
     return axiosClient.post('/api/auth/signup', backendPayload)

@@ -2,28 +2,85 @@ import { useState, useEffect } from 'react'
 import { Toast } from '../../components/common/Toast'
 import { useToast } from '../../hooks/useToast'
 import { CandidatePortalPage } from '../../pages/CandidatePortalPage'
+import { LandingPage } from '../../pages/LandingPage'
 import { LoginPage } from '../../pages/LoginPage'
+import { RoleDashboardPage } from '../../pages/RoleDashboardPage'
 import { SignupPage } from '../../pages/SignupPage'
 import { authApi } from '../../features/auth/services/authApi'
 
-type AppPage = 'login' | 'signup' | 'candidate'
+type AppPage = 'landing' | 'login' | 'signup' | 'candidate' | 'tenantAdmin' | 'superAdmin' | 'hr' | 'interviewer'
 const AUTH_PAGE_STORAGE_KEY = 'jobfusion_auth_page'
+const unsupportedRoleMessage = 'This role is not supported in the current frontend.'
+const authenticatedPages: AppPage[] = ['candidate', 'tenantAdmin', 'superAdmin', 'hr', 'interviewer']
+const authHashes = ['#/login', '#/signup', '#/candidate', '#/tenant-admin', '#/super-admin', '#/hr', '#/interviewer']
+
+function isAuthenticatedPage(value: string | null): value is AppPage {
+  return Boolean(value && authenticatedPages.includes(value as AppPage))
+}
+
+function getHashForPage(page: AppPage) {
+  const hashes: Record<AppPage, string> = {
+    landing: '#/landingpage',
+    login: '#/login',
+    signup: '#/signup',
+    candidate: '#/candidate',
+    tenantAdmin: '#/tenant-admin',
+    superAdmin: '#/super-admin',
+    hr: '#/hr',
+    interviewer: '#/interviewer',
+  }
+
+  return hashes[page]
+}
+
+function getPathForPage(page: AppPage) {
+  const paths: Partial<Record<AppPage, string>> = {
+    superAdmin: '/super-admin/dashboard',
+    tenantAdmin: '/tenant-admin',
+    hr: '/hr',
+    interviewer: '/interviewer',
+  }
+
+  return paths[page]
+}
+
+function setBrowserLocationForPage(page: AppPage) {
+  const path = getPathForPage(page)
+
+  if (path) {
+    window.history.pushState(null, '', path)
+    return
+  }
+
+  window.location.hash = getHashForPage(page)
+}
 
 function getSavedPage(): AppPage | null {
   if (typeof window === 'undefined') {
     return null
   }
   const savedPage = window.localStorage.getItem(AUTH_PAGE_STORAGE_KEY) || window.sessionStorage.getItem(AUTH_PAGE_STORAGE_KEY)
-  return savedPage === 'candidate' ? savedPage : null
+  return isAuthenticatedPage(savedPage) ? savedPage : null
 }
 
 function getPageFromHash(): AppPage {
   if (typeof window === 'undefined') {
-    return 'login'
+    return 'landing'
   }
   const hash = window.location.hash
   if (hash === '#/signup') return 'signup'
   if (hash === '#/candidate') return 'candidate'
+  if (hash === '#/tenant-admin') return 'tenantAdmin'
+  if (hash === '#/super-admin') return 'superAdmin'
+  if (hash === '#/hr') return 'hr'
+  if (hash === '#/interviewer') return 'interviewer'
+  if (hash === '#/login') return 'login'
+  if (hash === '#/landingpage') return 'landing'
+  if (window.location.pathname === '/super-admin' || window.location.pathname.startsWith('/super-admin/')) return 'superAdmin'
+  if (window.location.pathname === '/tenant-admin') return 'tenantAdmin'
+  if (window.location.pathname === '/hr') return 'hr'
+  if (window.location.pathname === '/interviewer') return 'interviewer'
+  if (window.location.pathname === '/landingpage') return 'landing'
   return 'login'
 }
 
@@ -31,6 +88,11 @@ export function AppRoutes() {
   const [page, setPage] = useState<AppPage>(() => {
     const hashPage = getPageFromHash()
     const savedPage = getSavedPage()
+    const hasAuthHash = authHashes.includes(window.location.hash)
+
+    if (!hasAuthHash && (window.location.pathname === '/' || window.location.pathname === '/landingpage')) {
+      return 'landing'
+    }
 
     if (savedPage) {
       if (hashPage === 'login' || hashPage === 'signup') {
@@ -49,17 +111,31 @@ export function AppRoutes() {
 
   useEffect(() => {
     const currentHashPage = getPageFromHash()
-    if (page !== currentHashPage) {
-      window.location.hash = `#/${page}`
+    if (page === 'landing') {
+      if (window.location.pathname !== '/landingpage') {
+        window.history.replaceState(null, '', '/landingpage')
+      }
+    } else if (page === 'superAdmin') {
+      if (window.location.pathname === '/super-admin' || !window.location.pathname.startsWith('/super-admin')) {
+        window.history.replaceState(null, '', '/super-admin/dashboard')
+      }
+    } else if (page !== currentHashPage) {
+      window.location.hash = getHashForPage(page)
     }
 
-    const handleHashChange = () => {
+    const handleRouteChange = () => {
       const hashPage = getPageFromHash()
       const savedPage = getSavedPage()
 
+      if (hashPage === 'landing') {
+        setPage('landing')
+        return
+      }
+
       if (savedPage) {
         if (hashPage === 'login' || hashPage === 'signup') {
-          window.location.hash = `#/${savedPage}`
+          setBrowserLocationForPage(savedPage)
+          setPage(savedPage)
         } else {
           setPage(hashPage)
         }
@@ -73,18 +149,68 @@ export function AppRoutes() {
       }
     }
 
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+    window.addEventListener('hashchange', handleRouteChange)
+    window.addEventListener('popstate', handleRouteChange)
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange)
+      window.removeEventListener('popstate', handleRouteChange)
+    }
   }, [page])
 
-  const handleSignInSuccess = (_email: string, keepLoggedIn: boolean) => {
-    const targetPage = 'candidate'
+  const navigateToAuthPage = (targetPage: 'login' | 'signup') => {
+    const nextUrl = `/#/${targetPage}`
+    const shouldKeepLandingBehind = page === 'landing' || window.location.pathname === '/landingpage'
+
+    if (shouldKeepLandingBehind) {
+      window.history.pushState(null, '', nextUrl)
+    } else {
+      window.history.replaceState(null, '', nextUrl)
+    }
+
+    setPage(targetPage)
+  }
+
+  const getPageForUserRole = (userRole: string): AppPage | null => {
+    const normalizedRole = userRole.trim().toLowerCase().replace(/[\s-]+/g, '_')
+
+    if (normalizedRole === 'candidate') {
+      return 'candidate'
+    }
+
+    if (['tenant_admin', 'tenantadmin', 'admin'].includes(normalizedRole)) {
+      return 'tenantAdmin'
+    }
+
+    if (['super_admin', 'superadmin'].includes(normalizedRole)) {
+      return 'superAdmin'
+    }
+
+    if (['hr', 'recruiter', 'tenant_hr', 'tenant_recruiter'].includes(normalizedRole)) {
+      return 'hr'
+    }
+
+    if (normalizedRole === 'interviewer') {
+      return 'interviewer'
+    }
+
+    return null
+  }
+
+  const handleSignInSuccess = (_email: string, keepLoggedIn: boolean, userRole: string) => {
+    const targetPage = getPageForUserRole(userRole)
+
+    if (!targetPage) {
+      triggerToast(unsupportedRoleMessage, 'error')
+      return false
+    }
 
     const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
     storage.setItem(AUTH_PAGE_STORAGE_KEY, targetPage)
     
-    window.location.hash = `#/${targetPage}`
+    setBrowserLocationForPage(targetPage)
+    setPage(targetPage)
     triggerToast('Logged in successfully.')
+    return true
   }
 
   const clearAuthStorage = () => {
@@ -112,12 +238,24 @@ export function AppRoutes() {
     }
   }
 
+  if (page === 'landing') {
+    return (
+      <>
+        <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
+        <LandingPage
+          onGoToLogin={() => navigateToAuthPage('login')}
+          onGoToSignup={() => navigateToAuthPage('signup')}
+        />
+      </>
+    )
+  }
+
   if (page === 'signup') {
     return (
       <>
         <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
         <SignupPage
-          onGoToSignin={() => { window.location.hash = '#/login' }}
+          onGoToSignin={() => navigateToAuthPage('login')}
           triggerToast={triggerToast}
         />
       </>
@@ -133,11 +271,20 @@ export function AppRoutes() {
     )
   }
 
+  if (page === 'tenantAdmin' || page === 'superAdmin' || page === 'hr' || page === 'interviewer') {
+    return (
+      <>
+        <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
+        <RoleDashboardPage role={page} onLogout={handleLogout} />
+      </>
+    )
+  }
+
   return (
     <>
       <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
       <LoginPage
-        onGoToSignup={() => { window.location.hash = '#/signup' }}
+        onGoToSignup={() => navigateToAuthPage('signup')}
         onSignInSuccess={handleSignInSuccess}
         triggerToast={triggerToast}
       />
