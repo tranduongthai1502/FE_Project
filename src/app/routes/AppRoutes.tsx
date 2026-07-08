@@ -288,7 +288,7 @@ export function AppRoutes() {
     return (
       <>
         <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
-        <RoleDashboardPage role={page} onLogout={handleLogout} />
+        <RoleDashboardPage role={page} onLogout={handleLogout} triggerToast={triggerToast} />
       </>
     )
   }

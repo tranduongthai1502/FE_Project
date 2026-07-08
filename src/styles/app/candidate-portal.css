@@ -2,19 +2,79 @@
   width: 100%;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   background: #f4f5fb;
   color: #14213d;
   font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
 }
 
 .candidate-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: 312px;
   display: flex;
   flex-direction: column;
   /* gap: 26px; */
-  padding: 32px 16px 18px;
+  padding: 18px 20px 20px;
   background: #fff;
   border-right: 1px solid #eed8d2;
+  box-shadow: 18px 0 45px rgba(15, 23, 42, 0.08);
+  transform: translateX(-100%);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.candidate-sidebar.is-open {
+  transform: translateX(0);
+}
+
+.candidate-sidebar-trigger {
+  position: fixed;
+  top: 18px;
+  left: 14px;
+  z-index: 31;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #df3100;
+  cursor: pointer;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: none;
+  transition: left 0.22s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.candidate-sidebar-trigger.is-open {
+  left: 264px;
+}
+
+.candidate-sidebar-trigger i {
+  font-size: 15px;
+}
+
+.candidate-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.candidate-brand-logo {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #ffffff;
+  background: #df3100;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 900;
 }
 
 .candidate-brand strong {
@@ -28,6 +88,10 @@
 .candidate-profile-card span {
   color: #6b5b55;
   font-size: 12px;
+}
+
+.candidate-brand .candidate-brand-logo {
+  color: #ffffff;
 }
 
 .candidate-nav {
@@ -60,12 +124,12 @@
 .candidate-profile-card {
   margin-top: auto;
   display: grid;
-  grid-template-columns: 38px 1fr;
-  gap: 10px;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
   align-items: center;
-  padding: 14px;
+  padding: 18px;
   background: #eef2ff;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .candidate-avatar,
@@ -80,8 +144,8 @@
 }
 
 .candidate-avatar {
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 3px solid #dd5a35;
   overflow: hidden;
@@ -97,18 +161,29 @@
 
 .candidate-profile-card strong {
   display: block;
-  font-size: 12px;
+  color: #0f1d36;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.candidate-profile-card span {
+  display: block;
+  margin-top: 6px;
+  color: #6b4d45;
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 .candidate-profile-card button {
   grid-column: 1 / -1;
-  height: 39px;
+  height: 48px;
   color: #fff;
-  background: #df3100;
+  background: linear-gradient(90deg, #cf2b00 0%, #ff9279 100%);
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   font: inherit;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -118,6 +193,7 @@
   min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  padding-left: 56px;
 }
 
 .candidate-topbar {
@@ -902,24 +978,24 @@
 /* Sidebar Logout Button Styling */
 .candidate-logout-btn {
   grid-column: 1 / -1;
-  height: 38px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   color: #fff;
-  background: #dc2626 !important;
+  background: linear-gradient(90deg, #cf2b00 0%, #ff9279 100%) !important;
   border: 0;
   border-radius: 8px;
   font: inherit;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .candidate-logout-btn:hover {
-  background: #b91c1c !important;
+  background: linear-gradient(90deg, #b82600 0%, #f57f66 100%) !important;
 }
 
 .candidate-logout-btn:active {
@@ -1254,10 +1330,6 @@
 @media (max-width: 1100px) {
   .candidate-page {
     grid-template-columns: 1fr;
-  }
-
-  .candidate-sidebar {
-    display: none;
   }
 
   .candidate-tabs {
