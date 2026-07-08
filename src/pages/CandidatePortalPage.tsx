@@ -481,9 +481,12 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
 export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalPageProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activePanel, setActivePanel] = useState<CandidatePanel>('dashboard')
   const [user] = useState<StoredUser | null>(() => getStoredUser())
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLElement | null>(null)
+  const sidebarTriggerRef = useRef<HTMLButtonElement | null>(null)
   const displayName = getUserDisplayName(user)
   const firstName = displayName.trim().split(/\s+/)[0] || displayName
   const userSubtitle = getUserSubtitle(user)
@@ -503,19 +506,42 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
       }
+
+      if (
+        isSidebarOpen &&
+        sidebarRef.current &&
+        sidebarTriggerRef.current &&
+        !sidebarRef.current.contains(event.target as Node) &&
+        !sidebarTriggerRef.current.contains(event.target as Node)
+      ) {
+        setIsSidebarOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [])
+  }, [isSidebarOpen])
 
   return (
     <main className="candidate-page">
-      <aside className="candidate-sidebar">
+      <button
+        type="button"
+        ref={sidebarTriggerRef}
+        className={`candidate-sidebar-trigger ${isSidebarOpen ? 'is-open' : ''}`}
+        aria-label={isSidebarOpen ? 'Close candidate navigation' : 'Open candidate navigation'}
+        aria-expanded={isSidebarOpen}
+        onClick={() => setIsSidebarOpen((value) => !value)}
+      >
+        <i className={`fa-solid ${isSidebarOpen ? 'fa-chevron-left' : 'fa-chevron-right'}`}></i>
+      </button>
+      <aside ref={sidebarRef} className={`candidate-sidebar ${isSidebarOpen ? 'is-open' : ''}`}>
         <div className="candidate-brand">
-          <strong>JobFusion Pro</strong>
-          <span>Candidate Portal</span>
+          <span className="candidate-brand-logo">J</span>
+          <div>
+            <strong>JobFusion Pro</strong>
+            <span>Candidate Portal</span>
+          </div>
         </div>
 
         <nav className="candidate-nav" aria-label="Candidate navigation">
@@ -542,8 +568,8 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
             <strong>{displayName}</strong>
             <span>{userSubtitle}</span>
           </div>
-          <button type="button" onClick={openLogoutConfirm} className="candidate-logout-btn">
-            <i className="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+          <button type="button" className="candidate-logout-btn" aria-label="Post New Job">
+            Post New Job
           </button>
         </div>
       </aside>
