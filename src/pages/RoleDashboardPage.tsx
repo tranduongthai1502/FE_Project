@@ -12,14 +12,16 @@ type StoredUser = {
   name?: string | null
   email?: string | null
   avatar?: string | null
+  role?: string | null
+  userRole?: string | null
   user_role?: string | null
   type?: string | null
 }
 
 type CreateTenantForm = {
   companyName: string
-  subscriptionPlan: string
   domain: string
+  planId: string
   adminFullName: string
   adminEmail: string
 }
@@ -179,13 +181,13 @@ function CreateTenantModal({
             </label>
 
             <label>
-              <span>Subscription Plan</span>
-              <select value={form.subscriptionPlan} onChange={(event) => onChange('subscriptionPlan', event.target.value)}>
-                <option value="professional">Professional - $499/mo</option>
-                <option value="enterprise">Enterprise - Custom</option>
-                <option value="growth">Growth - $299/mo</option>
-                <option value="starter">Starter - $99/mo</option>
-              </select>
+              <span>Plan ID</span>
+              <input
+                value={form.planId}
+                onChange={(event) => onChange('planId', event.target.value)}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                required
+              />
             </label>
 
             <label className="tenant-domain-field">
@@ -442,8 +444,8 @@ function TenantManagementView() {
   const [tenantError, setTenantError] = useState('')
   const [tenantForm, setTenantForm] = useState<CreateTenantForm>({
     companyName: '',
-    subscriptionPlan: 'professional',
     domain: '',
+    planId: '',
     adminFullName: '',
     adminEmail: '',
   })
@@ -468,8 +470,8 @@ function TenantManagementView() {
       await adminApi.createTenant(tenantForm)
       setTenantForm({
         companyName: '',
-        subscriptionPlan: 'professional',
         domain: '',
+        planId: '',
         adminFullName: '',
         adminEmail: '',
       })
