@@ -48,7 +48,6 @@ async function refreshAccessToken() {
   if (!refreshToken) return ''
 
   const response = await refreshClient.post('/api/auth/refresh-token', {
-    refresh_token: refreshToken,
     refreshToken,
   })
   const payload = getAuthResponsePayload(response.data)
