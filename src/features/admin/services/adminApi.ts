@@ -12,13 +12,13 @@ export const adminApi = {
   async createTenant(payload: CreateTenantPayload) {
     const tenantSlug = payload.domain.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
     const backendPayload = {
-      company_name: payload.companyName.trim(),
-      subscription_plan: payload.subscriptionPlan,
+      companyName: payload.companyName.trim(),
+      subscriptionPlan: payload.subscriptionPlan,
       domain: tenantSlug,
-      tenant_domain: `${tenantSlug}.jobfusion.ai`,
-      admin_full_name: payload.adminFullName.trim(),
-      admin_email: payload.adminEmail.trim(),
-      user_role: 'tenant_admin',
+      tenantDomain: `${tenantSlug}.jobfusion.ai`,
+      adminFullName: payload.adminFullName.trim(),
+      adminEmail: payload.adminEmail.trim(),
+      userRole: 'tenant_admin',
       type: 'TENANT_ADMIN',
     }
     return axiosClient.post('/api/tenants', backendPayload)
