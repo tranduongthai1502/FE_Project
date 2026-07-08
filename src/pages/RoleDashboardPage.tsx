@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { adminApi } from '../features/admin/services/adminApi'
+import { adminApi, type CreatePlanPayload, type SubscriptionPlan, type Tenant } from '../features/admin/services/adminApi'
 
 type RoleDashboardPageProps = {
   role: 'superAdmin' | 'tenantAdmin' | 'hr' | 'interviewer'
   onLogout: () => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
 type StoredUser = {
@@ -143,6 +144,8 @@ function MetricCard({ icon, label, value, note }: { icon: string; label: string;
 function CreateTenantModal({
   form,
   error,
+  plans,
+  isLoadingPlans,
   isSubmitting,
   onChange,
   onClose,
@@ -150,6 +153,8 @@ function CreateTenantModal({
 }: {
   form: CreateTenantForm
   error: string
+  plans: SubscriptionPlan[]
+  isLoadingPlans: boolean
   isSubmitting: boolean
   onChange: (field: keyof CreateTenantForm, value: string) => void
   onClose: () => void
@@ -181,13 +186,20 @@ function CreateTenantModal({
             </label>
 
             <label>
-              <span>Plan ID</span>
-              <input
+              <span>Subscription Plan</span>
+              <select
                 value={form.planId}
                 onChange={(event) => onChange('planId', event.target.value)}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                disabled={isLoadingPlans || isSubmitting}
                 required
-              />
+              >
+                <option value="">{isLoadingPlans ? 'Loading plans...' : 'Select a plan'}</option>
+                {plans.map((plan) => (
+                  <option value={plan.id} key={plan.id}>
+                    {plan.priceLabel ? `${plan.name} - ${plan.priceLabel}` : plan.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="tenant-domain-field">
@@ -438,10 +450,45 @@ function TenantAdminDashboard({ onLogout }: { onLogout: () => void }) {
   )
 }
 
-function TenantManagementView() {
+function ConfirmActionModal({
+  isSubmitting,
+  onCancel,
+  onConfirm,
+}: {
+  isSubmitting: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <div className="tenant-confirm-backdrop" role="presentation">
+      <section className="tenant-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="tenant-confirm-title">
+        <header>
+          <h2 id="tenant-confirm-title">Confirm Action</h2>
+          <button type="button" onClick={onCancel} aria-label="Close confirm dialog" disabled={isSubmitting}>
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </header>
+        <p>Are you sure you want to proceed? This action will trigger the next step in the recruitment workflow. Your changes will not be saved.</p>
+        <footer>
+          <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+          <button type="button" onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? 'Confirming...' : 'Confirm'}</button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function TenantManagementView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
+  const [isLoadingTenants, setIsLoadingTenants] = useState(false)
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
+  const [tenantListError, setTenantListError] = useState('')
+  const [tenants, setTenants] = useState<Tenant[]>([])
+  const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [tenantForm, setTenantForm] = useState<CreateTenantForm>({
     companyName: '',
     domain: '',
@@ -449,6 +496,67 @@ function TenantManagementView() {
     adminFullName: '',
     adminEmail: '',
   })
+
+  useEffect(() => {
+    let isActive = true
+    setIsLoadingTenants(true)
+    setTenantListError('')
+
+    adminApi.getTenants()
+      .then((items) => {
+        if (isActive) {
+          setTenants(items)
+        }
+      })
+      .catch((error) => {
+        if (isActive) {
+          setTenantListError(error instanceof Error ? error.message : 'Load tenants failed')
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingTenants(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [refreshTenantsKey])
+
+  useEffect(() => {
+    if (!isCreateModalOpen || subscriptionPlans.length > 0) return
+
+    let isActive = true
+    setIsLoadingPlans(true)
+    setTenantError('')
+
+    adminApi.getSubscriptionPlans()
+      .then((plans) => {
+        if (!isActive) return
+        setSubscriptionPlans(plans)
+        setTenantForm((current) => ({
+          ...current,
+          planId: current.planId || plans[0]?.id || '',
+        }))
+        if (plans.length === 0) {
+          setTenantError('No subscription plans found.')
+        }
+      })
+      .catch((error) => {
+        if (!isActive) return
+        setTenantError(error instanceof Error ? error.message : 'Load subscription plans failed')
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingPlans(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [isCreateModalOpen, subscriptionPlans.length])
 
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
     setTenantError('')
@@ -458,12 +566,23 @@ function TenantManagementView() {
   const closeCreateModal = () => {
     if (isSubmittingTenant) return
     setIsCreateModalOpen(false)
+    setIsCreateConfirmOpen(false)
     setTenantError('')
   }
 
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTenantError('')
+
+    if (!tenantForm.planId) {
+      setTenantError('Please select a subscription plan.')
+      return
+    }
+
+    setIsCreateConfirmOpen(true)
+  }
+
+  const confirmCreateTenant = async () => {
     setIsSubmittingTenant(true)
 
     try {
@@ -476,8 +595,13 @@ function TenantManagementView() {
         adminEmail: '',
       })
       setIsCreateModalOpen(false)
+      setIsCreateConfirmOpen(false)
+      setRefreshTenantsKey((value) => value + 1)
+      triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
+      setIsCreateConfirmOpen(false)
       setTenantError(error instanceof Error ? error.message : 'Create tenant failed')
+      triggerToast?.('Error system. Please try again', 'error')
     } finally {
       setIsSubmittingTenant(false)
     }
@@ -510,31 +634,420 @@ function TenantManagementView() {
 
       <div className="role-metrics tenant-management-metrics">
         <MetricCard icon="fa-arrow-trend-up" label="Total Revenue" value="$124.5k" />
-        <MetricCard icon="fa-building" label="Active Tenants" value="1,204" />
-        <MetricCard icon="fa-circle-notch" label="Average Usage" value="68.2%" />
-        <MetricCard icon="fa-triangle-exclamation" label="Churn Rate" value="0.8%" />
+        <MetricCard icon="fa-building" label="Active Tenants" value={String(tenants.filter((tenant) => tenant.status.toLowerCase() === 'active').length)} />
+        <MetricCard icon="fa-circle-notch" label="Total Tenants" value={String(tenants.length)} />
+        <MetricCard icon="fa-triangle-exclamation" label="Inactive Tenants" value={String(tenants.filter((tenant) => tenant.status.toLowerCase() !== 'active').length)} />
       </div>
 
-      <section className="tenant-empty-state">
-        <i className="fa-solid fa-triangle-exclamation"></i>
-        <strong>No tenants found.</strong>
+      <section className="tenant-list-table-card">
+        <div className="tenant-list-table-row tenant-list-table-head">
+          <span>Full Name</span>
+          <span>Subscription Plan</span>
+          <span>Expiration Date</span>
+          <span>User Quota</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+
+        {isLoadingTenants ? (
+          <div className="tenant-list-table-state">Loading tenants...</div>
+        ) : tenantListError ? (
+          <div className="tenant-list-table-state error">{tenantListError}</div>
+        ) : tenants.length === 0 ? (
+          <div className="tenant-list-table-state">No tenants found.</div>
+        ) : (
+          tenants.map((tenant) => {
+            const isActive = tenant.status.toLowerCase() === 'active'
+            const quotaPercent = tenant.userQuotaLimit > 0
+              ? Math.min(100, Math.round((tenant.userQuotaUsed / tenant.userQuotaLimit) * 100))
+              : 0
+
+            return (
+              <div className="tenant-list-table-row" key={tenant.id}>
+                <strong>{tenant.name}</strong>
+                <span className="tenant-plan-name">{tenant.subscriptionPlan}</span>
+                <span>{tenant.expirationDate}</span>
+                <span className="tenant-quota">
+                  <i><b style={{ width: `${quotaPercent}%` }} /></i>
+                  {tenant.userQuotaLimit > 0 ? `${tenant.userQuotaUsed}/${tenant.userQuotaLimit}` : `${tenant.userQuotaUsed}`}
+                </span>
+                <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : tenant.status}</em>
+                <button type="button" aria-label={`Edit ${tenant.name}`}><i className="fa-regular fa-pen-to-square"></i></button>
+              </div>
+            )
+          })
+        )}
+
+        <footer>
+          <span>Showing {tenants.length} Tenant{tenants.length === 1 ? '' : 's'}</span>
+          <div>
+            <button type="button" disabled><i className="fa-solid fa-chevron-left"></i></button>
+            <button type="button" className="active">1</button>
+            <button type="button" disabled><i className="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </footer>
       </section>
 
       {isCreateModalOpen && (
         <CreateTenantModal
           form={tenantForm}
           error={tenantError}
+          plans={subscriptionPlans}
+          isLoadingPlans={isLoadingPlans}
           isSubmitting={isSubmittingTenant}
           onChange={updateTenantForm}
           onClose={closeCreateModal}
           onSubmit={handleCreateTenant}
         />
       )}
+
+      {isCreateConfirmOpen && (
+        <ConfirmActionModal
+          isSubmitting={isSubmittingTenant}
+          onCancel={() => {
+            if (!isSubmittingTenant) setIsCreateConfirmOpen(false)
+          }}
+          onConfirm={confirmCreateTenant}
+        />
+      )}
     </div>
   )
 }
 
-function SubscriptionPlansView() {
+const planFeatureDefaults = [
+  {
+    key: 'aiJdGenerator',
+    code: 'AI_JD_GENERATOR',
+    icon: 'fa-briefcase-medical',
+    title: 'AI JD Generator',
+    description: 'Auto-generate job descriptions with AI.',
+    enabled: true,
+  },
+  {
+    key: 'aiCvParsing',
+    code: 'AI_CV_PARSING',
+    icon: 'fa-file-code',
+    title: 'AI CV Parsing',
+    description: 'Extract data from resumes automatically.',
+    enabled: true,
+  },
+  {
+    key: 'chatbotScreening',
+    code: 'CHATBOT_SCREENING',
+    icon: 'fa-message',
+    title: 'Chatbot Screening',
+    description: 'Interactive AI screening for candidates.',
+    enabled: false,
+  },
+  {
+    key: 'dssAnalytics',
+    code: 'DSS_ANALYTICS',
+    icon: 'fa-chart-simple',
+    title: 'DSS Analytics',
+    description: 'Advanced Decision Support System data.',
+    enabled: true,
+  },
+  {
+    key: 'prioritySupport',
+    code: 'PRIORITY_SUPPORT',
+    icon: 'fa-headset',
+    title: 'Priority Support',
+    description: '24/7 dedicated account manager.',
+    enabled: true,
+  },
+  {
+    key: 'customBranding',
+    code: 'CUSTOM_BRANDING',
+    icon: 'fa-window-maximize',
+    title: 'Custom Branding',
+    description: 'White-label options for dashboards.',
+    enabled: false,
+  },
+  {
+    key: 'apiAccess',
+    code: 'API_ACCESS',
+    icon: 'fa-arrows-spin',
+    title: 'API Access',
+    description: 'Full access to JobFusion endpoints.',
+    enabled: true,
+  },
+  {
+    key: 'multiRegionSupport',
+    code: 'MULTI_REGION_SUPPORT',
+    icon: 'fa-earth-americas',
+    title: 'Multi-Region Support',
+    description: 'Manage hiring across multiple countries.',
+    enabled: false,
+  },
+]
+
+function CreatePlanView({
+  onBack,
+  onCreated,
+  triggerToast,
+}: {
+  onBack: () => void
+  onCreated: () => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
+}) {
+  const [planName, setPlanName] = useState('')
+  const [description, setDescription] = useState('')
+  const [monthlyPrice, setMonthlyPrice] = useState('')
+  const [maxStaffAccount, setMaxStaffAccount] = useState('')
+  const [maxActiveJobPosting, setMaxActiveJobPosting] = useState('')
+  const [features, setFeatures] = useState(planFeatureDefaults)
+  const [isStaffUnlimited, setIsStaffUnlimited] = useState(false)
+  const [isJobsUnlimited, setIsJobsUnlimited] = useState(false)
+  const [planError, setPlanError] = useState('')
+  const [isSavingPlan, setIsSavingPlan] = useState(false)
+  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
+
+  const toggleFeature = (key: string) => {
+    setFeatures((current) => current.map((feature) => (
+      feature.key === key ? { ...feature, enabled: !feature.enabled } : feature
+    )))
+  }
+
+  const handleCreatePlan = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPlanError('')
+    setIsCreateConfirmOpen(true)
+  }
+
+  const confirmCreatePlan = async () => {
+    const payload: CreatePlanPayload = {
+      "name": planName,
+      "description": description,
+      "monthlyPrice": Number(monthlyPrice || 0),
+      "maxStaffAccount": isStaffUnlimited ? 0 : Number(maxStaffAccount || 0),
+      "staffAccountUnlimited": isStaffUnlimited,
+      "maxActiveJobPosting": isJobsUnlimited ? 0 : Number(maxActiveJobPosting || 0),
+      "activeJobPostingUnlimited": isJobsUnlimited,
+      "features": features.map((feature) => ({
+        "key": feature.code,
+        "status": feature.enabled ? 'ENABLED' : 'DISABLED',
+      })),
+    }
+
+    setIsSavingPlan(true)
+    try {
+      await adminApi.createPlan(payload)
+      setIsCreateConfirmOpen(false)
+      triggerToast?.('Subscription plan saved successfully', 'success')
+      onCreated()
+    } catch (error) {
+      setIsCreateConfirmOpen(false)
+      setPlanError(error instanceof Error ? error.message : 'Create plan failed')
+      triggerToast?.('Error system. Please try again.', 'error')
+    } finally {
+      setIsSavingPlan(false)
+    }
+  }
+
+  return (
+    <form className="role-content create-plan-content" onSubmit={handleCreatePlan}>
+      <div className="tenant-breadcrumb create-plan-breadcrumb">
+        <i className="fa-solid fa-house"></i>
+        <span>Home</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <span>Subscription Plans</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <strong>Create New Plan</strong>
+      </div>
+
+      <header className="create-plan-title">
+        <h1>Create New Plan</h1>
+        <p>Configure a new subscription tier and define its features and limitations to match specific enterprise requirements.</p>
+      </header>
+
+      <section className="create-plan-card">
+        <h2><i className="fa-regular fa-file-lines"></i> Plan Details</h2>
+        <div className="create-plan-divider" />
+
+        <div className="create-plan-details-grid">
+          <label>
+            <span>Plan Name</span>
+            <input
+              value={planName}
+              onChange={(event) => setPlanName(event.target.value)}
+              placeholder="Plan Name"
+              maxLength={255}
+              required
+            />
+          </label>
+
+          <label>
+            <span>Monthly Price</span>
+            <div className="price-input">
+              <span>$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={monthlyPrice}
+                onChange={(event) => setMonthlyPrice(event.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </label>
+
+          <label className="description-field">
+            <span>Short Description</span>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Description,....."
+              maxLength={1000}
+            />
+          </label>
+
+          <div className="limit-fields">
+            <label>
+              <span>Max Staff Accounts</span>
+              <div className="limit-input">
+                <input
+                  type="number"
+                  min="0"
+                  value={maxStaffAccount}
+                  onChange={(event) => setMaxStaffAccount(event.target.value)}
+                  placeholder="0"
+                  disabled={isStaffUnlimited}
+                />
+                <button
+                  type="button"
+                  className={`mini-toggle ${isStaffUnlimited ? 'active' : ''}`}
+                  onClick={() => setIsStaffUnlimited((value) => !value)}
+                  aria-pressed={isStaffUnlimited}
+                >
+                  <span />
+                </button>
+                <em>Unlimited</em>
+              </div>
+            </label>
+
+            <label>
+              <span>Max Active Job Postings</span>
+              <div className="limit-input">
+                <input
+                  type="number"
+                  min="0"
+                  value={maxActiveJobPosting}
+                  onChange={(event) => setMaxActiveJobPosting(event.target.value)}
+                  placeholder="0"
+                  disabled={isJobsUnlimited}
+                />
+                <button
+                  type="button"
+                  className={`mini-toggle ${isJobsUnlimited ? 'active' : ''}`}
+                  onClick={() => setIsJobsUnlimited((value) => !value)}
+                  aria-pressed={isJobsUnlimited}
+                >
+                  <span />
+                </button>
+                <em>Unlimited</em>
+              </div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="create-plan-card">
+        <h2><i className="fa-solid fa-wand-magic-sparkles"></i> Feature Permissions</h2>
+        <div className="create-plan-divider" />
+
+        <div className="feature-permission-grid">
+          {features.map((feature) => (
+            <article className="feature-permission-card" key={feature.key}>
+              <div className="feature-icon"><i className={`fa-solid ${feature.icon}`}></i></div>
+              <button
+                type="button"
+                className={`feature-toggle ${feature.enabled ? 'active' : ''}`}
+                onClick={() => toggleFeature(feature.key)}
+                aria-pressed={feature.enabled}
+                aria-label={`Toggle ${feature.title}`}
+              >
+                <span />
+              </button>
+              <strong>{feature.title}</strong>
+              <p>{feature.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {planError && <p className="create-plan-error">{planError}</p>}
+
+      <footer className="create-plan-actions">
+        <button type="button" onClick={onBack} disabled={isSavingPlan}>Cancel</button>
+        <button type="submit" disabled={isSavingPlan}>{isSavingPlan ? 'Saving...' : 'Save'}</button>
+      </footer>
+
+      {isCreateConfirmOpen && (
+        <ConfirmActionModal
+          isSubmitting={isSavingPlan}
+          onCancel={() => {
+            if (!isSavingPlan) setIsCreateConfirmOpen(false)
+          }}
+          onConfirm={confirmCreatePlan}
+        />
+      )}
+    </form>
+  )
+}
+
+function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
+  const [activeView, setActiveView] = useState<'list' | 'create'>('list')
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false)
+  const [planListError, setPlanListError] = useState('')
+  const [refreshPlansKey, setRefreshPlansKey] = useState(0)
+
+  useEffect(() => {
+    if (activeView !== 'list') return
+
+    let isActive = true
+    setIsLoadingPlans(true)
+    setPlanListError('')
+
+    adminApi.getSubscriptionPlans()
+      .then((items) => {
+        if (isActive) {
+          setPlans(items)
+        }
+      })
+      .catch((error) => {
+        if (isActive) {
+          setPlanListError(error instanceof Error ? error.message : 'Load subscription plans failed')
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingPlans(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, refreshPlansKey])
+
+  const activePlansCount = plans.filter((plan) => plan.status.toLowerCase() === 'active').length
+  const topTier = plans.reduce<SubscriptionPlan | null>((current, plan) => (
+    !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
+  ), null)
+  const averageRevenue = plans.length
+    ? Math.round(plans.reduce((total, plan) => total + plan.monthlyPrice, 0) / plans.length)
+    : 0
+  const handlePlanCreated = () => {
+    setActiveView('list')
+    setRefreshPlansKey((value) => value + 1)
+  }
+
+  if (activeView === 'create') {
+    return <CreatePlanView onBack={() => setActiveView('list')} onCreated={handlePlanCreated} triggerToast={triggerToast} />
+  }
+
   return (
     <div className="role-content subscription-plans-content">
       <div className="tenant-breadcrumb">
@@ -549,23 +1062,23 @@ function SubscriptionPlansView() {
           <h1>Subscription Plans</h1>
           <p>Manage tier configurations and global recruitment limits for platform customers.</p>
         </div>
-        <button type="button">Create New Plan</button>
+        <button type="button" onClick={() => setActiveView('create')}>Create New Plan</button>
       </div>
 
       <div className="role-metrics subscription-plan-metrics">
         <article className="role-metric subscription-plan-card">
           <small>Active Plans</small>
-          <strong>12</strong>
-          <em><i className="fa-solid fa-arrow-trend-up"></i> +2 this month</em>
+          <strong>{activePlansCount}</strong>
+          <em><i className="fa-solid fa-arrow-trend-up"></i> {plans.length} total plans</em>
         </article>
         <article className="role-metric subscription-plan-card">
           <small>Top Tier</small>
-          <strong>Enterprise</strong>
-          <p><i className="fa-solid fa-users"></i> 452 Subscribers</p>
+          <strong>{topTier?.name || '-'}</strong>
+          <p><i className="fa-solid fa-users"></i> {topTier?.staffAccountUnlimited ? 'Unlimited' : `${topTier?.maxStaffAccount || 0} staff`} accounts</p>
         </article>
         <article className="role-metric subscription-plan-card">
           <small>Avg. Revenue/Plan</small>
-          <strong>$428</strong>
+          <strong>${averageRevenue}</strong>
           <p><i className="fa-solid fa-wand-magic-sparkles"></i> Tier Optimization: High</p>
         </article>
         <article className="role-metric subscription-plan-card recommendation">
@@ -575,9 +1088,47 @@ function SubscriptionPlansView() {
         </article>
       </div>
 
-      <section className="tenant-empty-state subscription-empty-state">
-        <i className="fa-solid fa-triangle-exclamation"></i>
-        <strong>No subscription plans found.</strong>
+      <section className="subscription-table-card">
+        <div className="subscription-table-row subscription-table-head">
+          <span>Plan Name</span>
+          <span>Monthly Price</span>
+          <span>Max Staff Accounts</span>
+          <span>Max Job Postings</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+
+        {isLoadingPlans ? (
+          <div className="subscription-table-state">Loading subscription plans...</div>
+        ) : planListError ? (
+          <div className="subscription-table-state error">{planListError}</div>
+        ) : plans.length === 0 ? (
+          <div className="subscription-table-state">No subscription plans found.</div>
+        ) : (
+          plans.map((plan) => {
+            const isActive = plan.status.toLowerCase() === 'active'
+
+            return (
+              <div className="subscription-table-row" key={plan.id}>
+                <strong>{plan.name}</strong>
+                <span>{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / mo`}</span>
+                <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
+                <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
+                <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : plan.status}</em>
+                <button type="button" aria-label={`Edit ${plan.name}`}><i className="fa-regular fa-pen-to-square"></i></button>
+              </div>
+            )
+          })
+        )}
+
+        <footer>
+          <span>Showing {plans.length} plan{plans.length === 1 ? '' : 's'}</span>
+          <div>
+            <button type="button" disabled><i className="fa-solid fa-chevron-left"></i></button>
+            <button type="button" className="active">1</button>
+            <button type="button" disabled><i className="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </footer>
       </section>
     </div>
   )
@@ -663,8 +1214,12 @@ function PromptManagementView() {
   )
 }
 
-function SuperAdminDashboard({ onLogout }: { onLogout: () => void }) {
+function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<SuperAdminView>(() => getInitialSuperAdminView())
+  const [dashboardTenants, setDashboardTenants] = useState<Tenant[]>([])
+  const [dashboardPlans, setDashboardPlans] = useState<SubscriptionPlan[]>([])
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false)
+  const [dashboardError, setDashboardError] = useState('')
 
   useEffect(() => {
     const handlePopState = () => {
@@ -674,6 +1229,35 @@ function SuperAdminDashboard({ onLogout }: { onLogout: () => void }) {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
+
+  useEffect(() => {
+    if (activeView !== 'dashboard') return
+
+    let isActive = true
+    setIsDashboardLoading(true)
+    setDashboardError('')
+
+    Promise.all([adminApi.getTenants(), adminApi.getSubscriptionPlans()])
+      .then(([tenants, plans]) => {
+        if (!isActive) return
+        setDashboardTenants(tenants)
+        setDashboardPlans(plans)
+      })
+      .catch((error) => {
+        if (isActive) {
+          setDashboardError(error instanceof Error ? error.message : 'Load dashboard failed')
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsDashboardLoading(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView])
 
   const selectView = (view: SuperAdminView) => {
     setActiveView(view)
@@ -685,52 +1269,85 @@ function SuperAdminDashboard({ onLogout }: { onLogout: () => void }) {
     active: item.view === activeView,
     onClick: () => selectView(item.view as SuperAdminView),
   }))
+  const activeTenants = dashboardTenants.filter((tenant) => tenant.status.toLowerCase() === 'active')
+  const expiringTenantCount = dashboardTenants.filter((tenant) => {
+    const expiresAt = Date.parse(tenant.expirationDate)
+    if (Number.isNaN(expiresAt)) return false
+    const daysUntilExpiration = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24)
+    return daysUntilExpiration >= 0 && daysUntilExpiration <= 30
+  }).length
+  const planByName = new Map(dashboardPlans.map((plan) => [plan.name.toLowerCase(), plan]))
+  const monthlyRecurringRevenue = dashboardTenants.reduce((total, tenant) => {
+    const plan = planByName.get(tenant.subscriptionPlan.toLowerCase())
+    return total + (plan?.monthlyPrice || 0)
+  }, 0)
+  const tenantCountsByPlan = dashboardTenants.reduce<Record<string, number>>((counts, tenant) => {
+    const planName = tenant.subscriptionPlan || '-'
+    counts[planName] = (counts[planName] || 0) + 1
+    return counts
+  }, {})
+  const tenantPlanRows = Object.entries(tenantCountsByPlan)
+    .sort(([, countA], [, countB]) => countB - countA)
+    .slice(0, 4)
+  const maxTenantPlanCount = Math.max(1, ...tenantPlanRows.map(([, count]) => count))
+  const platformStaffAccounts = dashboardTenants.reduce((total, tenant) => total + tenant.userQuotaUsed, 0)
 
   return (
     <DashboardShell navItems={navItems} subtitle="Super Admin" onLogout={onLogout}>
       {activeView === 'tenantManagement' ? (
-        <TenantManagementView />
+        <TenantManagementView triggerToast={triggerToast} />
       ) : activeView === 'subscriptionPlans' ? (
-        <SubscriptionPlansView />
+        <SubscriptionPlansView triggerToast={triggerToast} />
       ) : activeView === 'promptManagement' ? (
         <PromptManagementView />
       ) : activeView === 'settings' ? (
         <AccountSettingsView onBack={() => selectView('dashboard')} />
       ) : (
         <div className="role-content">
+        {dashboardError && <p className="create-plan-error">{dashboardError}</p>}
         <div className="role-metrics four">
-          <MetricCard icon="fa-building" label="Total Tenants" value="1,204" note="+4.2%" />
-          <MetricCard icon="fa-bolt" label="Active Tenants" value="1,180" note="+2.1%" />
-          <MetricCard icon="fa-money-bill-trend-up" label="Monthly Recurring Revenue" value="$124,500" note="+22k" />
-          <MetricCard icon="fa-triangle-exclamation" label="Tenants expiring within 30 days" value="12" />
+          <MetricCard icon="fa-building" label="Total Tenants" value={isDashboardLoading ? '...' : String(dashboardTenants.length)} />
+          <MetricCard icon="fa-bolt" label="Active Tenants" value={isDashboardLoading ? '...' : String(activeTenants.length)} />
+          <MetricCard icon="fa-money-bill-trend-up" label="Monthly Recurring Revenue" value={isDashboardLoading ? '...' : `$${monthlyRecurringRevenue.toLocaleString()}`} />
+          <MetricCard icon="fa-triangle-exclamation" label="Tenants expiring within 30 days" value={isDashboardLoading ? '...' : String(expiringTenantCount)} />
         </div>
         <div className="role-grid super-grid">
           <section className="role-panel tenant-table">
-            <div className="role-panel-head"><h2>Recent Tenants</h2><a href="#tenants">View All</a></div>
-            {['Velocity AI', 'Quanto Recruits', 'GreenGrid Solar', 'Nexus Media', 'TechFlow'].map((name, index) => (
-              <article key={name}>
-                <strong>{name}</strong><span>{index % 2 ? 'PRO PLAN' : 'ENTERPRISE'}</span><em>{index === 4 ? 'Inactive' : 'Active'}</em>
-                <i className="fa-regular fa-eye"></i><i className="fa-regular fa-trash-can"></i>
-              </article>
-            ))}
+            <div className="role-panel-head"><h2>Recent Tenants</h2><button type="button" onClick={() => selectView('tenantManagement')}>View All</button></div>
+            {isDashboardLoading ? (
+              <p>Loading tenants...</p>
+            ) : dashboardTenants.length === 0 ? (
+              <p>No tenants found.</p>
+            ) : (
+              dashboardTenants.slice(0, 5).map((tenant) => (
+                <article key={tenant.id}>
+                  <strong>{tenant.name}</strong><span>{tenant.subscriptionPlan}</span><em>{tenant.status}</em>
+                  <i className="fa-regular fa-eye"></i><i className="fa-regular fa-pen-to-square"></i>
+                </article>
+              ))
+            )}
           </section>
           <section className="role-panel plan-bars">
             <h2>Tenants by Plan</h2>
-            {['Enterprise', 'Pro', 'Basic', 'Free'].map((label, index) => (
-              <div className="bar-row" key={label}><span>{label}</span><strong>{[245, 482, 312, 165][index]}</strong><i style={{ width: `${[38, 68, 45, 22][index]}%` }} /></div>
-            ))}
-            <div className="quick-actions"><button>Manage Subscriptions</button><button>Create New Tenant</button><button>Edit System Prompts</button></div>
+            {isDashboardLoading ? (
+              <p>Loading plans...</p>
+            ) : tenantPlanRows.length === 0 ? (
+              <p>No tenant plan data.</p>
+            ) : (
+              tenantPlanRows.map(([label, count]) => (
+                <div className="bar-row" key={label}><span>{label}</span><strong>{count}</strong><i style={{ width: `${Math.max(8, (count / maxTenantPlanCount) * 100)}%` }} /></div>
+              ))
+            )}
+            <div className="quick-actions"><button onClick={() => selectView('subscriptionPlans')}>Manage Subscriptions</button><button onClick={() => selectView('tenantManagement')}>Create New Tenant</button><button onClick={() => selectView('promptManagement')}>Edit System Prompts</button></div>
           </section>
           <section className="role-panel prompt-panel">
-            <div className="role-panel-head"><h2>System Prompts Status</h2><small>Update: 2h ago</small></div>
-            {['JD Generator', 'DSS Analytics', 'CV Parsing Engine'].map((name, index) => (
-              <article key={name}><strong>{name}</strong><span>{index === 1 ? 'Stale Pipeline' : 'Optimal'}</span><button>{index === 1 ? 'Update Now' : 'Edit'}</button></article>
-            ))}
+            <div className="role-panel-head"><h2>System Prompts Status</h2><small>Live API not connected</small></div>
+            <p>No prompt status data found.</p>
           </section>
           <section className="role-panel activity-panel">
             <h2>Platform Activity (24h)</h2>
-            <div className="activity-grid"><span>Staff Accounts <strong>4,120</strong></span><span>CVs Processed <strong>124,582</strong></span><span>Job Postings <strong>12,402</strong></span><span>Emails Sent <strong>892,110</strong></span></div>
-            <footer>System Healthy: Global AWS Load 14%</footer>
+            <div className="activity-grid"><span>Staff Accounts <strong>{platformStaffAccounts}</strong></span><span>CVs Processed <strong>0</strong></span><span>Job Postings <strong>0</strong></span><span>Emails Sent <strong>0</strong></span></div>
+            <footer>{dashboardError ? 'System status unavailable' : 'System data loaded from backend'}</footer>
           </section>
         </div>
       </div>
@@ -811,8 +1428,8 @@ function InterviewerDashboard({ onLogout }: { onLogout: () => void }) {
   )
 }
 
-export function RoleDashboardPage({ role, onLogout }: RoleDashboardPageProps) {
-  if (role === 'superAdmin') return <SuperAdminDashboard onLogout={onLogout} />
+export function RoleDashboardPage({ role, onLogout, triggerToast }: RoleDashboardPageProps) {
+  if (role === 'superAdmin') return <SuperAdminDashboard onLogout={onLogout} triggerToast={triggerToast} />
   if (role === 'tenantAdmin') return <TenantAdminDashboard onLogout={onLogout} />
   if (role === 'interviewer') return <InterviewerDashboard onLogout={onLogout} />
   return <HrDashboard onLogout={onLogout} />

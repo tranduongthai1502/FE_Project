@@ -115,6 +115,14 @@ npm run preview
 - Du lieu dashboard va bang bieu dang duoc khai bao truc tiep trong component/flow de phuc vu demo UI.
 - Khi tich hop backend that, nen thay cac mock service trong `src/features/auth/services` va `src/features/admin/services` bang request HTTP toi API.
 
-- tài khoản demo 
+- tài khoản demo candidate
 email: anhquocps@gmail.com
 mật khẩu: Quoc12345*
+
+- tài khoản demo super admin 
+email: dienpro0708@gmail.com
+mật khẩu: Dien@2004
+
+- tài khoản demo tenant admin
+email: chau65990@gmail.com
+mật khẩu: $peAE7FF6t@!
