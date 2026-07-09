@@ -44,6 +44,15 @@ const navItems = [
 
 type CandidatePanel = 'dashboard' | 'changePassword'
 
+function getInitialCandidatePanel(): CandidatePanel {
+  if (typeof window === 'undefined') return 'dashboard'
+  return window.location.hash === '#/candidate/change-password' ? 'changePassword' : 'dashboard'
+}
+
+function getCandidatePanelHash(panel: CandidatePanel) {
+  return panel === 'changePassword' ? '#/candidate/change-password' : '#/candidate'
+}
+
 type StoredUser = {
   full_name?: string | null
   fullName?: string | null
@@ -172,7 +181,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
 
   const confirmCancelChanges = () => {
     setShowCancelConfirm(false)
-    onBack()
+    resetForm()
   }
 
   const confirmSavePassword = async () => {
@@ -408,7 +417,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
             </div>
 
             <div className="candidate-change-password-actions">
-              <button type="button" className="candidate-password-cancel" onClick={resetForm}>Cancel</button>
+              <button type="button" className="candidate-password-cancel" onClick={openCancelConfirm}>Cancel</button>
               <button type="submit" className="candidate-password-save">Save Changes</button>
             </div>
           </form>
@@ -482,7 +491,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
   const [showDropdown, setShowDropdown] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [activePanel, setActivePanel] = useState<CandidatePanel>('dashboard')
+  const [activePanel, setActivePanel] = useState<CandidatePanel>(() => getInitialCandidatePanel())
   const [user] = useState<StoredUser | null>(() => getStoredUser())
   const dropdownRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement | null>(null)
@@ -496,47 +505,46 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
     setShowLogoutConfirm(true)
   }
 
+  const selectPanel = (panel: CandidatePanel) => {
+    setActivePanel(panel)
+    const nextHash = getCandidatePanelHash(panel)
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, '', nextHash)
+    }
+  }
+
   const confirmLogout = () => {
     setShowLogoutConfirm(false)
     onLogout()
   }
 
   useEffect(() => {
+    function handleHashChange() {
+      setActivePanel(getInitialCandidatePanel())
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    window.addEventListener('popstate', handleHashChange)
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('popstate', handleHashChange)
+    }
+  }, [])
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
-      }
-
-      if (
-        isSidebarOpen &&
-        sidebarRef.current &&
-        sidebarTriggerRef.current &&
-        !sidebarRef.current.contains(event.target as Node) &&
-        !sidebarTriggerRef.current.contains(event.target as Node)
-      ) {
-        setIsSidebarOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [isSidebarOpen])
+  }, [])
 
   return (
-    <main className="candidate-page">
-      <button
-        type="button"
-        ref={sidebarTriggerRef}
-        className={`candidate-sidebar-trigger ${isSidebarOpen ? 'is-open' : ''}`}
-        aria-label={isSidebarOpen ? 'Close candidate navigation' : 'Open candidate navigation'}
-        aria-expanded={isSidebarOpen}
-        onClick={() => setIsSidebarOpen((value) => !value)}
-      >
-        <span className="material-symbols-outlined" aria-hidden="true">
-          {isSidebarOpen ? 'arrow_menu_close' : 'arrow_menu_open'}
-        </span>
-      </button>
+    <main className={`candidate-page ${isSidebarOpen ? 'is-sidebar-open' : ''}`}>
       <aside ref={sidebarRef} className={`candidate-sidebar ${isSidebarOpen ? 'is-open' : ''}`}>
         <div className="candidate-brand">
           <span className="candidate-brand-logo">J</span>
@@ -554,7 +562,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
               className={`candidate-nav-item ${activePanel === 'dashboard' && item.active ? 'active' : ''}`}
               onClick={() => {
                 if (item.active) {
-                  setActivePanel('dashboard')
+                  selectPanel('dashboard')
                 }
               }}
             >
@@ -578,6 +586,19 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
 
       <section className="candidate-main">
         <header className="candidate-topbar">
+          <button
+            type="button"
+            ref={sidebarTriggerRef}
+            className={`candidate-sidebar-trigger ${isSidebarOpen ? 'is-open' : ''}`}
+            aria-label={isSidebarOpen ? 'Close candidate navigation' : 'Open candidate navigation'}
+            aria-expanded={isSidebarOpen}
+            onClick={() => setIsSidebarOpen((value) => !value)}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {isSidebarOpen ? 'arrow_menu_close' : 'arrow_menu_open'}
+            </span>
+          </button>
+
           <div className="candidate-search">
             <i className="fa-solid fa-magnifying-glass"></i>
             <input type="search" placeholder="Search jobs, documents..." aria-label="Search jobs and documents" />
@@ -620,7 +641,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
                     <span>Profile</span>
                   </button>
                   <button type="button" className="dropdown-item" onClick={() => {
-                    setActivePanel('changePassword')
+                    selectPanel('changePassword')
                     setShowDropdown(false)
                   }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -644,7 +665,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
         <div className={`candidate-content ${activePanel === 'changePassword' ? 'candidate-content-settings' : ''}`}>
           {activePanel === 'changePassword' ? (
             <CandidateChangePasswordView
-              onBack={() => setActivePanel('dashboard')}
+              onBack={() => selectPanel('dashboard')}
               triggerToast={triggerToast}
             />
           ) : (

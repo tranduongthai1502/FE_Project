@@ -88,7 +88,7 @@ function getPageFromHash(): AppPage {
   }
   const hash = window.location.hash
   if (hash === '#/signup') return 'signup'
-  if (hash === '#/candidate') return 'candidate'
+  if (hash === '#/candidate' || hash.startsWith('#/candidate/')) return 'candidate'
   if (hash === '#/tenant-admin') return 'tenantAdmin'
   if (hash === '#/super-admin') return 'superAdmin'
   if (hash === '#/hr') return 'hr'
@@ -103,11 +103,15 @@ function getPageFromHash(): AppPage {
   return 'login'
 }
 
+function isKnownAuthHash(hash: string) {
+  return authHashes.includes(hash) || hash.startsWith('#/candidate/')
+}
+
 export function AppRoutes() {
   const [page, setPage] = useState<AppPage>(() => {
     const hashPage = getPageFromHash()
     const savedPage = getSavedPage()
-    const hasAuthHash = authHashes.includes(window.location.hash)
+    const hasAuthHash = isKnownAuthHash(window.location.hash)
 
     if (!hasAuthHash && (window.location.pathname === '/' || window.location.pathname === '/landingpage')) {
       return 'landing'
