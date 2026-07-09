@@ -50,6 +50,8 @@ type StoredUser = {
   name?: string | null
   email?: string | null
   avatar?: string | null
+  role?: string | null
+  userRole?: string | null
   job_title?: string | null
   jobTitle?: string | null
   headline?: string | null
@@ -80,7 +82,7 @@ function getUserInitials(name: string) {
 }
 
 function getUserSubtitle(user: StoredUser | null) {
-  return user?.job_title || user?.jobTitle || user?.headline || user?.user_role || user?.type || 'Candidate'
+  return user?.job_title || user?.jobTitle || user?.headline || user?.role || user?.userRole || user?.user_role || user?.type || 'Candidate'
 }
 
 function UserAvatar({ user, className }: { user: StoredUser | null; className: string }) {
@@ -479,9 +481,12 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
 export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalPageProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activePanel, setActivePanel] = useState<CandidatePanel>('dashboard')
   const [user] = useState<StoredUser | null>(() => getStoredUser())
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLElement | null>(null)
+  const sidebarTriggerRef = useRef<HTMLButtonElement | null>(null)
   const displayName = getUserDisplayName(user)
   const firstName = displayName.trim().split(/\s+/)[0] || displayName
   const userSubtitle = getUserSubtitle(user)
@@ -501,19 +506,44 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
       }
+
+      if (
+        isSidebarOpen &&
+        sidebarRef.current &&
+        sidebarTriggerRef.current &&
+        !sidebarRef.current.contains(event.target as Node) &&
+        !sidebarTriggerRef.current.contains(event.target as Node)
+      ) {
+        setIsSidebarOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [])
+  }, [isSidebarOpen])
 
   return (
     <main className="candidate-page">
-      <aside className="candidate-sidebar">
+      <button
+        type="button"
+        ref={sidebarTriggerRef}
+        className={`candidate-sidebar-trigger ${isSidebarOpen ? 'is-open' : ''}`}
+        aria-label={isSidebarOpen ? 'Close candidate navigation' : 'Open candidate navigation'}
+        aria-expanded={isSidebarOpen}
+        onClick={() => setIsSidebarOpen((value) => !value)}
+      >
+        <span className="material-symbols-outlined" aria-hidden="true">
+          {isSidebarOpen ? 'arrow_menu_close' : 'arrow_menu_open'}
+        </span>
+      </button>
+      <aside ref={sidebarRef} className={`candidate-sidebar ${isSidebarOpen ? 'is-open' : ''}`}>
         <div className="candidate-brand">
-          <strong>JobFusion Pro</strong>
-          <span>Candidate Portal</span>
+          <span className="candidate-brand-logo">J</span>
+          <div>
+            <strong>JobFusion Pro</strong>
+            <span>Candidate Portal</span>
+          </div>
         </div>
 
         <nav className="candidate-nav" aria-label="Candidate navigation">
@@ -540,8 +570,8 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
             <strong>{displayName}</strong>
             <span>{userSubtitle}</span>
           </div>
-          <button type="button" onClick={openLogoutConfirm} className="candidate-logout-btn">
-            <i className="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+          <button type="button" className="candidate-logout-btn" aria-label="Post New Job">
+            Post New Job
           </button>
         </div>
       </aside>

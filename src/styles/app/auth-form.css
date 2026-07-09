@@ -53,7 +53,7 @@
 }
 
 .login-page:not(.signup-page) .form-header p {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .login-page:not(.signup-page) .login-form {
@@ -61,11 +61,11 @@
 }
 
 .login-page:not(.signup-page) .form-shell {
-  width: min(620px, 100%);
+  width: min(660px, 100%);
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap {
-  height: 42px;
+  height: 46px;
   box-sizing: border-box;
   background: #fffdfd;
   border-radius: 4px;
@@ -94,7 +94,7 @@
   padding-left: 34px;
   padding-right: 48px;
   background: transparent;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill,
@@ -126,6 +126,12 @@
 
 .login-page:not(.signup-page) .field-group {
   gap: 7px;
+}
+
+.login-page:not(.signup-page) .field-group label,
+.login-page:not(.signup-page) .label-row label,
+.login-page:not(.signup-page) .text-link-button {
+  font-size: 14px;
 }
 
 .field-group label,
@@ -483,7 +489,7 @@
 }
 
 .forgot-password-modal-reset {
-  width: min(344px, 100%);
+  width: min(536px, 100%);
   min-height: 580px;
   padding: 28px 24px;
 }

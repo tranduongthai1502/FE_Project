@@ -6,7 +6,6 @@ Theo dac ta he thong, JobFusion huong toi viec tu dong hoa phieu tuyen dung tu d
 
 ## Tinh nang hien co trong frontend
 
-- Man hinh dang nhap va dang ky tai khoan.
 - Dashboard JobFusion voi sidebar, header, thong bao toast va menu tai khoan.
 - Bo chuyen vai tro demo gom Super Admin, Tenant Admin, HR, Interviewer va Candidate.
 - Super Admin: xem tong quan he thong, quan ly tenant, goi dich vu, prompt va cai dat.
@@ -73,7 +72,7 @@ npm install
 npm run dev
 ```
 
-Sau khi chay, Vite se hien thi URL dang nhu:
+Sau khi chay, Vite se hien thi URL dang nhu nay:
 
 ```text
 http://localhost:5173/
@@ -115,6 +114,14 @@ npm run preview
 - Du lieu dashboard va bang bieu dang duoc khai bao truc tiep trong component/flow de phuc vu demo UI.
 - Khi tich hop backend that, nen thay cac mock service trong `src/features/auth/services` va `src/features/admin/services` bang request HTTP toi API.
 
-- tài khoản demo 
+- tài khoản demo candidate
 email: anhquocps@gmail.com
 mật khẩu: Quoc12345*
+
+- tài khoản demo super admin 
+email: dienpro0708@gmail.com
+mật khẩu: Dien@2004
+
+- tài khoản demo tenant admin
+email: chau65990@gmail.com
+mật khẩu: $peAE7FF6t@!

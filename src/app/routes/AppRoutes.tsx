@@ -13,6 +13,25 @@ const AUTH_PAGE_STORAGE_KEY = 'jobfusion_auth_page'
 const unsupportedRoleMessage = 'This role is not supported in the current frontend.'
 const authenticatedPages: AppPage[] = ['candidate', 'tenantAdmin', 'superAdmin', 'hr', 'interviewer']
 const authHashes = ['#/login', '#/signup', '#/candidate', '#/tenant-admin', '#/super-admin', '#/hr', '#/interviewer']
+const backendRoleConstants = {
+  superAdmin: 'Super Admin',
+  tenantAdmin: 'Tenant Admin',
+  hr: 'HR',
+  interviewer: 'Interviewer',
+  candidate: 'Candidate',
+}
+
+function normalizeRole(value: string) {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, '_')
+}
+
+const pageByBackendRole: Record<string, AppPage> = {
+  [normalizeRole(backendRoleConstants.superAdmin)]: 'superAdmin',
+  [normalizeRole(backendRoleConstants.tenantAdmin)]: 'tenantAdmin',
+  [normalizeRole(backendRoleConstants.hr)]: 'hr',
+  [normalizeRole(backendRoleConstants.interviewer)]: 'interviewer',
+  [normalizeRole(backendRoleConstants.candidate)]: 'candidate',
+}
 
 function isAuthenticatedPage(value: string | null): value is AppPage {
   return Boolean(value && authenticatedPages.includes(value as AppPage))
@@ -171,29 +190,23 @@ export function AppRoutes() {
   }
 
   const getPageForUserRole = (userRole: string): AppPage | null => {
-    const normalizedRole = userRole.trim().toLowerCase().replace(/[\s-]+/g, '_')
+    const normalizedRole = normalizeRole(userRole)
+    const backendRolePage = pageByBackendRole[normalizedRole]
 
-    if (normalizedRole === 'candidate') {
-      return 'candidate'
+    if (backendRolePage) {
+      return backendRolePage
     }
 
-    if (['tenant_admin', 'tenantadmin', 'admin'].includes(normalizedRole)) {
-      return 'tenantAdmin'
+    const legacyRolePages: Record<string, AppPage> = {
+      tenantadmin: 'tenantAdmin',
+      admin: 'tenantAdmin',
+      superadmin: 'superAdmin',
+      recruiter: 'hr',
+      tenant_hr: 'hr',
+      tenant_recruiter: 'hr',
     }
 
-    if (['super_admin', 'superadmin'].includes(normalizedRole)) {
-      return 'superAdmin'
-    }
-
-    if (['hr', 'recruiter', 'tenant_hr', 'tenant_recruiter'].includes(normalizedRole)) {
-      return 'hr'
-    }
-
-    if (normalizedRole === 'interviewer') {
-      return 'interviewer'
-    }
-
-    return null
+    return legacyRolePages[normalizedRole] || null
   }
 
   const handleSignInSuccess = (_email: string, keepLoggedIn: boolean, userRole: string) => {
@@ -275,7 +288,7 @@ export function AppRoutes() {
     return (
       <>
         <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
-        <RoleDashboardPage role={page} onLogout={handleLogout} />
+        <RoleDashboardPage role={page} onLogout={handleLogout} triggerToast={triggerToast} />
       </>
     )
   }

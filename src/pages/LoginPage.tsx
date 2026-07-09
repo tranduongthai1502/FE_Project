@@ -41,7 +41,7 @@ function normalizeUserRole(value?: string | null) {
 }
 
 function getAuthUserRole(user: any) {
-  return normalizeUserRole(user?.user_role || user?.type)
+  return normalizeUserRole(user?.role || user?.userRole || user?.user_role || user?.type)
 }
 
 function isLoginSuccessResponse(response: any) {

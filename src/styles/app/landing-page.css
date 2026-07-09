@@ -729,6 +729,119 @@
   text-decoration: none;
 }
 
+.landing-brand strong,
+.footer-brand strong {
+  font-size: 22px;
+}
+
+.landing-nav-links a,
+.landing-login {
+  font-size: 16px;
+}
+
+.landing-primary {
+  font-size: 16px;
+}
+
+.landing-pill {
+  font-size: 16px;
+}
+
+.landing-hero h1 {
+  font-size: clamp(54px, 6vw, 82px);
+}
+
+.landing-hero p {
+  font-size: 22px;
+}
+
+.landing-cta,
+.landing-demo,
+.landing-final button {
+  font-size: 19px;
+}
+
+.landing-trust {
+  font-size: 16px;
+}
+
+.landing-logos {
+  font-size: 19px;
+}
+
+.landing-logos span:nth-child(2) {
+  font-size: 24px;
+}
+
+.landing-section-heading span {
+  font-size: 14px;
+}
+
+.landing-section-heading h2,
+.landing-process h2,
+.landing-benefits h2,
+.landing-roles h2,
+.landing-final h2 {
+  font-size: clamp(36px, 3.6vw, 50px);
+}
+
+.landing-feature-card h3 {
+  font-size: 24px;
+}
+
+.landing-feature-card p {
+  font-size: 17px;
+}
+
+.process-step span {
+  font-size: 26px;
+}
+
+.process-step strong {
+  font-size: 16px;
+}
+
+.benefit-list article > span {
+  font-size: 36px;
+}
+
+.benefit-list h3 {
+  font-size: 18px;
+}
+
+.benefit-list p {
+  font-size: 17px;
+}
+
+.benefit-stats strong {
+  font-size: clamp(48px, 6vw, 70px);
+}
+
+.benefit-stats span {
+  font-size: 16px;
+}
+
+.role-card h3 {
+  font-size: 19px;
+}
+
+.role-card p {
+  font-size: 17px;
+}
+
+.landing-final p {
+  font-size: 20px;
+}
+
+.landing-footer h3 {
+  font-size: 17px;
+}
+
+.landing-footer p,
+.landing-footer a {
+  font-size: 16px;
+}
+
 @media (max-width: 980px) {
   .landing-nav {
     grid-template-columns: 1fr auto;
@@ -790,11 +903,11 @@
   }
 
   .landing-hero h1 {
-    font-size: 42px;
+    font-size: 50px;
   }
 
   .landing-hero p {
-    font-size: 16px;
+    font-size: 19px;
   }
 
   .landing-hero-actions,
