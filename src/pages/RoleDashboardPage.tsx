@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { adminApi, type CreatePlanPayload, type SubscriptionPlan, type Tenant } from '../features/admin/services/adminApi'
 
 type RoleDashboardPageProps = {
@@ -42,25 +42,63 @@ function getDisplayName(user: StoredUser | null) {
   return user?.full_name || user?.fullName || user?.name || user?.email || 'Alex Thompson'
 }
 
+function getUserInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return 'U'
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase()
+}
+
 function DashboardShell({
   children,
   navItems,
   subtitle,
   onLogout,
+  onChangePassword,
   showWorkspaceSwitcher = false,
+  searchPlaceholder = 'Search candidates, skills, or locations...',
+  className = '',
 }: {
   children: ReactNode
   navItems: Array<{ icon: string; label: string; active?: boolean; onClick?: () => void }>
   subtitle: string
   onLogout: () => void
+  onChangePassword?: () => void
   showWorkspaceSwitcher?: boolean
+  searchPlaceholder?: string
+  className?: string
 }) {
   const user = useMemo(() => getStoredUser(), [])
   const displayName = getDisplayName(user)
+  const userInitials = getUserInitials(displayName)
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true)
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
+  const userDropdownRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleChangePassword = () => {
+    onChangePassword?.()
+    setIsUserDropdownOpen(false)
+  }
+
+  const handleLogout = () => {
+    setIsUserDropdownOpen(false)
+    onLogout()
+  }
 
   return (
-    <main className="role-page">
-      <aside className="role-sidebar">
+    <main className={`role-page ${isSidebarVisible ? '' : 'is-sidebar-hidden'} ${className}`.trim()}>
+      <aside className={`role-sidebar ${isSidebarVisible ? 'is-open' : ''}`}>
         <div className="role-brand">
           <strong>JobFusion</strong>
           <span>AI Talent Suite</span>
@@ -77,19 +115,61 @@ function DashboardShell({
 
       <section className="role-main">
         <header className="role-topbar">
+          <button
+            type="button"
+            className={`role-sidebar-trigger ${isSidebarVisible ? 'is-open' : ''}`}
+            aria-label={isSidebarVisible ? 'Hide navigation sidebar' : 'Show navigation sidebar'}
+            aria-expanded={isSidebarVisible}
+            onClick={() => setIsSidebarVisible((value) => !value)}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {isSidebarVisible ? 'arrow_menu_close' : 'arrow_menu_open'}
+            </span>
+          </button>
+
           <div className="role-search">
             <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="search" placeholder="Search candidates, skills, or locations..." aria-label="Search" />
+            <input type="search" placeholder={searchPlaceholder} aria-label="Search" />
           </div>
           {showWorkspaceSwitcher && <button type="button" className="role-switcher">Workspace Switcher</button>}
           <div className="role-icons">
             <i className="fa-regular fa-bell"></i>
             <i className="fa-regular fa-circle-question"></i>
           </div>
-          <button type="button" className="role-user" onClick={onLogout} aria-label="Log out">
-            <span>{displayName}</span>
-            {user?.avatar ? <img src={user.avatar} alt="" /> : <i className="fa-solid fa-user"></i>}
-          </button>
+          <div className="role-user-menu-container" ref={userDropdownRef}>
+            <button
+              type="button"
+              className={`role-user ${isUserDropdownOpen ? 'is-open' : ''}`}
+              onClick={() => setIsUserDropdownOpen((value) => !value)}
+              aria-label="User menu"
+              aria-expanded={isUserDropdownOpen}
+            >
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" />
+              ) : (
+                <span className="role-user-avatar">{userInitials}</span>
+              )}
+              <span>{displayName}</span>
+              <i className={`fa-solid fa-chevron-down role-user-chevron ${isUserDropdownOpen ? 'open' : ''}`}></i>
+            </button>
+
+            {isUserDropdownOpen && (
+              <div className="role-user-dropdown" onClick={(event) => event.stopPropagation()}>
+                <button type="button" className="role-user-dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
+                  <i className="fa-solid fa-user-group"></i>
+                  <span>Profile</span>
+                </button>
+                <button type="button" className="role-user-dropdown-item" onClick={handleChangePassword}>
+                  <i className="fa-solid fa-lock"></i>
+                  <span>Change password</span>
+                </button>
+                <button type="button" className="role-user-dropdown-item logout" onClick={handleLogout}>
+                  <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                  <span>Log out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </header>
         {children}
       </section>
@@ -377,7 +457,7 @@ function TenantAdminDashboard({ onLogout }: { onLogout: () => void }) {
   const navItems = getRoleHomeNav(tenantNav, activeView, setActiveView)
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout}>
+    <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout} onChangePassword={() => setActiveView('settings')}>
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => setActiveView('dashboard')} />
       ) : (
@@ -1291,9 +1371,17 @@ function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void;
     .slice(0, 4)
   const maxTenantPlanCount = Math.max(1, ...tenantPlanRows.map(([, count]) => count))
   const platformStaffAccounts = dashboardTenants.reduce((total, tenant) => total + tenant.userQuotaUsed, 0)
+  const dashboardErrorMessage = dashboardError ? 'Unable to load platform data. Please try again later.' : ''
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Super Admin" onLogout={onLogout}>
+    <DashboardShell
+      navItems={navItems}
+      subtitle="Super Admin"
+      onLogout={onLogout}
+      onChangePassword={() => selectView('settings')}
+      searchPlaceholder="Search tenants, plans, prompts..."
+      className="super-admin-shell"
+    >
       {activeView === 'tenantManagement' ? (
         <TenantManagementView triggerToast={triggerToast} />
       ) : activeView === 'subscriptionPlans' ? (
@@ -1303,16 +1391,39 @@ function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void;
       ) : activeView === 'settings' ? (
         <AccountSettingsView onBack={() => selectView('dashboard')} />
       ) : (
-        <div className="role-content">
-        {dashboardError && <p className="create-plan-error">{dashboardError}</p>}
-        <div className="role-metrics four">
+        <div className="role-content super-admin-content">
+        <section className="super-admin-hero">
+          <div>
+            <span className="super-admin-eyebrow">Super Admin Console</span>
+            <h1>Platform Overview</h1>
+            <p>Monitor tenants, subscription health, and AI configuration from one control surface.</p>
+          </div>
+          <div className="super-admin-hero-actions">
+            <button type="button" onClick={() => selectView('tenantManagement')}>
+              <i className="fa-solid fa-building-circle-check"></i>
+              <span>Manage Tenants</span>
+            </button>
+            <button type="button" onClick={() => selectView('subscriptionPlans')}>
+              <i className="fa-solid fa-layer-group"></i>
+              <span>Plans</span>
+            </button>
+          </div>
+        </section>
+
+        {dashboardErrorMessage && (
+          <p className="super-admin-alert">
+            <i className="fa-solid fa-circle-exclamation"></i>
+            <span>{dashboardErrorMessage}</span>
+          </p>
+        )}
+        <div className="role-metrics four super-admin-metrics">
           <MetricCard icon="fa-building" label="Total Tenants" value={isDashboardLoading ? '...' : String(dashboardTenants.length)} />
           <MetricCard icon="fa-bolt" label="Active Tenants" value={isDashboardLoading ? '...' : String(activeTenants.length)} />
-          <MetricCard icon="fa-money-bill-trend-up" label="Monthly Recurring Revenue" value={isDashboardLoading ? '...' : `$${monthlyRecurringRevenue.toLocaleString()}`} />
-          <MetricCard icon="fa-triangle-exclamation" label="Tenants expiring within 30 days" value={isDashboardLoading ? '...' : String(expiringTenantCount)} />
+          <MetricCard icon="fa-money-bill-trend-up" label="Monthly Revenue" value={isDashboardLoading ? '...' : `$${monthlyRecurringRevenue.toLocaleString()}`} />
+          <MetricCard icon="fa-triangle-exclamation" label="Expiring Soon" value={isDashboardLoading ? '...' : String(expiringTenantCount)} />
         </div>
         <div className="role-grid super-grid">
-          <section className="role-panel tenant-table">
+          <section className="role-panel tenant-table super-tenant-table">
             <div className="role-panel-head"><h2>Recent Tenants</h2><button type="button" onClick={() => selectView('tenantManagement')}>View All</button></div>
             {isDashboardLoading ? (
               <p>Loading tenants...</p>
@@ -1321,7 +1432,7 @@ function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void;
             ) : (
               dashboardTenants.slice(0, 5).map((tenant) => (
                 <article key={tenant.id}>
-                  <strong>{tenant.name}</strong><span>{tenant.subscriptionPlan}</span><em>{tenant.status}</em>
+                  <strong>{tenant.name}</strong><span>{tenant.subscriptionPlan}</span><em className={tenant.status.toLowerCase() === 'active' ? 'active' : 'inactive'}>{tenant.status}</em>
                   <i className="fa-regular fa-eye"></i><i className="fa-regular fa-pen-to-square"></i>
                 </article>
               ))
@@ -1338,7 +1449,7 @@ function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void;
                 <div className="bar-row" key={label}><span>{label}</span><strong>{count}</strong><i style={{ width: `${Math.max(8, (count / maxTenantPlanCount) * 100)}%` }} /></div>
               ))
             )}
-            <div className="quick-actions"><button onClick={() => selectView('subscriptionPlans')}>Manage Subscriptions</button><button onClick={() => selectView('tenantManagement')}>Create New Tenant</button><button onClick={() => selectView('promptManagement')}>Edit System Prompts</button></div>
+            <div className="quick-actions"><button type="button" onClick={() => selectView('subscriptionPlans')}>Manage Subscriptions</button><button type="button" onClick={() => selectView('tenantManagement')}>Create New Tenant</button><button type="button" onClick={() => selectView('promptManagement')}>Edit System Prompts</button></div>
           </section>
           <section className="role-panel prompt-panel">
             <div className="role-panel-head"><h2>System Prompts Status</h2><small>Live API not connected</small></div>
@@ -1361,7 +1472,7 @@ function HrDashboard({ onLogout }: { onLogout: () => void }) {
   const navItems = getRoleHomeNav(hrNav, activeView, setActiveView)
 
   return (
-    <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} showWorkspaceSwitcher>
+    <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => setActiveView('settings')} showWorkspaceSwitcher>
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => setActiveView('dashboard')} />
       ) : (
@@ -1398,7 +1509,7 @@ function InterviewerDashboard({ onLogout }: { onLogout: () => void }) {
   const navItems = getRoleHomeNav(interviewerNav, activeView, setActiveView)
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} showWorkspaceSwitcher>
+    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => setActiveView('settings')} showWorkspaceSwitcher>
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => setActiveView('dashboard')} />
       ) : (

@@ -1,5 +1,5 @@
 .candidate-page {
-  --candidate-sidebar-width: 312px;
+  --candidate-sidebar-width: 240px;
   width: 100%;
   min-height: 100vh;
   display: grid;
@@ -7,7 +7,7 @@
   background: #f4f5fb;
   color: #14213d;
   font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: grid-template-columns 0.22s ease;
 }
 
@@ -18,7 +18,7 @@
 .candidate-sidebar {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: 80;
   grid-column: 1;
   grid-row: 1;
   width: var(--candidate-sidebar-width);
@@ -41,10 +41,8 @@
 }
 
 .candidate-sidebar-trigger {
-  position: fixed;
-  top: 18px;
-  left: 14px;
-  z-index: 31;
+  position: static;
+  flex: 0 0 auto;
   width: 36px;
   height: 36px;
   display: grid;
@@ -58,11 +56,7 @@
   font-size: 18px;
   font-weight: 900;
   box-shadow: none;
-  transition: left 0.22s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.candidate-sidebar-trigger.is-open {
-  left: calc(var(--candidate-sidebar-width) - 48px);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .candidate-sidebar-trigger .material-symbols-outlined {
@@ -222,28 +216,32 @@
   grid-row: 1;
   width: 100%;
   min-width: 0;
+  overflow: clip;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  padding-left: 56px;
-  transition: padding-left 0.22s ease;
-}
-
-.candidate-page.is-sidebar-open .candidate-main {
   padding-left: 0;
 }
 
 .candidate-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  min-width: 0;
   height: 58px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: clamp(10px, 1.2vw, 18px);
   padding: 0 22px;
   background: #fff;
   border-bottom: 1px solid #eed8d2;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
 }
 
 .candidate-search {
+  flex: 1 1 260px;
   width: min(320px, 34vw);
+  max-width: 320px;
+  min-width: 180px;
   height: 34px;
   display: flex;
   align-items: center;
@@ -268,9 +266,10 @@
 }
 
 .candidate-tabs {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: clamp(12px, 1.4vw, 24px);
   margin-left: auto;
 }
 
@@ -285,6 +284,7 @@
 }
 
 .candidate-tabs button {
+  flex: 0 1 auto;
   height: 58px;
   color: #493a35;
   font-size: 14px;
@@ -309,6 +309,7 @@
 
 .ai-match-btn {
   height: 34px;
+  flex: 0 0 auto;
   min-width: 92px;
   display: inline-flex;
   align-items: center;
@@ -325,9 +326,10 @@
 }
 
 .candidate-top-icons {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: clamp(10px, 1vw, 16px);
   color: #493a35;
 }
 
@@ -338,6 +340,7 @@
 }
 
 .candidate-content {
+  min-width: 0;
   padding: 28px 24px 34px;
 }
 
@@ -691,6 +694,7 @@
 
 .candidate-hero-grid,
 .candidate-lower-grid {
+  min-width: 0;
   display: grid;
   gap: 22px;
 }
@@ -701,13 +705,14 @@
 }
 
 .candidate-lower-grid {
-  grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.15fr);
 }
 
 .application-status-card,
 .interview-card,
 .resume-insights-card,
 .active-applications-card {
+  min-width: 0;
   background: #fff;
   border: 1px solid #eed8d2;
   border-radius: 10px;
@@ -1069,9 +1074,40 @@
 }
 
 .candidate-user-name {
+  max-width: 180px;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 600;
   color: #334155;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-page.is-sidebar-open .candidate-search {
+  flex-basis: 220px;
+  max-width: 300px;
+}
+
+.candidate-page.is-sidebar-open .candidate-tabs {
+  gap: 14px;
+}
+
+.candidate-page.is-sidebar-open .candidate-tabs button {
+  font-size: 13px;
+}
+
+.candidate-page.is-sidebar-open .candidate-tabs .candidate-pill {
+  min-width: 120px;
+  padding: 0 12px;
+  line-height: 1.1;
+}
+
+.candidate-page.is-sidebar-open .candidate-user-trigger {
+  max-width: 168px;
+}
+
+.candidate-page.is-sidebar-open .candidate-user-name {
+  max-width: 84px;
 }
 
 .candidate-chevron {
@@ -1094,7 +1130,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 50;
+  z-index: 100;
   overflow: hidden;
   animation: slideDown 0.15s ease-out;
 }
@@ -1289,17 +1325,17 @@
 .candidate-change-confirm-modal {
   box-sizing: border-box;
   width: min(418px, calc(100vw - 32px));
-  min-height: 260px;
+  min-height: 238px;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid #e4beb4;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .candidate-change-confirm-body {
-  padding: 24px 22px 20px;
+  padding: 28px 22px 20px;
 }
 
 .candidate-change-confirm-heading {
@@ -1312,48 +1348,48 @@
 .candidate-change-confirm-heading h2 {
   margin: 0;
   color: #0b1c30;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.2;
   font-weight: 800;
 }
 
 .candidate-change-confirm-close {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   color: #5a4038;
   background: transparent;
   border: 0;
-  font-size: 20px;
+  font-size: 14px;
   cursor: pointer;
 }
 
 .candidate-change-confirm-body p {
   margin: 18px 0 0;
   color: #5a4038;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .candidate-change-confirm-footer {
-  min-height: 78px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 16px 22px;
+  gap: 14px;
+  padding: 16px 24px;
   background: #eef4ff;
   border-top: 1px solid #e4beb4;
 }
 
 .candidate-change-confirm-cancel,
 .candidate-change-confirm-action {
-  min-width: 106px;
-  height: 47px;
-  border-radius: 8px;
+  min-width: 96px;
+  height: 44px;
+  border-radius: 6px;
   font: inherit;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
