@@ -533,7 +533,9 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
         aria-expanded={isSidebarOpen}
         onClick={() => setIsSidebarOpen((value) => !value)}
       >
-        <i className={`fa-solid ${isSidebarOpen ? 'fa-chevron-left' : 'fa-chevron-right'}`}></i>
+        <span className="material-symbols-outlined" aria-hidden="true">
+          {isSidebarOpen ? 'arrow_menu_close' : 'arrow_menu_open'}
+        </span>
       </button>
       <aside ref={sidebarRef} className={`candidate-sidebar ${isSidebarOpen ? 'is-open' : ''}`}>
         <div className="candidate-brand">
