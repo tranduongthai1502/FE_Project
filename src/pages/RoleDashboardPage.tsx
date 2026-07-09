@@ -221,7 +221,7 @@ function MetricCard({ icon, label, value, note }: { icon: string; label: string;
   )
 }
 
-function CreateTenantModal({
+function CreateTenantPage({
   form,
   error,
   plans,
@@ -241,8 +241,17 @@ function CreateTenantModal({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }) {
   return (
-    <div className="tenant-modal-backdrop" role="presentation">
-      <section className="tenant-modal" role="dialog" aria-modal="true" aria-labelledby="create-tenant-title">
+    <div className="role-content create-tenant-content">
+      <div className="tenant-breadcrumb create-tenant-breadcrumb">
+        <i className="fa-solid fa-house"></i>
+        <span>Home</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <span>Tenant Management</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <strong>Create New Tenant</strong>
+      </div>
+
+      <section className="tenant-modal create-tenant-card" aria-labelledby="create-tenant-title">
         <header className="tenant-modal-header">
           <div>
             <h2 id="create-tenant-title">Create New Tenant</h2>
@@ -687,6 +696,33 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
     }
   }
 
+  if (isCreateModalOpen) {
+    return (
+      <>
+        <CreateTenantPage
+          form={tenantForm}
+          error={tenantError}
+          plans={subscriptionPlans}
+          isLoadingPlans={isLoadingPlans}
+          isSubmitting={isSubmittingTenant}
+          onChange={updateTenantForm}
+          onClose={closeCreateModal}
+          onSubmit={handleCreateTenant}
+        />
+
+        {isCreateConfirmOpen && (
+          <ConfirmActionModal
+            isSubmitting={isSubmittingTenant}
+            onCancel={() => {
+              if (!isSubmittingTenant) setIsCreateConfirmOpen(false)
+            }}
+            onConfirm={confirmCreateTenant}
+          />
+        )}
+      </>
+    )
+  }
+
   return (
     <div className="role-content tenant-management-content">
       <div className="tenant-breadcrumb">
@@ -767,19 +803,6 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
           </div>
         </footer>
       </section>
-
-      {isCreateModalOpen && (
-        <CreateTenantModal
-          form={tenantForm}
-          error={tenantError}
-          plans={subscriptionPlans}
-          isLoadingPlans={isLoadingPlans}
-          isSubmitting={isSubmittingTenant}
-          onChange={updateTenantForm}
-          onClose={closeCreateModal}
-          onSubmit={handleCreateTenant}
-        />
-      )}
 
       {isCreateConfirmOpen && (
         <ConfirmActionModal

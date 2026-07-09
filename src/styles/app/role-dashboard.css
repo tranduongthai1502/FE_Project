@@ -22,7 +22,10 @@
   grid-column: 1;
   grid-row: 1;
   width: var(--role-sidebar-width);
+  height: 100vh;
   min-height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-right: 1px solid #f0cfc6;
   background: #ffffff;
   padding: 20px 18px;
@@ -1034,6 +1037,44 @@
   background: #f7f8fd;
 }
 
+.create-tenant-content {
+  min-height: calc(100vh - 58px);
+  padding: 20px 26px 52px;
+  background: #f7f8fd;
+}
+
+.create-tenant-breadcrumb {
+  max-width: 980px;
+  margin: 0 auto 52px;
+}
+
+.create-tenant-card {
+  width: min(920px, calc(100% - 60px));
+  margin: 0 auto;
+  box-shadow: none;
+}
+
+.create-tenant-card .tenant-modal-header {
+  min-height: 78px;
+  align-items: center;
+}
+
+.create-tenant-card .tenant-form-grid {
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 260px);
+  padding: 26px 24px 20px;
+}
+
+.create-tenant-card .tenant-form-grid.admin {
+  grid-template-columns: 1fr 1fr;
+  min-height: 118px;
+  padding-top: 22px;
+  padding-bottom: 44px;
+}
+
+.create-tenant-card .tenant-modal-actions {
+  min-height: 72px;
+}
+
 .tenant-breadcrumb {
   display: flex;
   align-items: center;
@@ -1319,18 +1360,19 @@
 .tenant-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 220;
   display: grid;
   place-items: center;
-  padding: 32px;
+  padding: 18px;
   background: rgba(15, 23, 42, 0.08);
 }
 
 .tenant-modal {
-  width: min(1180px, 100%);
-  overflow: hidden;
+  width: min(860px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
   border: 1px solid #efb7aa;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 26px 70px rgba(20, 31, 51, 0.22);
 }
@@ -1338,7 +1380,7 @@
 .tenant-confirm-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 230;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -1424,15 +1466,15 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  padding: 34px 34px 28px;
+  gap: 16px;
+  padding: 20px 24px 16px;
   border-bottom: 1px solid #efb7aa;
 }
 
 .tenant-modal-header h2 {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: #102033;
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .tenant-modal-header p {
@@ -1444,7 +1486,7 @@
   border: 0;
   background: transparent;
   color: #667085;
-  font-size: 20px;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -1454,20 +1496,20 @@
 
 .tenant-form-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 545px) minmax(260px, 270px);
-  gap: 30px;
-  padding: 34px;
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 260px);
+  gap: 20px;
+  padding: 22px 24px;
 }
 
 .tenant-form-grid.admin {
   grid-template-columns: 1fr 1fr;
-  padding-top: 24px;
-  padding-bottom: 72px;
+  padding-top: 18px;
+  padding-bottom: 34px;
 }
 
 .tenant-create-form label {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .tenant-create-form label span {
@@ -1481,7 +1523,7 @@
 .tenant-create-form input,
 .tenant-create-form select,
 .tenant-domain-field div {
-  height: 48px;
+  height: 40px;
   border: 1px solid #efb7aa;
   border-radius: 7px;
   background: #f7f8fd;
@@ -1490,7 +1532,7 @@
 .tenant-create-form input,
 .tenant-create-form select {
   width: 100%;
-  padding: 0 18px;
+  padding: 0 14px;
   outline: 0;
   color: #102033;
   font-size: 13px;
@@ -1519,21 +1561,21 @@
 }
 
 .tenant-create-form hr {
-  width: calc(100% - 68px);
+  width: calc(100% - 48px);
   height: 1px;
-  margin: 8px auto 30px;
+  margin: 4px auto 20px;
   border: 0;
   background: #efb7aa;
 }
 
 .tenant-create-form h3 {
-  padding: 0 34px;
+  padding: 0 24px;
   color: #102033;
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .tenant-modal-error {
-  margin: -48px 34px 28px;
+  margin: -18px 24px 18px;
   color: #d93408;
   font-size: 13px;
   font-weight: 800;
@@ -1542,16 +1584,16 @@
 .tenant-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 32px 34px;
+  gap: 12px;
+  padding: 16px 24px;
   border-top: 1px solid #dce4f2;
   background: #eef3ff;
 }
 
 .tenant-modal-actions button {
-  min-width: 132px;
-  min-height: 48px;
-  border-radius: 8px;
+  min-width: 112px;
+  min-height: 38px;
+  border-radius: 6px;
   font-weight: 900;
   cursor: pointer;
 }
