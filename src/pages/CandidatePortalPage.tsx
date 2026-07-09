@@ -524,7 +524,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
   }, [isSidebarOpen])
 
   return (
-    <main className="candidate-page"></main>
+    <main className="candidate-page">
       <button
         type="button"
         ref={sidebarTriggerRef}
