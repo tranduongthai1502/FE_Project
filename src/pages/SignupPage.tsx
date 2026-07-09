@@ -194,7 +194,7 @@ export function SignupPage({ onGoToSignin, triggerToast }: SignupPageProps) {
                     setConfirmPasswordError(validateConfirmPassword(confirmPassword, value))
                   }
                 })}
-                placeholder="************"
+                placeholder="............"
                 autoComplete="new-password"
                 aria-invalid={passwordError ? 'true' : 'false'}
                 aria-describedby={passwordError ? 'signup-password-error' : undefined}
@@ -231,7 +231,7 @@ export function SignupPage({ onGoToSignin, triggerToast }: SignupPageProps) {
                     setConfirmPasswordError(validateConfirmPassword(value, password))
                   }
                 })}
-                placeholder="************"
+                placeholder="............"
                 autoComplete="new-password"
                 aria-invalid={confirmPasswordError ? 'true' : 'false'}
                 aria-describedby={confirmPasswordError ? 'confirm-password-error' : undefined}
@@ -275,7 +275,7 @@ export function SignupPage({ onGoToSignin, triggerToast }: SignupPageProps) {
 
         <p className="signup-copy signin-copy">
           Do you have an account?
-          <button type="button" onClick={onGoToSignin}>
+          <button className='signInBtn' type="button" onClick={onGoToSignin}>
             Log in
           </button>
         </p>

@@ -111,6 +111,13 @@
   box-sizing: border-box;
 }
 
+.signup-page .input-wrap input[name='password'],
+.signup-page .input-wrap input[name='confirmPassword'] {
+  font-size: 14px;
+  padding-top: 0;
+  padding-bottom: 2px;
+}
+
 .signup-page .input-wrap input:valid,
 .signup-page .input-wrap input:invalid {
   background: transparent;
@@ -129,6 +136,12 @@
 .signup-page .input-wrap input::placeholder {
   color: #6d7584;
   opacity: 1;
+}
+
+.signup-page .input-wrap input[name='password']::placeholder,
+.signup-page .input-wrap input[name='confirmPassword']::placeholder {
+  font-size: 18px;
+  letter-spacing: 1px;
 }
 
 .signup-page .icon-button {
@@ -277,7 +290,7 @@
 }
 
 .signup-page .signup-copy button {
-  margin-left: 28px;
+  margin-left: 5px;
   padding: 0;
   color: #c93408;
   background: transparent;

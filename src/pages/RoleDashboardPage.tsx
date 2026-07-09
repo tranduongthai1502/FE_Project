@@ -433,7 +433,7 @@ const superAdminViewSlugs: Record<SuperAdminView, string> = {
 
 function getInitialSuperAdminView(): SuperAdminView {
   const slug = window.location.pathname.replace(/^\/super-admin\/?/, '') || 'dashboard'
-  const match = Object.entries(superAdminViewSlugs).find(([, value]) => value === slug)
+  const match = Object.entries(superAdminViewSlugs).find(([, value]) => slug === value || slug.startsWith(`${value}/`))
 
   return (match?.[0] as SuperAdminView | undefined) || 'dashboard'
 }
@@ -1099,15 +1099,49 @@ function CreatePlanView({
   )
 }
 
+function getSubscriptionPlanIdFromUrl() {
+  const match = window.location.pathname.match(/^\/super-admin\/subscription-plans\/([^/]+)$/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
+function updateSubscriptionPlanDetailUrl(planId: string) {
+  window.history.pushState(null, '', `/super-admin/subscription-plans/${encodeURIComponent(planId)}`)
+}
+
+function formatPlanDate(value: string) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date)
+}
+
+function formatFeatureLabel(value: string) {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
 function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
-  const [activeView, setActiveView] = useState<'list' | 'create'>('list')
+  const [activeView, setActiveView] = useState<'list' | 'create' | 'detail'>(() => (
+    getSubscriptionPlanIdFromUrl() ? 'detail' : 'list'
+  ))
+  const [selectedPlanId, setSelectedPlanId] = useState(() => getSubscriptionPlanIdFromUrl())
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+  const [tenants, setTenants] = useState<Tenant[]>([])
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [planListError, setPlanListError] = useState('')
   const [refreshPlansKey, setRefreshPlansKey] = useState(0)
 
   useEffect(() => {
-    if (activeView !== 'list') return
+    if (activeView !== 'list' && activeView !== 'detail') return
 
     let isActive = true
     setIsLoadingPlans(true)
@@ -1130,10 +1164,33 @@ function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: stri
         }
       })
 
+    adminApi.getTenants()
+      .then((tenantItems) => {
+        if (isActive) {
+          setTenants(tenantItems)
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setTenants([])
+        }
+      })
+
     return () => {
       isActive = false
     }
   }, [activeView, refreshPlansKey])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const planId = getSubscriptionPlanIdFromUrl()
+      setSelectedPlanId(planId)
+      setActiveView(planId ? 'detail' : 'list')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const activePlansCount = plans.filter((plan) => plan.status.toLowerCase() === 'active').length
   const topTier = plans.reduce<SubscriptionPlan | null>((current, plan) => (
@@ -1144,11 +1201,142 @@ function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: stri
     : 0
   const handlePlanCreated = () => {
     setActiveView('list')
+    setSelectedPlanId('')
+    updateSuperAdminViewUrl('subscriptionPlans')
     setRefreshPlansKey((value) => value + 1)
   }
 
+  const openPlanDetail = (planId: string) => {
+    setSelectedPlanId(planId)
+    setActiveView('detail')
+    updateSubscriptionPlanDetailUrl(planId)
+  }
+
+  const closePlanDetail = () => {
+    setSelectedPlanId('')
+    setActiveView('list')
+    updateSuperAdminViewUrl('subscriptionPlans')
+  }
+
   if (activeView === 'create') {
-    return <CreatePlanView onBack={() => setActiveView('list')} onCreated={handlePlanCreated} triggerToast={triggerToast} />
+    return <CreatePlanView onBack={() => {
+      setActiveView('list')
+      updateSuperAdminViewUrl('subscriptionPlans')
+    }} onCreated={handlePlanCreated} triggerToast={triggerToast} />
+  }
+
+  if (activeView === 'detail') {
+    const selectedPlan = plans.find((plan) => plan.id === selectedPlanId)
+    const matchingTenants = selectedPlan
+      ? tenants.filter((tenant) => (
+        tenant.subscriptionPlanId === selectedPlan.id ||
+        tenant.subscriptionPlan.toLowerCase() === selectedPlan.name.toLowerCase()
+      ))
+      : []
+
+    return (
+      <div className="role-content subscription-plan-detail-content">
+        <div className="tenant-breadcrumb">
+          <i className="fa-solid fa-house"></i>
+          <span>Home</span>
+          <i className="fa-solid fa-chevron-right"></i>
+          <button type="button" onClick={closePlanDetail}>Subscription Plans</button>
+          <i className="fa-solid fa-chevron-right"></i>
+          <strong>Plan Detail</strong>
+        </div>
+
+        {isLoadingPlans ? (
+          <div className="subscription-table-state">Loading plan details...</div>
+        ) : planListError ? (
+          <div className="subscription-table-state error">{planListError}</div>
+        ) : !selectedPlan ? (
+          <div className="subscription-table-state">Plan not found.</div>
+        ) : (
+          <>
+            <div className="plan-detail-title-row">
+              <div>
+                <h1>{selectedPlan.name}</h1>
+                <p>{selectedPlan.description || 'Manage configuration and monitor active subscribers for this subscription plan.'}</p>
+              </div>
+              <div className="plan-detail-title-actions">
+                <em className={selectedPlan.status.toLowerCase() === 'active' ? 'active' : 'inactive'}>
+                  {selectedPlan.status}
+                </em>
+                <button type="button">Edit</button>
+              </div>
+            </div>
+
+            <section className="plan-detail-card plan-configuration-card">
+              <h2>Plan Configuration</h2>
+              <div className="plan-config-grid">
+                <div>
+                  <span>Tagline</span>
+                  <strong>{selectedPlan.description || '-'}</strong>
+                </div>
+                <div>
+                  <span>Base Price</span>
+                  <strong className="price">{selectedPlan.priceLabel || `$${selectedPlan.monthlyPrice.toFixed(2)} / mo`}</strong>
+                </div>
+                <div>
+                  <span>Staff Limit</span>
+                  <strong><i className="fa-regular fa-calendar-days"></i> {selectedPlan.staffAccountUnlimited ? 'Unlimited' : `${selectedPlan.maxStaffAccount} Members`}</strong>
+                </div>
+                <div>
+                  <span>Job Limit</span>
+                  <strong><i className="fa-regular fa-folder-open"></i> {selectedPlan.activeJobPostingUnlimited ? 'Unlimited' : `${selectedPlan.maxActiveJobPosting} Active Jobs`}</strong>
+                </div>
+                <div>
+                  <span>Created Date</span>
+                  <strong><i className="fa-regular fa-calendar"></i> {formatPlanDate(selectedPlan.createdAt)}</strong>
+                </div>
+                <div>
+                  <span>AI Features</span>
+                  <div className="plan-feature-tags">
+                    {selectedPlan.features.length > 0 ? (
+                      selectedPlan.features.map((feature) => (
+                        <em key={feature.key} className={feature.status.toLowerCase() === 'enabled' ? 'enabled' : 'disabled'}>
+                          {formatFeatureLabel(feature.key)}
+                        </em>
+                      ))
+                    ) : (
+                      <strong>-</strong>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="plan-detail-card active-subscribers-card">
+              <div className="plan-detail-card-head">
+                <h2>Active Subscribers</h2>
+                <div>
+                  <i className="fa-solid fa-filter"></i>
+                  <i className="fa-solid fa-download"></i>
+                </div>
+              </div>
+
+              {matchingTenants.length === 0 ? (
+                <div className="plan-no-tenants">
+                  <i className="fa-solid fa-triangle-exclamation"></i>
+                  <span>No tenants found.</span>
+                </div>
+              ) : (
+                <div className="plan-tenant-list">
+                  {matchingTenants.map((tenant) => (
+                    <div className="plan-tenant-row" key={tenant.id}>
+                      <strong>{tenant.name}</strong>
+                      <span>{tenant.status}</span>
+                      <span>{tenant.userQuotaUsed}/{tenant.userQuotaLimit || 'Unlimited'} users</span>
+                      <span>{tenant.expirationDate}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -1218,7 +1406,9 @@ function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: stri
                 <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                 <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                 <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : plan.status}</em>
-                <button type="button" aria-label={`Edit ${plan.name}`}><i className="fa-regular fa-pen-to-square"></i></button>
+                <button type="button" aria-label={`View ${plan.name}`} onClick={() => openPlanDetail(plan.id)}>
+                  <i className="fa-regular fa-eye"></i>
+                </button>
               </div>
             )
           })

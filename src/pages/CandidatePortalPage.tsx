@@ -134,6 +134,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
   const [saveMessage, setSaveMessage] = useState('')
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showBackConfirm, setShowBackConfirm] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const strength = getPasswordStrength(newPassword)
   const passwordRequirements = Object.entries(strength.requirements) as Array<[
@@ -175,13 +176,27 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
     setShowCancelConfirm(true)
   }
 
+  const openBackConfirm = () => {
+    setShowBackConfirm(true)
+  }
+
   const closeCancelConfirm = () => {
     setShowCancelConfirm(false)
+  }
+
+  const closeBackConfirm = () => {
+    setShowBackConfirm(false)
   }
 
   const confirmCancelChanges = () => {
     setShowCancelConfirm(false)
     resetForm()
+  }
+
+  const confirmBackHome = () => {
+    setShowBackConfirm(false)
+    resetForm()
+    onBack()
   }
 
   const confirmSavePassword = async () => {
@@ -272,7 +287,7 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
           </div>
         )}
 
-      <button type="button" className="candidate-back-home" onClick={openCancelConfirm}>
+      <button type="button" className="candidate-back-home" onClick={openBackConfirm}>
         <i className="fa-solid fa-arrow-left"></i>
         <span>Back to Home</span>
       </button>
@@ -483,6 +498,35 @@ function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePa
           </section>
         </div>
       )}
+
+      {showBackConfirm && (
+        <div className="candidate-change-confirm-backdrop" role="presentation">
+          <section className="candidate-change-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="candidate-back-confirm-title">
+            <div className="candidate-change-confirm-body">
+              <div className="candidate-change-confirm-heading">
+                <h2 id="candidate-back-confirm-title">Confirm Action</h2>
+                <button
+                  type="button"
+                  className="candidate-change-confirm-close"
+                  onClick={closeBackConfirm}
+                  aria-label="Close back home confirmation"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <p>Are you sure you want to go back home? Your changes will not be saved.</p>
+            </div>
+            <div className="candidate-change-confirm-footer">
+              <button type="button" className="candidate-change-confirm-cancel" onClick={closeBackConfirm}>
+                Cancel
+              </button>
+              <button type="button" className="candidate-change-confirm-action" onClick={confirmBackHome}>
+                Confirm
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </>
   )
 }
@@ -497,7 +541,8 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
   const sidebarRef = useRef<HTMLElement | null>(null)
   const sidebarTriggerRef = useRef<HTMLButtonElement | null>(null)
   const displayName = getUserDisplayName(user)
-  const firstName = displayName.trim().split(/\s+/)[0] || displayName
+  const nameParts = displayName.trim().split(/\s+/).filter(Boolean)
+  const lastName = nameParts[nameParts.length - 1] || displayName
   const userSubtitle = getUserSubtitle(user)
 
   const openLogoutConfirm = () => {
@@ -672,7 +717,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
             <>
           <section className="candidate-welcome">
             <div>
-              <h1>Welcome back, {firstName}!</h1>
+              <h1>Welcome back, {lastName}!</h1>
               <p>Here is your application progress and personalized AI recommendations.</p>
             </div>
             <span className="profile-views">

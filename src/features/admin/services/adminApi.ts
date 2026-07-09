@@ -11,18 +11,22 @@ export type CreateTenantPayload = {
 export type SubscriptionPlan = {
   id: string
   name: string
+  description: string
   monthlyPrice: number
   maxStaffAccount: number
   staffAccountUnlimited: boolean
   maxActiveJobPosting: number
   activeJobPostingUnlimited: boolean
   status: string
+  createdAt: string
+  features: CreatePlanFeature[]
   priceLabel?: string
 }
 
 export type Tenant = {
   id: string
   name: string
+  subscriptionPlanId?: string
   subscriptionPlan: string
   expirationDate: string
   userQuotaUsed: number
@@ -91,6 +95,11 @@ function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
   const name = plan?.name || plan?.planName || plan?.title || 'Subscription Plan'
   const price = Number(plan?.monthlyPrice ?? plan?.price ?? plan?.amount ?? 0)
   const billingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
+  const featureList = Array.isArray(plan?.features)
+    ? plan.features
+    : Array.isArray(plan?.planFeatures)
+      ? plan.planFeatures
+      : []
   const priceLabel = Number.isFinite(price)
     ? `$${price.toFixed(2)}${billingCycle ? `/${billingCycle}` : ' / mo'}`
     : undefined
@@ -98,12 +107,18 @@ function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
   return {
     id: String(id),
     name: String(name),
+    description: String(plan?.description || plan?.shortDescription || plan?.tagline || ''),
     monthlyPrice: Number.isFinite(price) ? price : 0,
     maxStaffAccount: Number(plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? 0),
     staffAccountUnlimited: Boolean(plan?.staffAccountUnlimited),
     maxActiveJobPosting: Number(plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? 0),
     activeJobPostingUnlimited: Boolean(plan?.activeJobPostingUnlimited),
     status: String(plan?.status || (plan?.active === false ? 'Inactive' : 'Active')),
+    createdAt: String(plan?.createdAt || plan?.createdDate || plan?.created_at || plan?.createAt || ''),
+    features: featureList.map((feature: any) => ({
+      key: String(feature?.key || feature?.code || feature?.name || feature?.featureKey || ''),
+      status: String(feature?.status || (feature?.enabled === false ? 'DISABLED' : 'ENABLED')),
+    })).filter((feature: CreatePlanFeature) => feature.key),
     priceLabel,
   }
 }
@@ -125,6 +140,9 @@ function normalizeTenant(tenant: any): Tenant | null {
   return {
     id: String(id),
     name: String(tenant?.companyName || tenant?.name || tenant?.fullName || tenant?.tenantName || 'Tenant'),
+    subscriptionPlanId: tenant?.planId || tenant?.subscriptionPlanId || plan?.id || plan?.planId
+      ? String(tenant?.planId || tenant?.subscriptionPlanId || plan?.id || plan?.planId)
+      : undefined,
     subscriptionPlan: String(plan?.name || tenant?.planName || tenant?.subscriptionPlanName || tenant?.subscriptionPlan || '-'),
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
