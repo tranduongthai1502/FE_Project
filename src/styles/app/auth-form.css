@@ -97,6 +97,18 @@
   font-size: 14px;
 }
 
+.login-page:not(.signup-page) .login-form .input-wrap input[type='password'],
+.login-page:not(.signup-page) .login-form .input-wrap input[name='password'] {
+  font-size: 14px;
+  padding-top: 0;
+  padding-bottom: 2px;
+}
+
+.login-page:not(.signup-page) .login-form .input-wrap input[name='password']::placeholder {
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
 .login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill,
 .login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill:hover,
 .login-page:not(.signup-page) .login-form .input-wrap input:-webkit-autofill:focus,

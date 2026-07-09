@@ -497,7 +497,8 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
   const sidebarRef = useRef<HTMLElement | null>(null)
   const sidebarTriggerRef = useRef<HTMLButtonElement | null>(null)
   const displayName = getUserDisplayName(user)
-  const firstName = displayName.trim().split(/\s+/)[0] || displayName
+  const nameParts = displayName.trim().split(/\s+/).filter(Boolean)
+  const lastName = nameParts[nameParts.length - 1] || displayName
   const userSubtitle = getUserSubtitle(user)
 
   const openLogoutConfirm = () => {
@@ -672,7 +673,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
             <>
           <section className="candidate-welcome">
             <div>
-              <h1>Welcome back, {firstName}!</h1>
+              <h1>Welcome back, {lastName}!</h1>
               <p>Here is your application progress and personalized AI recommendations.</p>
             </div>
             <span className="profile-views">
