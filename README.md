@@ -6,7 +6,6 @@ Theo dac ta he thong, JobFusion huong toi viec tu dong hoa phieu tuyen dung tu d
 
 ## Tinh nang hien co trong frontend
 
-- Man hinh dang nhap va dang ky tai khoan.
 - Dashboard JobFusion voi sidebar, header, thong bao toast va menu tai khoan.
 - Bo chuyen vai tro demo gom Super Admin, Tenant Admin, HR, Interviewer va Candidate.
 - Super Admin: xem tong quan he thong, quan ly tenant, goi dich vu, prompt va cai dat.
