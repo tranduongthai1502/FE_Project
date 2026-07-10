@@ -442,6 +442,15 @@ function updateSuperAdminViewUrl(view: SuperAdminView) {
   window.history.pushState(null, '', `/super-admin/${superAdminViewSlugs[view]}`)
 }
 
+function getTenantDetailIdFromUrl() {
+  const match = window.location.pathname.match(/^\/super-admin\/tenant-management\/([^/]+)$/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
+function updateTenantDetailUrl(tenantId: string) {
+  window.history.pushState(null, '', `/super-admin/tenant-management/${encodeURIComponent(tenantId)}`)
+}
+
 type RoleHomeView = 'dashboard' | 'settings'
 
 function getRoleHomeNav(
@@ -568,6 +577,10 @@ function ConfirmActionModal({
 }
 
 function TenantManagementView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
+  const [activeView, setActiveView] = useState<'list' | 'detail'>(() => (
+    getTenantDetailIdFromUrl() ? 'detail' : 'list'
+  ))
+  const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
@@ -614,6 +627,32 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
   }, [refreshTenantsKey])
 
   useEffect(() => {
+    let isActive = true
+    setIsLoadingPlans(true)
+
+    adminApi.getSubscriptionPlans()
+      .then((plans) => {
+        if (isActive) {
+          setSubscriptionPlans(plans)
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setSubscriptionPlans([])
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingPlans(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isCreateModalOpen || subscriptionPlans.length > 0) return
 
     let isActive = true
@@ -646,6 +685,17 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
       isActive = false
     }
   }, [isCreateModalOpen, subscriptionPlans.length])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const tenantId = getTenantDetailIdFromUrl()
+      setSelectedTenantId(tenantId)
+      setActiveView(tenantId ? 'detail' : 'list')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
     setTenantError('')
@@ -696,6 +746,42 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
     }
   }
 
+  const activeTenantCount = useMemo(() => (
+    tenants.filter((tenant) => tenant.status.toLowerCase() === 'active').length
+  ), [tenants])
+  const inactiveTenantCount = tenants.length - activeTenantCount
+  const planById = useMemo(() => (
+    new Map(subscriptionPlans.map((plan) => [plan.id, plan]))
+  ), [subscriptionPlans])
+  const planByName = useMemo(() => (
+    new Map(subscriptionPlans.map((plan) => [plan.name.toLowerCase(), plan]))
+  ), [subscriptionPlans])
+  const totalRevenue = useMemo(() => (
+    tenants.reduce((total, tenant) => {
+      const plan = tenant.subscriptionPlanId
+        ? planById.get(tenant.subscriptionPlanId)
+        : planByName.get(tenant.subscriptionPlan.toLowerCase())
+
+      return total + (plan?.monthlyPrice || 0)
+    }, 0)
+  ), [planById, planByName, tenants])
+  const metricsAreLoading = isLoadingTenants || isLoadingPlans
+  const getTenantPlan = (tenant: Tenant) => (
+    tenant.subscriptionPlanId
+      ? planById.get(tenant.subscriptionPlanId)
+      : planByName.get(tenant.subscriptionPlan.toLowerCase())
+  )
+  const openTenantDetail = (tenantId: string) => {
+    setSelectedTenantId(tenantId)
+    setActiveView('detail')
+    updateTenantDetailUrl(tenantId)
+  }
+  const closeTenantDetail = () => {
+    setSelectedTenantId('')
+    setActiveView('list')
+    updateSuperAdminViewUrl('tenantManagement')
+  }
+
   if (isCreateModalOpen) {
     return (
       <>
@@ -720,6 +806,104 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
           />
         )}
       </>
+    )
+  }
+
+  if (activeView === 'detail') {
+    const selectedTenant = tenants.find((tenant) => tenant.id === selectedTenantId)
+    const selectedPlan = selectedTenant ? getTenantPlan(selectedTenant) : undefined
+    const isActive = selectedTenant?.status.toLowerCase() === 'active'
+    const quotaLabel = selectedTenant
+      ? selectedTenant.userQuotaLimit > 0
+        ? `${selectedTenant.userQuotaUsed}/${selectedTenant.userQuotaLimit}`
+        : String(selectedTenant.userQuotaUsed)
+      : '-'
+
+    return (
+      <div className="role-content tenant-detail-content">
+        <div className="tenant-breadcrumb">
+          <i className="fa-solid fa-house"></i>
+          <span>Home</span>
+          <i className="fa-solid fa-chevron-right"></i>
+          <button type="button" onClick={closeTenantDetail}>Tenant Management</button>
+          <i className="fa-solid fa-chevron-right"></i>
+          <strong>Tenant detail</strong>
+        </div>
+
+        {isLoadingTenants ? (
+          <div className="tenant-list-table-state">Loading tenant details...</div>
+        ) : tenantListError ? (
+          <div className="tenant-list-table-state error">{tenantListError}</div>
+        ) : !selectedTenant ? (
+          <div className="tenant-list-table-state">Tenant not found.</div>
+        ) : (
+          <>
+            <div className="tenant-detail-title-row">
+              <div>
+                <h1>{selectedTenant.name}</h1>
+                <em className={isActive ? 'active' : 'inactive'}>{selectedTenant.status}</em>
+              </div>
+              <button type="button">Deactivate Tenant</button>
+            </div>
+
+            <div className="tenant-detail-grid">
+              <section className="tenant-detail-card tenant-company-card">
+                <header>
+                  <span><i className="fa-regular fa-building"></i></span>
+                  <h2>Company Information</h2>
+                  <i className="fa-solid fa-ellipsis-vertical"></i>
+                </header>
+                <div className="tenant-detail-info-grid">
+                  <div><small>Company Name</small><strong>{selectedTenant.name}</strong></div>
+                  <div><small>Domain</small><strong>{selectedTenant.id}</strong></div>
+                  <div><small>Industry</small><strong>-</strong></div>
+                  <div><small>Company Size</small><strong>{quotaLabel} Employees</strong></div>
+                  <div><small>Created Date</small><strong>-</strong></div>
+                  <div><small>Region</small><strong>-</strong></div>
+                </div>
+              </section>
+
+              <section className="tenant-detail-empty-card">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                <strong>No tenants found.</strong>
+              </section>
+
+              <section className="tenant-detail-card tenant-subscription-card">
+                <header>
+                  <span><i className="fa-regular fa-id-badge"></i></span>
+                  <h2>Subscription Plan</h2>
+                </header>
+                <strong className="tenant-plan-heading">{selectedPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
+                <small className="tenant-plan-tier">{selectedPlan?.description || '-'}</small>
+                <div className="tenant-subscription-metrics">
+                  <div><small>Monthly Billing</small><strong>{selectedPlan ? `$${selectedPlan.monthlyPrice.toLocaleString()}` : '-'}</strong></div>
+                  <div><small>Days Remaining</small><strong>{selectedTenant.expirationDate}</strong></div>
+                </div>
+                <div className="tenant-subscription-lines">
+                  <span>Start Date <strong>-</strong></span>
+                  <span>ExpirationDate <strong>{selectedTenant.expirationDate}</strong></span>
+                  <span>Renewal Cycle <strong>Annual</strong></span>
+                  <span>Trailing <strong>Enabled</strong></span>
+                </div>
+              </section>
+
+              <section className="tenant-detail-card tenant-admin-card">
+                <header>
+                  <span><i className="fa-regular fa-calendar-check"></i></span>
+                  <h2>Tenant Admin</h2>
+                </header>
+                <div className="tenant-admin-layout">
+                  <div className="tenant-admin-avatar"><i className="fa-regular fa-user"></i><b /></div>
+                  <div><small>Full Name</small><strong>-</strong></div>
+                  <div><small>Email Address</small><strong>-</strong></div>
+                  <div><small>Current Status</small><em className={isActive ? 'active' : 'inactive'}>{selectedTenant.status}</em></div>
+                  <div><small>Activated Date</small><strong>-</strong></div>
+                </div>
+              </section>
+            </div>
+          </>
+        )}
+      </div>
     )
   }
 
@@ -749,10 +933,10 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
       </section>
 
       <div className="role-metrics tenant-management-metrics">
-        <MetricCard icon="fa-arrow-trend-up" label="Total Revenue" value="$124.5k" />
-        <MetricCard icon="fa-building" label="Active Tenants" value={String(tenants.filter((tenant) => tenant.status.toLowerCase() === 'active').length)} />
-        <MetricCard icon="fa-circle-notch" label="Total Tenants" value={String(tenants.length)} />
-        <MetricCard icon="fa-triangle-exclamation" label="Inactive Tenants" value={String(tenants.filter((tenant) => tenant.status.toLowerCase() !== 'active').length)} />
+        <MetricCard icon="fa-arrow-trend-up" label="Total Revenue" value={metricsAreLoading ? '...' : `$${totalRevenue.toLocaleString()}`} />
+        <MetricCard icon="fa-building" label="Active Tenants" value={isLoadingTenants ? '...' : String(activeTenantCount)} />
+        <MetricCard icon="fa-circle-notch" label="Total Tenants" value={isLoadingTenants ? '...' : String(tenants.length)} />
+        <MetricCard icon="fa-triangle-exclamation" label="Inactive Tenants" value={isLoadingTenants ? '...' : String(inactiveTenantCount)} />
       </div>
 
       <section className="tenant-list-table-card">
@@ -788,7 +972,13 @@ function TenantManagementView({ triggerToast }: { triggerToast?: (message: strin
                   {tenant.userQuotaLimit > 0 ? `${tenant.userQuotaUsed}/${tenant.userQuotaLimit}` : `${tenant.userQuotaUsed}`}
                 </span>
                 <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : tenant.status}</em>
-                <button type="button" aria-label={`Edit ${tenant.name}`}><i className="fa-regular fa-pen-to-square"></i></button>
+                <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}>
+                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
               </div>
             )
           })
@@ -1407,7 +1597,11 @@ function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: stri
                 <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                 <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : plan.status}</em>
                 <button type="button" aria-label={`View ${plan.name}`} onClick={() => openPlanDetail(plan.id)}>
-                  <i className="fa-regular fa-eye"></i>
+                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
               </div>
             )

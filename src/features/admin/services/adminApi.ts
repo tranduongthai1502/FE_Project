@@ -36,7 +36,7 @@ export type Tenant = {
 
 export type PlanListRequest = {
   sortField: string
-  filters: string
+  filters: Record<string, unknown>
   sortBy: 'ASC' | 'DESC'
   page: number
   size: number
@@ -77,6 +77,8 @@ function getSubscriptionPlanList(payload: any): any[] {
 function getTenantList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.result)) return payload.result
+  if (Array.isArray(payload?.results)) return payload.results
   if (Array.isArray(payload?.content)) return payload.content
   if (Array.isArray(payload?.items)) return payload.items
   if (Array.isArray(payload?.records)) return payload.records
@@ -85,6 +87,13 @@ function getTenantList(payload: any): any[] {
   if (Array.isArray(payload?.data?.items)) return payload.data.items
   if (Array.isArray(payload?.data?.records)) return payload.data.records
   if (Array.isArray(payload?.data?.list)) return payload.data.list
+  if (Array.isArray(payload?.data?.result)) return payload.data.result
+  if (Array.isArray(payload?.data?.results)) return payload.data.results
+  if (Array.isArray(payload?.data?.data)) return payload.data.data
+  if (Array.isArray(payload?.data?.data?.content)) return payload.data.data.content
+  if (Array.isArray(payload?.data?.data?.items)) return payload.data.data.items
+  if (Array.isArray(payload?.data?.data?.records)) return payload.data.data.records
+  if (Array.isArray(payload?.data?.data?.list)) return payload.data.data.list
   return []
 }
 
@@ -154,11 +163,11 @@ function normalizeTenant(tenant: any): Tenant | null {
 export const adminApi = {
   async getTenants() {
     const response = await axiosClient.post('/api/tenant/list', {
-      "sortField": 'name',
-      "filters": '',
+      "sortField": 'companyName',
+      "filters": {},
       "sortBy": 'ASC',
-      "page": 0,
-      "size": 0,
+      "page": 1,
+      "size": 100,
     } satisfies TenantListRequest)
 
     return getTenantList(response)
@@ -169,10 +178,10 @@ export const adminApi = {
   async getSubscriptionPlans() {
     const response = await axiosClient.post('/api/plan/list', {
       "sortField": 'name',
-      "filters": '',
+      "filters": {},
       "sortBy": 'ASC',
-      "page": 0,
-      "size": 0,
+      "page": 1,
+      "size": 100,
     } satisfies PlanListRequest)
 
     return getSubscriptionPlanList(response)

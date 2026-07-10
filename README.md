@@ -123,5 +123,5 @@ email: dienpro0708@gmail.com
 mật khẩu: Dien@2004
 
 - tài khoản demo tenant admin
-email: chau65990@gmail.com
-mật khẩu: $peAE7FF6t@!
+email: huynhanhquoc15022005@gmail.com
+mật khẩu: c6-yFUVU!9-U
