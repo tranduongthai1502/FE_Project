@@ -1208,6 +1208,257 @@
   font-size: 18px;
 }
 
+.tenant-detail-content {
+  min-height: calc(100vh - 42px);
+  background: #f7f8fd;
+}
+
+.tenant-breadcrumb button {
+  border: 0;
+  background: transparent;
+  color: #0d1b2a;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.tenant-detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin: 22px 0 24px;
+}
+
+.tenant-detail-title-row > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tenant-detail-title-row h1 {
+  color: #101c33;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.tenant-detail-title-row em,
+.tenant-admin-layout em {
+  min-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tenant-detail-title-row em.active,
+.tenant-admin-layout em.active {
+  background: #dcfae6;
+  color: #039855;
+}
+
+.tenant-detail-title-row em.inactive,
+.tenant-admin-layout em.inactive {
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.tenant-detail-title-row > button {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #d93408;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tenant-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 18px;
+}
+
+.tenant-detail-card,
+.tenant-detail-empty-card {
+  border: 1px solid #f0b8a8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.tenant-detail-card {
+  padding: 18px;
+}
+
+.tenant-company-card {
+  min-height: 220px;
+}
+
+.tenant-detail-card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.tenant-detail-card header > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: #fff1ed;
+  color: #d93408;
+}
+
+.tenant-detail-card header h2 {
+  flex: 1;
+  color: #101c33;
+  font-size: 15px;
+}
+
+.tenant-detail-card header > i {
+  color: #667085;
+  font-size: 12px;
+}
+
+.tenant-detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  row-gap: 28px;
+  column-gap: 42px;
+}
+
+.tenant-detail-info-grid small,
+.tenant-subscription-metrics small,
+.tenant-subscription-lines,
+.tenant-admin-layout small {
+  display: block;
+  margin-bottom: 7px;
+  color: #667085;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-detail-info-grid strong,
+.tenant-subscription-metrics strong,
+.tenant-subscription-lines strong,
+.tenant-admin-layout strong {
+  color: #101c33;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.tenant-detail-empty-card {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  background: #ffd5cc;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.tenant-detail-empty-card i {
+  font-size: 82px;
+}
+
+.tenant-subscription-card {
+  min-height: 230px;
+}
+
+.tenant-plan-heading {
+  display: block;
+  color: #101c33;
+  font-size: 14px;
+}
+
+.tenant-plan-tier {
+  display: block;
+  margin-top: 4px;
+  color: #d93408;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.tenant-subscription-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.tenant-subscription-metrics div {
+  min-height: 58px;
+  padding: 12px;
+  border: 1px solid #f0b8a8;
+  border-radius: 5px;
+  background: #f7f8fd;
+}
+
+.tenant-subscription-lines {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-top: 20px;
+}
+
+.tenant-subscription-lines span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0d7d0;
+}
+
+.tenant-subscription-lines span:last-child strong {
+  color: #039855;
+}
+
+.tenant-admin-card {
+  min-height: 190px;
+}
+
+.tenant-admin-layout {
+  display: grid;
+  grid-template-columns: 76px 1fr 1fr;
+  gap: 22px;
+  align-items: center;
+}
+
+.tenant-admin-avatar {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eef3ff;
+  color: #667085;
+  font-size: 30px;
+}
+
+.tenant-admin-avatar b {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #12b76a;
+}
+
 .tenant-list-table-card {
   width: min(1080px, calc(100% - 60px));
   margin: 26px auto 0;
@@ -2997,6 +3248,20 @@
   }
 
   .tenant-filter-card {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-detail-title-row,
+  .tenant-detail-title-row > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tenant-detail-grid,
+  .tenant-detail-info-grid,
+  .tenant-subscription-metrics,
+  .tenant-subscription-lines,
+  .tenant-admin-layout {
     grid-template-columns: 1fr;
   }
 
