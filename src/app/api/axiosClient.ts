@@ -16,6 +16,9 @@ const refreshClient = axios.create({
   },
 })
 
+const authExpiredEventName = 'jobfusion:auth-expired'
+let refreshTokenRequest: Promise<string> | null = null
+
 function getStoredToken(key: 'access_token' | 'refresh_token') {
   return localStorage.getItem(key) || sessionStorage.getItem(key)
 }
@@ -27,12 +30,21 @@ function getAuthStorage() {
 function clearAuthTokens() {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
+  localStorage.removeItem('user_info')
+  localStorage.removeItem('jobfusion_auth_page')
   sessionStorage.removeItem('access_token')
   sessionStorage.removeItem('refresh_token')
+  sessionStorage.removeItem('user_info')
+  sessionStorage.removeItem('jobfusion_auth_page')
+}
+
+function notifyAuthExpired() {
+  window.dispatchEvent(new Event(authExpiredEventName))
 }
 
 function getAuthResponsePayload(response: any) {
-  return response?.data && typeof response.data === 'object' ? response.data : response
+  const payload = response?.data && typeof response.data === 'object' ? response.data : response
+  return payload?.data && typeof payload.data === 'object' ? payload.data : payload
 }
 
 function getAccessToken(payload: any) {
@@ -64,6 +76,16 @@ async function refreshAccessToken() {
   }
 
   return nextAccessToken
+}
+
+function getRefreshTokenRequest() {
+  if (!refreshTokenRequest) {
+    refreshTokenRequest = refreshAccessToken().finally(() => {
+      refreshTokenRequest = null
+    })
+  }
+
+  return refreshTokenRequest
 }
 
 axiosClient.interceptors.request.use(
@@ -114,8 +136,9 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const token = await refreshAccessToken()
+        const token = await getRefreshTokenRequest()
         if (token) {
+          originalRequest.headers = originalRequest.headers || {}
           originalRequest.headers.Authorization = `Bearer ${token}`
           return axiosClient(originalRequest)
         }
@@ -124,6 +147,7 @@ axiosClient.interceptors.response.use(
       }
 
       clearAuthTokens()
+      notifyAuthExpired()
     }
 
     return Promise.reject(Object.assign(new Error(message), { status }))

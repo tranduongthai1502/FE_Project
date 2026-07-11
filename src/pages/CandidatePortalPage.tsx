@@ -121,7 +121,7 @@ type CandidateChangePasswordViewProps = {
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
-function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePasswordViewProps) {
+export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePasswordViewProps) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')

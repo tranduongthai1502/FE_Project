@@ -10,6 +10,7 @@ import { authApi } from '../../features/auth/services/authApi'
 
 type AppPage = 'landing' | 'login' | 'signup' | 'candidate' | 'tenantAdmin' | 'superAdmin' | 'hr' | 'interviewer'
 const AUTH_PAGE_STORAGE_KEY = 'jobfusion_auth_page'
+const AUTH_EXPIRED_EVENT_NAME = 'jobfusion:auth-expired'
 const unsupportedRoleMessage = 'This role is not supported in the current frontend.'
 const authenticatedPages: AppPage[] = ['candidate', 'tenantAdmin', 'superAdmin', 'hr', 'interviewer']
 const authHashes = ['#/login', '#/signup', '#/candidate', '#/tenant-admin', '#/super-admin', '#/hr', '#/interviewer']
@@ -72,6 +73,10 @@ function setBrowserLocationForPage(page: AppPage) {
   }
 
   window.location.hash = getHashForPage(page)
+}
+
+function setBrowserLocationForAuthPage(page: 'login' | 'signup', mode: 'push' | 'replace' = 'replace') {
+  window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', `/#/${page}`)
 }
 
 function getSavedPage(): AppPage | null {
@@ -142,6 +147,11 @@ export function AppRoutes() {
       if (window.location.pathname === '/super-admin' || !window.location.pathname.startsWith('/super-admin')) {
         window.history.replaceState(null, '', '/super-admin/dashboard')
       }
+    } else if (page === 'login' || page === 'signup') {
+      const expectedHash = getHashForPage(page)
+      if (window.location.pathname !== '/' || window.location.hash !== expectedHash) {
+        setBrowserLocationForAuthPage(page)
+      }
     } else if (page !== currentHashPage) {
       window.location.hash = getHashForPage(page)
     }
@@ -166,7 +176,7 @@ export function AppRoutes() {
         if (hashPage === 'signup') {
           setPage('signup')
         } else {
-          window.location.hash = '#/login'
+          setBrowserLocationForAuthPage('login')
           setPage('login')
         }
       }
@@ -181,15 +191,9 @@ export function AppRoutes() {
   }, [page])
 
   const navigateToAuthPage = (targetPage: 'login' | 'signup') => {
-    const nextUrl = `/#/${targetPage}`
     const shouldKeepLandingBehind = page === 'landing' || window.location.pathname === '/landingpage'
 
-    if (shouldKeepLandingBehind) {
-      window.history.pushState(null, '', nextUrl)
-    } else {
-      window.history.replaceState(null, '', nextUrl)
-    }
-
+    setBrowserLocationForAuthPage(targetPage, shouldKeepLandingBehind ? 'push' : 'replace')
     setPage(targetPage)
   }
 
@@ -250,10 +254,23 @@ export function AppRoutes() {
       // Local logout should still complete if the server token is already invalid.
     } finally {
       clearAuthStorage()
-      window.location.hash = '#/login'
+      setBrowserLocationForAuthPage('login')
+      setPage('login')
       triggerToast('Logged out successfully.')
     }
   }
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      clearAuthStorage()
+      setBrowserLocationForAuthPage('login')
+      setPage('login')
+      triggerToast('Your session has expired. Please log in again.', 'error')
+    }
+
+    window.addEventListener(AUTH_EXPIRED_EVENT_NAME, handleAuthExpired)
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT_NAME, handleAuthExpired)
+  }, [triggerToast])
 
   if (page === 'landing') {
     return (
