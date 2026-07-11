@@ -8,6 +8,15 @@ export type CreateTenantPayload = {
   adminEmail: string
 }
 
+export type UpdateTenantPayload = {
+  companyName: string
+  domain: string
+  industry: string
+  region: string
+  status: string
+  planId: string
+}
+
 export type SubscriptionPlan = {
   id: string
   name: string
@@ -26,6 +35,9 @@ export type SubscriptionPlan = {
 export type Tenant = {
   id: string
   name: string
+  domain?: string
+  industry?: string
+  region?: string
   subscriptionPlanId?: string
   subscriptionPlan: string
   expirationDate: string
@@ -58,6 +70,37 @@ export type CreatePlanPayload = {
   maxActiveJobPosting: number
   activeJobPostingUnlimited: boolean
   features: CreatePlanFeature[]
+}
+
+function buildPlanPayload(payload: CreatePlanPayload) {
+  const monthlyPrice = Number(payload.monthlyPrice)
+  const maxStaffAccount = Number(payload.maxStaffAccount)
+  const maxActiveJobPosting = Number(payload.maxActiveJobPosting)
+
+  return {
+    "name": payload.name.trim(),
+    "description": payload.description.trim(),
+    "monthlyPrice": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
+    "maxStaffAccount": Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
+    "staffAccountUnlimited": Boolean(payload.staffAccountUnlimited),
+    "maxActiveJobPosting": Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
+    "activeJobPostingUnlimited": Boolean(payload.activeJobPostingUnlimited),
+    "features": payload.features.map((feature) => ({
+      "key": String(feature.key),
+      "status": String(feature.status),
+    })),
+  }
+}
+
+function buildTenantUpdatePayload(payload: UpdateTenantPayload) {
+  return {
+    "companyName": payload.companyName.trim(),
+    "domain": payload.domain.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+    "industry": payload.industry.trim(),
+    "region": payload.region.trim(),
+    "status": payload.status.trim().toUpperCase() || 'ACTIVE',
+    "planId": payload.planId,
+  }
 }
 
 function getSubscriptionPlanList(payload: any): any[] {
@@ -149,6 +192,9 @@ function normalizeTenant(tenant: any): Tenant | null {
   return {
     id: String(id),
     name: String(tenant?.companyName || tenant?.name || tenant?.fullName || tenant?.tenantName || 'Tenant'),
+    domain: tenant?.domain ? String(tenant.domain) : undefined,
+    industry: tenant?.industry ? String(tenant.industry) : undefined,
+    region: tenant?.region ? String(tenant.region) : undefined,
     subscriptionPlanId: tenant?.planId || tenant?.subscriptionPlanId || plan?.id || plan?.planId
       ? String(tenant?.planId || tenant?.subscriptionPlanId || plan?.id || plan?.planId)
       : undefined,
@@ -201,16 +247,15 @@ export const adminApi = {
     return axiosClient.post('/api/tenant', backendPayload)
   },
 
+  async updateTenant(tenantId: string, payload: UpdateTenantPayload) {
+    return axiosClient.put(`/api/tenant/${encodeURIComponent(tenantId)}`, buildTenantUpdatePayload(payload))
+  },
+
   async createPlan(payload: CreatePlanPayload) {
-    return axiosClient.post('/api/plan', {
-      "name": payload.name.trim(),
-      "description": payload.description.trim(),
-      "monthlyPrice": payload.monthlyPrice,
-      "maxStaffAccount": payload.maxStaffAccount,
-      "staffAccountUnlimited": payload.staffAccountUnlimited,
-      "maxActiveJobPosting": payload.maxActiveJobPosting,
-      "activeJobPostingUnlimited": payload.activeJobPostingUnlimited,
-      "features": payload.features,
-    })
+    return axiosClient.post('/api/plan', buildPlanPayload(payload))
+  },
+
+  async updatePlan(planId: string, payload: CreatePlanPayload) {
+    return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanPayload(payload))
   }
 }
