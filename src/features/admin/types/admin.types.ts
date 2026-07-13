@@ -32,11 +32,15 @@ export type CreatePlanPayload = {
   name: string
   description: string
   monthlyPrice: number
-  maxStaffAccount: number
+  maxStaffAccount: number | null
   staffAccountUnlimited: boolean
-  maxActiveJobPosting: number
+  maxActiveJobPosting: number | null
   activeJobPostingUnlimited: boolean
   features: CreatePlanFeature[]
+}
+
+export type UpdatePlanPayload = CreatePlanPayload & {
+  status: string
 }
 
 export type SubscriptionPlan = {

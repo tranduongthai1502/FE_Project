@@ -5,5 +5,6 @@ export type {
   CreateTenantPayload,
   SubscriptionPlan,
   Tenant,
+  UpdatePlanPayload,
   UpdateTenantPayload,
 } from './types/admin.types'

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { isPromptCreateUrl, updatePromptCreateUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 
 function CreatePromptView({ onBack }: { onBack: () => void }) {
   const [internalName, setInternalName] = useState('xinquiU9')
@@ -102,7 +103,9 @@ SEO-optimized, and free of bias.`)
 }
 
 export function PromptManagementView() {
-  const [activeView, setActiveView] = useState<'list' | 'create'>('list')
+  const [activeView, setActiveView] = useState<'list' | 'create'>(() => (
+    isPromptCreateUrl() ? 'create' : 'list'
+  ))
   const prompts = [
     ['JD Generator', 'Structural role description creator', 'Recruitment Module', 'Today, 09:42 AM', 'Active'],
     ['AI CV Parsing', 'JSON extraction from PDF/Docx', 'Talent Module', 'Yesterday, 4:15 PM', 'Active'],
@@ -111,8 +114,27 @@ export function PromptManagementView() {
     ['Priority Support', 'Priority Support really joelman', 'Priority Module', '4 weeks ago', 'Active'],
   ]
 
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveView(isPromptCreateUrl() ? 'create' : 'list')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const openPromptCreate = () => {
+    setActiveView('create')
+    updatePromptCreateUrl()
+  }
+
+  const closePromptCreate = () => {
+    setActiveView('list')
+    updateSuperAdminViewUrl('promptManagement')
+  }
+
   if (activeView === 'create') {
-    return <CreatePromptView onBack={() => setActiveView('list')} />
+    return <CreatePromptView onBack={closePromptCreate} />
   }
 
   return (
@@ -129,7 +151,7 @@ export function PromptManagementView() {
           <h1>Prompt Management</h1>
           <p>Configure and optimize core AI instructions across the platform.</p>
         </div>
-        <button type="button" onClick={() => setActiveView('create')}>Create New Prompt</button>
+        <button type="button" onClick={openPromptCreate}>Create New Prompt</button>
       </div>
 
       <div className="role-metrics prompt-management-metrics">

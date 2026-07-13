@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { adminApi } from '../../services/adminApi'
-import type { CreatePlanPayload, SubscriptionPlan } from '../../types/admin.types'
+import type { CreatePlanPayload, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
-import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
+import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 
 const planFeatureDefaults = [
@@ -102,6 +102,22 @@ function CreatePlanView({
   const handleCreatePlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPlanError('')
+
+    if (!planName.trim() || !description.trim() || !monthlyPrice.trim()) {
+      setPlanError('Please fill in all required fields.')
+      return
+    }
+
+    if (!isStaffUnlimited && !maxStaffAccount.trim()) {
+      setPlanError('Please enter max staff accounts or enable unlimited.')
+      return
+    }
+
+    if (!isJobsUnlimited && !maxActiveJobPosting.trim()) {
+      setPlanError('Please enter max active job postings or enable unlimited.')
+      return
+    }
+
     setIsCreateConfirmOpen(true)
   }
 
@@ -110,9 +126,9 @@ function CreatePlanView({
       "name": planName,
       "description": description,
       "monthlyPrice": Number(monthlyPrice || 0),
-      "maxStaffAccount": isStaffUnlimited ? 0 : Number(maxStaffAccount || 0),
+      "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
-      "maxActiveJobPosting": isJobsUnlimited ? 0 : Number(maxActiveJobPosting || 0),
+      "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
       "features": features.map((feature) => ({
         "key": feature.code,
@@ -190,13 +206,14 @@ function CreatePlanView({
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Description,....."
               maxLength={1000}
+              required
             />
           </label>
 
           <div className="limit-fields">
             <label>
               <span>Max Staff Accounts</span>
-              <div className="limit-input">
+              <div className={`limit-input ${isStaffUnlimited ? 'unlimited-selected' : ''}`}>
                 <input
                   type="number"
                   min="0"
@@ -204,6 +221,7 @@ function CreatePlanView({
                   onChange={(event) => setMaxStaffAccount(event.target.value)}
                   placeholder="0"
                   disabled={isStaffUnlimited}
+                  required={!isStaffUnlimited}
                 />
                 <button
                   type="button"
@@ -219,7 +237,7 @@ function CreatePlanView({
 
             <label>
               <span>Max Active Job Postings</span>
-              <div className="limit-input">
+              <div className={`limit-input ${isJobsUnlimited ? 'unlimited-selected' : ''}`}>
                 <input
                   type="number"
                   min="0"
@@ -227,6 +245,7 @@ function CreatePlanView({
                   onChange={(event) => setMaxActiveJobPosting(event.target.value)}
                   placeholder="0"
                   disabled={isJobsUnlimited}
+                  required={!isJobsUnlimited}
                 />
                 <button
                   type="button"
@@ -335,19 +354,30 @@ function EditPlanDetailView({
     event.preventDefault()
     setPlanError('')
 
-    if (!planName.trim() || !monthlyPrice.trim()) {
+    if (!planName.trim() || !description.trim() || !monthlyPrice.trim()) {
       setPlanError('Please fill in all required fields.')
       return
     }
 
-    const payload: CreatePlanPayload = {
+    if (!isStaffUnlimited && !maxStaffAccount.trim()) {
+      setPlanError('Please enter max staff accounts or enable unlimited.')
+      return
+    }
+
+    if (!isJobsUnlimited && !maxActiveJobPosting.trim()) {
+      setPlanError('Please enter max active job postings or enable unlimited.')
+      return
+    }
+
+    const payload: UpdatePlanPayload = {
       "name": planName,
       "description": description,
       "monthlyPrice": Number(monthlyPrice || 0),
-      "maxStaffAccount": isStaffUnlimited ? 0 : Number(maxStaffAccount || 0),
+      "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
-      "maxActiveJobPosting": isJobsUnlimited ? 0 : Number(maxActiveJobPosting || 0),
+      "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
+      "status": isActive ? 'ACTIVE' : 'INACTIVE',
       "features": features.map((feature) => ({
         "key": feature.code,
         "status": feature.enabled ? 'ENABLED' : 'DISABLED',
@@ -392,7 +422,7 @@ function EditPlanDetailView({
               </label>
               <label>
                 <span>Short Tagline</span>
-                <input value={description} onChange={(event) => setDescription(event.target.value)} />
+                <input value={description} onChange={(event) => setDescription(event.target.value)} required />
               </label>
               <div className="edit-price-status-row">
                 <label>
@@ -469,7 +499,11 @@ function EditPlanDetailView({
 
 export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<'list' | 'create' | 'detail' | 'edit'>(() => (
-    getSubscriptionPlanIdFromUrl() ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail') : 'list'
+    isSubscriptionPlanCreateUrl()
+      ? 'create'
+      : getSubscriptionPlanIdFromUrl()
+        ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail')
+        : 'list'
   ))
   const [selectedPlanId, setSelectedPlanId] = useState(() => getSubscriptionPlanIdFromUrl())
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
@@ -523,7 +557,13 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
     const handlePopState = () => {
       const planId = getSubscriptionPlanIdFromUrl()
       setSelectedPlanId(planId)
-      setActiveView(planId ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail') : 'list')
+      setActiveView(
+        isSubscriptionPlanCreateUrl()
+          ? 'create'
+          : planId
+            ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail')
+            : 'list',
+      )
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -548,6 +588,18 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
     setSelectedPlanId('')
     setActiveView('list')
     updateSuperAdminViewUrl('subscriptionPlans')
+  }
+
+  const openPlanCreate = () => {
+    setSelectedPlanId('')
+    setActiveView('create')
+    updateSubscriptionPlanCreateUrl()
+  }
+
+  const openPlanDetail = (planId: string) => {
+    setSelectedPlanId(planId)
+    setActiveView('detail')
+    updateSubscriptionPlanDetailUrl(planId)
   }
 
   const openPlanEdit = (planId: string) => {
@@ -729,7 +781,7 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
           <h1>Subscription Plans</h1>
           <p>Manage tier configurations and global recruitment limits for platform customers.</p>
         </div>
-        <button type="button" onClick={() => setActiveView('create')}>Create New Plan</button>
+        <button type="button" onClick={openPlanCreate}>Create New Plan</button>
       </div>
 
       <div className="role-metrics subscription-plan-metrics">
@@ -776,19 +828,24 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
             const isActive = plan.status.toLowerCase() === 'active'
 
             return (
-              <div className="subscription-table-row" key={plan.id}>
+              <div className={`subscription-table-row ${isActive ? '' : 'inactive-plan-row'}`} key={plan.id}>
                 <strong>{plan.name}</strong>
                 <span>{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / mo`}</span>
                 <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                 <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                 <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : plan.status}</em>
-                <button type="button" aria-label={`Edit ${plan.name}`} onClick={() => openPlanEdit(plan.id)}>
-                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <span className="subscription-table-actions">
+                  <button type="button" aria-label={`View ${plan.name}`} onClick={() => openPlanDetail(plan.id)}>
+                    <i className="fa-regular fa-eye"></i>
+                  </button>
+                  <button type="button" aria-label={`Edit ${plan.name}`} onClick={() => openPlanEdit(plan.id)}>
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </span>
               </div>
             )
           })

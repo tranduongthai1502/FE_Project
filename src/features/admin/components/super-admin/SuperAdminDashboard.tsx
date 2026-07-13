@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { superNav } from '../../data/adminNavigation'
 import { adminApi } from '../../services/adminApi'
 import type { SubscriptionPlan, SuperAdminView, Tenant } from '../../types/admin.types'
-import { getInitialSuperAdminView, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
+import { getInitialSuperAdminView, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 import { MetricCard } from '../shared/MetricCard'
@@ -58,6 +58,14 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
   const selectView = (view: SuperAdminView) => {
     setActiveView(view)
     updateSuperAdminViewUrl(view)
+  }
+  const openTenantCreate = () => {
+    setActiveView('tenantManagement')
+    updateTenantCreateUrl()
+  }
+  const openTenantDetail = (tenantId: string) => {
+    setActiveView('tenantManagement')
+    updateTenantDetailUrl(tenantId)
   }
   const navItems = superNav.map((item) => ({
     icon: item.icon,
@@ -175,7 +183,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
                   <em className={tenant.status.toLowerCase() === 'active' ? 'active' : 'inactive'}>{tenant.status}</em>
                   <small>{formatTenantCreatedAt(tenant)}</small>
                   <div>
-                    <button type="button" aria-label={`View ${tenant.name}`}><i className="fa-regular fa-eye"></i></button>
+                    <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}><i className="fa-regular fa-eye"></i></button>
                     <button type="button" aria-label={`Delete ${tenant.name}`}><i className="fa-regular fa-trash-can"></i></button>
                   </div>
                 </article>
@@ -194,7 +202,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
             )}
             <div className="quick-actions">
               <button type="button" onClick={() => selectView('subscriptionPlans')}><i className="fa-solid fa-briefcase"></i>Manage Subscriptions</button>
-              <button type="button" onClick={() => selectView('tenantManagement')}><i className="fa-solid fa-building-circle-check"></i>Create New Tenant</button>
+              <button type="button" onClick={openTenantCreate}><i className="fa-solid fa-building-circle-check"></i>Create New Tenant</button>
               <button type="button" onClick={() => selectView('promptManagement')}><i className="fa-solid fa-wand-magic-sparkles"></i>Edit System Prompts</button>
             </div>
           </section>

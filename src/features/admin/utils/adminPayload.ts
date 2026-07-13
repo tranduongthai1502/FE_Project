@@ -1,22 +1,30 @@
-import type { CreatePlanPayload, CreateTenantPayload, UpdateTenantPayload } from '../types/admin.types'
+import type { CreatePlanPayload, CreateTenantPayload, UpdatePlanPayload, UpdateTenantPayload } from '../types/admin.types'
 
 export function buildPlanPayload(payload: CreatePlanPayload) {
   const monthlyPrice = Number(payload.monthlyPrice)
-  const maxStaffAccount = Number(payload.maxStaffAccount)
-  const maxActiveJobPosting = Number(payload.maxActiveJobPosting)
+  const maxStaffAccount = payload.maxStaffAccount === null ? null : Number(payload.maxStaffAccount)
+  const maxActiveJobPosting = payload.maxActiveJobPosting === null ? null : Number(payload.maxActiveJobPosting)
 
   return {
     "name": payload.name.trim(),
     "description": payload.description.trim(),
     "monthlyPrice": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
-    "maxStaffAccount": Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
+    "maxStaffAccount": payload.staffAccountUnlimited ? null : Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
     "staffAccountUnlimited": Boolean(payload.staffAccountUnlimited),
-    "maxActiveJobPosting": Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
+    "maxActiveJobPosting": payload.activeJobPostingUnlimited ? null : Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
     "activeJobPostingUnlimited": Boolean(payload.activeJobPostingUnlimited),
     "features": payload.features.map((feature) => ({
       "key": String(feature.key),
       "status": String(feature.status),
     })),
+  }
+}
+
+export function buildPlanUpdatePayload(planId: string, payload: UpdatePlanPayload) {
+  return {
+    "id": planId,
+    ...buildPlanPayload(payload),
+    "status": payload.status.trim().toUpperCase() || 'ACTIVE',
   }
 }
 
