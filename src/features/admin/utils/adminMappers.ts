@@ -43,6 +43,11 @@ export function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
 
   const name = plan?.name || plan?.planName || plan?.title || 'Subscription Plan'
   const price = Number(plan?.monthlyPrice ?? plan?.price ?? plan?.amount ?? 0)
+  const maxStaffAccountValue = plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? 0
+  const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? 0
+  const isUnlimitedValue = (value: unknown) => String(value).trim().toLowerCase() === 'unlimited'
+  const maxStaffAccount = Number(maxStaffAccountValue)
+  const maxActiveJobPosting = Number(maxActiveJobPostingValue)
   const billingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
   const featureList = Array.isArray(plan?.features)
     ? plan.features
@@ -58,10 +63,10 @@ export function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
     name: String(name),
     description: String(plan?.description || plan?.shortDescription || plan?.tagline || ''),
     monthlyPrice: Number.isFinite(price) ? price : 0,
-    maxStaffAccount: Number(plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? 0),
-    staffAccountUnlimited: Boolean(plan?.staffAccountUnlimited),
-    maxActiveJobPosting: Number(plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? 0),
-    activeJobPostingUnlimited: Boolean(plan?.activeJobPostingUnlimited),
+    maxStaffAccount: Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
+    staffAccountUnlimited: Boolean(plan?.staffAccountUnlimited) || isUnlimitedValue(maxStaffAccountValue),
+    maxActiveJobPosting: Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
+    activeJobPostingUnlimited: Boolean(plan?.activeJobPostingUnlimited) || isUnlimitedValue(maxActiveJobPostingValue),
     status: String(plan?.status || (plan?.active === false ? 'Inactive' : 'Active')),
     createdAt: String(plan?.createdAt || plan?.createdDate || plan?.created_at || plan?.createAt || ''),
     features: featureList.map((feature: any) => ({

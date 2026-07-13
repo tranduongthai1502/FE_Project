@@ -5,6 +5,7 @@ import type {
   PlanListRequest,
   SubscriptionPlan,
   Tenant,
+  UpdatePlanPayload,
   TenantListRequest,
   UpdateTenantPayload,
 } from '../types/admin.types'
@@ -14,7 +15,7 @@ import {
   normalizeSubscriptionPlan,
   normalizeTenant,
 } from '../utils/adminMappers'
-import { buildPlanPayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../utils/adminPayload'
+import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../utils/adminPayload'
 
 export const adminApi = {
   async getTenants() {
@@ -57,7 +58,11 @@ export const adminApi = {
     return axiosClient.post('/api/plan', buildPlanPayload(payload))
   },
 
-  async updatePlan(planId: string, payload: CreatePlanPayload) {
-    return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanPayload(payload))
+  async updatePlan(planId: string, payload: UpdatePlanPayload) {
+    if (!planId.trim()) {
+      throw new Error('Missing subscription plan id')
+    }
+
+    return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(planId, payload))
   }
 }

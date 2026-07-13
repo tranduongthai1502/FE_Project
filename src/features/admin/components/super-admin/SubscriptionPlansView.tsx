@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { adminApi } from '../../services/adminApi'
-import type { CreatePlanPayload, SubscriptionPlan, Tenant } from '../../types/admin.types'
+import type { CreatePlanPayload, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
@@ -102,6 +102,22 @@ function CreatePlanView({
   const handleCreatePlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPlanError('')
+
+    if (!planName.trim() || !description.trim() || !monthlyPrice.trim()) {
+      setPlanError('Please fill in all required fields.')
+      return
+    }
+
+    if (!isStaffUnlimited && !maxStaffAccount.trim()) {
+      setPlanError('Please enter max staff accounts or enable unlimited.')
+      return
+    }
+
+    if (!isJobsUnlimited && !maxActiveJobPosting.trim()) {
+      setPlanError('Please enter max active job postings or enable unlimited.')
+      return
+    }
+
     setIsCreateConfirmOpen(true)
   }
 
@@ -110,9 +126,9 @@ function CreatePlanView({
       "name": planName,
       "description": description,
       "monthlyPrice": Number(monthlyPrice || 0),
-      "maxStaffAccount": isStaffUnlimited ? 0 : Number(maxStaffAccount || 0),
+      "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
-      "maxActiveJobPosting": isJobsUnlimited ? 0 : Number(maxActiveJobPosting || 0),
+      "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
       "features": features.map((feature) => ({
         "key": feature.code,
@@ -190,13 +206,14 @@ function CreatePlanView({
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Description,....."
               maxLength={1000}
+              required
             />
           </label>
 
           <div className="limit-fields">
             <label>
               <span>Max Staff Accounts</span>
-              <div className="limit-input">
+              <div className={`limit-input ${isStaffUnlimited ? 'unlimited-selected' : ''}`}>
                 <input
                   type="number"
                   min="0"
@@ -204,6 +221,7 @@ function CreatePlanView({
                   onChange={(event) => setMaxStaffAccount(event.target.value)}
                   placeholder="0"
                   disabled={isStaffUnlimited}
+                  required={!isStaffUnlimited}
                 />
                 <button
                   type="button"
@@ -219,7 +237,7 @@ function CreatePlanView({
 
             <label>
               <span>Max Active Job Postings</span>
-              <div className="limit-input">
+              <div className={`limit-input ${isJobsUnlimited ? 'unlimited-selected' : ''}`}>
                 <input
                   type="number"
                   min="0"
@@ -227,6 +245,7 @@ function CreatePlanView({
                   onChange={(event) => setMaxActiveJobPosting(event.target.value)}
                   placeholder="0"
                   disabled={isJobsUnlimited}
+                  required={!isJobsUnlimited}
                 />
                 <button
                   type="button"
@@ -335,19 +354,30 @@ function EditPlanDetailView({
     event.preventDefault()
     setPlanError('')
 
-    if (!planName.trim() || !monthlyPrice.trim()) {
+    if (!planName.trim() || !description.trim() || !monthlyPrice.trim()) {
       setPlanError('Please fill in all required fields.')
       return
     }
 
-    const payload: CreatePlanPayload = {
+    if (!isStaffUnlimited && !maxStaffAccount.trim()) {
+      setPlanError('Please enter max staff accounts or enable unlimited.')
+      return
+    }
+
+    if (!isJobsUnlimited && !maxActiveJobPosting.trim()) {
+      setPlanError('Please enter max active job postings or enable unlimited.')
+      return
+    }
+
+    const payload: UpdatePlanPayload = {
       "name": planName,
       "description": description,
       "monthlyPrice": Number(monthlyPrice || 0),
-      "maxStaffAccount": isStaffUnlimited ? 0 : Number(maxStaffAccount || 0),
+      "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
-      "maxActiveJobPosting": isJobsUnlimited ? 0 : Number(maxActiveJobPosting || 0),
+      "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
+      "status": isActive ? 'ACTIVE' : 'INACTIVE',
       "features": features.map((feature) => ({
         "key": feature.code,
         "status": feature.enabled ? 'ENABLED' : 'DISABLED',
@@ -392,7 +422,7 @@ function EditPlanDetailView({
               </label>
               <label>
                 <span>Short Tagline</span>
-                <input value={description} onChange={(event) => setDescription(event.target.value)} />
+                <input value={description} onChange={(event) => setDescription(event.target.value)} required />
               </label>
               <div className="edit-price-status-row">
                 <label>
@@ -798,7 +828,7 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
             const isActive = plan.status.toLowerCase() === 'active'
 
             return (
-              <div className="subscription-table-row" key={plan.id}>
+              <div className={`subscription-table-row ${isActive ? '' : 'inactive-plan-row'}`} key={plan.id}>
                 <strong>{plan.name}</strong>
                 <span>{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / mo`}</span>
                 <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
