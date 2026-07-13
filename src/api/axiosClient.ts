@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage } from '../features/auth/utils/authStorage'
 
 const API_URL = import.meta.env.VITE_BACKEND_API_URL
 
@@ -16,7 +17,6 @@ const refreshClient = axios.create({
   },
 })
 
-const authExpiredEventName = 'jobfusion:auth-expired'
 let refreshTokenRequest: Promise<string> | null = null
 
 function getStoredToken(key: 'access_token' | 'refresh_token') {
@@ -27,19 +27,8 @@ function getAuthStorage() {
   return localStorage.getItem('refresh_token') ? localStorage : sessionStorage
 }
 
-function clearAuthTokens() {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-  localStorage.removeItem('user_info')
-  localStorage.removeItem('jobfusion_auth_page')
-  sessionStorage.removeItem('access_token')
-  sessionStorage.removeItem('refresh_token')
-  sessionStorage.removeItem('user_info')
-  sessionStorage.removeItem('jobfusion_auth_page')
-}
-
 function notifyAuthExpired() {
-  window.dispatchEvent(new Event(authExpiredEventName))
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT_NAME))
 }
 
 function getAuthResponsePayload(response: any) {
@@ -146,7 +135,7 @@ axiosClient.interceptors.response.use(
         // Fall through to clearing tokens and returning the original auth error.
       }
 
-      clearAuthTokens()
+      clearAuthStorage()
       notifyAuthExpired()
     }
 
