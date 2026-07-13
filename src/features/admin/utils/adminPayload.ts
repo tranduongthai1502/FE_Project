@@ -20,12 +20,8 @@ export function buildPlanPayload(payload: CreatePlanPayload) {
   }
 }
 
-export function buildPlanUpdatePayload(planId: string, payload: UpdatePlanPayload) {
-  return {
-    "id": planId,
-    ...buildPlanPayload(payload),
-    "status": payload.status.trim().toUpperCase() || 'ACTIVE',
-  }
+export function buildPlanUpdatePayload(payload: UpdatePlanPayload) {
+  return buildPlanPayload(payload)
 }
 
 export function buildTenantCreatePayload(payload: CreateTenantPayload) {
