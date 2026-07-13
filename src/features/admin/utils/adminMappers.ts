@@ -84,6 +84,7 @@ export function normalizeTenant(tenant: any): Tenant | null {
   const plan = tenant?.plan || tenant?.subscriptionPlan || tenant?.subscription_plan || {}
   const quotaLimit = Number(
     tenant?.userQuotaLimit ??
+    tenant?.maxUsers ??
     tenant?.maxStaffAccount ??
     tenant?.maxStaffAccounts ??
     plan?.maxStaffAccount ??
@@ -102,7 +103,7 @@ export function normalizeTenant(tenant: any): Tenant | null {
       : undefined,
     subscriptionPlan: String(plan?.name || tenant?.planName || tenant?.subscriptionPlanName || tenant?.subscriptionPlan || '-'),
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
-    userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
+    userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
     status: String(tenant?.status || (tenant?.active === false ? 'Inactive' : 'Active')),
   }

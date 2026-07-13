@@ -487,7 +487,7 @@
 .super-admin-metrics .role-metric small {
   margin-top: 10px;
   color: #667085;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.2;
   letter-spacing: 0;
   text-transform: none;
@@ -582,7 +582,7 @@
   display: block;
   margin-top: 10px;
   color: #667085;
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
 }
 
@@ -1473,7 +1473,7 @@
   border: 0;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -1856,14 +1856,14 @@
   padding: 0 28px;
   border-bottom: 1px solid #f0d7d0;
   color: #243044;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .tenant-list-table-head {
   min-height: 50px;
   background: #eef3ff;
   color: #667085;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1871,12 +1871,12 @@
 
 .tenant-list-table-row strong {
   color: #101c33;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .tenant-plan-name {
   color: #d93408;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -1892,7 +1892,7 @@
   align-items: center;
   gap: 12px;
   color: #101c33;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .tenant-quota i {
@@ -1913,7 +1913,7 @@
 
 .tenant-quota strong {
   color: #101c33;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1924,7 +1924,7 @@
 }
 
 .tenant-list-table-row em {
-  font-size: 11px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 900;
 }
@@ -1959,7 +1959,7 @@
   place-items: center;
   border-bottom: 1px solid #f0d7d0;
   color: #667085;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -4243,5 +4243,407 @@
     grid-template-columns: 1fr;
     gap: 6px;
     padding: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .role-page,
+  .role-page.is-sidebar-hidden,
+  .super-admin-shell {
+    --role-sidebar-width: min(82vw, 300px);
+    display: block;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .role-sidebar,
+  .super-admin-shell .role-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--role-sidebar-width);
+    max-width: calc(100vw - 28px);
+    height: 100dvh;
+    min-height: 100dvh;
+    box-shadow: 18px 0 38px rgba(16, 28, 51, 0.16);
+  }
+
+  .role-main {
+    width: 100%;
+  }
+
+  .role-topbar,
+  .super-admin-shell .role-topbar {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .role-search,
+  .super-admin-shell .role-search {
+    order: 4;
+    flex-basis: 100%;
+    height: 38px;
+  }
+
+  .role-switcher,
+  .role-icons {
+    display: none;
+  }
+
+  .role-user,
+  .super-admin-shell .role-user {
+    min-height: 36px;
+    padding: 0 8px;
+  }
+
+  .role-user > span:not(.role-user-avatar),
+  .super-admin-shell .role-user > span:not(.role-user-avatar),
+  .role-user-chevron {
+    display: none;
+  }
+
+  .role-user-dropdown,
+  .super-admin-shell .role-user-dropdown {
+    right: 0;
+    width: min(230px, calc(100vw - 24px));
+  }
+
+  .role-content,
+  .super-admin-content,
+  .tenant-management-content,
+  .subscription-plans-content,
+  .subscription-plan-detail-content,
+  .create-plan-content,
+  .edit-plan-content,
+  .prompt-management-content,
+  .create-prompt-content,
+  .tenant-detail-content,
+  .create-tenant-content,
+  .account-settings-content {
+    padding: 16px 12px 28px;
+  }
+
+  .create-plan-content,
+  .edit-plan-content,
+  .create-prompt-content {
+    padding-bottom: 96px;
+  }
+
+  .role-title-row,
+  .subscription-title-row,
+  .plan-detail-title-row,
+  .tenant-detail-title-row,
+  .create-plan-title,
+  .prompt-title-row {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .role-title-row h1,
+  .subscription-title-row h1,
+  .plan-detail-title-row h1,
+  .tenant-detail-title-row h1,
+  .create-plan-title h1,
+  .account-settings-content h1 {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .role-title-row div:last-child,
+  .plan-detail-title-actions,
+  .super-admin-hero-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .role-title-row button,
+  .subscription-title-row button,
+  .plan-detail-title-actions button,
+  .tenant-detail-title-row > button,
+  .tenant-create-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .role-metrics,
+  .role-metrics.four,
+  .super-admin-metrics,
+  .tenant-management-metrics,
+  .subscription-plan-metrics,
+  .prompt-management-metrics,
+  .role-grid,
+  .tenant-grid,
+  .super-grid,
+  .hr-grid,
+  .interviewer-grid,
+  .activity-grid,
+  .super-admin-content .activity-grid,
+  .plan-config-grid,
+  .edit-plan-layout,
+  .edit-price-status-row,
+  .create-prompt-layout,
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .role-metric,
+  .subscription-plan-card,
+  .prompt-summary-card {
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .role-metric strong,
+  .subscription-plan-card strong,
+  .prompt-summary-card strong {
+    font-size: 24px;
+  }
+
+  .tenant-filter-card {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .tenant-filter-tabs {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .tenant-filter-tabs button {
+    flex: 0 0 auto;
+  }
+
+  .tenant-filter-search,
+  .tenant-plan-filter,
+  .tenant-plan-filter select {
+    width: 100%;
+  }
+
+  .tenant-list-table-card,
+  .subscription-table-card,
+  .prompt-table-card,
+  .prompt-sync-footer {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .tenant-list-table-head,
+  .subscription-table-head,
+  .prompt-table-head,
+  .super-tenant-table-header {
+    display: none;
+  }
+
+  .tenant-list-table-row,
+  .subscription-table-row,
+  .prompt-table-row,
+  .super-tenant-table article,
+  .plan-tenant-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .tenant-list-table-row > *,
+  .subscription-table-row > *,
+  .prompt-table-row > *,
+  .plan-tenant-row > * {
+    min-width: 0;
+  }
+
+  .tenant-list-table-row:not(.tenant-list-table-head) > *,
+  .subscription-table-row:not(.subscription-table-head) > *,
+  .prompt-table-row:not(.prompt-table-head) > *,
+  .plan-tenant-row > * {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    text-align: right;
+  }
+
+  .tenant-list-table-row:not(.tenant-list-table-head) > *::before,
+  .subscription-table-row:not(.subscription-table-head) > *::before,
+  .prompt-table-row:not(.prompt-table-head) > *::before,
+  .plan-tenant-row > *::before {
+    flex: 0 0 auto;
+    color: #667085;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .tenant-list-table-row > :nth-child(1)::before { content: 'Tenant'; }
+  .tenant-list-table-row > :nth-child(2)::before { content: 'Plan'; }
+  .tenant-list-table-row > :nth-child(3)::before { content: 'Expires'; }
+  .tenant-list-table-row > :nth-child(4)::before { content: 'Quota'; }
+  .tenant-list-table-row > :nth-child(5)::before { content: 'Status'; }
+  .tenant-list-table-row > :nth-child(6)::before { content: 'Action'; }
+
+  .subscription-table-row > :nth-child(1)::before { content: 'Plan'; }
+  .subscription-table-row > :nth-child(2)::before { content: 'Price'; }
+  .subscription-table-row > :nth-child(3)::before { content: 'Members'; }
+  .subscription-table-row > :nth-child(4)::before { content: 'Jobs'; }
+  .subscription-table-row > :nth-child(5)::before { content: 'Status'; }
+  .subscription-table-row > :nth-child(6)::before { content: 'Action'; }
+
+  .prompt-table-row > :nth-child(1)::before { content: 'Prompt'; }
+  .prompt-table-row > :nth-child(2)::before { content: 'Description'; }
+  .prompt-table-row > :nth-child(3)::before { content: 'Model'; }
+  .prompt-table-row > :nth-child(4)::before { content: 'Updated'; }
+  .prompt-table-row > :nth-child(5)::before { content: 'Status'; }
+  .prompt-table-row > :nth-child(6)::before { content: 'Action'; }
+
+  .plan-tenant-row > :nth-child(1)::before { content: 'Tenant'; }
+  .plan-tenant-row > :nth-child(2)::before { content: 'Status'; }
+  .plan-tenant-row > :nth-child(3)::before { content: 'Quota'; }
+  .plan-tenant-row > :nth-child(4)::before { content: 'Expires'; }
+
+  .tenant-quota {
+    flex-wrap: wrap;
+  }
+
+  .tenant-quota i {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .tenant-list-table-row button,
+  .subscription-table-row button,
+  .prompt-table-row button {
+    margin-left: auto;
+  }
+
+  .tenant-list-table-card footer,
+  .subscription-table-card footer,
+  .prompt-table-card footer {
+    min-height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .tenant-list-table-card footer div,
+  .subscription-table-card footer div,
+  .prompt-table-card footer div {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .tenant-detail-grid,
+  .tenant-detail-info-grid,
+  .tenant-subscription-metrics,
+  .tenant-subscription-lines,
+  .tenant-admin-layout,
+  .create-tenant-card .tenant-form-grid,
+  .create-tenant-card .tenant-form-grid.admin,
+  .tenant-form-grid,
+  .tenant-form-grid.admin,
+  .create-plan-details-grid,
+  .feature-permission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-modal-backdrop {
+    padding: 10px;
+  }
+
+  .tenant-modal,
+  .tenant-confirm-modal,
+  .create-tenant-card,
+  .create-plan-card,
+  .edit-plan-card,
+  .settings-password-card {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .tenant-modal-header,
+  .tenant-detail-card header,
+  .plan-detail-card-head,
+  .prompt-editor-panel header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tenant-modal-actions,
+  .create-plan-actions,
+  .create-prompt-actions,
+  .settings-password-form footer {
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .create-plan-actions button,
+  .create-prompt-actions button,
+  .settings-cancel-btn,
+  .settings-save-btn {
+    width: 100%;
+  }
+
+  .edit-plan-actions p {
+    margin-right: 0;
+  }
+
+  .edit-resource-list article {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .edit-resource-list article input,
+  .edit-resource-list article .mini-toggle,
+  .edit-resource-list article em {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .create-prompt-layout {
+    min-width: 0;
+  }
+
+  .prompt-editor-panel,
+  .prompt-version-panel {
+    min-height: auto;
+  }
+
+  .prompt-editor-panel {
+    grid-template-rows: auto minmax(360px, 1fr) auto;
+  }
+
+  .prompt-code-editor {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .prompt-code-editor textarea {
+    min-height: 360px;
+    padding: 12px;
+  }
+
+  .prompt-sync-footer,
+  .settings-page-footer,
+  .settings-page-footer nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .account-settings-content h1 {
+    margin-bottom: 20px;
+  }
+
+  .settings-tabs-card {
+    padding: 14px;
   }
 }

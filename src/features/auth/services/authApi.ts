@@ -11,13 +11,6 @@ export const authApi = {
     return axiosClient.post('/api/auth/logout', refreshToken ? { refresh_token: refreshToken, refreshToken } : {})
   },
 
-  async refreshToken(refreshToken: string) {
-    return axiosClient.post('/api/auth/refresh-token', {
-      refresh_token: refreshToken,
-      refreshToken,
-    })
-  },
-
   async register(payload: RegisterPayload) {
     const backendPayload = {
       email: payload.email,

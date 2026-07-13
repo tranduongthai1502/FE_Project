@@ -63,6 +63,6 @@ export const adminApi = {
       throw new Error('Missing subscription plan id')
     }
 
-    return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(planId, payload))
+    return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
   }
 }
