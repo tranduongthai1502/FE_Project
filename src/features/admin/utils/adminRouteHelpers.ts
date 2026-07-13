@@ -21,7 +21,15 @@ export function updateSuperAdminViewUrl(view: SuperAdminView) {
 
 export function getTenantDetailIdFromUrl() {
   const match = window.location.pathname.match(/^\/super-admin\/tenant-management\/([^/]+)$/)
-  return match ? decodeURIComponent(match[1]) : ''
+  return match && match[1] !== 'create' ? decodeURIComponent(match[1]) : ''
+}
+
+export function isTenantCreateUrl() {
+  return window.location.pathname === '/super-admin/tenant-management/create'
+}
+
+export function updateTenantCreateUrl() {
+  window.history.pushState(null, '', '/super-admin/tenant-management/create')
 }
 
 export function updateTenantDetailUrl(tenantId: string) {
@@ -30,11 +38,19 @@ export function updateTenantDetailUrl(tenantId: string) {
 
 export function getSubscriptionPlanIdFromUrl() {
   const match = window.location.pathname.match(/^\/super-admin\/subscription-plans\/([^/]+)(?:\/edit)?$/)
-  return match ? decodeURIComponent(match[1]) : ''
+  return match && match[1] !== 'create' ? decodeURIComponent(match[1]) : ''
+}
+
+export function isSubscriptionPlanCreateUrl() {
+  return window.location.pathname === '/super-admin/subscription-plans/create'
 }
 
 export function isSubscriptionPlanEditUrl() {
   return /^\/super-admin\/subscription-plans\/[^/]+\/edit$/.test(window.location.pathname)
+}
+
+export function updateSubscriptionPlanCreateUrl() {
+  window.history.pushState(null, '', '/super-admin/subscription-plans/create')
 }
 
 export function updateSubscriptionPlanDetailUrl(planId: string) {
@@ -43,4 +59,12 @@ export function updateSubscriptionPlanDetailUrl(planId: string) {
 
 export function updateSubscriptionPlanEditUrl(planId: string) {
   window.history.pushState(null, '', `/super-admin/subscription-plans/${encodeURIComponent(planId)}/edit`)
+}
+
+export function isPromptCreateUrl() {
+  return window.location.pathname === '/super-admin/prompt-management/create'
+}
+
+export function updatePromptCreateUrl() {
+  window.history.pushState(null, '', '/super-admin/prompt-management/create')
 }

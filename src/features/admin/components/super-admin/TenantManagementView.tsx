@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { adminApi } from '../../services/adminApi'
 import type { CreateTenantForm, SubscriptionPlan, Tenant } from '../../types/admin.types'
-import { getTenantDetailIdFromUrl, updateSuperAdminViewUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
+import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
@@ -11,7 +11,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     getTenantDetailIdFromUrl() ? 'detail' : 'list'
   ))
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
@@ -121,6 +121,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       const tenantId = getTenantDetailIdFromUrl()
       setSelectedTenantId(tenantId)
       setActiveView(tenantId ? 'detail' : 'list')
+      setIsCreateModalOpen(isTenantCreateUrl())
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -137,6 +138,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setIsCreateModalOpen(false)
     setIsCreateConfirmOpen(false)
     setTenantError('')
+    updateSuperAdminViewUrl('tenantManagement')
   }
 
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
@@ -165,6 +167,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       })
       setIsCreateModalOpen(false)
       setIsCreateConfirmOpen(false)
+      updateSuperAdminViewUrl('tenantManagement')
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
@@ -202,6 +205,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       : planByName.get(tenant.subscriptionPlan.toLowerCase())
   )
   const openTenantDetail = (tenantId: string) => {
+    setIsCreateModalOpen(false)
     setSelectedTenantId(tenantId)
     setActiveView('detail')
     updateTenantDetailUrl(tenantId)
@@ -210,6 +214,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setSelectedTenantId('')
     setActiveView('list')
     updateSuperAdminViewUrl('tenantManagement')
+  }
+  const openCreateTenant = () => {
+    setSelectedTenantId('')
+    setActiveView('list')
+    setIsCreateModalOpen(true)
+    updateTenantCreateUrl()
   }
 
   if (isCreateModalOpen) {
@@ -357,7 +367,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           <i className="fa-solid fa-magnifying-glass"></i>
           <input type="search" value="Xingqiu" readOnly aria-label="Tenant search" />
         </div>
-        <button type="button" className="tenant-create-btn" onClick={() => setIsCreateModalOpen(true)}>
+        <button type="button" className="tenant-create-btn" onClick={openCreateTenant}>
           Create New Tenant
         </button>
       </section>

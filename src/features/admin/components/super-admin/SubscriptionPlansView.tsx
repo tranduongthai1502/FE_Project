@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { adminApi } from '../../services/adminApi'
-import type { CreatePlanPayload, SubscriptionPlan } from '../../types/admin.types'
+import type { CreatePlanPayload, SubscriptionPlan, Tenant } from '../../types/admin.types'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
-import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
+import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 
 const planFeatureDefaults = [
@@ -469,7 +469,11 @@ function EditPlanDetailView({
 
 export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<'list' | 'create' | 'detail' | 'edit'>(() => (
-    getSubscriptionPlanIdFromUrl() ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail') : 'list'
+    isSubscriptionPlanCreateUrl()
+      ? 'create'
+      : getSubscriptionPlanIdFromUrl()
+        ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail')
+        : 'list'
   ))
   const [selectedPlanId, setSelectedPlanId] = useState(() => getSubscriptionPlanIdFromUrl())
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
@@ -523,7 +527,13 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
     const handlePopState = () => {
       const planId = getSubscriptionPlanIdFromUrl()
       setSelectedPlanId(planId)
-      setActiveView(planId ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail') : 'list')
+      setActiveView(
+        isSubscriptionPlanCreateUrl()
+          ? 'create'
+          : planId
+            ? (isSubscriptionPlanEditUrl() ? 'edit' : 'detail')
+            : 'list',
+      )
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -548,6 +558,18 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
     setSelectedPlanId('')
     setActiveView('list')
     updateSuperAdminViewUrl('subscriptionPlans')
+  }
+
+  const openPlanCreate = () => {
+    setSelectedPlanId('')
+    setActiveView('create')
+    updateSubscriptionPlanCreateUrl()
+  }
+
+  const openPlanDetail = (planId: string) => {
+    setSelectedPlanId(planId)
+    setActiveView('detail')
+    updateSubscriptionPlanDetailUrl(planId)
   }
 
   const openPlanEdit = (planId: string) => {
@@ -729,7 +751,7 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
           <h1>Subscription Plans</h1>
           <p>Manage tier configurations and global recruitment limits for platform customers.</p>
         </div>
-        <button type="button" onClick={() => setActiveView('create')}>Create New Plan</button>
+        <button type="button" onClick={openPlanCreate}>Create New Plan</button>
       </div>
 
       <div className="role-metrics subscription-plan-metrics">
@@ -782,13 +804,18 @@ export function SubscriptionPlansView({ triggerToast }: { triggerToast?: (messag
                 <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                 <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                 <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : plan.status}</em>
-                <button type="button" aria-label={`Edit ${plan.name}`} onClick={() => openPlanEdit(plan.id)}>
-                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <span className="subscription-table-actions">
+                  <button type="button" aria-label={`View ${plan.name}`} onClick={() => openPlanDetail(plan.id)}>
+                    <i className="fa-regular fa-eye"></i>
+                  </button>
+                  <button type="button" aria-label={`Edit ${plan.name}`} onClick={() => openPlanEdit(plan.id)}>
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </span>
               </div>
             )
           })
