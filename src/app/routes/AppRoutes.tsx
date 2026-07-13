@@ -1,8 +1,8 @@
 import { useEffect, type ReactElement } from 'react'
 import { BrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Toast } from '../../components/common/Toast'
-import { useAuthSession } from '../../features/auth/hooks/useAuthSession'
-import { useToast } from '../../hooks/useToast'
+import { Toast } from '@/components/common/Toast'
+import { useAuthSession } from '@/features/auth'
+import { useToast } from '@/hooks/useToast'
 import { ProtectedRoute } from './ProtectedRoute'
 import { RouteConfig, type AppPage } from './RouteConfig'
 

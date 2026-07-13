@@ -1,4 +1,4 @@
 export {
   CandidatePortalPage,
-} from '../features/candidate'
-export { CandidateChangePasswordView } from '../features/auth'
+} from '@/features/candidate'
+export { CandidateChangePasswordView } from '@/features/auth'

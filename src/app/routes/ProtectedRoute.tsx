@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { AppRole } from '../../features/auth/utils/authRole'
+import type { AppRole } from '@/features/auth'
 
 type ProtectedRouteProps = {
   allowedRole: AppRole

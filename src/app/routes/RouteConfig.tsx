@@ -1,12 +1,12 @@
 import type { ReactElement } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { CandidatePortalPage } from '../../pages/CandidatePortalPage'
-import { LandingPage } from '../../pages/LandingPage'
-import { LoginPage } from '../../pages/LoginPage'
-import { RoleDashboardPage } from '../../pages/RoleDashboardPage'
-import { SignupPage } from '../../pages/SignupPage'
-import type { AppRole } from '../../features/auth/utils/authRole'
+import { CandidatePortalPage } from '@/pages/CandidatePortalPage'
+import { LandingPage } from '@/pages/LandingPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { RoleDashboardPage } from '@/pages/RoleDashboardPage'
+import { SignupPage } from '@/pages/SignupPage'
+import type { AppRole } from '@/features/auth'
 
 export type AppPage = AppRole
 

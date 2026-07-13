@@ -1,1 +1,1 @@
-export { RoleDashboardPage } from '../features/admin'
+export { RoleDashboardPage } from '@/features/admin'

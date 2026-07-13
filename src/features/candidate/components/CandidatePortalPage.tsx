@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CandidateChangePasswordView } from '../../auth/components/ChangePasswordView'
+import { CandidateChangePasswordView } from '@/features/auth'
 
 import { applications, candidateNavItems } from '../data/candidateData'
 import { useCandidatePanel } from '../hooks/useCandidatePanel'

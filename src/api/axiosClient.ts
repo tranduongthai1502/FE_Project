@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage } from '../features/auth/utils/authStorage'
+import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage } from '@/features/auth'
 
 const API_URL = import.meta.env.VITE_BACKEND_API_URL
 
