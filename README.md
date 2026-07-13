@@ -147,7 +147,7 @@ Mot so route dang dung:
 
 Luu y: Super Admin dung path `/super-admin/...`. Khi logout hoac session het han, app se replace URL ve `/#/login` de tranh truong hop URL bi thanh `/super-admin/dashboard#/login`.
 
-## Cac lenh huu ich
+## Cac lenh huu ic
 
 Chay lint:
 
