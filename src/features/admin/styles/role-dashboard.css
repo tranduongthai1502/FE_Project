@@ -4275,6 +4275,7 @@
   .super-admin-shell .role-topbar {
     gap: 8px;
     padding: 8px 12px;
+    overflow: visible;
   }
 
   .role-search,
@@ -4303,8 +4304,14 @@
 
   .role-user-dropdown,
   .super-admin-shell .role-user-dropdown {
-    right: 0;
-    width: min(230px, calc(100vw - 24px));
+    position: fixed;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    border-radius: 14px;
+    z-index: 1200;
   }
 
   .role-content,
