@@ -12,7 +12,7 @@ export type SuperAdminView = 'dashboard' | 'tenantManagement' | 'subscriptionPla
 
 export type RoleHomeView = 'dashboard' | 'settings'
 
-export type TenantAdminView = RoleHomeView | 'staffManagement'
+export type TenantAdminView = RoleHomeView | 'staffManagement' | 'staffCreate'
 
 export type UpdateTenantPayload = {
   companyName: string
