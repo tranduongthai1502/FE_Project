@@ -350,6 +350,13 @@
 
 .candidate-settings-screen {
   min-height: 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+.role-main > .candidate-settings-screen {
+  padding: 22px 28px 28px;
+  box-sizing: border-box;
 }
 
 .candidate-back-home {
@@ -373,10 +380,10 @@
 }
 
 .candidate-settings-layout {
-  width: 75%;
+  width: min(100%, 980px);
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
-  gap: 10px;
+  gap: 24px;
   align-items: start;
   margin: 0 auto;
 }
@@ -393,7 +400,7 @@
   display: grid;
   gap: 12px;
   padding: 20px 17px;
-  margin:0px 20px;
+  margin: 0;
 }
 
 .security-tabs-title {
@@ -428,7 +435,8 @@
   position: relative;
   min-height: 350px;
   padding: 28px 34px 24px;
-  margin:0px 30px;
+  margin: 0;
+  min-width: 0;
 }
 
 .candidate-change-password-close {
@@ -1415,18 +1423,74 @@
     grid-template-columns: var(--candidate-sidebar-width) minmax(0, 1fr);
   }
 
+  .candidate-topbar {
+    gap: 10px;
+    padding: 8px 16px;
+  }
+
   .candidate-tabs {
+    order: 4;
+    display: flex;
+    flex: 0 1 auto;
+    gap: 18px;
+    margin-left: 0;
+  }
+
+  .candidate-tabs button {
+    height: 42px;
+    font-size: 13px;
+  }
+
+  .candidate-tabs .candidate-pill {
     display: none;
   }
 
   .candidate-search {
+    order: 2;
+    flex: 1 1 220px;
     width: min(420px, 50vw);
+    max-width: 340px;
+    min-width: 160px;
+  }
+
+  .ai-match-btn {
+    order: 3;
+    min-width: 88px;
+    padding: 0 14px;
+  }
+
+  .candidate-top-icons {
+    order: 5;
+    margin-left: 0;
+    gap: 10px;
+  }
+
+  .candidate-user-trigger {
+    max-width: 168px;
+    padding: 5px 10px 5px 5px;
+  }
+
+  .candidate-user-name {
+    max-width: 88px;
+  }
+
+  .candidate-page.is-sidebar-open .candidate-hero-grid,
+  .candidate-page.is-sidebar-open .candidate-lower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-page.is-sidebar-open .application-status-card,
+  .candidate-page.is-sidebar-open .interview-card,
+  .candidate-page.is-sidebar-open .resume-insights-card,
+  .candidate-page.is-sidebar-open .active-applications-card {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .candidate-settings-layout {
     grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
     gap: 24px;
-    padding: 0px 30px;
+    padding: 0;
   }
 
   .candidate-change-password-card {
@@ -1434,12 +1498,95 @@
   }
 }
 
-@media (max-width: 760px) {
-  .candidate-page {
-    --candidate-sidebar-width: 260px;
+@media (max-width: 900px) {
+  .candidate-topbar {
+    height: auto;
+    min-height: 58px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 16px;
   }
 
-  .candidate-topbar,
+  .candidate-sidebar-trigger {
+    order: 1;
+  }
+
+  .candidate-top-icons {
+    order: 4;
+    margin-left: auto;
+  }
+
+  .candidate-tabs {
+    order: 3;
+    flex: 0 1 auto;
+    gap: 18px;
+  }
+
+  .candidate-tabs button {
+    height: 36px;
+  }
+
+  .ai-match-btn {
+    order: 2;
+    height: 36px;
+  }
+
+  .candidate-search {
+    order: 5;
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: none;
+    height: 38px;
+    box-sizing: border-box;
+    border-radius: 999px;
+  }
+
+  .candidate-hero-grid,
+  .candidate-lower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .application-row {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(96px, 0.7fr) 72px 22px;
+    gap: 10px;
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .candidate-page {
+    --candidate-mobile-topbar-height: 112px;
+    --candidate-sidebar-width: min(60vw, 224px);
+    display: block;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .candidate-page.is-sidebar-open {
+    display: block;
+  }
+
+  .candidate-sidebar {
+    position: fixed;
+    top: var(--candidate-mobile-topbar-height);
+    right: auto;
+    bottom: 0;
+    left: 0;
+    z-index: 80;
+    width: var(--candidate-sidebar-width);
+    height: calc(100dvh - var(--candidate-mobile-topbar-height));
+    min-height: 0;
+    max-width: calc(100vw - 136px);
+    padding: 20px 16px;
+    box-shadow: 18px 0 38px rgba(16, 28, 51, 0.16);
+  }
+
+  .candidate-main {
+    width: 100%;
+    overflow: visible;
+    padding-top: var(--candidate-mobile-topbar-height);
+  }
+
   .candidate-footer,
   .candidate-welcome {
     align-items: stretch;
@@ -1448,31 +1595,102 @@
   }
 
   .candidate-topbar {
-    padding: 16px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: auto;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    overflow: visible;
+    z-index: 1200;
+  }
+
+  .candidate-tabs {
+    display: none;
+  }
+
+  .candidate-sidebar-trigger {
+    order: 1;
+  }
+
+  .candidate-top-icons {
+    order: 2;
+    margin-left: auto;
+    gap: 12px;
+  }
+
+  .candidate-search {
+    order: 4;
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: 38px;
+    box-sizing: border-box;
+    border-radius: 999px;
+  }
+
+  .ai-match-btn {
+    order: 3;
+    width: auto;
+    height: 36px;
+    min-width: 0;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
+  .candidate-user-trigger {
+    max-width: min(220px, calc(100vw - 128px));
+    padding: 4px 8px 4px 4px;
+  }
+
+  .candidate-user-name {
+    max-width: 110px;
+  }
+
+  .candidate-user-dropdown {
+    position: fixed;
+    top: 70px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    z-index: 1200;
+  }
+
+  .role-main > .candidate-settings-screen {
+    padding: 18px 16px 28px;
   }
 
   .candidate-settings-screen h1 {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+    font-size: 24px;
   }
 
   .candidate-settings-layout {
     grid-template-columns: 1fr;
+    width: 100%;
+    gap: 18px;
   }
 
   .security-tabs-card {
     min-height: auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .candidate-change-password-card {
+    width: 100%;
+    box-sizing: border-box;
     padding: 24px 18px 22px;
   }
 
   .candidate-change-password-actions {
     flex-wrap: wrap;
-  }
-
-  .candidate-search {
-    width: 100%;
   }
 
   .candidate-hero-grid,
@@ -1487,5 +1705,136 @@
   .application-status-text,
   .application-progress {
     grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .candidate-page {
+    --candidate-mobile-topbar-height: 116px;
+    --candidate-sidebar-width: min(62vw, 216px);
+  }
+
+  .candidate-topbar {
+    padding: 12px 14px;
+    gap: 11px;
+  }
+
+  .candidate-top-icons {
+    gap: 10px;
+  }
+
+  .candidate-user-trigger {
+    max-width: min(210px, calc(100vw - 118px));
+  }
+
+  .candidate-user-name {
+    max-width: 96px;
+  }
+
+  .candidate-content {
+    padding: 26px 16px 34px;
+  }
+
+  .candidate-content-settings {
+    padding: 18px 16px 28px;
+  }
+
+  .candidate-back-home {
+    margin-bottom: 20px;
+    font-size: 16px;
+  }
+
+  .candidate-settings-screen h1 {
+    margin-bottom: 18px;
+    font-size: 26px;
+    line-height: 1.15;
+  }
+
+  .security-tabs-card {
+    gap: 10px;
+    padding: 18px 16px;
+  }
+
+  .security-tabs-title {
+    font-size: 10px;
+  }
+
+  .security-tab {
+    min-height: 48px;
+    height: auto;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .candidate-change-password-card {
+    padding: 26px 20px 24px;
+  }
+
+  .candidate-change-password-close {
+    top: 24px;
+    right: 20px;
+  }
+
+  .candidate-change-password-heading {
+    padding-right: 34px;
+  }
+
+  .candidate-change-password-heading h2 {
+    font-size: 24px;
+  }
+
+  .candidate-change-password-heading p {
+    font-size: 14px;
+  }
+
+  .candidate-change-password-form {
+    width: 100%;
+    gap: 16px;
+  }
+
+  .candidate-password-field label {
+    font-size: 12px;
+  }
+
+  .candidate-password-input {
+    height: 48px;
+    padding: 0 14px;
+  }
+
+  .candidate-password-input input {
+    font-size: 14px;
+  }
+
+  .candidate-password-input button {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+  }
+
+  .candidate-password-error {
+    font-size: 11px;
+    text-align: left;
+  }
+
+  .candidate-password-strength div:first-child {
+    font-size: 11px;
+  }
+
+  .candidate-password-strength strong,
+  .candidate-password-strength small {
+    font-size: 11px;
+  }
+
+  .candidate-change-password-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .candidate-password-cancel,
+  .candidate-password-save {
+    width: 100%;
+    height: 44px;
+    font-size: 13px;
   }
 }
