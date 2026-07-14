@@ -4,12 +4,18 @@ export function ConfirmActionModal({
   onConfirm,
   title = 'Confirm Action',
   message = 'Are you sure you want to proceed? This action will trigger the next step in the recruitment workflow. Your changes will not be saved.',
+  cancelLabel = 'Cancel',
+  confirmLabel = 'Confirm',
+  submittingLabel = 'Confirming...',
 }: {
   isSubmitting: boolean
   onCancel: () => void
   onConfirm: () => void
   title?: string
   message?: string
+  cancelLabel?: string
+  confirmLabel?: string
+  submittingLabel?: string
 }) {
   return (
     <div className="tenant-confirm-backdrop" role="presentation">
@@ -22,8 +28,8 @@ export function ConfirmActionModal({
         </header>
         <p>{message}</p>
         <footer>
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
-          <button type="button" onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? 'Confirming...' : 'Confirm'}</button>
+          <button type="button" onClick={onCancel} disabled={isSubmitting}>{cancelLabel}</button>
+          <button type="button" onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? submittingLabel : confirmLabel}</button>
         </footer>
       </section>
     </div>
