@@ -91,7 +91,7 @@ function CreatePlanView({
   const [isJobsUnlimited, setIsJobsUnlimited] = useState(false)
   const [planError, setPlanError] = useState('')
   const [isSavingPlan, setIsSavingPlan] = useState(false)
-  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
 
   const toggleFeature = (key: string) => {
     setFeatures((current) => current.map((feature) => (
@@ -118,7 +118,7 @@ function CreatePlanView({
       return
     }
 
-    setIsCreateConfirmOpen(true)
+    await confirmCreatePlan()
   }
 
   const confirmCreatePlan = async () => {
@@ -139,11 +139,9 @@ function CreatePlanView({
     setIsSavingPlan(true)
     try {
       await adminApi.createPlan(payload)
-      setIsCreateConfirmOpen(false)
       triggerToast?.('Subscription plan saved successfully', 'success')
       onCreated()
     } catch (error) {
-      setIsCreateConfirmOpen(false)
       setPlanError(error instanceof Error ? error.message : 'Create plan failed')
       triggerToast?.('Error system. Please try again.', 'error')
     } finally {
@@ -289,17 +287,17 @@ function CreatePlanView({
       {planError && <p className="create-plan-error">{planError}</p>}
 
       <footer className="create-plan-actions">
-        <button type="button" onClick={onBack} disabled={isSavingPlan}>Cancel</button>
+        <button type="button" onClick={() => setIsCancelConfirmOpen(true)} disabled={isSavingPlan}>Cancel</button>
         <button type="submit" disabled={isSavingPlan}>{isSavingPlan ? 'Saving...' : 'Save'}</button>
       </footer>
 
-      {isCreateConfirmOpen && (
+      {isCancelConfirmOpen && (
         <ConfirmActionModal
-          isSubmitting={isSavingPlan}
-          onCancel={() => {
-            if (!isSavingPlan) setIsCreateConfirmOpen(false)
-          }}
-          onConfirm={confirmCreatePlan}
+          isSubmitting={false}
+          title="Discard Changes"
+          message="Are you sure you want to cancel? Your changes will not be saved."
+          onCancel={() => setIsCancelConfirmOpen(false)}
+          onConfirm={onBack}
         />
       )}
     </form>
@@ -343,6 +341,7 @@ function EditPlanDetailView({
   const [isActive, setIsActive] = useState(plan.status.toLowerCase() === 'active')
   const [planError, setPlanError] = useState('')
   const [isSavingPlan, setIsSavingPlan] = useState(false)
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
 
   const toggleFeature = (key: string) => {
     setFeatures((current) => current.map((feature) => (
@@ -490,9 +489,19 @@ function EditPlanDetailView({
 
       <footer className="create-plan-actions edit-plan-actions">
         <p><i className="fa-solid fa-circle-info"></i> Last modified by Super Admin on {formatPlanDate(plan.createdAt) || 'Oct 24, 2023'}</p>
-        <button type="button" onClick={onBack} disabled={isSavingPlan}>Cancel</button>
+        <button type="button" onClick={() => setIsCancelConfirmOpen(true)} disabled={isSavingPlan}>Cancel</button>
         <button type="submit" disabled={isSavingPlan}>{isSavingPlan ? 'Saving...' : 'Save Changes'}</button>
       </footer>
+
+      {isCancelConfirmOpen && (
+        <ConfirmActionModal
+          isSubmitting={false}
+          title="Discard Changes"
+          message="Are you sure you want to cancel? Your changes will not be saved."
+          onCancel={() => setIsCancelConfirmOpen(false)}
+          onConfirm={onBack}
+        />
+      )}
     </form>
   )
 }
