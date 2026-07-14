@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getTenantAdminNav } from '../../data/adminNavigation'
 import type { TenantAdminView } from '../../types/admin.types'
+import { getInitialTenantAdminView, updateTenantAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 import { MetricCard } from '../shared/MetricCard'
 
-function StaffManagementView() {
+function StaffManagementView({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="role-content staff-management-content">
       <div className="tenant-breadcrumb">
@@ -51,7 +52,7 @@ function StaffManagementView() {
           <i className="fa-solid fa-magnifying-glass"></i>
           <input type="search" placeholder="Search full name or email address..." />
         </div>
-        <button type="button">Create Staff Account</button>
+        <button type="button" onClick={onCreate}>Create Staff Account</button>
       </div>
 
       <section className="staff-empty-state">
@@ -64,16 +65,125 @@ function StaffManagementView() {
   )
 }
 
+function CreateStaffAccountView({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <div className="role-content create-staff-content">
+      <div className="tenant-breadcrumb create-staff-breadcrumb">
+        <i className="fa-solid fa-house"></i>
+        <span>Home</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <span>Staff Management</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <strong>Create New Staff account</strong>
+      </div>
+
+      <section className="create-staff-card">
+        <header className="create-staff-header">
+          <div className="create-staff-title">
+            <span><i className="fa-solid fa-user-plus"></i></span>
+            <div>
+              <h1>Create Staff Account</h1>
+              <p>Provision a new user account with specific access roles.</p>
+            </div>
+          </div>
+          <span className="system-status"><i className="fa-solid fa-circle"></i> System Online</span>
+        </header>
+
+        <form className="create-staff-form" onSubmit={(event) => { event.preventDefault(); onConfirm() }}>
+          <div className="create-staff-grid">
+            <fieldset className="staff-fieldset">
+              <legend>Identity Details</legend>
+              <label>
+                <span>Full Name</span>
+                <div>
+                  <i className="fa-regular fa-user"></i>
+                  <input type="text" placeholder="e.g. Sarah Jenkins" required />
+                </div>
+              </label>
+              <label>
+                <span>Corporate Email Address</span>
+                <div>
+                  <i className="fa-regular fa-envelope"></i>
+                  <input type="email" placeholder="sarah.j@jobfusion.com" required />
+                </div>
+              </label>
+            </fieldset>
+
+            <fieldset className="staff-fieldset">
+              <legend>Access & Permissions</legend>
+              <label className="staff-role-option">
+                <input type="radio" name="staffRole" value="hr" defaultChecked />
+                <span><i className="fa-solid fa-users-gear"></i></span>
+                <div>
+                  <strong>HR</strong>
+                  <small>Full access to candidate sourcing and recruitment management tools.</small>
+                </div>
+              </label>
+              <label className="staff-role-option">
+                <input type="radio" name="staffRole" value="interviewer" />
+                <span><i className="fa-solid fa-clipboard-check"></i></span>
+                <div>
+                  <strong>Interviewer</strong>
+                  <small>Can view assigned interviews, candidate profiles and submit evaluation feedback.</small>
+                </div>
+              </label>
+            </fieldset>
+          </div>
+
+          <div className="staff-automation-note">
+            <span><i className="fa-solid fa-wand-magic-sparkles"></i></span>
+            <div>
+              <strong>Platform Automation Notice</strong>
+              <p>Once you confirm, an activation email will be dispatched immediately. The new team member will have <b>48 hours</b> to securely set their password and finalize their profile before the invitation link expires.</p>
+            </div>
+          </div>
+
+          <footer className="create-staff-actions">
+            <small><i className="fa-regular fa-circle-question"></i> Required fields marked with *</small>
+            <button type="button" onClick={onCancel}>Cancel</button>
+            <button type="submit">Confirm</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  )
+}
+
 export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
-  const [activeView, setActiveView] = useState<TenantAdminView>('dashboard')
-  const navItems = getTenantAdminNav(activeView, setActiveView)
+  const [activeView, setActiveView] = useState<TenantAdminView>(() => getInitialTenantAdminView())
+  const changeView = (view: TenantAdminView) => {
+    setActiveView(view)
+    updateTenantAdminViewUrl(view)
+  }
+  const navItems = getTenantAdminNav(activeView, changeView)
+
+  useEffect(() => {
+    const handlePopState = () => setActiveView(getInitialTenantAdminView())
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout} onChangePassword={() => setActiveView('settings')}>
+    <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout} onChangePassword={() => changeView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsView onBack={() => setActiveView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsView onBack={() => changeView('dashboard')} triggerToast={triggerToast} />
+      ) : activeView === 'staffCreate' ? (
+        <CreateStaffAccountView
+          onCancel={() => changeView('staffManagement')}
+          onConfirm={() => {
+            triggerToast?.('Staff account invitation sent successfully.', 'success')
+            changeView('staffManagement')
+          }}
+        />
       ) : activeView === 'staffManagement' ? (
-        <StaffManagementView />
+        <StaffManagementView onCreate={() => changeView('staffCreate')} />
       ) : (
       <div className="role-content">
         <div className="role-metrics four">

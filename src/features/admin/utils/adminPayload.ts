@@ -1,6 +1,6 @@
 import type { CreatePlanPayload, CreateTenantPayload, UpdatePlanPayload, UpdateTenantPayload } from '../types/admin.types'
 
-export function buildPlanPayload(payload: CreatePlanPayload) {
+export function buildPlanPayload(payload: CreatePlanPayload & { status?: string }) {
   const monthlyPrice = Number(payload.monthlyPrice)
   const maxStaffAccount = payload.maxStaffAccount === null ? null : Number(payload.maxStaffAccount)
   const maxActiveJobPosting = payload.maxActiveJobPosting === null ? null : Number(payload.maxActiveJobPosting)
@@ -17,6 +17,7 @@ export function buildPlanPayload(payload: CreatePlanPayload) {
       "key": String(feature.key),
       "status": String(feature.status),
     })),
+    "status": payload.status ? String(payload.status).trim().toUpperCase() : 'ACTIVE',
   }
 }
 
