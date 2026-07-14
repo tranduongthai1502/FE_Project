@@ -1924,13 +1924,21 @@
 }
 
 .tenant-list-table-row em {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 14px;
   font-style: normal;
   font-weight: 900;
 }
 
 .tenant-list-table-row em::before {
-  content: '+ ';
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .tenant-list-table-row em.active {
@@ -2356,6 +2364,47 @@
   background: #ffffff;
 }
 
+.subscription-table-toolbar {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 28px;
+  border-bottom: 1px solid #f0d7d0;
+  background: #ffffff;
+}
+
+.subscription-table-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.subscription-table-toolbar i {
+  color: #df3100;
+  font-size: 13px;
+}
+
+.subscription-table-toolbar select {
+  min-width: 210px;
+  height: 36px;
+  padding: 0 42px 0 12px;
+  border: 1px solid #efb4a5;
+  border-radius: 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9L12 15L18 9' stroke='%23101C33' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .subscription-table-row {
   display: grid;
   grid-template-columns: 1.15fr 1fr 1.05fr 1.05fr 0.7fr 0.45fr;
@@ -2378,6 +2427,24 @@
   text-transform: uppercase;
 }
 
+.subscription-table-body {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.subscription-table-data-row {
+  cursor: pointer;
+}
+
+.subscription-table-data-row:hover {
+  background: #fff8f6;
+}
+
+.subscription-table-data-row:focus-visible {
+  outline: 2px solid #df3100;
+  outline-offset: -2px;
+}
+
 .subscription-table-row strong {
   color: #101c33;
   font-size: 12px;
@@ -2387,14 +2454,26 @@
   color: #101c33;
 }
 
+.subscription-table-row .subscription-price-cell {
+  font-weight: 900;
+}
+
 .subscription-table-row em {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 11px;
   font-style: normal;
   font-weight: 900;
 }
 
 .subscription-table-row em::before {
-  content: '+ ';
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .subscription-table-row em.active {
@@ -2529,10 +2608,11 @@
   gap: 14px;
 }
 
-.plan-detail-title-actions em {
+.plan-detail-title-row h1 em {
   min-height: 18px;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 0 10px;
   border-radius: 999px;
   font-size: 9px;
@@ -2541,12 +2621,21 @@
   text-transform: uppercase;
 }
 
-.plan-detail-title-actions em.active {
+.plan-detail-title-row h1 em::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.plan-detail-title-row h1 em.active {
   background: #dcfae6;
   color: #039855;
 }
 
-.plan-detail-title-actions em.inactive {
+.plan-detail-title-row h1 em.inactive {
   background: #f2f4f7;
   color: #667085;
 }
@@ -2771,6 +2860,11 @@
   font-weight: 900;
 }
 
+.required-mark {
+  color: #df3100;
+  font-weight: 900;
+}
+
 .create-plan-details-grid input,
 .create-plan-details-grid textarea {
   width: 100%;
@@ -2799,6 +2893,21 @@
 .create-plan-details-grid textarea:focus {
   border-color: #d93408;
   box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
+}
+
+.create-plan-details-grid input.has-error,
+.create-plan-details-grid textarea.has-error,
+.price-input.has-error,
+.limit-input.has-error {
+  border-color: #dc2626;
+}
+
+.create-plan-field-error {
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: right;
 }
 
 .description-field {
@@ -2963,6 +3072,12 @@
   color: #667085;
   font-size: 10px;
   line-height: 1.35;
+}
+
+.feature-permission-error {
+  margin: -6px 0 6px;
+  text-align: right;
+  line-height: 1.2;
 }
 
 .feature-toggle {
@@ -3352,6 +3467,9 @@
 }
 
 .prompt-table-row em {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-style: normal;
   font-weight: 900;
 }
@@ -3365,7 +3483,12 @@
 }
 
 .prompt-table-row em::before {
-  content: '+ ';
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .prompt-table-row button {

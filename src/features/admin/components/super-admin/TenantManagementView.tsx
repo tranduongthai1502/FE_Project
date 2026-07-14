@@ -9,6 +9,14 @@ import { MetricCard } from '../shared/MetricCard'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
 
+const emptyTenantForm: CreateTenantForm = {
+  companyName: '',
+  domain: '',
+  planId: '',
+  adminFullName: '',
+  adminEmail: '',
+}
+
 export function TenantManagementView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<'list' | 'detail'>(() => (
     getTenantDetailIdFromUrl() ? 'detail' : 'list'
@@ -16,6 +24,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
+  const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
@@ -27,13 +36,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
   const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
-  const [tenantForm, setTenantForm] = useState<CreateTenantForm>({
-    companyName: '',
-    domain: '',
-    planId: '',
-    adminFullName: '',
-    adminEmail: '',
-  })
+  const [tenantForm, setTenantForm] = useState<CreateTenantForm>(emptyTenantForm)
 
   useEffect(() => {
     let isActive = true
@@ -143,8 +146,27 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     if (isSubmittingTenant) return
     setIsCreateModalOpen(false)
     setIsCreateConfirmOpen(false)
+    setIsCreateCancelConfirmOpen(false)
     setTenantError('')
+    setTenantForm(emptyTenantForm)
     updateSuperAdminViewUrl('tenantManagement')
+  }
+
+  const hasTenantDraftChanges = Boolean(
+    tenantForm.companyName.trim() ||
+    tenantForm.domain.trim() ||
+    tenantForm.adminFullName.trim() ||
+    tenantForm.adminEmail.trim(),
+  )
+
+  const requestCloseCreateModal = () => {
+    if (isSubmittingTenant) return
+    if (hasTenantDraftChanges) {
+      setIsCreateCancelConfirmOpen(true)
+      return
+    }
+
+    closeCreateModal()
   }
 
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
@@ -164,13 +186,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
     try {
       await adminApi.createTenant(tenantForm)
-      setTenantForm({
-        companyName: '',
-        domain: '',
-        planId: '',
-        adminFullName: '',
-        adminEmail: '',
-      })
+      setTenantForm(emptyTenantForm)
       setIsCreateModalOpen(false)
       setIsCreateConfirmOpen(false)
       updateSuperAdminViewUrl('tenantManagement')
@@ -292,7 +308,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           isLoadingPlans={isLoadingPlans}
           isSubmitting={isSubmittingTenant}
           onChange={updateTenantForm}
-          onClose={closeCreateModal}
+          onClose={requestCloseCreateModal}
           onSubmit={handleCreateTenant}
         />
 
@@ -303,6 +319,18 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
               if (!isSubmittingTenant) setIsCreateConfirmOpen(false)
             }}
             onConfirm={confirmCreateTenant}
+          />
+        )}
+
+        {isCreateCancelConfirmOpen && (
+          <ConfirmActionModal
+            isSubmitting={false}
+            title="Confirm Action"
+            message="Are you sure you want to cancel? Your changes will not be saved."
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={() => setIsCreateCancelConfirmOpen(false)}
+            onConfirm={closeCreateModal}
           />
         )}
       </>
