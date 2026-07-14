@@ -181,7 +181,7 @@ Candidate:
 
 ```text
 email: anhquocps@gmail.com
-password: Quoc12345*
+password: Quoc123451*
 ```
 
 Super Admin:
