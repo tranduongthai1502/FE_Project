@@ -2239,6 +2239,8 @@
 }
 
 .tenant-list-table-row button {
+  justify-self: end;
+  margin-right: 10px;
   width: 28px;
   height: 28px;
   display: grid;
@@ -2248,6 +2250,11 @@
   background: transparent;
   color: #344054;
   cursor: pointer;
+}
+
+.tenant-list-table-row button svg {
+  width: 27px;
+  height: 27px;
 }
 
 .tenant-list-table-state {
@@ -2776,6 +2783,15 @@
 .subscription-table-card footer button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.subscription-table-actions{
+  display:flex;
+}
+
+.subscription-table-actions button svg {
+  width: 28px;
+  height: 28px;
 }
 
 .tenant-breadcrumb button {
