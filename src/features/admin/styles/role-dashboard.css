@@ -1,5 +1,5 @@
 .role-page {
-  --role-sidebar-width: 190px;
+  --role-sidebar-width: 280px;
   width: 100%;
   min-height: 100vh;
   display: grid;
@@ -124,23 +124,24 @@
   position: sticky;
   top: 0;
   z-index: 70;
-  min-height: 42px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 6px 18px;
+  padding: 10px 24px;
   border-bottom: 1px solid #f0cfc6;
   background: #ffffff;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
 .role-search {
-  width: min(420px, 48vw);
-  height: 28px;
+  width: min(680px, 52vw);
+  min-width: 600px;
+  height: 45px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
+  padding: 0 16px;
   border: 1px solid #f0b8a8;
   border-radius: 999px;
   background: #f5f7ff;
@@ -153,7 +154,12 @@
   outline: 0;
   background: transparent;
   color: #172033;
-  font-size: 11px;
+  font-size: 14px;
+}
+
+.role-search input::placeholder {
+  color: #667085;
+  font-size: 14px;
 }
 
 .role-switcher,
@@ -220,6 +226,25 @@
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
+}
+
+.role-user-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.role-user-text strong {
+  color: #0b1c30;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.role-user-text small {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .role-user.is-open {
@@ -306,9 +331,9 @@
   position: sticky;
   top: 0;
   z-index: 90;
-  min-height: 58px;
+  min-height: 70px;
   gap: 18px;
-  padding: 0 26px;
+  padding: 10px 24px;
   border-bottom: 1px solid #f0cfc6;
   background: #ffffff;
   box-shadow: none;
@@ -358,22 +383,23 @@
 }
 
 .super-admin-shell .role-search {
-  width: min(470px, 42vw);
-  height: 32px;
+  width: min(680px, 52vw);
+  min-width: 600px;
+  height: 45px;
   gap: 8px;
-  padding: 0 12px;
+  padding: 0 16px;
   border-color: #f0b8a8;
   border-radius: 999px;
   background: #f7f8fd;
 }
 
 .super-admin-shell .role-search input {
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .super-admin-shell .role-search input::placeholder {
   color: #667085;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .super-admin-shell .role-icons {
@@ -404,17 +430,8 @@
   font-size: 12px;
 }
 
-.super-admin-shell .role-user > span:not(.role-user-avatar) {
-  display: grid;
-  gap: 2px;
+.super-admin-shell .role-user-text {
   text-align: right;
-}
-
-.super-admin-shell .role-user > span:not(.role-user-avatar)::after {
-  content: "HR";
-  color: #667085;
-  font-size: 9px;
-  font-weight: 800;
 }
 
 .super-admin-shell .role-user-chevron {
@@ -1230,18 +1247,20 @@
 
 .staff-management-head h1 {
   color: #101c33;
-  font-size: 22px;
+  padding-top:20px;
+  font-size: 30px;
   line-height: 1.1;
 }
 
 .staff-management-head p {
   margin-top: 6px;
   color: #667085;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .staff-quota-card {
-  width: 250px;
+  width: 400px;
+  min-width:250px;
   min-height: 70px;
   padding: 12px 14px;
   border: 1px solid #f0b8a8;
@@ -1254,7 +1273,7 @@
   justify-content: space-between;
   gap: 12px;
   color: #667085;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -1284,13 +1303,13 @@
   display: block;
   margin-top: 7px;
   color: #667085;
-  font-size: 9px;
+  font-size: 12px;
   text-align: right;
 }
 
 .staff-management-toolbar {
   display: grid;
-  grid-template-columns: 92px 112px minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(170px, auto) minmax(170px, auto) minmax(320px, 1fr) auto;
   align-items: center;
   gap: 12px;
   margin-top: 14px;
@@ -1298,7 +1317,6 @@
 
 .staff-management-toolbar label,
 .staff-search {
-  height: 34px;
   display: flex;
   align-items: center;
   border: 1px solid #f0b8a8;
@@ -1307,13 +1325,15 @@
 }
 
 .staff-management-toolbar label {
+  height: 45px;
   gap: 6px;
+  min-width: 170px;
   padding: 0 8px;
 }
 
 .staff-management-toolbar label span {
   color: #667085;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -1326,15 +1346,21 @@
   background: transparent;
   color: #101c33;
   font: inherit;
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .staff-search {
   justify-self: end;
-  width: min(360px, 100%);
+  width: 60%;
+  height: 35px;
   gap: 8px;
   padding: 0 12px;
   border-radius: 999px;
+}
+
+.staff-search input {
+  width: 100%;
 }
 
 .staff-search i {
@@ -1343,14 +1369,14 @@
 }
 
 .staff-management-toolbar > button {
-  min-height: 34px;
+  min-height: 45px;
   padding: 0 16px;
   border: 0;
   border-radius: 5px;
   background: #d93408;
   color: #ffffff;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -1391,6 +1417,283 @@
   margin-top: 4px;
   color: #667085;
   font-size: 11px;
+}
+
+.create-staff-content {
+  min-height: calc(100vh - 42px);
+  padding: 20px 26px 44px;
+  background: #f7f8fd;
+}
+
+.create-staff-breadcrumb {
+  margin-bottom: 34px;
+  font-size: 11px;
+}
+
+.create-staff-card {
+  width: min(930px, 100%);
+  margin: 50px auto 0px auto ;
+  overflow: hidden;
+  border: 1px solid #f0d7d0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgba(20, 31, 51, 0.07);
+}
+
+.create-staff-header {
+  min-height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px;
+  border-bottom: 1px solid #edf0f6;
+}
+
+.create-staff-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.create-staff-title > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #fff0ec;
+  color: #d93408;
+  font-size: 18px;
+}
+
+.create-staff-title h1 {
+  color: #101c33;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.create-staff-title p {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 11px;
+}
+
+.system-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid #d9e3f7;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #344054;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.system-status i {
+  color: #12b76a;
+  font-size: 7px;
+}
+
+.create-staff-form {
+  padding: 0 24px;
+}
+
+.create-staff-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 22px 0 18px;
+}
+
+.staff-fieldset {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  border: 0;
+}
+
+.staff-fieldset legend {
+  width: 100%;
+  margin-bottom: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf0f6;
+  color: #344054;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.staff-fieldset label:not(.staff-role-option) {
+  display: grid;
+  gap: 8px;
+}
+
+.staff-fieldset label > span:not(:only-child) {
+  color: #101c33;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.staff-fieldset label:not(.staff-role-option) > div {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #f0b8a8;
+  border-radius: 6px;
+  background: #f7f8fd;
+}
+
+.staff-fieldset label:not(.staff-role-option) > div i {
+  color: #98a2b3;
+  font-size: 11px;
+}
+
+.staff-fieldset input[type='text'],
+.staff-fieldset input[type='email'] {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #101c33;
+  font-size: 12px;
+}
+
+.staff-role-option {
+  position: relative;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 34px 1fr 18px;
+  column-gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 8px 12px 8px 10px;
+  border: 1px solid #e99a84;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.staff-role-option input {
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  accent-color: #d93408;
+}
+
+.staff-role-option > span {
+  grid-row: 1 / span 2;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: #d93408;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.staff-role-option > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.staff-role-option strong {
+  color: #101c33;
+  font-size: 12px;
+}
+
+.staff-role-option small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #667085;
+  font-size: 10px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.staff-automation-note {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  background: #eef4ff;
+}
+
+.staff-automation-note > span {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #ff5a3d;
+}
+
+.staff-automation-note strong {
+  color: #101c33;
+  font-size: 11px;
+}
+
+.staff-automation-note p {
+  margin-top: 5px;
+  color: #475467;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.staff-automation-note b {
+  color: #d93408;
+}
+
+.create-staff-actions {
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 0 20px;
+  border-top: 1px solid #edf0f6;
+}
+
+.create-staff-actions small {
+  margin-right: auto;
+  color: #98a2b3;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.create-staff-actions button {
+  min-width: 86px;
+  min-height: 34px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.create-staff-actions button[type='button'] {
+  border: 1px solid #ff8d75;
+  background: #ffffff;
+  color: #d93408;
+}
+
+.create-staff-actions button[type='submit'] {
+  border: 1px solid #d93408;
+  background: #d93408;
+  color: #ffffff;
 }
 
 .create-tenant-content {
@@ -1446,7 +1749,11 @@
 }
 
 .tenant-breadcrumb i {
-  font-size: 11px;
+  font-size: 12px;
+}
+
+.tenant-breadcrumb .fa-house{
+  font-size:18px;
 }
 
 .tenant-filter-card {
@@ -1950,6 +2257,8 @@
 }
 
 .tenant-list-table-row button {
+  justify-self: end;
+  margin-right: 10px;
   width: 28px;
   height: 28px;
   display: grid;
@@ -1959,6 +2268,11 @@
   background: transparent;
   color: #344054;
   cursor: pointer;
+}
+
+.tenant-list-table-row button svg {
+  width: 27px;
+  height: 27px;
 }
 
 .tenant-list-table-state {
@@ -2558,6 +2872,15 @@
 .subscription-table-card footer button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.subscription-table-actions{
+  display:flex;
+}
+
+.subscription-table-actions button svg {
+  width: 28px;
+  height: 28px;
 }
 
 .tenant-breadcrumb button {
@@ -4269,10 +4592,12 @@
 
   .role-search {
     width: 100%;
+    min-width: 0;
   }
 
   .super-admin-shell .role-search {
     width: 100%;
+    min-width: 0;
   }
 
   .tenant-filter-card {
@@ -4405,6 +4730,7 @@
   .super-admin-shell .role-search {
     order: 4;
     flex-basis: 100%;
+    min-width: 0;
     height: 38px;
   }
 
@@ -4440,6 +4766,8 @@
   .role-content,
   .super-admin-content,
   .tenant-management-content,
+  .staff-management-content,
+  .create-staff-content,
   .subscription-plans-content,
   .subscription-plan-detail-content,
   .create-plan-content,
@@ -4672,6 +5000,9 @@
   .tenant-subscription-metrics,
   .tenant-subscription-lines,
   .tenant-admin-layout,
+  .staff-management-head,
+  .staff-management-toolbar,
+  .create-staff-grid,
   .create-tenant-card .tenant-form-grid,
   .create-tenant-card .tenant-form-grid.admin,
   .tenant-form-grid,
@@ -4687,6 +5018,7 @@
 
   .tenant-modal,
   .tenant-confirm-modal,
+  .create-staff-card,
   .create-tenant-card,
   .create-plan-card,
   .edit-plan-card,
@@ -4696,6 +5028,7 @@
   }
 
   .tenant-modal-header,
+  .create-staff-header,
   .tenant-detail-card header,
   .plan-detail-card-head,
   .prompt-editor-panel header {
@@ -4705,6 +5038,7 @@
   }
 
   .tenant-modal-actions,
+  .create-staff-actions,
   .create-plan-actions,
   .create-prompt-actions,
   .settings-password-form footer {
@@ -4717,6 +5051,7 @@
   }
 
   .create-plan-actions button,
+  .create-staff-actions button,
   .create-prompt-actions button,
   .settings-cancel-btn,
   .settings-save-btn {

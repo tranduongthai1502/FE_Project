@@ -165,7 +165,7 @@ function CreatePlanView({
       return
     }
 
-    setIsCreateConfirmOpen(true)
+    await confirmCreatePlan()
   }
 
   const confirmCreatePlan = async () => {
@@ -186,11 +186,9 @@ function CreatePlanView({
     setIsSavingPlan(true)
     try {
       await adminApi.createPlan(payload)
-      setIsCreateConfirmOpen(false)
       triggerToast?.('Subscription plan saved successfully', 'success')
       onCreated()
     } catch (error) {
-      setIsCreateConfirmOpen(false)
       setPlanError(error instanceof Error ? error.message : 'Create plan failed')
       triggerToast?.('Error system. Please try again.', 'error')
     } finally {
@@ -394,13 +392,13 @@ function CreatePlanView({
         <button type="submit" disabled={isSavingPlan}>{isSavingPlan ? 'Saving...' : 'Save'}</button>
       </footer>
 
-      {isCreateConfirmOpen && (
+      {isCancelConfirmOpen && (
         <ConfirmActionModal
-          isSubmitting={isSavingPlan}
-          onCancel={() => {
-            if (!isSavingPlan) setIsCreateConfirmOpen(false)
-          }}
-          onConfirm={confirmCreatePlan}
+          isSubmitting={false}
+          title="Discard Changes"
+          message="Are you sure you want to cancel? Your changes will not be saved."
+          onCancel={() => setIsCancelConfirmOpen(false)}
+          onConfirm={onBack}
         />
       )}
 

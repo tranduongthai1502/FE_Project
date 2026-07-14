@@ -7,6 +7,8 @@ type StoredUser = {
   email?: string | null
   avatar?: string | null
   role?: string | null
+  roleName?: string | null
+  role_name?: string | null
   userRole?: string | null
   user_role?: string | null
   type?: string | null
@@ -25,6 +27,22 @@ function getStoredUser(): StoredUser | null {
 
 function getDisplayName(user: StoredUser | null) {
   return user?.full_name || user?.fullName || user?.name || user?.email || 'Alex Thompson'
+}
+
+function formatRoleLabel(role: string) {
+  return role
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.toLowerCase() === 'hr' ? 'HR' : `${word[0]?.toUpperCase() || ''}${word.slice(1).toLowerCase()}`)
+    .join(' ')
+}
+
+function getDisplayRole(user: StoredUser | null, fallback: string) {
+  const role = user?.roleName || user?.role_name || user?.role || user?.userRole || user?.user_role || user?.type
+
+  return role ? formatRoleLabel(role) : fallback
 }
 
 function getUserInitials(name: string) {
@@ -55,6 +73,7 @@ export function DashboardShell({
 }) {
   const user = useMemo(() => getStoredUser(), [])
   const displayName = getDisplayName(user)
+  const displayRole = getDisplayRole(user, subtitle)
   const userInitials = getUserInitials(displayName)
   const [isSidebarVisible, setIsSidebarVisible] = useState(true)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
@@ -134,7 +153,10 @@ export function DashboardShell({
               ) : (
                 <span className="role-user-avatar">{userInitials}</span>
               )}
-              <span>{displayName}</span>
+              <span className="role-user-text">
+                <strong>{displayName}</strong>
+                <small>{displayRole}</small>
+              </span>
               <i className={`fa-solid fa-chevron-down role-user-chevron ${isUserDropdownOpen ? 'open' : ''}`}></i>
             </button>
 

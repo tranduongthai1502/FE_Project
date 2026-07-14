@@ -1,4 +1,24 @@
-import type { SuperAdminView } from '../types/admin.types'
+import type { SuperAdminView, TenantAdminView } from '../types/admin.types'
+
+export const tenantAdminViewSlugs: Record<TenantAdminView, string> = {
+  dashboard: 'dashboard',
+  staffManagement: 'staff-management',
+  staffCreate: 'staff-management/create',
+  settings: 'settings',
+}
+
+export function getInitialTenantAdminView(): TenantAdminView {
+  const slug = window.location.pathname.replace(/^\/tenant-admin\/?/, '') || 'dashboard'
+  const match = Object.entries(tenantAdminViewSlugs)
+    .sort(([, first], [, second]) => second.length - first.length)
+    .find(([, value]) => slug === value || slug.startsWith(`${value}/`))
+
+  return (match?.[0] as TenantAdminView | undefined) || 'dashboard'
+}
+
+export function updateTenantAdminViewUrl(view: TenantAdminView) {
+  window.history.pushState(null, '', `/tenant-admin/${tenantAdminViewSlugs[view]}`)
+}
 
 export const superAdminViewSlugs: Record<SuperAdminView, string> = {
   dashboard: 'dashboard',

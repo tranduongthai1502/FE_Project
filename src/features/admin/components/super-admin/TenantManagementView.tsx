@@ -144,6 +144,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
   const closeCreateModal = () => {
     if (isSubmittingTenant) return
+    setIsCancelConfirmOpen(true)
+  }
+
+  const confirmCloseCreateModal = () => {
     setIsCreateModalOpen(false)
     setIsCreateConfirmOpen(false)
     setIsCreateCancelConfirmOpen(false)
@@ -178,7 +182,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       return
     }
 
-    setIsCreateConfirmOpen(true)
+    await confirmCreateTenant()
   }
 
   const confirmCreateTenant = async () => {
@@ -188,12 +192,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       await adminApi.createTenant(tenantForm)
       setTenantForm(emptyTenantForm)
       setIsCreateModalOpen(false)
-      setIsCreateConfirmOpen(false)
       updateSuperAdminViewUrl('tenantManagement')
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
-      setIsCreateConfirmOpen(false)
       setTenantError(error instanceof Error ? error.message : 'Create tenant failed')
       triggerToast?.('Error system. Please try again', 'error')
     } finally {
@@ -312,13 +314,13 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           onSubmit={handleCreateTenant}
         />
 
-        {isCreateConfirmOpen && (
+        {isCancelConfirmOpen && (
           <ConfirmActionModal
-            isSubmitting={isSubmittingTenant}
-            onCancel={() => {
-              if (!isSubmittingTenant) setIsCreateConfirmOpen(false)
-            }}
-            onConfirm={confirmCreateTenant}
+            isSubmitting={false}
+            title="Discard Changes"
+            message="Are you sure you want to cancel? Your changes will not be saved."
+            onCancel={() => setIsCancelConfirmOpen(false)}
+            onConfirm={confirmCloseCreateModal}
           />
         )}
 
@@ -546,16 +548,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           </div>
         </footer>
       </section>
-
-      {isCreateConfirmOpen && (
-        <ConfirmActionModal
-          isSubmitting={isSubmittingTenant}
-          onCancel={() => {
-            if (!isSubmittingTenant) setIsCreateConfirmOpen(false)
-          }}
-          onConfirm={confirmCreateTenant}
-        />
-      )}
     </div>
   )
 }
