@@ -143,7 +143,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       {activeView === 'tenantManagement' ? (
         <TenantManagementView triggerToast={triggerToast} />
       ) : activeView === 'subscriptionPlans' ? (
-        <SubscriptionPlansView triggerToast={triggerToast} />
+        <SubscriptionPlansView onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'promptManagement' ? (
         <PromptManagementView />
       ) : activeView === 'settings' ? (
