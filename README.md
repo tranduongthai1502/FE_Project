@@ -2,26 +2,26 @@
 
 JobFusion la giao dien frontend cho he thong ho tro tuyen dung nhan su tich hop AI. Du an duoc thiet ke theo mo hinh SaaS da doanh nghiep, giup cac cong ty quan ly quy trinh tuyen dung, sang loc CV, theo doi ung vien va ho tro cac vai tro trong phong nhan su bang cac man hinh dashboard truc quan.
 
-Theo dac ta he thong, JobFusion huong toi viec tu dong hoa phieu tuyen dung tu dau den cuoi: HR tao JD, ung vien nop CV, AI doc va cham diem CV, chatbot phong van so van thu thap them thong tin, HR/Interviewer danh gia, sau do he thong ho tro gui email va bao cao xu huong tuyen dung. Nguyen tac thiet ke chinh la human-in-the-loop: AI dua ra goi y, con quyet dinh cuoi cung van thuoc ve con nguoi.
+Theo dac ta he thong, JobFusion huong toi viec tu dong hoa quy trinh tuyen dung tu dau den cuoi: HR tao JD, ung vien nop CV, AI doc va cham diem CV, chatbot phong van so van thu thap them thong tin, HR/Interviewer danh gia, sau do he thong ho tro email va bao cao xu huong tuyen dung. Nguyen tac thiet ke chinh la human-in-the-loop: AI dua ra goi y, con quyet dinh cuoi cung van thuoc ve con nguoi.
 
 ## Tinh nang hien co trong frontend
 
-- Dashboard JobFusion voi sidebar, header, thong bao toast va menu tai khoan.
-- Bo chuyen vai tro demo gom Super Admin, Tenant Admin, HR, Interviewer va Candidate.
+- Landing page, login, signup, forgot password, OTP va reset password.
+- Dashboard JobFusion voi sidebar, header, toast va menu tai khoan.
+- Phan quyen giao dien theo role: Super Admin, Tenant Admin, HR, Interviewer va Candidate.
 - Super Admin: xem tong quan he thong, quan ly tenant, goi dich vu, prompt va cai dat.
 - Tenant Admin: xem funnel tuyen dung, quota, quan ly nhan su noi bo va phan quyen HR/Interviewer.
 - HR: xem thong ke ung vien, danh sach job, candidate pool, email template, lich phong van va analytics.
 - Interviewer: xem lich phong van, danh sach ung vien va scorecard danh gia phong van.
 - Candidate: xem don ung tuyen, lich phong van va goi y cai thien CV tu AI.
-- Form doi mat khau co kiem tra do manh, modal xac nhan va mock API.
-
-Luu y: phan frontend hien tai dang la prototype voi du lieu mau va cac service mock trong `src/features/*/services`. Chua co backend that, database hay API AI duoc ket noi truc tiep trong project nay.
+- Auth flow co luu access token, refresh token, logout va tu dong refresh token khi backend tra ve `401`.
 
 ## Cong nghe su dung
 
 - React 19
 - TypeScript
 - Vite
+- Axios
 - Oxlint
 - CSS thu cong trong `src/styles`
 - Font Awesome class icons va mot so SVG/icon component noi bo
@@ -32,14 +32,14 @@ Luu y: phan frontend hien tai dang la prototype voi du lieu mau va cac service m
 FE_Project/
 +-- public/                 # favicon, icon sprite va anh public
 +-- src/
-|   +-- app/                # App shell va dieu huong trang noi bo
+|   +-- app/                # App shell, axios client va dieu huong trang noi bo
 |   +-- assets/             # anh dung trong frontend
 |   +-- components/         # component dung chung: layout, modal, toast, icons
 |   +-- features/
-|   |   +-- admin/          # dashboard, flow theo vai tro va admin settings
-|   |   +-- auth/           # form dang nhap/dang ky/OTP/reset password va validation
+|   |   +-- admin/          # service va kieu du lieu admin
+|   |   +-- auth/           # auth API, form dang nhap/dang ky/OTP/reset password
 |   +-- hooks/              # hook dung chung
-|   +-- pages/              # cac trang Login, Signup, Admin Dashboard
+|   +-- pages/              # Landing, Login, Signup, Candidate, Role Dashboard
 |   +-- styles/             # CSS toan cuc va CSS cua app
 +-- index.html
 +-- package.json
@@ -58,6 +58,27 @@ node -v
 npm -v
 ```
 
+## Cau hinh bien moi truong
+
+Tao file `.env` o thu muc goc neu chua co:
+
+```env
+VITE_BACKEND_API_URL=http://localhost:8080
+```
+
+Gia tri tren la base URL cua backend. Frontend se goi cac API dang:
+
+```text
+POST /api/auth/signin
+POST /api/auth/logout
+POST /api/auth/refresh-token
+POST /api/auth/signup
+POST /api/auth/forgot-password
+POST /api/auth/check-otp
+POST /api/auth/reset-password
+POST /api/auth/change-password
+```
+
 ## Cach cai dat va chay du an
 
 1. Cai dependencies:
@@ -72,7 +93,7 @@ npm install
 npm run dev
 ```
 
-Sau khi chay, Vite se hien thi URL dang nhu nay:
+Sau khi chay, Vite se hien thi URL dang nhu:
 
 ```text
 http://localhost:5173/
@@ -80,14 +101,53 @@ http://localhost:5173/
 
 Mo URL nay tren trinh duyet de xem ung dung.
 
-3. Dang nhap vao dashboard:
+3. Dang nhap:
 
-- O man hinh login, co the nhap email/password bat ky.
-- Bam `Sign in`.
-- Ung dung se chuyen vao dashboard demo.
-- Trong dashboard, dung dropdown `ROLE FLOW` o sidebar de xem giao dien theo tung vai tro.
+- Mo trang login.
+- Nhap tai khoan backend da cap.
+- Sau khi dang nhap thanh cong, app se dieu huong theo role cua user.
 
-## Cac lenh huu ich
+## Auth va refresh token
+
+Frontend dung `src/app/api/axiosClient.ts` lam axios client dung chung.
+
+- Khi login thanh cong, app lay `access_token` va `refresh_token` tu response backend.
+- Neu chon ghi nho dang nhap, token duoc luu trong `localStorage`; neu khong, token duoc luu trong `sessionStorage`.
+- Moi request API tu `axiosClient` se tu dong gan header:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+- Neu backend tra ve `401`, app se goi `POST /api/auth/refresh-token` bang refresh token hien co.
+- Neu refresh thanh cong, app luu access token moi va retry request bi loi ban dau.
+- Neu nhieu request cung bi `401` cung luc, app chi tao mot request refresh token va dung chung ket qua.
+- Neu refresh token het han hoac backend khong tra ve access token moi, app xoa auth storage va dua user ve `/#/login`.
+- Khi logout, app goi `POST /api/auth/logout`, xoa token local va dua user ve `/#/login`.
+
+## Dieu huong trang
+
+App hien khong dung React Router. Viec chuyen trang duoc quan ly bang state trong:
+
+```text
+src/app/routes/AppRoutes.tsx
+```
+
+Mot so route dang dung:
+
+```text
+/#/login
+/#/signup
+/#/candidate
+/tenant-admin
+/hr
+/interviewer
+/super-admin/dashboard
+```
+
+Luu y: Super Admin dung path `/super-admin/...`. Khi logout hoac session het han, app se replace URL ve `/#/login` de tranh truong hop URL bi thanh `/super-admin/dashboard#/login`.
+
+## Cac lenh huu ic
 
 Chay lint:
 
@@ -109,19 +169,31 @@ npm run preview
 
 ## Ghi chu phat trien
 
-- App khong dung React Router; viec chuyen trang login/signup/admin dang duoc quan ly bang state trong `src/app/routes/AppRoutes.tsx`.
-- Cac API hien tai la mock, vi du `authApi` va `adminApi` luon tra ve `{ ok: true }`.
-- Du lieu dashboard va bang bieu dang duoc khai bao truc tiep trong component/flow de phuc vu demo UI.
-- Khi tich hop backend that, nen thay cac mock service trong `src/features/auth/services` va `src/features/admin/services` bang request HTTP toi API.
+- Cac man hinh dashboard van con nhieu du lieu demo de phuc vu UI prototype.
+- Mot so service admin da goi backend qua `axiosClient`; mot so phan UI van hien thi du lieu mau trong component.
+- Khi backend thay doi format response auth, can kiem tra lai cac ham doc token trong `LoginPage.tsx` va `axiosClient.ts`.
+- Response refresh token nen tra ve access token moi o mot trong cac field: `token`, `access_token`, `accessToken` hoac `jwt`.
+- Neu backend co rotate refresh token, co the tra ve `refresh_token` hoac `refreshToken`; frontend se tu cap nhat token moi.
 
-- tài khoản demo candidate
+## Tai khoan demo
+
+Candidate:
+
+```text
 email: anhquocps@gmail.com
-mật khẩu: Quoc12345*
+password: Quoc12345*
+```
 
-- tài khoản demo super admin 
+Super Admin:
+
+```text
 email: dienpro0708@gmail.com
-mật khẩu: Dien@2004
+password: Dien@2004
+```
 
-- tài khoản demo tenant admin
-email: chau65990@gmail.com
-mật khẩu: $peAE7FF6t@!
+Tenant Admin:
+
+```text
+email: huynhanhquoc15022005@gmail.com
+password: c6-yFUVU!9-U
+```

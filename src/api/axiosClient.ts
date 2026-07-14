@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage } from '@/features/auth'
 
 const API_URL = import.meta.env.VITE_BACKEND_API_URL
 
@@ -16,6 +17,8 @@ const refreshClient = axios.create({
   },
 })
 
+let refreshTokenRequest: Promise<string> | null = null
+
 function getStoredToken(key: 'access_token' | 'refresh_token') {
   return localStorage.getItem(key) || sessionStorage.getItem(key)
 }
@@ -24,15 +27,13 @@ function getAuthStorage() {
   return localStorage.getItem('refresh_token') ? localStorage : sessionStorage
 }
 
-function clearAuthTokens() {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-  sessionStorage.removeItem('access_token')
-  sessionStorage.removeItem('refresh_token')
+function notifyAuthExpired() {
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT_NAME))
 }
 
 function getAuthResponsePayload(response: any) {
-  return response?.data && typeof response.data === 'object' ? response.data : response
+  const payload = response?.data && typeof response.data === 'object' ? response.data : response
+  return payload?.data && typeof payload.data === 'object' ? payload.data : payload
 }
 
 function getAccessToken(payload: any) {
@@ -48,7 +49,6 @@ async function refreshAccessToken() {
   if (!refreshToken) return ''
 
   const response = await refreshClient.post('/api/auth/refresh-token', {
-    refresh_token: refreshToken,
     refreshToken,
   })
   const payload = getAuthResponsePayload(response.data)
@@ -64,6 +64,16 @@ async function refreshAccessToken() {
   }
 
   return nextAccessToken
+}
+
+function getRefreshTokenRequest() {
+  if (!refreshTokenRequest) {
+    refreshTokenRequest = refreshAccessToken().finally(() => {
+      refreshTokenRequest = null
+    })
+  }
+
+  return refreshTokenRequest
 }
 
 axiosClient.interceptors.request.use(
@@ -114,8 +124,9 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const token = await refreshAccessToken()
+        const token = await getRefreshTokenRequest()
         if (token) {
+          originalRequest.headers = originalRequest.headers || {}
           originalRequest.headers.Authorization = `Bearer ${token}`
           return axiosClient(originalRequest)
         }
@@ -123,7 +134,8 @@ axiosClient.interceptors.response.use(
         // Fall through to clearing tokens and returning the original auth error.
       }
 
-      clearAuthTokens()
+      clearAuthStorage()
+      notifyAuthExpired()
     }
 
     return Promise.reject(Object.assign(new Error(message), { status }))

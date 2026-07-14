@@ -1,8 +1,8 @@
-@import './app/auth-layout.css';
-@import './app/auth-hero.css';
-@import './app/auth-form.css';
-@import './app/signup-page.css';
-@import './app/candidate-portal.css';
-@import './app/role-dashboard.css';
-@import './app/landing-page.css';
-@import './app/auth-responsive.css';
+@import '../features/auth/styles/auth-layout.css';
+@import '../features/auth/styles/auth-hero.css';
+@import '../features/auth/styles/auth-form.css';
+@import '../features/auth/styles/signup-page.css';
+@import '../features/auth/styles/auth-responsive.css';
+@import '../features/candidate/styles/candidate-portal.css';
+@import '../features/admin/styles/role-dashboard.css';
+@import '../features/landing/styles/landing-page.css';

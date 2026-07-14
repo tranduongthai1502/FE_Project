@@ -1,0 +1,345 @@
+@media (min-width: 1025px) {
+  .login-page:not(.signup-page) .form-panel,
+  .signup-page .form-panel {
+    justify-content: center;
+  }
+
+  .login-page:not(.signup-page) .form-shell,
+  .signup-page .signup-shell {
+    margin-right: auto;
+    margin-left: auto;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 1025px) {
+  .signup-page .form-panel {
+    align-items: center;
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .signup-page .signup-header {
+    margin-bottom: 28px;
+  }
+
+  .signup-page .signup-header h2 {
+    font-size: 32px;
+  }
+
+  .signup-page .signup-form {
+    gap: 12px;
+  }
+
+  .signup-page .field-group {
+    gap: 9px;
+  }
+
+  .signup-page .input-wrap {
+    height: 40px;
+  }
+
+  .signup-page .input-wrap input {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .signup-page .register-strength {
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .signup-page .register-strength-hint {
+    line-height: 1.15;
+  }
+
+  .signup-page .signup-submit {
+    height: 48px;
+    margin-top: 8px;
+  }
+
+  .signup-page .signup-copy {
+    margin-top: 18px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel {
+    min-height: 430px;
+  }
+
+  .form-panel {
+    min-height: auto;
+    padding: 36px 24px 48px;
+  }
+
+  .signup-page .form-panel {
+    min-height: auto;
+    padding: 34px 24px 44px;
+  }
+
+  .signup-shell {
+    transform: none;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    min-height: 100dvh;
+    background: #f7f8fd;
+  }
+
+  .hero-panel {
+    min-height: auto;
+    padding: 18px 16px;
+  }
+
+  .hero-card {
+    width: 100%;
+    min-height: 156px;
+    gap: 14px;
+    padding: 18px 16px;
+  }
+
+  .hero-card h1 {
+    font-size: 25px;
+    line-height: 1.15;
+  }
+
+  .hero-card p {
+    max-width: 280px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .form-panel,
+  .signup-page .form-panel {
+    min-height: auto;
+    align-items: flex-start;
+    padding: 22px 16px 34px;
+  }
+
+  .form-shell,
+  .signup-shell,
+  .signup-page .signup-shell {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    transform: none;
+  }
+
+  .login-page:not(.signup-page) .form-panel {
+    padding: 24px 16px 34px;
+  }
+
+  .login-page:not(.signup-page) .form-header {
+    margin-bottom: 30px;
+  }
+
+  .form-header h2 {
+    font-size: 28px;
+  }
+
+  .login-page:not(.signup-page) .form-header h2 {
+    font-size: 28px;
+  }
+
+  .form-header p,
+  .login-page:not(.signup-page) .form-header p {
+    font-size: 13px;
+  }
+
+  .login-form,
+  .login-page:not(.signup-page) .login-form,
+  .signup-page .signup-form {
+    gap: 14px;
+  }
+
+  .field-group,
+  .login-page:not(.signup-page) .field-group,
+  .signup-page .field-group {
+    gap: 8px;
+  }
+
+  .input-wrap,
+  .login-page:not(.signup-page) .login-form .input-wrap,
+  .signup-page .input-wrap {
+    height: 44px;
+  }
+
+  .label-row {
+    gap: 12px;
+  }
+
+  .check-row {
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .login-page:not(.signup-page) .submit-button,
+  .signup-page .signup-submit {
+    height: 48px;
+    margin-top: 8px;
+    font-size: 20px;
+  }
+
+  .submit-button {
+    width: 100%;
+  }
+
+  .signup-page .signup-header {
+    margin-bottom: 24px;
+  }
+
+  .signup-page .signup-header h2 {
+    font-size: 28px;
+  }
+
+  .signup-page .field-group label {
+    font-size: 13px;
+  }
+
+  .signup-page .register-strength {
+    gap: 7px;
+    margin-top: 0;
+  }
+
+  .signup-page .register-strength-header {
+    font-size: 10px;
+  }
+
+  .signup-page .register-strength-hint {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .signup-page .signup-submit {
+    width: 100%;
+  }
+
+  .signup-copy,
+  .login-page:not(.signup-page) .signup-copy,
+  .signup-page .signup-copy {
+    margin-top: 18px;
+    font-size: 14px;
+  }
+
+  .signup-copy button,
+  .login-page:not(.signup-page) .signup-copy button,
+  .signup-page .signup-copy button {
+    margin-left: 6px;
+    font-size: 14px;
+  }
+
+  .auth-modal-overlay {
+    align-items: start;
+    padding: 12px;
+  }
+
+  .forgot-password-modal,
+  .forgot-password-modal-otp,
+  .forgot-password-modal-reset {
+    width: 100%;
+    min-height: auto;
+    max-height: calc(100dvh - 24px);
+    padding: 22px 16px;
+    border-radius: 10px;
+  }
+
+  .forgot-password-modal .form-header-with-back {
+    gap: 10px;
+  }
+
+  .forgot-password-modal .form-title,
+  .forgot-password-modal-otp .form-title,
+  .forgot-password-modal-reset .form-title {
+    font-size: 21px !important;
+    line-height: 1.2;
+  }
+
+  .forgot-password-modal .form-desc,
+  .forgot-password-modal-otp .form-desc,
+  .forgot-password-modal-reset .form-desc {
+    max-width: none;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .forgot-password-modal .auth-form-content,
+  .forgot-password-modal-otp .auth-form-content,
+  .forgot-password-modal-reset .auth-form-content {
+    gap: 14px;
+  }
+
+  .forgot-password-modal .form-input,
+  .forgot-password-modal .submit-btn,
+  .forgot-password-modal-otp .submit-btn,
+  .forgot-password-modal-reset .submit-btn {
+    width: 100%;
+    height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-panel {
+    padding: 12px;
+  }
+
+  .hero-card {
+    min-height: 132px;
+    padding: 14px 12px;
+  }
+
+  .hero-card h1 {
+    font-size: 22px;
+  }
+
+  .hero-card p {
+    font-size: 11px;
+  }
+
+  .form-panel,
+  .signup-page .form-panel,
+  .login-page:not(.signup-page) .form-panel {
+    padding: 18px 12px 28px;
+  }
+
+  .login-page:not(.signup-page) .form-header {
+    margin-bottom: 22px;
+  }
+
+  .form-header h2,
+  .login-page:not(.signup-page) .form-header h2,
+  .signup-page .signup-header h2 {
+    font-size: 25px;
+  }
+
+  .label-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .login-page:not(.signup-page) .submit-button,
+  .signup-page .signup-submit {
+    height: 46px;
+    font-size: 18px;
+  }
+
+  .signup-page .signup-copy,
+  .login-page:not(.signup-page) .signup-copy {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+  }
+
+  .signup-copy button,
+  .login-page:not(.signup-page) .signup-copy button,
+  .signup-page .signup-copy button {
+    margin-left: 0;
+  }
+}
