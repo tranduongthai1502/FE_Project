@@ -572,8 +572,15 @@
 .super-admin-metrics .role-metric em {
   top: 14px;
   right: 16px;
-  color: #16a34a;
   font-size: 9px;
+}
+
+.super-admin-metrics .role-metric em.positive {
+  color: #16a34a;
+}
+
+.super-admin-metrics .role-metric em.negative {
+  color: #d93408;
 }
 
 .role-title-row {
@@ -664,24 +671,58 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  color: #12b76a;
+  color: #d93408;
   font-size: 11px;
   font-style: normal;
   font-weight: 800;
 }
 
-.role-grid {
-  display: grid;
-  gap: 18px;
+.role-metric em.positive {
+  color: #12b76a;
+}
+
+.role-metric em.negative {
+  color: #d93408;
 }
 
 .tenant-grid {
-  grid-template-columns: 1.45fr 0.95fr;
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  align-items: flex-start;
 }
 
-.super-grid {
-  grid-template-columns: 1.35fr 1fr;
-  align-items: start;
+.tenant-grid > .role-panel:first-child {
+  flex: 1.45 1 0;
+}
+
+.tenant-grid > .role-panel:last-child {
+  flex: 0.95 1 0;
+}
+
+.super-dashboard-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin: 10px;
+}
+
+.super-dashboard-row {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.super-dashboard-row > .role-panel {
+  flex: 1 1 0;
+  height: 100%;
+}
+
+.super-dashboard-row > .role-panel:first-child {
+  flex-grow: 1.32;
 }
 
 .hr-grid {
@@ -975,7 +1016,7 @@
   border-top: 1px solid #f0b8a8;
   border-bottom: 1px solid #f0b8a8;
   background: #eef3ff;
-  color: #5f6c85;
+  color: #101c33;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.02em;
@@ -993,10 +1034,15 @@
 }
 
 .tenant-table span {
-  color: #d93408;
+  color: #101c33;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.tenant-table span.premium-plan,
+.bar-row span.premium-plan {
+  color: #d93408;
 }
 
 .tenant-table em {
@@ -1109,7 +1155,17 @@
   border-top: 1px solid #f0d7d0;
 }
 
-.super-admin-content .quick-actions button:nth-child(3) {
+.super-admin-content .quick-actions h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.super-admin-content .quick-actions button:nth-of-type(3) {
   grid-column: 1 / -1;
   justify-self: center;
   width: 54%;
@@ -1164,6 +1220,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.prompt-panel .role-panel-head h2 i,
+.prompt-panel .role-panel-head h2 svg {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  color: #d93408;
+  font-size: 13px;
 }
 
 .prompt-panel .role-panel-head small {
@@ -2201,6 +2268,7 @@
 }
 
 .tenant-filter-tabs button,
+.tenant-plan-filter-tab,
 .tenant-create-btn {
   min-height: 34px;
   border: 0;
@@ -2210,16 +2278,60 @@
   font-weight: 900;
 }
 
-.tenant-filter-tabs button {
+.tenant-filter-tabs button,
+.tenant-plan-filter-tab {
   padding: 0 14px;
   background: #f4f6fb;
   color: #667085;
 }
 
-.tenant-filter-tabs button.active {
+.tenant-filter-tabs button.active,
+.tenant-plan-filter-tab.active {
   border: 1px solid #f0b8a8;
   background: #fff8f6;
   color: #d93408;
+}
+
+.tenant-plan-filter-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 132px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tenant-plan-filter-tab select {
+  width: 100%;
+  height: 34px;
+  padding: 0 32px 0 14px;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.tenant-plan-filter-tab select option {
+  color: #101c33;
+  background: #ffffff;
+}
+
+.tenant-plan-filter-tab::after {
+  content: '';
+  position: absolute;
+  right: 13px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  pointer-events: none;
+  transform: translateY(-2px) rotate(45deg);
 }
 
 .tenant-filter-search {
@@ -2601,7 +2713,13 @@
 
 .tenant-list-table-row {
   display: grid;
-  grid-template-columns: 1.25fr 1.1fr 1fr 1.05fr 0.75fr 0.45fr;
+  grid-template-columns:
+    minmax(0, 1.25fr)
+    minmax(0, 1.1fr)
+    minmax(104px, 1fr)
+    minmax(120px, 1.05fr)
+    minmax(82px, 0.75fr)
+    minmax(34px, 0.45fr);
   align-items: center;
   gap: 16px;
   min-height: 62px;
@@ -2621,16 +2739,32 @@
   text-transform: uppercase;
 }
 
+.tenant-list-table-row > * {
+  min-width: 0;
+}
+
 .tenant-list-table-row strong {
   color: #101c33;
   font-size: 14px;
 }
 
+.tenant-list-table-row strong,
+.tenant-list-table-row .tenant-plan-name,
+.tenant-list-table-row .tenant-expiration-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tenant-plan-name {
-  color: #d93408;
+  color: #101c33;
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.tenant-plan-name.premium-plan {
+  color: #d93408;
 }
 
 .tenant-expiration-date {
@@ -3172,7 +3306,13 @@
 
 .subscription-table-row {
   display: grid;
-  grid-template-columns: 1.15fr 1fr 1.05fr 1.05fr 0.7fr 0.45fr;
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(88px, 1fr)
+    minmax(88px, 1.05fr)
+    minmax(88px, 1.05fr)
+    minmax(78px, 0.7fr)
+    minmax(34px, 0.45fr);
   align-items: center;
   gap: 16px;
   min-height: 56px;
@@ -3180,6 +3320,10 @@
   border-bottom: 1px solid #f0d7d0;
   color: #243044;
   font-size: 12px;
+}
+
+.subscription-table-row > * {
+  min-width: 0;
 }
 
 .subscription-table-head {
@@ -3211,12 +3355,18 @@
 }
 
 .subscription-table-row strong {
+  overflow: hidden;
   color: #101c33;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subscription-table-row span {
+  overflow: hidden;
   color: #101c33;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subscription-table-row .subscription-price-cell {
@@ -3566,7 +3716,13 @@
 
 .plan-subscriber-row {
   display: grid;
-  grid-template-columns: 1.25fr 1.1fr 1.15fr 1.15fr 1.15fr 0.65fr;
+  grid-template-columns:
+    minmax(0, 1.25fr)
+    minmax(0, 1.1fr)
+    minmax(120px, 1.15fr)
+    minmax(120px, 1.15fr)
+    minmax(110px, 1.15fr)
+    minmax(72px, 0.65fr);
   align-items: center;
   gap: 18px;
   min-height: 56px;
@@ -3574,6 +3730,10 @@
   border-bottom: 1px solid #f0d7d0;
   color: #101c33;
   font-size: 12px;
+}
+
+.plan-subscriber-row > * {
+  min-width: 0;
 }
 
 .plan-subscriber-head {
@@ -3587,14 +3747,22 @@
 }
 
 .plan-subscriber-row strong {
+  min-width: 0;
+  overflow: hidden;
   font-size: 12px;
   font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plan-subscriber-row code {
+  min-width: 0;
+  overflow: hidden;
   color: #4f5d75;
   font-family: inherit;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subscriber-usage-cell {
@@ -4413,7 +4581,13 @@
 
 .prompt-table-row {
   display: grid;
-  grid-template-columns: 1.05fr 1.35fr 1fr 1.05fr 0.7fr 0.45fr;
+  grid-template-columns:
+    minmax(0, 1.05fr)
+    minmax(0, 1.35fr)
+    minmax(88px, 1fr)
+    minmax(100px, 1.05fr)
+    minmax(78px, 0.7fr)
+    minmax(34px, 0.45fr);
   align-items: center;
   gap: 16px;
   min-height: 58px;
@@ -4421,6 +4595,10 @@
   border-bottom: 1px solid #f0d7d0;
   color: #243044;
   font-size: 12px;
+}
+
+.prompt-table-row > * {
+  min-width: 0;
 }
 
 .prompt-table-head {
@@ -4434,7 +4612,16 @@
 }
 
 .prompt-table-row strong {
+  overflow: hidden;
   font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prompt-table-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prompt-table-row em {
@@ -5213,10 +5400,18 @@
   .subscription-plan-metrics,
   .prompt-management-metrics,
   .tenant-grid,
-  .super-grid,
+  .super-dashboard-row,
   .hr-grid,
   .interviewer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tenant-grid {
+    flex-direction: column;
+  }
+
+  .super-dashboard-row {
+    flex-direction: column;
   }
 
   .settings-layout {
@@ -5483,9 +5678,8 @@
   .tenant-management-metrics,
   .subscription-plan-metrics,
   .prompt-management-metrics,
-  .role-grid,
   .tenant-grid,
-  .super-grid,
+  .super-dashboard-row,
   .hr-grid,
   .interviewer-grid,
   .activity-grid,
@@ -5497,6 +5691,14 @@
   .settings-layout {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .tenant-grid {
+    flex-direction: column;
+  }
+
+  .super-dashboard-row {
+    flex-direction: column;
   }
 
   .role-metric,
@@ -5793,6 +5995,18 @@
   font-size: 14px;
 }
 
+.staff-list-table-row > * {
+  min-width: 0;
+}
+
+.staff-truncate-text {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .staff-list-table-head {
   min-height: 50px;
   background: #eef3ff;
@@ -6064,6 +6278,7 @@
 }
 
 .staff-detail-info-grid div {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -6115,6 +6330,7 @@
 
 .staff-header-info {
   flex: 1;
+  min-width: 0;
 }
 
 .staff-header-info h1 {

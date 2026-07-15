@@ -39,6 +39,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>('all')
   const [tenantPlanFilter, setTenantPlanFilter] = useState('')
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
+  const [tenantPage, setTenantPage] = useState(1)
   const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [tenantForm, setTenantForm] = useState<CreateTenantForm>(emptyTenantForm)
@@ -217,6 +218,23 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const planByName = useMemo(() => (
     new Map(subscriptionPlans.map((plan) => [plan.name.toLowerCase(), plan]))
   ), [subscriptionPlans])
+  const highestMonthlyPrice = useMemo(() => (
+    Math.max(0, ...subscriptionPlans.map((plan) => plan.monthlyPrice || 0))
+  ), [subscriptionPlans])
+  const highestPlanIds = useMemo(() => (
+    new Set(
+      subscriptionPlans
+        .filter((plan) => plan.monthlyPrice > 0 && plan.monthlyPrice === highestMonthlyPrice)
+        .map((plan) => plan.id),
+    )
+  ), [highestMonthlyPrice, subscriptionPlans])
+  const highestPlanNames = useMemo(() => (
+    new Set(
+      subscriptionPlans
+        .filter((plan) => plan.monthlyPrice > 0 && plan.monthlyPrice === highestMonthlyPrice)
+        .map((plan) => plan.name.toLowerCase()),
+    )
+  ), [highestMonthlyPrice, subscriptionPlans])
   const totalRevenue = useMemo(() => (
     tenants.reduce((total, tenant) => {
       const plan = tenant.subscriptionPlanId
@@ -232,6 +250,13 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       ? planById.get(tenant.subscriptionPlanId)
       : planByName.get(tenant.subscriptionPlan.toLowerCase())
   )
+  const isHighestPricedPlan = (tenant: Tenant, plan?: SubscriptionPlan) => {
+    if (plan) {
+      return highestPlanIds.has(plan.id)
+    }
+
+    return highestPlanNames.has(tenant.subscriptionPlan.toLowerCase())
+  }
   const planFilterOptions = useMemo(() => {
     const optionsByKey = new Map<string, string>()
 
@@ -278,6 +303,20 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       return matchesStatus && matchesPlan && matchesSearch
     })
   }, [planById, planByName, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter, tenants])
+  const tenantsPerPage = 5
+  const tenantPageCount = Math.max(1, Math.ceil(filteredTenants.length / tenantsPerPage))
+  const currentTenantPage = Math.min(tenantPage, tenantPageCount)
+  const paginatedTenants = filteredTenants.slice(
+    (currentTenantPage - 1) * tenantsPerPage,
+    currentTenantPage * tenantsPerPage,
+  )
+  const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * tenantsPerPage) + 1
+  const tenantDisplayEnd = Math.min(currentTenantPage * tenantsPerPage, filteredTenants.length)
+
+  useEffect(() => {
+    setTenantPage(1)
+  }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter, tenants.length])
+
   const selectTenantFilter = (filter: TenantStatusFilter) => {
     setTenantStatusFilter(filter)
     if (filter !== 'plan') {
@@ -285,6 +324,15 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     } else if (!tenantPlanFilter && planFilterOptions[0]) {
       setTenantPlanFilter(planFilterOptions[0].value)
     }
+  }
+  const selectPlanFilter = (planValue: string) => {
+    if (!planValue) {
+      selectTenantFilter('all')
+      return
+    }
+
+    setTenantStatusFilter('plan')
+    setTenantPlanFilter(planValue)
   }
   const openTenantDetail = (tenantId: string) => {
     setIsCreateModalOpen(false)
@@ -513,7 +561,18 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           <button type="button" className={tenantStatusFilter === 'all' ? 'active' : ''} onClick={() => selectTenantFilter('all')}>All Tenants</button>
           <button type="button" className={tenantStatusFilter === 'active' ? 'active' : ''} onClick={() => selectTenantFilter('active')}>Active</button>
           <button type="button" className={tenantStatusFilter === 'inactive' ? 'active' : ''} onClick={() => selectTenantFilter('inactive')}>Inactive</button>
-          <button type="button" className={tenantStatusFilter === 'plan' ? 'active' : ''} onClick={() => selectTenantFilter('plan')}>Filter by Plan</button>
+          <label className={`tenant-plan-filter-tab ${tenantStatusFilter === 'plan' ? 'active' : ''}`}>
+            <select
+              value={tenantStatusFilter === 'plan' ? tenantPlanFilter : ''}
+              onChange={(event) => selectPlanFilter(event.target.value)}
+              aria-label="Filter by plan"
+            >
+              <option value="">Filter by Plan</option>
+              {planFilterOptions.map((plan) => (
+                <option value={plan.value} key={plan.value}>{plan.label}</option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="tenant-filter-search">
           <i className="fa-solid fa-magnifying-glass"></i>
@@ -525,20 +584,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
             aria-label="Tenant search"
           />
         </div>
-        {tenantStatusFilter === 'plan' && (
-          <label className="tenant-plan-filter">
-            <span>Plan</span>
-            <select value={tenantPlanFilter} onChange={(event) => setTenantPlanFilter(event.target.value)}>
-              {planFilterOptions.length === 0 ? (
-                <option value="">No plans</option>
-              ) : (
-                planFilterOptions.map((plan) => (
-                  <option value={plan.value} key={plan.value}>{plan.label}</option>
-                ))
-              )}
-            </select>
-          </label>
-        )}
         <button type="button" className="tenant-create-btn" onClick={openCreateTenant}>
           Create New Tenant
         </button>
@@ -570,7 +615,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         ) : filteredTenants.length === 0 ? (
           <div className="tenant-list-table-state">No tenants found.</div>
         ) : (
-          filteredTenants.map((tenant) => {
+          paginatedTenants.map((tenant) => {
             const isActive = tenant.status.toLowerCase() === 'active'
             const tenantPlan = getTenantPlan(tenant)
             const hasUnlimitedQuota = tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0
@@ -582,13 +627,15 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
             return (
               <div className="tenant-list-table-row" key={tenant.id}>
                 <strong>{tenant.name}</strong>
-                <span className="tenant-plan-name">{tenantPlan?.name || tenant.subscriptionPlan || '-'}</span>
+                <span className={`tenant-plan-name ${isHighestPricedPlan(tenant, tenantPlan) ? 'premium-plan' : ''}`}>
+                  {tenantPlan?.name || tenant.subscriptionPlan || '-'}
+                </span>
                 <span className="tenant-expiration-date">{expirationDateLabel}</span>
                 <span className={`tenant-quota ${hasUnlimitedQuota ? 'unlimited' : ''}`}>
                   {!hasUnlimitedQuota && <i><b style={{ width: `${quotaPercent}%` }} /></i>}
                   <strong>{hasUnlimitedQuota ? 'Unlimited' : `${tenant.userQuotaUsed}/${tenant.userQuotaLimit}`}</strong>
                 </span>
-                <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : tenant.status}</em>
+                <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : 'Inactive'}</em>
                 <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}>
                   <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -602,11 +649,13 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         )}
 
         <footer>
-          <span>Showing {filteredTenants.length} of {tenants.length} Tenant{tenants.length === 1 ? '' : 's'}</span>
+          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {filteredTenants.length} Tenant{filteredTenants.length === 1 ? '' : 's'}</span>
           <div>
-            <button type="button" disabled><i className="fa-solid fa-chevron-left"></i></button>
-            <button type="button" className="active">1</button>
-            <button type="button" disabled><i className="fa-solid fa-chevron-right"></i></button>
+            <button type="button" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+            {Array.from({ length: tenantPageCount }, (_, index) => index + 1).map((page) => (
+              <button type="button" className={page === currentTenantPage ? 'active' : ''} key={page} onClick={() => setTenantPage(page)}>{page}</button>
+            ))}
+            <button type="button" disabled={currentTenantPage === tenantPageCount} onClick={() => setTenantPage((page) => Math.min(tenantPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
           </div>
         </footer>
       </section>
