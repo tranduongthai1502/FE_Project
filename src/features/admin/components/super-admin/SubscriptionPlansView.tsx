@@ -93,6 +93,18 @@ function hasFeatureChanges(features: typeof planFeatureDefaults) {
 
 type PlanSortOption = 'price-asc' | 'price-desc' | 'newest' | 'oldest'
 
+function getUsagePercent(used: number, limit: number) {
+  if (limit <= 0) return 100
+  return Math.min(100, Math.round((used / limit) * 100))
+}
+
+function getDerivedJobUsage(index: number, plan: SubscriptionPlan) {
+  const limit = plan.activeJobPostingUnlimited ? 50 : Math.max(1, plan.maxActiveJobPosting)
+  const usageRatios = [0.24, 0.96, 0.16, 0.64, 0.42, 0.78]
+  const used = Math.max(1, Math.round(limit * usageRatios[index % usageRatios.length]))
+  return { used, limit, percent: getUsagePercent(used, limit) }
+}
+
 function CreatePlanView({
   onBack,
   onHome,
@@ -117,7 +129,6 @@ function CreatePlanView({
   const [planError, setPlanError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<CreatePlanFieldErrors>({})
   const [isSavingPlan, setIsSavingPlan] = useState(false)
-  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
 
   const toggleFeature = (key: string) => {
@@ -395,16 +406,6 @@ function CreatePlanView({
       {isCancelConfirmOpen && (
         <ConfirmActionModal
           isSubmitting={false}
-          title="Discard Changes"
-          message="Are you sure you want to cancel? Your changes will not be saved."
-          onCancel={() => setIsCancelConfirmOpen(false)}
-          onConfirm={onBack}
-        />
-      )}
-
-      {isCancelConfirmOpen && (
-        <ConfirmActionModal
-          isSubmitting={false}
           title="Confirm Action"
           message="Are you sure you want to cancel? Your changes will not be saved."
           cancelLabel="Cancel"
@@ -457,6 +458,7 @@ function EditPlanDetailView({
   const [isJobsUnlimited, setIsJobsUnlimited] = useState(plan.activeJobPostingUnlimited)
   const [isActive, setIsActive] = useState(plan.status.toLowerCase() === 'active')
   const [planError, setPlanError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<CreatePlanFieldErrors>({})
   const [isSavingPlan, setIsSavingPlan] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
 
@@ -464,24 +466,43 @@ function EditPlanDetailView({
     setFeatures((current) => current.map((feature) => (
       feature.key === key ? { ...feature, enabled: !feature.enabled } : feature
     )))
+    if (planError === 'Please enable at least one feature for this plan.') {
+      setPlanError('')
+    }
   }
 
   const handleSavePlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPlanError('')
+    const nextFieldErrors: CreatePlanFieldErrors = {}
 
-    if (!planName.trim() || !description.trim() || !monthlyPrice.trim()) {
-      setPlanError('Please fill in all required fields.')
+    if (!planName.trim()) {
+      nextFieldErrors.planName = 'Please fill in all required fields.'
+    }
+
+    if (!description.trim()) {
+      nextFieldErrors.description = 'Please fill in all required fields.'
+    }
+
+    if (!isValidCreatePlanPrice(monthlyPrice)) {
+      nextFieldErrors.monthlyPrice = 'Please enter a valid price.'
+    }
+
+    if (!isStaffUnlimited && !isValidCreatePlanLimit(maxStaffAccount)) {
+      nextFieldErrors.maxStaffAccount = 'Please enter a valid number or select Unlimited.'
+    }
+
+    if (!isJobsUnlimited && !isValidCreatePlanLimit(maxActiveJobPosting)) {
+      nextFieldErrors.maxActiveJobPosting = 'Please enter a valid number or select Unlimited.'
+    }
+
+    setFieldErrors(nextFieldErrors)
+    if (Object.keys(nextFieldErrors).length > 0) {
       return
     }
 
-    if (!isStaffUnlimited && !maxStaffAccount.trim()) {
-      setPlanError('Please enter max staff accounts or enable unlimited.')
-      return
-    }
-
-    if (!isJobsUnlimited && !maxActiveJobPosting.trim()) {
-      setPlanError('Please enter max active job postings or enable unlimited.')
+    if (!features.some((feature) => feature.enabled)) {
+      setPlanError('Please enable at least one feature for this plan.')
       return
     }
 
@@ -537,7 +558,7 @@ function EditPlanDetailView({
   }
 
   return (
-    <form className="role-content edit-plan-content" onSubmit={handleSavePlan}>
+    <form className="role-content edit-plan-content" onSubmit={handleSavePlan} noValidate>
       <div className="tenant-breadcrumb create-plan-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <button type="button" onClick={onHome}>Home</button>
@@ -556,20 +577,49 @@ function EditPlanDetailView({
             <div className="create-plan-divider" />
             <div className="edit-plan-general-grid">
               <label>
-                <span>Plan Name <span className="required-mark">*</span></span>
-                <input value={planName} onChange={(event) => setPlanName(event.target.value)} required />
+                <span>Plan Name</span>
+                <input
+                  className={fieldErrors.planName ? 'has-error' : ''}
+                  value={planName}
+                  onChange={(event) => {
+                    setPlanName(event.target.value)
+                    if (fieldErrors.planName) setFieldErrors((current) => ({ ...current, planName: '' }))
+                  }}
+                  required
+                />
+                {fieldErrors.planName && <small className="create-plan-field-error">{fieldErrors.planName}</small>}
               </label>
               <label>
-                <span>Short Tagline <span className="required-mark">*</span></span>
-                <input value={description} onChange={(event) => setDescription(event.target.value)} required />
+                <span>Short Tagline</span>
+                <input
+                  className={fieldErrors.description ? 'has-error' : ''}
+                  value={description}
+                  onChange={(event) => {
+                    setDescription(event.target.value)
+                    if (fieldErrors.description) setFieldErrors((current) => ({ ...current, description: '' }))
+                  }}
+                  required
+                />
+                {fieldErrors.description && <small className="create-plan-field-error">{fieldErrors.description}</small>}
               </label>
               <div className="edit-price-status-row">
                 <label>
-                  <span>Monthly Price (USD) <span className="required-mark">*</span></span>
-                  <div className="price-input">
+                  <span>Monthly Price (USD)</span>
+                  <div className={`price-input edit-monthly-price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
                     <span>$</span>
-                    <input type="number" min="0" step="0.01" value={monthlyPrice} onChange={(event) => setMonthlyPrice(event.target.value)} required />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={monthlyPrice}
+                      onChange={(event) => {
+                        setMonthlyPrice(event.target.value)
+                        if (fieldErrors.monthlyPrice) setFieldErrors((current) => ({ ...current, monthlyPrice: '' }))
+                      }}
+                      required
+                    />
                   </div>
+                  {fieldErrors.monthlyPrice && <small className="create-plan-field-error">{fieldErrors.monthlyPrice}</small>}
                 </label>
                 <button type="button" className={`mini-toggle ${isActive ? 'active' : ''}`} onClick={() => setIsActive((value) => !value)} aria-pressed={isActive}>
                   <span />
@@ -577,7 +627,7 @@ function EditPlanDetailView({
                 <strong>Active Status</strong>
               </div>
             </div>
-            {planError && <p className="create-plan-error">{planError}</p>}
+            {planError && planError !== 'Please enable at least one feature for this plan.' && <p className="create-plan-error">{planError}</p>}
           </section>
 
           <section className="create-plan-card edit-plan-card">
@@ -587,26 +637,64 @@ function EditPlanDetailView({
               <article>
                 <i className="fa-solid fa-id-card-clip"></i>
                 <div>
-                  <strong>Max Staff Accounts <span className="required-mark">*</span></strong>
+                  <strong>Max Staff Accounts</strong>
                   <p>Number of administrative users allowed</p>
                 </div>
-                <input type="number" min="0" value={maxStaffAccount} onChange={(event) => setMaxStaffAccount(event.target.value)} disabled={isStaffUnlimited} />
-                <button type="button" className={`mini-toggle ${isStaffUnlimited ? 'active' : ''}`} onClick={() => setIsStaffUnlimited((value) => !value)} aria-pressed={isStaffUnlimited}>
+                <input
+                  className={fieldErrors.maxStaffAccount ? 'has-error' : ''}
+                  type="number"
+                  min="0"
+                  value={maxStaffAccount}
+                  onChange={(event) => {
+                    setMaxStaffAccount(event.target.value)
+                    if (fieldErrors.maxStaffAccount) setFieldErrors((current) => ({ ...current, maxStaffAccount: '' }))
+                  }}
+                  disabled={isStaffUnlimited}
+                />
+                <button
+                  type="button"
+                  className={`mini-toggle ${isStaffUnlimited ? 'active' : ''}`}
+                  onClick={() => {
+                    setIsStaffUnlimited((value) => !value)
+                    if (fieldErrors.maxStaffAccount) setFieldErrors((current) => ({ ...current, maxStaffAccount: '' }))
+                  }}
+                  aria-pressed={isStaffUnlimited}
+                >
                   <span />
                 </button>
                 <em>Unlimited</em>
+                {fieldErrors.maxStaffAccount && <small className="create-plan-field-error edit-resource-error">{fieldErrors.maxStaffAccount}</small>}
               </article>
               <article>
                 <i className="fa-solid fa-briefcase"></i>
                 <div>
-                  <strong>Max Active Job Postings <span className="required-mark">*</span></strong>
+                  <strong>Max Active Job Postings</strong>
                   <p>Concurrent open roles allowed per tenant</p>
                 </div>
-                <input type="number" min="0" value={maxActiveJobPosting} onChange={(event) => setMaxActiveJobPosting(event.target.value)} disabled={isJobsUnlimited} />
-                <button type="button" className={`mini-toggle ${isJobsUnlimited ? 'active' : ''}`} onClick={() => setIsJobsUnlimited((value) => !value)} aria-pressed={isJobsUnlimited}>
+                <input
+                  className={fieldErrors.maxActiveJobPosting ? 'has-error' : ''}
+                  type="number"
+                  min="0"
+                  value={maxActiveJobPosting}
+                  onChange={(event) => {
+                    setMaxActiveJobPosting(event.target.value)
+                    if (fieldErrors.maxActiveJobPosting) setFieldErrors((current) => ({ ...current, maxActiveJobPosting: '' }))
+                  }}
+                  disabled={isJobsUnlimited}
+                />
+                <button
+                  type="button"
+                  className={`mini-toggle ${isJobsUnlimited ? 'active' : ''}`}
+                  onClick={() => {
+                    setIsJobsUnlimited((value) => !value)
+                    if (fieldErrors.maxActiveJobPosting) setFieldErrors((current) => ({ ...current, maxActiveJobPosting: '' }))
+                  }}
+                  aria-pressed={isJobsUnlimited}
+                >
                   <span />
                 </button>
                 <em>Unlimited</em>
+                {fieldErrors.maxActiveJobPosting && <small className="create-plan-field-error edit-resource-error">{fieldErrors.maxActiveJobPosting}</small>}
               </article>
             </div>
           </section>
@@ -614,6 +702,10 @@ function EditPlanDetailView({
 
         <section className="create-plan-card edit-plan-card edit-feature-panel">
           <h2><i className="fa-solid fa-bolt"></i> Plan Features <small>AI ENABLED</small></h2>
+          <div className="create-plan-divider" />
+          {planError === 'Please enable at least one feature for this plan.' && (
+            <p className="create-plan-error feature-permission-error">{planError}</p>
+          )}
           <div className="edit-feature-list">
             {features.map((feature) => (
               <article key={feature.key} className={feature.enabled ? '' : 'disabled'}>
@@ -731,9 +823,6 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const topTier = plans.reduce<SubscriptionPlan | null>((current, plan) => (
     !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
   ), null)
-  const averageRevenue = plans.length
-    ? Math.round(plans.reduce((total, plan) => total + plan.monthlyPrice, 0) / plans.length)
-    : 0
   const sortedPlans = [...plans].sort((firstPlan, secondPlan) => {
     if (planSort === 'price-asc') return firstPlan.monthlyPrice - secondPlan.monthlyPrice
     if (planSort === 'price-desc') return secondPlan.monthlyPrice - firstPlan.monthlyPrice
@@ -800,6 +889,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         tenant.subscriptionPlan.toLowerCase() === selectedPlan.name.toLowerCase()
       ))
       : []
+    const enabledFeatures = selectedPlan?.features.filter((feature) => feature.status.toLowerCase() === 'enabled') || []
 
     return (
       <div className="role-content subscription-plan-detail-content">
@@ -828,7 +918,6 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                     {selectedPlan.status}
                   </em>
                 </h1>
-                <p>{selectedPlan.description || 'Manage configuration and monitor active subscribers for this subscription plan.'}</p>
               </div>
               <div className="plan-detail-title-actions">
                 <button type="button" onClick={() => openPlanEdit(selectedPlan.id)}>Edit</button>
@@ -839,7 +928,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
               <h2>Plan Configuration</h2>
               <div className="plan-config-grid">
                 <div>
-                  <span>Tagline</span>
+                  <span>Short Description</span>
                   <strong>{selectedPlan.description || '-'}</strong>
                 </div>
                 <div>
@@ -861,9 +950,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 <div>
                   <span>AI Features</span>
                   <div className="plan-feature-tags">
-                    {selectedPlan.features.length > 0 ? (
-                      selectedPlan.features.map((feature) => (
-                        <em key={feature.key} className={feature.status.toLowerCase() === 'enabled' ? 'enabled' : 'disabled'}>
+                    {enabledFeatures.length > 0 ? (
+                      enabledFeatures.map((feature) => (
+                        <em key={feature.key} className="enabled">
                           {formatFeatureLabel(feature.key)}
                         </em>
                       ))
@@ -878,10 +967,6 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
             <section className="plan-detail-card active-subscribers-card">
               <div className="plan-detail-card-head">
                 <h2>Active Subscribers</h2>
-                <div>
-                  <i className="fa-solid fa-filter"></i>
-                  <i className="fa-solid fa-download"></i>
-                </div>
               </div>
 
               {matchingTenants.length === 0 ? (
@@ -890,15 +975,49 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   <span>No tenants found.</span>
                 </div>
               ) : (
-                <div className="plan-tenant-list">
-                  {matchingTenants.map((tenant) => (
-                    <div className="plan-tenant-row" key={tenant.id}>
-                      <strong>{tenant.name}</strong>
-                      <span>{tenant.status}</span>
-                      <span>{tenant.userQuotaUsed}/{tenant.userQuotaLimit || 'Unlimited'} users</span>
-                      <span>{tenant.expirationDate}</span>
+                <div className="plan-subscriber-table">
+                  <div className="plan-subscriber-row plan-subscriber-head">
+                    <span>Company Name</span>
+                    <span>Domain</span>
+                    <span>Staff Usage</span>
+                    <span>Job Usage</span>
+                    <span>Expiration Date</span>
+                    <span>Status</span>
+                  </div>
+
+                  {matchingTenants.map((tenant, index) => {
+                    const staffLimit = tenant.userQuotaLimit || selectedPlan.maxStaffAccount || 0
+                    const staffPercent = getUsagePercent(tenant.userQuotaUsed, staffLimit)
+                    const jobUsage = getDerivedJobUsage(index, selectedPlan)
+                    const status = tenant.status.toLowerCase()
+                    const statusLabel = status.includes('expir') ? 'Expiring' : status === 'active' ? 'Active' : tenant.status
+
+                    return (
+                      <div className="plan-subscriber-row" key={tenant.id}>
+                        <strong>{tenant.name}</strong>
+                        <code>{tenant.domain || '-'}</code>
+                        <div className="subscriber-usage-cell">
+                          <span><b>{tenant.userQuotaUsed}/{staffLimit || 'Unlimited'}</b><small>{staffPercent}%</small></span>
+                          <i><em style={{ width: `${staffPercent}%` }} /></i>
+                        </div>
+                        <div className="subscriber-usage-cell">
+                          <span><b>{jobUsage.used}/{jobUsage.limit}</b><small>{jobUsage.percent}%</small></span>
+                          <i><em style={{ width: `${jobUsage.percent}%` }} /></i>
+                        </div>
+                        <span>{formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'}</span>
+                        <em className={statusLabel.toLowerCase() === 'active' ? 'active' : 'expiring'}>{statusLabel}</em>
+                      </div>
+                    )
+                  })}
+
+                  <footer>
+                    <span>Showing {matchingTenants.length} of {matchingTenants.length} subscribers</span>
+                    <div>
+                      <button type="button" disabled><i className="fa-solid fa-chevron-left"></i></button>
+                      <button type="button" className="active">1</button>
+                      <button type="button" disabled><i className="fa-solid fa-chevron-right"></i></button>
                     </div>
-                  ))}
+                  </footer>
                 </div>
               )}
             </section>
@@ -978,13 +1097,13 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         </article>
         <article className="role-metric subscription-plan-card">
           <small>Monthly Active Plan Revenue</small>
-          <strong>${averageRevenue}</strong>
-          <p><i className="fa-solid fa-wand-magic-sparkles"></i> Tier Optimization: High</p>
+          <strong>$3500.00</strong>
+          <p><i className="fa-solid fa-arrow-trend-up"></i> +12.5% from last month.</p>
         </article>
         <article className="role-metric subscription-plan-card recommendation">
           <small>Renewal Rate</small>
-          <p>Adjust Starter pricing for better conversion.</p>
-          <a href="#insights">View insights <i className="fa-solid fa-arrow-right"></i></a>
+          <strong>94.8%</strong>
+          <p><i className="fa-solid fa-arrow-trend-up"></i> +1.1% vs target</p>
         </article>
       </div>
 
