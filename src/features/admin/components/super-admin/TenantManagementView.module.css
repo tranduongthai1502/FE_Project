@@ -1,0 +1,87 @@
+.tenantAdminCard {
+  grid-column: span 6;
+  min-height: 235px;
+}
+
+.tenantAdminLayout {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 24px;
+  align-items: center;
+}
+
+.tenantAdminLayout > div {
+  min-width: 0;
+}
+
+.tenantAdminLayout small {
+  display: block;
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenantAdminLayout strong {
+  color: #101c33;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.tenantAdminLayout em {
+  min-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.active {
+  background: #dcfae6;
+  color: #039855;
+}
+
+.inactive {
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.tenantAdminAvatar {
+  position: relative;
+  grid-row: 1 / span 2;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eef3ff;
+  color: #667085;
+  font-size: 26px;
+}
+
+.tenantAdminAvatar b {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #12b76a;
+}
+
+@media (max-width: 980px) {
+  .tenantAdminLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .tenantAdminCard {
+    grid-column: auto;
+  }
+}

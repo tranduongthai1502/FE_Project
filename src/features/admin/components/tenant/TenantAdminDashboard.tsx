@@ -169,12 +169,12 @@ function StaffManagementView({
               : []
             const isActive = staff.status === 'ACTIVE'
             const isPending = staff.status === 'PENDING'
-            const isDisabled = staff.status === 'DISABLED'
 
             return (
               <div className="staff-list-table-row" key={staff.id}>
                 <strong 
-                  className="staff-clickable-name"
+                  className="staff-clickable-name staff-truncate-text"
+                  title={staff.fullName}
                   onClick={() => onSelectStaff(staff)}
                 >
                   {staff.fullName}
@@ -510,7 +510,7 @@ function EditStaffAccountView({
           <aside className="edit-staff-profile-card">
             <div className="edit-staff-profile-banner"></div>
             <div className="edit-staff-avatar">{getInitials(staffMember.fullName)}</div>
-            <strong>{staffMember.fullName}</strong>
+            <strong className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</strong>
             <small>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 6).toUpperCase()}`}</small>
 
             <div className="edit-staff-meta-list">
@@ -663,7 +663,7 @@ function StaffDetailView({
           {getInitials(staffMember.fullName)}
         </div>
         <div className="staff-header-info">
-          <h1>{staffMember.fullName}</h1>
+          <h1 className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</h1>
           <div className="staff-header-meta">
             <span>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 4).toUpperCase()}`}</span>
             <span>•</span>
@@ -699,7 +699,7 @@ function StaffDetailView({
             <div className="staff-detail-info-grid">
               <div>
                 <small>Full Name</small>
-                <strong>{staffMember.fullName}</strong>
+                <strong className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</strong>
               </div>
               <div>
                 <small>Primary Email</small>
@@ -713,7 +713,7 @@ function StaffDetailView({
               </div>
               <div>
                 <small>Office Location</small>
-                <strong>{staffMember.officeLocation || 'San Francisco, CA (HQ)'}</strong>
+                <strong>San Francisco, CA (HQ)</strong>
               </div>
             </div>
           </section>
@@ -859,7 +859,7 @@ function StaffActivityLogView({
       </header>
 
       <section className="staff-log-subject">
-        <h2>{staffMember.fullName}</h2>
+        <h2 className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</h2>
         <p>
           <span>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 6).toUpperCase()}`}</span>
           <span>Created on {formatDate(staffMember.createdAt)}</span>
@@ -1116,7 +1116,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           <MetricCard icon="fa-calendar-check" label="Interviews Today" value="5" note="Today" />
         </div>
 
-        <div className="role-grid tenant-grid">
+        <div className="tenant-grid">
           <section className="role-panel funnel-panel">
             <div className="role-panel-head">
               <div>
