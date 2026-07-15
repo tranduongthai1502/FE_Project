@@ -537,7 +537,7 @@ function EditPlanDetailView({
       "staffAccountUnlimited": isStaffUnlimited,
       "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
-      "status": isActive ? 'ACTIVE' : 'INACTIVE',
+      "status": isActive ? 'ACTIVE' : 'DISABLED',
       "features": features.map((feature) => ({
         "key": feature.code,
         "status": feature.enabled ? 'ENABLED' : 'DISABLED',
