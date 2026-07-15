@@ -23,7 +23,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   ))
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
-  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
@@ -144,12 +143,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
   const closeCreateModal = () => {
     if (isSubmittingTenant) return
-    setIsCancelConfirmOpen(true)
-  }
-
-  const confirmCloseCreateModal = () => {
     setIsCreateModalOpen(false)
-    setIsCreateConfirmOpen(false)
     setIsCreateCancelConfirmOpen(false)
     setTenantError('')
     setTenantForm(emptyTenantForm)
@@ -313,16 +307,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           onClose={requestCloseCreateModal}
           onSubmit={handleCreateTenant}
         />
-
-        {isCancelConfirmOpen && (
-          <ConfirmActionModal
-            isSubmitting={false}
-            title="Discard Changes"
-            message="Are you sure you want to cancel? Your changes will not be saved."
-            onCancel={() => setIsCancelConfirmOpen(false)}
-            onConfirm={confirmCloseCreateModal}
-          />
-        )}
 
         {isCreateCancelConfirmOpen && (
           <ConfirmActionModal
