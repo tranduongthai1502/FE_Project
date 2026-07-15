@@ -1,6 +1,8 @@
 export type CreateTenantPayload = {
   companyName: string
   domain: string
+  industry: string
+  region: string
   planId: string
   adminFullName: string
   adminEmail: string

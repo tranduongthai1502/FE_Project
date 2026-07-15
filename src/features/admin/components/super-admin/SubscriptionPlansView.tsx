@@ -144,6 +144,19 @@ function CreatePlanView({
     event.preventDefault()
     setPlanError('')
     const nextFieldErrors: CreatePlanFieldErrors = {}
+    const planDetailsAreEmpty = !planName.trim() &&
+      !description.trim() &&
+      !monthlyPrice.trim() &&
+      !maxStaffAccount.trim() &&
+      !maxActiveJobPosting.trim() &&
+      !isStaffUnlimited &&
+      !isJobsUnlimited
+
+    if (planDetailsAreEmpty) {
+      setFieldErrors({ planName: 'Please fill in all required fields.' })
+      return
+    }
+
     if (!planName.trim()) {
       nextFieldErrors.planName = 'Please fill in all required fields.'
     } else if (existingPlans.some((plan) => plan.name.trim().toLowerCase() === planName.trim().toLowerCase())) {
@@ -439,6 +452,8 @@ function EditPlanDetailView({
   onHome,
   onPlans,
   onSaved,
+  assignedTenantCount,
+  activeAssignedTenantCount,
   triggerToast,
 }: {
   plan: SubscriptionPlan
@@ -446,6 +461,8 @@ function EditPlanDetailView({
   onHome: () => void
   onPlans: () => void
   onSaved: () => void
+  assignedTenantCount: number
+  activeAssignedTenantCount: number
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }) {
   const [planName, setPlanName] = useState(plan.name)
@@ -461,6 +478,8 @@ function EditPlanDetailView({
   const [fieldErrors, setFieldErrors] = useState<CreatePlanFieldErrors>({})
   const [isSavingPlan, setIsSavingPlan] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
+  const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false)
+  const [isRetireConfirmOpen, setIsRetireConfirmOpen] = useState(false)
 
   const toggleFeature = (key: string) => {
     setFeatures((current) => current.map((feature) => (
@@ -506,6 +525,10 @@ function EditPlanDetailView({
       return
     }
 
+    setIsSaveConfirmOpen(true)
+  }
+
+  const confirmSavePlan = async () => {
     const payload: UpdatePlanPayload = {
       "name": planName,
       "description": description,
@@ -524,9 +547,11 @@ function EditPlanDetailView({
     setIsSavingPlan(true)
     try {
       await adminApi.updatePlan(plan.id, payload)
-      triggerToast?.('Subscription plan updated successfully', 'success')
+      setIsSaveConfirmOpen(false)
+      triggerToast?.('Subscription plan updated successfully.', 'success')
       onSaved()
     } catch (error) {
+      setIsSaveConfirmOpen(false)
       setPlanError(error instanceof Error ? error.message : 'Update plan failed')
       triggerToast?.('Error system. Please try again.', 'error')
     } finally {
@@ -556,6 +581,22 @@ function EditPlanDetailView({
 
     onBack()
   }
+
+  const handleActiveStatusToggle = () => {
+    if (!isActive) {
+      setIsActive(true)
+      return
+    }
+
+    if (activeAssignedTenantCount > 0) {
+      setIsRetireConfirmOpen(true)
+      return
+    }
+
+    setIsActive(false)
+  }
+
+  const activeTenantLabel = `${activeAssignedTenantCount} active tenant${activeAssignedTenantCount === 1 ? '' : 's'}`
 
   return (
     <form className="role-content edit-plan-content" onSubmit={handleSavePlan} noValidate>
@@ -621,7 +662,7 @@ function EditPlanDetailView({
                   </div>
                   {fieldErrors.monthlyPrice && <small className="create-plan-field-error">{fieldErrors.monthlyPrice}</small>}
                 </label>
-                <button type="button" className={`mini-toggle ${isActive ? 'active' : ''}`} onClick={() => setIsActive((value) => !value)} aria-pressed={isActive}>
+                <button type="button" className={`mini-toggle ${isActive ? 'active' : ''}`} onClick={handleActiveStatusToggle} aria-pressed={isActive}>
                   <span />
                 </button>
                 <strong>Active Status</strong>
@@ -734,6 +775,35 @@ function EditPlanDetailView({
           confirmLabel="Confirm"
           onCancel={() => setIsCancelConfirmOpen(false)}
           onConfirm={onBack}
+        />
+      )}
+
+      {isSaveConfirmOpen && (
+        <ConfirmActionModal
+          isSubmitting={isSavingPlan}
+          title="Confirm Action"
+          message={`This plan is currently assigned to ${assignedTenantCount} tenant(s). Saving changes will immediately update their resource limits and pricing.`}
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          onCancel={() => {
+            if (!isSavingPlan) setIsSaveConfirmOpen(false)
+          }}
+          onConfirm={confirmSavePlan}
+        />
+      )}
+
+      {isRetireConfirmOpen && (
+        <ConfirmActionModal
+          isSubmitting={false}
+          title="Confirm Action"
+          message={`This plan still has ${activeTenantLabel}. Retiring this plan will not remove them from the plan, but new tenants will no longer be able to subscribe to it.`}
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          onCancel={() => setIsRetireConfirmOpen(false)}
+          onConfirm={() => {
+            setIsActive(false)
+            setIsRetireConfirmOpen(false)
+          }}
         />
       )}
     </form>
@@ -1029,6 +1099,14 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
 
   if (activeView === 'edit') {
     const selectedPlan = plans.find((plan) => plan.id === selectedPlanId)
+    const assignedTenants = selectedPlan
+      ? tenants.filter((tenant) => (
+        tenant.subscriptionPlanId === selectedPlan.id ||
+        tenant.subscriptionPlan.toLowerCase() === selectedPlan.name.toLowerCase()
+      ))
+      : []
+    const assignedTenantCount = assignedTenants.length
+    const activeAssignedTenantCount = assignedTenants.filter((tenant) => tenant.status.toLowerCase() === 'active').length
 
     if (isLoadingPlans) {
       return (
@@ -1053,6 +1131,8 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         plan={selectedPlan}
         onHome={onHome}
         onPlans={openPlanList}
+        assignedTenantCount={assignedTenantCount}
+        activeAssignedTenantCount={activeAssignedTenantCount}
         onBack={() => {
           setActiveView('detail')
           updateSubscriptionPlanDetailUrl(selectedPlan.id)

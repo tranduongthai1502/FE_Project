@@ -9,6 +9,7 @@ export function CreateTenantPage({
   isSubmitting,
   onChange,
   onClose,
+  onBackToList,
   onSubmit,
 }: {
   form: CreateTenantForm
@@ -18,6 +19,7 @@ export function CreateTenantPage({
   isSubmitting: boolean
   onChange: (field: keyof CreateTenantForm, value: string) => void
   onClose: () => void
+  onBackToList: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }) {
   return (
@@ -26,7 +28,7 @@ export function CreateTenantPage({
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
         <i className="fa-solid fa-chevron-right"></i>
-        <span>Tenant Management</span>
+        <button type="button" onClick={onBackToList}>Tenant Management</button>
         <i className="fa-solid fa-chevron-right"></i>
         <strong>Create New Tenant</strong>
       </div>
@@ -37,15 +39,12 @@ export function CreateTenantPage({
             <h2 id="create-tenant-title">Create New Tenant</h2>
             <p>Configure a new instance for your recruitment partner.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close create tenant modal">
-            <i className="fa-solid fa-xmark"></i>
-          </button>
         </header>
 
         <form className="tenant-create-form" onSubmit={onSubmit}>
           <div className="tenant-form-grid">
             <label>
-              <span>Company Name</span>
+              <span>Company Name <b>*</b></span>
               <input
                 value={form.companyName}
                 onChange={(event) => onChange('companyName', event.target.value)}
@@ -55,7 +54,7 @@ export function CreateTenantPage({
             </label>
 
             <label>
-              <span>Subscription Plan</span>
+              <span>Subscription Plan <b>*</b></span>
               <select
                 value={form.planId}
                 onChange={(event) => onChange('planId', event.target.value)}
@@ -72,7 +71,7 @@ export function CreateTenantPage({
             </label>
 
             <label className="tenant-domain-field">
-              <span>Domain / Identifier</span>
+              <span>Domain / Identifier <b>*</b></span>
               <div>
                 <input
                   value={form.domain}
@@ -83,6 +82,26 @@ export function CreateTenantPage({
                 <small>.jobfusion.ai</small>
               </div>
             </label>
+
+            <label>
+              <span>Industry <b>*</b></span>
+              <input
+                value={form.industry}
+                onChange={(event) => onChange('industry', event.target.value)}
+                placeholder="e.g. Media"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Region <b>*</b></span>
+              <input
+                value={form.region}
+                onChange={(event) => onChange('region', event.target.value)}
+                placeholder="e.g. America"
+                required
+              />
+            </label>
           </div>
 
           <hr />
@@ -90,7 +109,7 @@ export function CreateTenantPage({
 
           <div className="tenant-form-grid admin">
             <label>
-              <span>Admin Full Name</span>
+              <span>Admin Full Name <b>*</b></span>
               <input
                 value={form.adminFullName}
                 onChange={(event) => onChange('adminFullName', event.target.value)}
@@ -100,7 +119,7 @@ export function CreateTenantPage({
             </label>
 
             <label>
-              <span>Admin Email</span>
+              <span>Admin Email <b>*</b></span>
               <input
                 value={form.adminEmail}
                 onChange={(event) => onChange('adminEmail', event.target.value)}
@@ -122,4 +141,3 @@ export function CreateTenantPage({
     </div>
   )
 }
-

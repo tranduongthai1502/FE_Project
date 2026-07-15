@@ -1,5 +1,5 @@
 .role-page {
-  --role-sidebar-width: 280px;
+  --role-sidebar-width: 200px;
   width: 100%;
   min-height: 100vh;
   display: grid;
@@ -9,6 +9,25 @@
   font-family: var(--font-family);
   overflow-x: clip;
   transition: grid-template-columns 0.22s ease;
+}
+
+.create-tenant-card .tenant-modal-actions {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 10px 28px;
+}
+
+.create-tenant-card .tenant-modal-actions button {
+  width: auto;
+  min-width: 78px;
+  width: 78px;
+  min-height: 32px;
+  height: 32px;
+  border-radius: 5px;
+  font-size: 10px;
 }
 
 .edit-plan-actions {
@@ -62,7 +81,7 @@
   overscroll-behavior: contain;
   border-right: 1px solid #f0cfc6;
   background: #ffffff;
-  padding: 20px 18px;
+  padding: 20px 14px;
   transform: translateX(-100%);
   pointer-events: none;
   transition: transform 0.22s ease, border-color 0.22s ease;
@@ -132,8 +151,8 @@
   min-height: 40px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 10px;
+  padding: 0 12px;
   border: 0;
   border-radius: 7px;
   background: transparent;
@@ -347,7 +366,7 @@
 }
 
 .super-admin-shell {
-  --role-sidebar-width: 280px;
+  --role-sidebar-width: 200px;
 }
 
 .super-admin-shell {
@@ -356,7 +375,7 @@
 
 .super-admin-shell .role-sidebar {
   z-index: 80;
-  padding: 24px 14px 24px;
+  padding: 24px 10px 24px;
   border-right: 1px solid #f0cfc6;
   background: #ffffff;
 }
@@ -379,14 +398,14 @@
 
 .super-admin-shell .role-brand strong {
   color: #c72b08;
-  font-size: 25px;
+  font-size: 21px;
   line-height: 1.05;
 }
 
 .super-admin-shell .role-brand span {
   margin-top: 7px;
   color: #101c33;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.2;
 }
 
@@ -397,11 +416,11 @@
 
 .super-admin-shell .role-nav button {
   min-height: 42px;
-  gap: 12px;
-  padding: 0 13px;
+  gap: 9px;
+  padding: 0 9px;
   border-radius: 6px;
   color: #0b1c30;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .super-admin-shell .role-nav button.active {
@@ -1732,7 +1751,7 @@
 
 .create-tenant-content {
   min-height: calc(100vh - 58px);
-  padding: 20px 26px 52px;
+  padding: 20px 16px 52px;
   background: #f7f8fd;
 }
 
@@ -1742,30 +1761,77 @@
 }
 
 .create-tenant-card {
-  width: min(920px, calc(100% - 60px));
+  width: min(1360px, calc(100% - 24px));
   margin: 0 auto;
   box-shadow: none;
 }
 
 .create-tenant-card .tenant-modal-header {
-  min-height: 78px;
+  min-height: 76px;
   align-items: center;
+  padding: 18px 28px 14px;
 }
 
 .create-tenant-card .tenant-form-grid {
-  grid-template-columns: minmax(240px, 1fr) minmax(220px, 260px);
-  padding: 26px 24px 20px;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 24px 28px;
+  padding: 26px 28px 26px;
 }
 
 .create-tenant-card .tenant-form-grid.admin {
-  grid-template-columns: 1fr 1fr;
-  min-height: 118px;
-  padding-top: 22px;
-  padding-bottom: 44px;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  min-height: 140px;
+  padding: 24px 28px 58px;
+}
+
+.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(1) {
+  grid-column: 1 / 13;
+}
+
+.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2) {
+  grid-column: 13 / 19;
+  max-width: none;
+}
+
+.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(4) {
+  grid-column: 13 / 19;
+}
+
+.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(5) {
+  grid-column: 19 / 25;
+}
+
+.create-tenant-card .tenant-form-grid.admin label:nth-child(1) {
+  grid-column: 1 / 13;
+}
+
+.create-tenant-card .tenant-form-grid.admin label:nth-child(2) {
+  grid-column: 13 / 25;
 }
 
 .create-tenant-card .tenant-modal-actions {
-  min-height: 72px;
+  min-height: 64px;
+}
+
+@media (max-width: 1200px) {
+  .create-tenant-card {
+    width: min(980px, calc(100% - 40px));
+  }
+
+  .create-tenant-card .tenant-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(1),
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2),
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(4),
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(5),
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(1),
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(2),
+  .tenant-domain-field {
+    grid-column: auto;
+    max-width: none;
+  }
 }
 
 .tenant-breadcrumb {
@@ -1930,6 +1996,7 @@
 
 .tenant-detail-content {
   min-height: calc(100vh - 42px);
+  padding: 18px 24px 36px;
   background: #f7f8fd;
 }
 
@@ -1947,7 +2014,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 18px;
-  margin: 22px 0 24px;
+  margin: 28px 0 22px;
 }
 
 .tenant-detail-title-row > div {
@@ -2001,7 +2068,7 @@
 
 .tenant-detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -2013,23 +2080,25 @@
 }
 
 .tenant-detail-card {
-  padding: 18px;
+  padding: 18px 20px;
 }
 
 .tenant-company-card {
+  grid-column: span 8;
   min-height: 220px;
 }
 
 .tenant-detail-card header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 26px;
+  gap: 10px;
+  margin-bottom: 24px;
 }
 
 .tenant-detail-card header > span {
-  width: 32px;
-  height: 32px;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border-radius: 5px;
@@ -2039,8 +2108,9 @@
 
 .tenant-detail-card header h2 {
   flex: 1;
+  min-width: 0;
   color: #101c33;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .tenant-detail-card header > i {
@@ -2051,8 +2121,14 @@
 .tenant-detail-info-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  row-gap: 28px;
-  column-gap: 42px;
+  row-gap: 26px;
+  column-gap: 36px;
+}
+
+.tenant-detail-info-grid > div,
+.tenant-admin-layout > div,
+.tenant-subscription-metrics > div {
+  min-width: 0;
 }
 
 .tenant-detail-info-grid small,
@@ -2060,9 +2136,9 @@
 .tenant-subscription-lines,
 .tenant-admin-layout small {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   color: #667085;
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2073,54 +2149,98 @@
 .tenant-subscription-lines strong,
 .tenant-admin-layout strong {
   color: #101c33;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
+.tenant-detail-info-grid strong i,
+.tenant-subscription-metrics strong i {
+  margin-right: 6px;
+  color: #667085;
+}
+
+.tenant-domain-link {
+  display: inline-block;
+  max-width: 100%;
+  color: #d93408 !important;
+  overflow-wrap: anywhere;
+}
+
+.tenant-domain-link i {
+  margin-left: 3px;
+  color: #d93408 !important;
+  font-size: 10px;
+}
+
 .tenant-detail-empty-card {
+  grid-column: span 4;
   min-height: 220px;
+  padding: 24px;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 14px;
+  gap: 12px;
   background: #ffd5cc;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .tenant-detail-empty-card i {
-  font-size: 82px;
+  font-size: 76px;
 }
 
 .tenant-subscription-card {
-  min-height: 230px;
+  grid-column: span 6;
+  min-height: 235px;
+}
+
+.tenant-subscription-card header {
+  margin-bottom: 0;
+}
+
+.tenant-subscription-card header > button {
+  min-height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: #d93408;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.tenant-plan-chevron {
+  margin-right: auto;
+  color: #667085 !important;
 }
 
 .tenant-plan-heading {
   display: block;
   color: #101c33;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .tenant-plan-tier {
   display: block;
   margin-top: 4px;
   color: #d93408;
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .tenant-subscription-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 22px;
+  gap: 14px;
+  margin-top: 18px;
 }
 
 .tenant-subscription-metrics div {
-  min-height: 58px;
-  padding: 12px;
+  min-height: 54px;
+  padding: 10px;
   border: 1px solid #f0b8a8;
   border-radius: 5px;
   background: #f7f8fd;
@@ -2129,16 +2249,21 @@
 .tenant-subscription-lines {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 18px;
-  margin-top: 20px;
+  gap: 10px 16px;
+  margin-top: 16px;
 }
 
 .tenant-subscription-lines span {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 8px;
+  gap: 10px;
+  padding-bottom: 7px;
   border-bottom: 1px solid #f0d7d0;
+}
+
+.tenant-subscription-lines strong {
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .tenant-subscription-lines span:last-child strong {
@@ -2146,26 +2271,28 @@
 }
 
 .tenant-admin-card {
-  min-height: 190px;
+  grid-column: span 6;
+  min-height: 235px;
 }
 
 .tenant-admin-layout {
   display: grid;
-  grid-template-columns: 76px 1fr 1fr;
-  gap: 22px;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 24px;
   align-items: center;
 }
 
 .tenant-admin-avatar {
   position: relative;
-  width: 64px;
-  height: 64px;
+  grid-row: 1 / span 2;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
   border-radius: 8px;
   background: #eef3ff;
   color: #667085;
-  font-size: 30px;
+  font-size: 26px;
 }
 
 .tenant-admin-avatar b {
@@ -2478,12 +2605,12 @@
 .tenant-modal-header h2 {
   margin-bottom: 4px;
   color: #102033;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .tenant-modal-header p {
   color: #475467;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .tenant-modal-header button {
@@ -2518,16 +2645,21 @@
 
 .tenant-create-form label span {
   color: #475467;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
 
+.tenant-create-form label span b {
+  color: #d93408;
+  font-weight: 900;
+}
+
 .tenant-create-form input,
 .tenant-create-form select,
 .tenant-domain-field div {
-  height: 40px;
+  height: 34px;
   border: 1px solid #efb7aa;
   border-radius: 7px;
   background: #f7f8fd;
@@ -2536,14 +2668,14 @@
 .tenant-create-form input,
 .tenant-create-form select {
   width: 100%;
-  padding: 0 14px;
+  padding: 0 12px;
   outline: 0;
   color: #102033;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .tenant-domain-field {
-  grid-column: 1;
+  grid-column: 1 / 13;
 }
 
 .tenant-domain-field div {
@@ -2565,17 +2697,17 @@
 }
 
 .tenant-create-form hr {
-  width: calc(100% - 48px);
+  width: calc(100% - 56px);
   height: 1px;
-  margin: 4px auto 20px;
+  margin: 0 auto 22px;
   border: 0;
   background: #efb7aa;
 }
 
 .tenant-create-form h3 {
-  padding: 0 24px;
+  padding: 0 28px;
   color: #102033;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .tenant-modal-error {
@@ -2595,9 +2727,10 @@
 }
 
 .tenant-modal-actions button {
-  min-width: 112px;
-  min-height: 38px;
+  min-width: 100px;
+  min-height: 34px;
   border-radius: 6px;
+  font-size: 11px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -3590,7 +3723,7 @@
   position: fixed;
   right: 0;
   bottom: 0;
-  left: 270px;
+  left: var(--role-sidebar-width);
   display: flex;
   justify-content: flex-end;
   gap: 18px;
@@ -4331,7 +4464,7 @@
   position: fixed;
   right: 0;
   bottom: 0;
-  left: 270px;
+  left: var(--role-sidebar-width);
   z-index: 5;
   display: flex;
   justify-content: flex-end;
@@ -4773,7 +4906,7 @@
 
 @media (max-width: 980px) {
   .role-page {
-    --role-sidebar-width: 260px;
+    --role-sidebar-width: 220px;
     grid-template-columns: var(--role-sidebar-width) minmax(0, 1fr);
   }
 
@@ -4847,6 +4980,13 @@
   .tenant-subscription-lines,
   .tenant-admin-layout {
     grid-template-columns: 1fr;
+  }
+
+  .tenant-company-card,
+  .tenant-detail-empty-card,
+  .tenant-subscription-card,
+  .tenant-admin-card {
+    grid-column: auto;
   }
 
   .super-admin-hero {
@@ -5241,6 +5381,13 @@
   .create-plan-details-grid,
   .feature-permission-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tenant-company-card,
+  .tenant-detail-empty-card,
+  .tenant-subscription-card,
+  .tenant-admin-card {
+    grid-column: auto;
   }
 
   .tenant-modal-backdrop {
