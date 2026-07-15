@@ -31,6 +31,8 @@ export function buildTenantCreatePayload(payload: CreateTenantPayload) {
   return {
     "companyName": payload.companyName.trim(),
     "domain": tenantSlug,
+    "industry": payload.industry.trim(),
+    "region": payload.region.trim(),
     "planId": payload.planId,
     "adminFullName": payload.adminFullName.trim(),
     "adminEmail": payload.adminEmail.trim(),
