@@ -6,6 +6,7 @@ import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, u
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
+import styles from './TenantManagementView.module.css'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
 
@@ -465,16 +466,16 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 </div>
               </section>
 
-              <section className="tenant-detail-card tenant-admin-card">
+              <section className={`tenant-detail-card ${styles.tenantAdminCard}`}>
                 <header>
                   <span><i className="fa-regular fa-calendar-check"></i></span>
                   <h2>Tenant Admin</h2>
                 </header>
-                <div className="tenant-admin-layout">
-                  <div className="tenant-admin-avatar"><i className="fa-regular fa-user"></i><b /></div>
+                <div className={styles.tenantAdminLayout}>
+                  <div className={styles.tenantAdminAvatar}><i className="fa-regular fa-user"></i><b /></div>
                   <div><small>Full Name</small><strong>Tenant Admin</strong></div>
                   <div><small>Email Address</small><strong>admin@{selectedTenant.domain || 'tenant'}.com</strong></div>
-                  <div><small>Current Status</small><em className={isActive ? 'active' : 'inactive'}>{selectedTenant.status}</em></div>
+                  <div><small>Current Status</small><em className={isActive ? styles.active : styles.inactive}>{selectedTenant.status}</em></div>
                   <div><small>Activated Date</small><strong>{tenantCreatedDate}</strong></div>
                 </div>
               </section>
