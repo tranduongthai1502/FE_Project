@@ -4,6 +4,9 @@ export const tenantAdminViewSlugs: Record<TenantAdminView, string> = {
   dashboard: 'dashboard',
   staffManagement: 'staff-management',
   staffCreate: 'staff-management/create',
+  staffEdit: 'staff-management/edit',
+  staffDetail: 'staff-management/detail',
+  staffActivityLog: 'staff-management/activity-log',
   settings: 'settings',
 }
 

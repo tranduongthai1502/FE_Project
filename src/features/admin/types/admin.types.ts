@@ -14,7 +14,27 @@ export type SuperAdminView = 'dashboard' | 'tenantManagement' | 'subscriptionPla
 
 export type RoleHomeView = 'dashboard' | 'settings'
 
-export type TenantAdminView = RoleHomeView | 'staffManagement' | 'staffCreate'
+export type TenantAdminView = RoleHomeView | 'staffManagement' | 'staffCreate' | 'staffEdit' | 'staffDetail' | 'staffActivityLog'
+
+export type UserStatus = 'PENDING' | 'ACTIVE' | 'DISABLED'
+
+export type StaffMember = {
+  id: string
+  email: string
+  fullName: string
+  status: UserStatus
+  userRole: string
+  employeeCode?: string
+  phone?: string
+  createdAt?: string
+}
+
+export type StaffPayload = {
+  email: string
+  fullName: string
+  role: string[]
+  status: UserStatus
+}
 
 export type UpdateTenantPayload = {
   companyName: string
