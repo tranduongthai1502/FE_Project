@@ -12,6 +12,8 @@ type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
 const emptyTenantForm: CreateTenantForm = {
   companyName: '',
   domain: '',
+  industry: '',
+  region: '',
   planId: '',
   adminFullName: '',
   adminEmail: '',
@@ -23,6 +25,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   ))
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
+  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
@@ -141,13 +144,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setTenantForm((current) => ({ ...current, [field]: value }))
   }
 
-  const closeCreateModal = () => {
-    if (isSubmittingTenant) return
-    setIsCreateConfirmOpen(true)
-  }
-
   const confirmCloseCreateModal = () => {
     setIsCreateModalOpen(false)
+    setIsCreateConfirmOpen(false)
     setIsCreateCancelConfirmOpen(false)
     setTenantError('')
     setTenantForm(emptyTenantForm)
@@ -157,6 +156,8 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const hasTenantDraftChanges = Boolean(
     tenantForm.companyName.trim() ||
     tenantForm.domain.trim() ||
+    tenantForm.industry.trim() ||
+    tenantForm.region.trim() ||
     tenantForm.adminFullName.trim() ||
     tenantForm.adminEmail.trim(),
   )
@@ -168,19 +169,19 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       return
     }
 
-    closeCreateModal()
+    confirmCloseCreateModal()
   }
 
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTenantError('')
 
-    if (!tenantForm.planId) {
-      setTenantError('Please select a subscription plan.')
+    if (!tenantForm.companyName.trim() || !tenantForm.domain.trim() || !tenantForm.industry.trim() || !tenantForm.region.trim() || !tenantForm.planId || !tenantForm.adminFullName.trim() || !tenantForm.adminEmail.trim()) {
+      setTenantError('Please fill in all required fields.')
       return
     }
 
-    await confirmCreateTenant()
+    setIsCreateConfirmOpen(true)
   }
 
   const confirmCreateTenant = async () => {
@@ -190,10 +191,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       await adminApi.createTenant(tenantForm)
       setTenantForm(emptyTenantForm)
       setIsCreateModalOpen(false)
+      setIsCreateConfirmOpen(false)
       updateSuperAdminViewUrl('tenantManagement')
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
+      setIsCreateConfirmOpen(false)
       setTenantError(error instanceof Error ? error.message : 'Create tenant failed')
       triggerToast?.('Error system. Please try again', 'error')
     } finally {
@@ -309,16 +312,19 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           isSubmitting={isSubmittingTenant}
           onChange={updateTenantForm}
           onClose={requestCloseCreateModal}
+          onBackToList={requestCloseCreateModal}
           onSubmit={handleCreateTenant}
         />
 
         {isCreateConfirmOpen && (
           <ConfirmActionModal
-            isSubmitting={false}
-            title="Discard Changes"
-            message="Are you sure you want to cancel? Your changes will not be saved."
+            isSubmitting={isSubmittingTenant}
+            title="Confirm Action"
+            message="Are you sure you want to proceed? This action will create a new tenant."
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
             onCancel={() => setIsCreateConfirmOpen(false)}
-            onConfirm={confirmCloseCreateModal}
+            onConfirm={confirmCreateTenant}
           />
         )}
 
@@ -346,6 +352,11 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         ? `${selectedTenant.userQuotaUsed}/${selectedTenant.userQuotaLimit}`
         : String(selectedTenant.userQuotaUsed)
       : '-'
+    const tenantDomain = selectedTenant?.domain ? `${selectedTenant.domain}.jobfusion.ai` : selectedTenant?.id || '-'
+    const tenantIndustry = selectedTenant?.industry || 'Media & Advertising'
+    const tenantRegion = selectedTenant?.region || 'VietNam'
+    const tenantExpirationDate = selectedTenant ? formatPlanDate(selectedTenant.expirationDate) || selectedTenant.expirationDate : '-'
+    const tenantCreatedDate = tenantExpirationDate !== '-' ? tenantExpirationDate : '-'
 
     return (
       <div className="role-content tenant-detail-content">
@@ -383,33 +394,35 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 </header>
                 <div className="tenant-detail-info-grid">
                   <div><small>Company Name</small><strong>{selectedTenant.name}</strong></div>
-                  <div><small>Domain</small><strong>{selectedTenant.id}</strong></div>
-                  <div><small>Industry</small><strong>-</strong></div>
-                  <div><small>Company Size</small><strong>{quotaLabel} Employees</strong></div>
-                  <div><small>Created Date</small><strong>-</strong></div>
-                  <div><small>Region</small><strong>-</strong></div>
+                  <div><small>Domain</small><strong className="tenant-domain-link">{tenantDomain} <i className="fa-solid fa-arrow-up-right-from-square"></i></strong></div>
+                  <div><small>Industry</small><strong>{tenantIndustry}</strong></div>
+                  <div><small>Company Size</small><strong><i className="fa-solid fa-users"></i> {quotaLabel} Employees</strong></div>
+                  <div><small>Created Date</small><strong>{tenantCreatedDate}</strong></div>
+                  <div><small>Region</small><strong>{tenantRegion}</strong></div>
                 </div>
               </section>
 
               <section className="tenant-detail-empty-card">
                 <i className="fa-solid fa-triangle-exclamation"></i>
-                <strong>No tenants found.</strong>
+                <strong>Usage data temporarily unavailable.</strong>
               </section>
 
               <section className="tenant-detail-card tenant-subscription-card">
                 <header>
                   <span><i className="fa-regular fa-id-badge"></i></span>
                   <h2>Subscription Plan</h2>
+                  <i className="fa-solid fa-chevron-down tenant-plan-chevron"></i>
+                  <button type="button">Change Plan</button>
                 </header>
                 <strong className="tenant-plan-heading">{selectedPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
                 <small className="tenant-plan-tier">{selectedPlan?.description || '-'}</small>
                 <div className="tenant-subscription-metrics">
-                  <div><small>Monthly Billing</small><strong>{selectedPlan ? `$${selectedPlan.monthlyPrice.toLocaleString()}` : '-'}</strong></div>
-                  <div><small>Days Remaining</small><strong>{selectedTenant.expirationDate}</strong></div>
+                  <div><small>Monthly Billing</small><strong>{selectedPlan ? `$${selectedPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</strong></div>
+                  <div><small>Days Remaining</small><strong><i className="fa-regular fa-calendar-check"></i> 365 Days</strong></div>
                 </div>
                 <div className="tenant-subscription-lines">
-                  <span>Start Date <strong>-</strong></span>
-                  <span>ExpirationDate <strong>{selectedTenant.expirationDate}</strong></span>
+                  <span>Start Date <strong>{tenantCreatedDate}</strong></span>
+                  <span>ExpirationDate <strong>{tenantExpirationDate}</strong></span>
                   <span>Renewal Cycle <strong>Annual</strong></span>
                   <span>Trailing <strong>Enabled</strong></span>
                 </div>
@@ -422,10 +435,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 </header>
                 <div className="tenant-admin-layout">
                   <div className="tenant-admin-avatar"><i className="fa-regular fa-user"></i><b /></div>
-                  <div><small>Full Name</small><strong>-</strong></div>
-                  <div><small>Email Address</small><strong>-</strong></div>
+                  <div><small>Full Name</small><strong>Tenant Admin</strong></div>
+                  <div><small>Email Address</small><strong>admin@{selectedTenant.domain || 'tenant'}.com</strong></div>
                   <div><small>Current Status</small><em className={isActive ? 'active' : 'inactive'}>{selectedTenant.status}</em></div>
-                  <div><small>Activated Date</small><strong>-</strong></div>
+                  <div><small>Activated Date</small><strong>{tenantCreatedDate}</strong></div>
                 </div>
               </section>
             </div>
