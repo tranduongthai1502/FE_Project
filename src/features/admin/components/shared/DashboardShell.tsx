@@ -59,6 +59,7 @@ export function DashboardShell({
   onLogout,
   onChangePassword,
   showWorkspaceSwitcher = false,
+  onWorkspaceSwitch,
   searchPlaceholder = 'Search candidates, skills, or locations...',
   className = '',
 }: {
@@ -68,6 +69,7 @@ export function DashboardShell({
   onLogout: () => void
   onChangePassword?: () => void
   showWorkspaceSwitcher?: boolean
+  onWorkspaceSwitch?: () => void
   searchPlaceholder?: string
   className?: string
 }) {
@@ -135,7 +137,7 @@ export function DashboardShell({
             <i className="fa-solid fa-magnifying-glass"></i>
             <input type="search" placeholder={searchPlaceholder} aria-label="Search" />
           </div>
-          {showWorkspaceSwitcher && <button type="button" className="role-switcher">Workspace Switcher</button>}
+          {showWorkspaceSwitcher && <button type="button" className="role-switcher" onClick={onWorkspaceSwitch}>Workspace Switcher</button>}
           <div className="role-icons">
             <i className="fa-regular fa-bell"></i>
             <i className="fa-regular fa-circle-question"></i>

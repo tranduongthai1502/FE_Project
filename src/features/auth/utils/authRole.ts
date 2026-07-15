@@ -28,10 +28,30 @@ const legacyRolePages: Record<string, AppRole> = {
 }
 
 export function getPageForUserRole(userRole: string): AppRole | null {
-  const normalizedRole = normalizeRole(userRole)
-  return pageByBackendRole[normalizedRole] || legacyRolePages[normalizedRole] || null
+  const normalizedRoles = getNormalizedRoles(userRole)
+  const rolePriority = ['super_admin', 'tenant_admin', 'hr', 'interviewer', 'candidate']
+
+  for (const role of rolePriority) {
+    if (normalizedRoles.includes(role)) {
+      return pageByBackendRole[role] || legacyRolePages[role] || null
+    }
+  }
+
+  for (const role of normalizedRoles) {
+    const page = pageByBackendRole[role] || legacyRolePages[role]
+    if (page) return page
+  }
+
+  return null
 }
 
 function normalizeRole(value: string) {
-  return value.trim().toLowerCase().replace(/[\s-]+/g, '_')
+  return value.trim().toLowerCase().replace(/[\s-]+/g, '_').replace(/^role_/, '')
+}
+
+function getNormalizedRoles(value: string) {
+  return value
+    .split(/[,;/|]+/)
+    .map((role) => normalizeRole(role))
+    .filter(Boolean)
 }

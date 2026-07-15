@@ -35,12 +35,57 @@ function getAuthUser(payload: any) {
   return payload?.user || payload?.user_info || payload?.userInfo || null
 }
 
-function normalizeUserRole(value?: string | null) {
-  return String(value || '').trim().toLowerCase()
+function normalizeRoleValue(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeRoleValue(item))
+  }
+
+  if (value && typeof value === 'object') {
+    const roleObject = value as Record<string, unknown>
+    return normalizeRoleValue(
+      roleObject.role ||
+        roleObject.name ||
+        roleObject.roleName ||
+        roleObject.role_name ||
+        roleObject.authority ||
+        roleObject.authorities ||
+        roleObject.userRole ||
+        roleObject.user_role,
+    )
+  }
+
+  return String(value || '')
+    .split(/[,;/|]+/)
+    .map((role) => role.trim())
+    .filter(Boolean)
 }
 
-function getAuthUserRole(user: any) {
-  return normalizeUserRole(user?.role || user?.userRole || user?.user_role || user?.type)
+function getAuthUserRole(user: any, payload: any) {
+  const primaryRoleValues = [
+    user?.role,
+    user?.userRole,
+    user?.user_role,
+    user?.type,
+    payload?.role,
+    payload?.userRole,
+    payload?.user_role,
+    payload?.type,
+  ].flatMap((value) => normalizeRoleValue(value))
+
+  if (primaryRoleValues.length > 0) {
+    return primaryRoleValues.join(',')
+  }
+
+  const multiRoleValues = [
+    user?.roles,
+    user?.userRoles,
+    user?.authorities,
+    payload?.roles,
+    payload?.userRoles,
+    payload?.authorities,
+  ].flatMap((value) => normalizeRoleValue(value))
+
+  return multiRoleValues.join(',')
 }
 
 function isLoginSuccessResponse(response: any) {
@@ -222,7 +267,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         const token = getAuthToken(payload)
         const refreshToken = getRefreshToken(payload)
         const user = getAuthUser(payload)
-        const userRole = getAuthUserRole(user)
+        const userRole = getAuthUserRole(user, payload)
 
         if (!onSignInSuccess(email, keepLoggedIn, userRole)) {
           return

@@ -64,5 +64,27 @@ export const adminApi = {
     }
 
     return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
+  },
+
+  async getStaffList(page = 1, size = 100) {
+    return axiosClient.post('/api/user/staff/list', {
+      sortField: 'fullName',
+      filters: {},
+      sortBy: 'ASC',
+      page,
+      size,
+    })
+  },
+
+  async createStaff(payload: { email: string; fullName: string; role: string[]; status?: string }) {
+    return axiosClient.post('/api/user/staff', payload)
+  },
+
+  async updateStaff(id: string, payload: { email: string; fullName: string; role: string[]; status?: string }) {
+    return axiosClient.put(`/api/user/staff/${encodeURIComponent(id)}`, payload)
+  },
+
+  async deleteStaff(id: string) {
+    return axiosClient.delete(`/api/user/staff/${encodeURIComponent(id)}`)
   }
 }

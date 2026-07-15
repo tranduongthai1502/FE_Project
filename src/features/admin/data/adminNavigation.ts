@@ -56,7 +56,7 @@ export function getTenantAdminNav(activeView: TenantAdminView, setActiveView: (v
     label: item.label,
     active:
       (item.label === 'Dashboard' && activeView === 'dashboard') ||
-      (item.label === 'Staff Management' && (activeView === 'staffManagement' || activeView === 'staffCreate')) ||
+      (item.label === 'Staff Management' && (activeView === 'staffManagement' || activeView === 'staffCreate' || activeView === 'staffEdit' || activeView === 'staffDetail' || activeView === 'staffActivityLog')) ||
       (item.label === 'Settings' && activeView === 'settings'),
     onClick: item.label === 'Staff Management'
       ? () => setActiveView('staffManagement')
