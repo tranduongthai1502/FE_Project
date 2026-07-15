@@ -88,6 +88,11 @@
 }
 
 @media (max-width: 640px) {
+  .tenant-activation-page {
+    min-height: 100dvh;
+    padding: 16px;
+  }
+
   .login-page {
     min-height: 100dvh;
     background: #f7f8fd;
@@ -235,6 +240,18 @@
     font-size: 14px;
   }
 
+  .tenant-activation-shell {
+    padding: 24px 18px;
+  }
+
+  .tenant-activation-copy h2 {
+    font-size: 25px;
+  }
+
+  .tenant-activation-summary {
+    grid-template-columns: 1fr;
+  }
+
   .auth-modal-overlay {
     align-items: start;
     padding: 12px;
@@ -285,6 +302,10 @@
 }
 
 @media (max-width: 420px) {
+  .tenant-activation-page {
+    padding: 12px;
+  }
+
   .hero-panel {
     padding: 12px;
   }
@@ -328,6 +349,15 @@
   .signup-page .signup-submit {
     height: 46px;
     font-size: 18px;
+  }
+
+  .tenant-activation-shell {
+    gap: 18px;
+    padding: 22px 14px;
+  }
+
+  .tenant-activation-copy h2 {
+    font-size: 22px;
   }
 
   .signup-page .signup-copy,

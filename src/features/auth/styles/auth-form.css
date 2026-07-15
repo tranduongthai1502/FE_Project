@@ -424,6 +424,130 @@
   cursor: wait;
 }
 
+.tenant-activation-page {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(223, 49, 0, 0.08), transparent 34%),
+    #f7f8fd;
+  color: #10213a;
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.tenant-activation-shell {
+  width: min(520px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  padding: 34px;
+  border: 1px solid #efc8bf;
+  border-radius: 10px;
+  background: #fffdfd;
+  box-shadow: 0 22px 55px rgba(16, 33, 58, 0.08);
+  text-align: center;
+}
+
+.tenant-activation-badge {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #fff1ed;
+  color: #df3100;
+  font-size: 24px;
+}
+
+.tenant-activation-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.tenant-activation-copy span {
+  color: #df3100;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tenant-activation-copy h2 {
+  margin: 0;
+  color: #11243c;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.tenant-activation-copy p {
+  max-width: 420px;
+  margin: 0;
+  color: #604740;
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+.tenant-activation-summary {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #f0d7d0;
+  border-radius: 8px;
+  background: #f7f8fd;
+}
+
+.tenant-activation-summary div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+}
+
+.tenant-activation-summary small {
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-activation-summary strong {
+  min-width: 0;
+  color: #11243c;
+  font-size: 12px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.tenant-activation-button,
+.tenant-activation-secondary {
+  width: min(280px, 100%);
+  height: 48px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tenant-activation-button {
+  border: 0;
+  background: #df3100;
+  color: #ffffff;
+}
+
+.tenant-activation-secondary {
+  border: 1px solid #df3100;
+  background: #ffffff;
+  color: #df3100;
+}
+
 .signup-copy {
   margin: 20px 0 0;
   text-align: center;
