@@ -143,6 +143,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
   const closeCreateModal = () => {
     if (isSubmittingTenant) return
+    setIsCreateConfirmOpen(true)
+  }
+
+  const confirmCloseCreateModal = () => {
     setIsCreateModalOpen(false)
     setIsCreateCancelConfirmOpen(false)
     setTenantError('')
@@ -308,6 +312,16 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           onSubmit={handleCreateTenant}
         />
 
+        {isCreateConfirmOpen && (
+          <ConfirmActionModal
+            isSubmitting={false}
+            title="Discard Changes"
+            message="Are you sure you want to cancel? Your changes will not be saved."
+            onCancel={() => setIsCreateConfirmOpen(false)}
+            onConfirm={confirmCloseCreateModal}
+          />
+        )}
+
         {isCreateCancelConfirmOpen && (
           <ConfirmActionModal
             isSubmitting={false}
@@ -316,7 +330,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
             cancelLabel="Cancel"
             confirmLabel="Confirm"
             onCancel={() => setIsCreateCancelConfirmOpen(false)}
-            onConfirm={closeCreateModal}
+            onConfirm={confirmCloseCreateModal}
           />
         )}
       </>
