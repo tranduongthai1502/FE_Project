@@ -700,6 +700,46 @@
   flex: 0.95 1 0;
 }
 
+.tenant-dashboard-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tenant-dashboard-top,
+.tenant-dashboard-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.tenant-dashboard-top-side {
+  display: grid;
+  gap: 18px;
+}
+
+.tenant-dashboard-top .funnel-panel {
+  min-height: 330px;
+}
+
+.tenant-dashboard-bottom .interview-list {
+  min-height: 180px;
+}
+
+.tenant-dashboard-top-side .quota-panel {
+  min-height: 180px;
+}
+
+.tenant-dashboard-top-side .plan-panel {
+  min-height: 126px;
+}
+
+.tenant-dashboard-bottom .insights-panel {
+  min-height: 178px;
+}
+
 .super-dashboard-container {
   width: 100%;
   display: flex;
@@ -774,7 +814,9 @@
   display: flex;
   justify-content: space-between;
   color: #344054;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -787,6 +829,10 @@
   overflow: hidden;
   border-radius: 999px;
   background: #d9dbe1;
+}
+
+.funnel-track {
+  height: 8px;
 }
 
 .funnel-track span,
@@ -807,12 +853,16 @@
 
 .quota-panel,
 .plan-panel {
+  text-align: left;
+}
+
+.quota-panel {
   text-align: center;
 }
 
 .quota-ring {
-  width: 92px;
-  height: 92px;
+  width: 88px;
+  height: 88px;
   display: grid;
   place-items: center;
   margin: 14px auto;
@@ -830,6 +880,13 @@
   color: #667085;
   font-size: 8px;
   text-transform: uppercase;
+}
+
+.quota-panel p {
+  max-width: 210px;
+  margin: 0 auto;
+  font-size: 10px;
+  line-height: 1.45;
 }
 
 .interview-list,
@@ -893,6 +950,9 @@
 }
 
 .plan-panel small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #f7b29d;
   text-transform: uppercase;
 }
@@ -901,8 +961,28 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+.plan-panel footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.plan-panel footer span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.plan-panel footer strong {
+  color: #ffffff;
+  font-size: 11px;
+}
+
 .plan-panel button {
-  margin-top: 16px;
   min-height: 36px;
   padding: 0 18px;
   border-radius: 6px;
@@ -912,6 +992,16 @@
 
 .insights-panel h2 i {
   color: #ff5a1d;
+}
+
+.insights-panel > small {
+  display: block;
+  margin-top: 10px;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .tag-list {
@@ -5399,6 +5489,8 @@
   .super-admin-metrics,
   .subscription-plan-metrics,
   .prompt-management-metrics,
+  .tenant-dashboard-top,
+  .tenant-dashboard-bottom,
   .tenant-grid,
   .super-dashboard-row,
   .hr-grid,
@@ -5678,6 +5770,8 @@
   .tenant-management-metrics,
   .subscription-plan-metrics,
   .prompt-management-metrics,
+  .tenant-dashboard-top,
+  .tenant-dashboard-bottom,
   .tenant-grid,
   .super-dashboard-row,
   .hr-grid,
@@ -5834,6 +5928,7 @@
   }
 
   .tenant-list-table-card footer,
+  .staff-list-table-card footer,
   .subscription-table-card footer,
   .prompt-table-card footer {
     min-height: auto;
@@ -5844,6 +5939,7 @@
   }
 
   .tenant-list-table-card footer div,
+  .staff-list-table-card footer div,
   .subscription-table-card footer div,
   .prompt-table-card footer div {
     justify-content: center;
@@ -6133,8 +6229,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: min(1080px, calc(100% - 60px));
-  margin: 26px auto 0;
+  width: 100%;
+  margin: 26px 0 0;
 }
 
 .staff-detail-title-row h1 {
@@ -6231,8 +6327,8 @@
   display: grid;
   grid-template-columns: 1.5fr 1fr;
   gap: 26px;
-  width: min(1080px, calc(100% - 60px));
-  margin: 26px auto 0;
+  width: 100%;
+  margin: 26px 0 0;
 }
 
 .staff-detail-card {
@@ -6271,6 +6367,23 @@
   font-size: 16px;
 }
 
+.staff-role-assignment-card {
+  min-height: 110px;
+}
+
+.staff-role-assignment-card h2 {
+  margin: 0 0 18px;
+  color: #101c33;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.staff-role-assignment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .staff-detail-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -6307,10 +6420,8 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  width: min(1080px, calc(100% - 60px));
-  margin: 26px auto 0;
-  background: #ffffff;
-  border: 1px solid #f0b8a8;
+  width: 100%;
+  margin: 26px 0 0;
   border-radius: 8px;
   padding: 20px 24px;
 }
@@ -6318,7 +6429,7 @@
 .staff-header-avatar {
   width: 64px;
   height: 64px;
-  border-radius: 50%;
+  border-radius: 16px;
   background: #ff5f2b;
   color: #ffffff;
   display: flex;
