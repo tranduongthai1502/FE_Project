@@ -4,7 +4,7 @@ function normalizeResourceStatus(status?: string) {
   const normalizedStatus = String(status || '').trim().toUpperCase()
 
   if (!normalizedStatus) return 'ACTIVE'
-  if (normalizedStatus === 'INACTIVE') return 'DISABLED'
+  if (normalizedStatus === 'DISABLED') return 'INACTIVE'
   return normalizedStatus
 }
 

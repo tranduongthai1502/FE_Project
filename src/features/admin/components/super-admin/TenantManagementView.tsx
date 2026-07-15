@@ -27,7 +27,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
+  const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
+  const [isUpdatingTenantStatus, setIsUpdatingTenantStatus] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
@@ -300,6 +302,39 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setIsCreateModalOpen(true)
     updateTenantCreateUrl()
   }
+  const confirmUpdateTenantStatus = async () => {
+    const selectedTenant = tenants.find((tenant) => tenant.id === selectedTenantId)
+    if (!selectedTenant) return
+
+    const selectedPlan = getTenantPlan(selectedTenant)
+    const nextStatus = selectedTenant.status.toLowerCase() === 'active' ? 'DISABLED' : 'ACTIVE'
+    const planId = selectedTenant.subscriptionPlanId || selectedPlan?.id || ''
+
+    setIsUpdatingTenantStatus(true)
+    setTenantListError('')
+
+    try {
+      await adminApi.updateTenant(selectedTenant.id, {
+        companyName: selectedTenant.name,
+        domain: selectedTenant.domain || selectedTenant.id,
+        industry: selectedTenant.industry || 'Media & Advertising',
+        region: selectedTenant.region || 'VietNam',
+        status: nextStatus,
+        planId,
+      })
+      setIsStatusConfirmOpen(false)
+      setRefreshTenantsKey((value) => value + 1)
+      triggerToast?.(
+        nextStatus === 'DISABLED' ? 'Tenant admin account disabled successfully.' : 'Tenant admin account activated successfully.',
+        'success',
+      )
+    } catch (error) {
+      setTenantListError(error instanceof Error ? error.message : 'Update tenant status failed')
+      triggerToast?.('Error system. Please try again', 'error')
+    } finally {
+      setIsUpdatingTenantStatus(false)
+    }
+  }
 
   if (isCreateModalOpen) {
     return (
@@ -382,7 +417,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 <h1>{selectedTenant.name}</h1>
                 <em className={isActive ? 'active' : 'inactive'}>{selectedTenant.status}</em>
               </div>
-              <button type="button">Deactivate Tenant</button>
+              <button type="button" onClick={() => setIsStatusConfirmOpen(true)} disabled={isUpdatingTenantStatus}>
+                {isActive ? 'Deactivate Tenant' : 'Activate Tenant'}
+              </button>
             </div>
 
             <div className="tenant-detail-grid">
@@ -442,6 +479,19 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 </div>
               </section>
             </div>
+
+            {isStatusConfirmOpen && (
+              <ConfirmActionModal
+                isSubmitting={isUpdatingTenantStatus}
+                title="Confirm Action"
+                message={`Are you sure you want to ${isActive ? 'deactivate' : 'activate'} this tenant admin account?`}
+                cancelLabel="Cancel"
+                confirmLabel="Confirm"
+                submittingLabel={isActive ? 'Deactivating...' : 'Activating...'}
+                onCancel={() => setIsStatusConfirmOpen(false)}
+                onConfirm={confirmUpdateTenantStatus}
+              />
+            )}
           </>
         )}
       </div>
