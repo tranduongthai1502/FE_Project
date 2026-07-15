@@ -23,7 +23,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   ))
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
-  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
@@ -149,7 +148,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
   const confirmCloseCreateModal = () => {
     setIsCreateModalOpen(false)
-    setIsCreateConfirmOpen(false)
     setIsCreateCancelConfirmOpen(false)
     setTenantError('')
     setTenantForm(emptyTenantForm)
