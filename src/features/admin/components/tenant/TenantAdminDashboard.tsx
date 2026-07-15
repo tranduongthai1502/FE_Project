@@ -1,12 +1,90 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { getTenantAdminNav } from '../../data/adminNavigation'
-import type { TenantAdminView } from '../../types/admin.types'
+import type { TenantAdminView, StaffMember, UserStatus } from '../../types/admin.types'
 import { getInitialTenantAdminView, updateTenantAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 import { MetricCard } from '../shared/MetricCard'
+import { adminApi } from '../../services/adminApi'
+import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 
-function StaffManagementView({ onCreate }: { onCreate: () => void }) {
+
+function StaffManagementView({
+  staffList,
+  isLoading,
+  error,
+  maxStaffQuota = 10,
+  onCreate,
+  onEdit,
+  onDelete,
+  onSelectStaff,
+}: {
+  staffList: StaffMember[]
+  isLoading: boolean
+  error: string
+  maxStaffQuota?: number
+  onCreate: () => void
+  onEdit: (staff: StaffMember) => void
+  onDelete: (staff: StaffMember) => void
+  onSelectStaff: (staff: StaffMember) => void
+}) {
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 5
+
+  const filteredStaff = staffList.filter(staff => {
+    // 1. Search Query
+    const normalizedSearch = searchQuery.toLowerCase().trim()
+    const matchesSearch = !normalizedSearch || 
+      staff.fullName.toLowerCase().includes(normalizedSearch) || 
+      staff.email.toLowerCase().includes(normalizedSearch)
+
+    // 2. Role Filter
+    const matchesRole = roleFilter === 'all' || 
+      (staff.userRole && staff.userRole.toLowerCase().includes(roleFilter))
+
+    // 3. Status Filter
+    let matchesStatus = true
+    if (statusFilter === 'activated') {
+      matchesStatus = staff.status === 'ACTIVE'
+    } else if (statusFilter === 'pending') {
+      matchesStatus = staff.status === 'PENDING'
+    } else if (statusFilter === 'disabled') {
+      matchesStatus = staff.status === 'DISABLED'
+    }
+
+    return matchesSearch && matchesRole && matchesStatus
+  })
+
+  // Pagination local calculations
+  const totalElements = filteredStaff.length
+  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize))
+  const paginatedStaff = filteredStaff.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  useEffect(() => {
+    // Reset to page 1 when filter changes
+    setCurrentPage(1)
+  }, [roleFilter, statusFilter, searchQuery])
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Oct 12, 2023'
+    try {
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return dateStr
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    } catch {
+      return dateStr
+    }
+  }
+
+  const quotaPercent = Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
+
   return (
     <div className="role-content staff-management-content">
       <div className="tenant-breadcrumb">
@@ -24,54 +102,196 @@ function StaffManagementView({ onCreate }: { onCreate: () => void }) {
         <section className="staff-quota-card">
           <div>
             <span>Staff Accounts</span>
-            <strong>8 / 10</strong>
+            <strong>{staffList.length} / {maxStaffQuota}</strong>
           </div>
-          <i aria-hidden="true"><span /></i>
-          <small>2 seats available</small>
+          <i><span style={{ width: `${quotaPercent}%`, background: '#ff5f2b' }} /></i>
+          <small>{Math.max(0, maxStaffQuota - staffList.length)} seats remaining</small>
         </section>
       </div>
 
       <div className="staff-management-toolbar">
         <label>
-          <span>Role</span>
-          <select defaultValue="all">
+          <span>Role:</span>
+          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
             <option value="all">All Roles</option>
             <option value="hr">HR</option>
             <option value="interviewer">Interviewer</option>
           </select>
         </label>
         <label>
-          <span>Status</span>
-          <select defaultValue="activated">
-            <option value="activated">Activated</option>
+          <span>Status:</span>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All Status</option>
+            <option value="activated">Active</option>
             <option value="pending">Pending</option>
             <option value="disabled">Disabled</option>
           </select>
         </label>
         <div className="staff-search">
           <i className="fa-solid fa-magnifying-glass"></i>
-          <input type="search" placeholder="Search full name or email address..." />
+          <input 
+            type="search" 
+            placeholder="Search full name or email address..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        <button type="button" onClick={onCreate}>Create Staff Account</button>
+        <button type="button" className="tenant-create-btn" onClick={onCreate}>Create Staff Account</button>
       </div>
 
-      <section className="staff-empty-state">
-        <i className="fa-solid fa-user-plus"></i>
-        <span><i className="fa-solid fa-briefcase"></i></span>
-        <strong>No staff accounts found</strong>
-        <p>Click "Create Staff Account" to add your first team member.</p>
-      </section>
+      {isLoading ? (
+        <div className="tenant-list-table-state" style={{ marginTop: '24px' }}>Loading staff accounts...</div>
+      ) : error ? (
+        <div className="tenant-list-table-state error" style={{ marginTop: '24px' }}>{error}</div>
+      ) : staffList.length === 0 ? (
+        <section className="staff-empty-state">
+          <i className="fa-solid fa-user-plus"></i>
+          <span><i className="fa-solid fa-briefcase"></i></span>
+          <strong>No staff accounts found</strong>
+          <p>Click "Create Staff Account" to add your first team member.</p>
+        </section>
+      ) : filteredStaff.length === 0 ? (
+        <div className="tenant-list-table-state" style={{ marginTop: '24px' }}>No staff members match the filters.</div>
+      ) : (
+        <section className="staff-list-table-card">
+          <div className="staff-list-table-row staff-list-table-head">
+            <span>Full Name</span>
+            <span>Email</span>
+            <span>Role</span>
+            <span>Status</span>
+            <span>Date Created</span>
+            <span>Actions</span>
+          </div>
+
+          {paginatedStaff.map(staff => {
+            const roleList = staff.userRole 
+              ? staff.userRole.split(', ').map(r => r.trim())
+              : []
+            const isActive = staff.status === 'ACTIVE'
+            const isPending = staff.status === 'PENDING'
+            const isDisabled = staff.status === 'DISABLED'
+
+            return (
+              <div className="staff-list-table-row" key={staff.id}>
+                <strong 
+                  className="staff-clickable-name"
+                  onClick={() => onSelectStaff(staff)}
+                >
+                  {staff.fullName}
+                </strong>
+                <span>{staff.email}</span>
+                <div>
+                  {roleList.map(r => (
+                    <span key={r} className="staff-badge">{r}</span>
+                  ))}
+                </div>
+                <em className={isActive ? 'active' : isPending ? 'pending' : 'disabled'}>
+                  <i className="fa-solid fa-circle" style={{ fontSize: '6px' }}></i>
+                  {isActive ? 'Active' : isPending ? 'Pending' : 'Disabled'}
+                </em>
+                <span>{formatDate(staff.createdAt)}</span>
+                <div className="staff-actions">
+                  <button 
+                    type="button" 
+                    aria-label={`Edit ${staff.fullName}`}
+                    onClick={() => onEdit(staff)}
+                  >
+                    <i className="fa-regular fa-pen-to-square"></i>
+                  </button>
+                  <button 
+                    type="button" 
+                    aria-label={`Delete ${staff.fullName}`}
+                    onClick={() => onDelete(staff)}
+                  >
+                    <i className="fa-regular fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+
+          <footer>
+            <span>Showing {paginatedStaff.length} of {totalElements} staff account{totalElements === 1 ? '' : 's'}</span>
+            <div>
+              <button 
+                type="button" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              >
+                <i className="fa-solid fa-chevron-left"></i>
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button 
+                  key={p} 
+                  type="button" 
+                  className={currentPage === p ? 'active' : ''}
+                  onClick={() => setCurrentPage(p)}
+                >
+                  {p}
+                </button>
+              ))}
+              <button 
+                type="button" 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              >
+                <i className="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </footer>
+        </section>
+      )}
     </div>
   )
 }
 
 function CreateStaffAccountView({
+  staffMember,
   onCancel,
   onConfirm,
+  isSubmitting = false,
 }: {
+  staffMember?: StaffMember
   onCancel: () => void
-  onConfirm: () => void
+  onConfirm: (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => void
+  isSubmitting?: boolean
 }) {
+  const isEdit = !!staffMember
+  const [fullName, setFullName] = useState(staffMember?.fullName || '')
+  const [email, setEmail] = useState(staffMember?.email || '')
+  
+  // Parse roles
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
+    if (!staffMember?.userRole) return ['hr'] // default to HR on create
+    return staffMember.userRole.split(', ').map(r => r.trim().toLowerCase())
+  })
+  
+  const [status, setStatus] = useState<UserStatus>(staffMember?.status || 'ACTIVE')
+
+  const handleRoleToggle = (role: string) => {
+    setSelectedRoles(prev => {
+      if (prev.includes(role)) {
+        // Must have at least one role selected
+        if (prev.length === 1) return prev
+        return prev.filter(r => r !== role)
+      } else {
+        return [...prev, role]
+      }
+    })
+  }
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    // Map roles to uppercase: "HR" or "Interviewer" (matching backend validation regexp ^(HR|Interviewer)$)
+    const rolePayload = selectedRoles.map(r => r === 'hr' ? 'HR' : 'Interviewer')
+    onConfirm({
+      fullName,
+      email,
+      role: rolePayload,
+      status,
+    })
+  }
+
   return (
     <div className="role-content create-staff-content">
       <div className="tenant-breadcrumb create-staff-breadcrumb">
@@ -80,59 +300,106 @@ function CreateStaffAccountView({
         <i className="fa-solid fa-chevron-right"></i>
         <span>Staff Management</span>
         <i className="fa-solid fa-chevron-right"></i>
-        <strong>Create New Staff account</strong>
+        <strong>{isEdit ? 'Edit Staff Account' : 'Create New Staff account'}</strong>
       </div>
 
       <section className="create-staff-card">
         <header className="create-staff-header">
           <div className="create-staff-title">
-            <span><i className="fa-solid fa-user-plus"></i></span>
+            <span><i className={`fa-solid ${isEdit ? 'fa-user-pen' : 'fa-user-plus'}`}></i></span>
             <div>
-              <h1>Create Staff Account</h1>
-              <p>Provision a new user account with specific access roles.</p>
+              <h1>{isEdit ? 'Edit Staff Account' : 'Create Staff Account'}</h1>
+              <p>{isEdit ? 'Modify user account settings and access roles.' : 'Provision a new user account with specific access roles.'}</p>
             </div>
           </div>
-          <span className="system-status"><i className="fa-solid fa-circle"></i> System Online</span>
+          <span className="system-status"><i className="fa-solid fa-circle"></i> SYSTEM ONLINE</span>
         </header>
 
-        <form className="create-staff-form" onSubmit={(event) => { event.preventDefault(); onConfirm() }}>
+        <form className="create-staff-form" onSubmit={handleSubmit}>
           <div className="create-staff-grid">
             <fieldset className="staff-fieldset">
               <legend>Identity Details</legend>
               <label>
-                <span>Full Name</span>
+                <span>Full Name *</span>
                 <div>
                   <i className="fa-regular fa-user"></i>
-                  <input type="text" placeholder="e.g. Sarah Jenkins" required />
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Sarah Jenkins" 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required 
+                    disabled={isSubmitting}
+                  />
                 </div>
               </label>
               <label>
-                <span>Corporate Email Address</span>
+                <span>Corporate Email Address *</span>
                 <div>
                   <i className="fa-regular fa-envelope"></i>
-                  <input type="email" placeholder="sarah.j@jobfusion.com" required />
+                  <input 
+                    type="email" 
+                    placeholder="sarah.j@jobfusion.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required 
+                    disabled={isEdit || isSubmitting}
+                  />
                 </div>
               </label>
+              {isEdit && (
+                <label style={{ marginTop: '16px' }}>
+                  <span>Account Status</span>
+                  <div style={{ border: '1px solid #f0b8a8', borderRadius: '5px', padding: '0 8px', background: '#ffffff', height: '45px', display: 'flex', alignItems: 'center' }}>
+                    <select 
+                      value={status} 
+                      onChange={(e) => setStatus(e.target.value as UserStatus)}
+                      disabled={isSubmitting}
+                      style={{ width: '100%', border: 0, outline: 0, background: 'transparent', font: 'inherit', fontSize: '14px', fontWeight: 'bold' }}
+                    >
+                      <option value="ACTIVE">Activated</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="DISABLED">Disabled</option>
+                    </select>
+                  </div>
+                </label>
+              )}
             </fieldset>
 
             <fieldset className="staff-fieldset">
               <legend>Access & Permissions</legend>
-              <label className="staff-role-option">
-                <input type="radio" name="staffRole" value="hr" defaultChecked />
+              <div 
+                className={`staff-role-card-option ${selectedRoles.includes('hr') ? 'selected' : ''}`}
+                onClick={() => !isSubmitting && handleRoleToggle('hr')}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={selectedRoles.includes('hr')}
+                  onChange={() => {}} // handled by div onClick
+                  disabled={isSubmitting}
+                />
                 <span><i className="fa-solid fa-users-gear"></i></span>
                 <div>
                   <strong>HR</strong>
                   <small>Full access to candidate sourcing and recruitment management tools.</small>
                 </div>
-              </label>
-              <label className="staff-role-option">
-                <input type="radio" name="staffRole" value="interviewer" />
+              </div>
+              <div 
+                className={`staff-role-card-option ${selectedRoles.includes('interviewer') ? 'selected' : ''}`}
+                onClick={() => !isSubmitting && handleRoleToggle('interviewer')}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={selectedRoles.includes('interviewer')}
+                  onChange={() => {}} // handled by div onClick
+                  disabled={isSubmitting}
+                />
                 <span><i className="fa-solid fa-clipboard-check"></i></span>
                 <div>
                   <strong>Interviewer</strong>
                   <small>Can view assigned interviews, candidate profiles and submit evaluation feedback.</small>
                 </div>
-              </label>
+              </div>
             </fieldset>
           </div>
 
@@ -146,10 +413,472 @@ function CreateStaffAccountView({
 
           <footer className="create-staff-actions">
             <small><i className="fa-regular fa-circle-question"></i> Required fields marked with *</small>
-            <button type="button" onClick={onCancel}>Cancel</button>
-            <button type="submit">Confirm</button>
+            <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+            <button type="submit" className="tenant-create-btn" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : isEdit ? 'Update' : 'Confirm'}
+            </button>
           </footer>
         </form>
+      </section>
+    </div>
+  )
+}
+
+function EditStaffAccountView({
+  staffMember,
+  onCancel,
+  onConfirm,
+  isSubmitting = false,
+}: {
+  staffMember: StaffMember
+  onCancel: () => void
+  onConfirm: (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => void
+  isSubmitting?: boolean
+}) {
+  const [fullName, setFullName] = useState(staffMember.fullName)
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
+    const roles = staffMember.userRole
+      ? staffMember.userRole.split(',').map((role) => role.trim().toLowerCase())
+      : []
+
+    return roles.length > 0 ? roles : ['hr']
+  })
+
+  const getInitials = (name: string) => {
+    const words = name.trim().split(/\s+/).filter(Boolean)
+    if (words.length === 0) return 'U'
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+    return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase()
+  }
+
+  const formatActivityDate = (dateStr?: string) => {
+    if (!dateStr) return '2 hours ago'
+
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  }
+
+  const toggleRole = (role: string) => {
+    setSelectedRoles((current) => {
+      if (current.includes(role)) {
+        return current.length === 1 ? current : current.filter((item) => item !== role)
+      }
+
+      return [...current, role]
+    })
+  }
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    const rolePayload = selectedRoles.map((role) => role === 'hr' ? 'HR' : 'Interviewer')
+
+    onConfirm({
+      fullName: fullName.trim(),
+      email: staffMember.email,
+      role: rolePayload,
+      status: staffMember.status,
+    })
+  }
+
+  const isActive = staffMember.status === 'ACTIVE'
+  const statusLabel = isActive ? 'Verified' : staffMember.status === 'PENDING' ? 'Pending' : 'Disabled'
+
+  return (
+    <div className="role-content edit-staff-content">
+      <div className="tenant-breadcrumb create-staff-breadcrumb">
+        <i className="fa-solid fa-house"></i>
+        <span>Home</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <span>Staff Management</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <strong>Edit Staff Account</strong>
+      </div>
+
+      <header className="edit-staff-heading">
+        <h1>Edit Staff Account</h1>
+        <p>Modify permissions and personal details for {staffMember.fullName}.</p>
+      </header>
+
+      <form className="edit-staff-form" onSubmit={handleSubmit}>
+        <div className="edit-staff-layout">
+          <aside className="edit-staff-profile-card">
+            <div className="edit-staff-profile-banner"></div>
+            <div className="edit-staff-avatar">{getInitials(staffMember.fullName)}</div>
+            <strong>{staffMember.fullName}</strong>
+            <small>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 6).toUpperCase()}`}</small>
+
+            <div className="edit-staff-meta-list">
+              <div>
+                <span><i className="fa-regular fa-calendar-check"></i></span>
+                <p>Last Active</p>
+                <strong>{formatActivityDate(staffMember.createdAt)}</strong>
+              </div>
+              <div>
+                <span><i className="fa-solid fa-shield-heart"></i></span>
+                <p>Account Status</p>
+                <strong className={isActive ? 'verified' : 'not-verified'}>{statusLabel}</strong>
+              </div>
+            </div>
+          </aside>
+
+          <section className="edit-staff-account-card">
+            <h2><i className="fa-solid fa-user"></i> Account Information</h2>
+
+            <label className="edit-staff-field">
+              <span>Email Address (Primary)</span>
+              <div className="edit-staff-readonly-input">
+                <i className="fa-regular fa-envelope"></i>
+                <input type="email" value={staffMember.email} readOnly />
+                <em><i className="fa-solid fa-lock"></i> Read-only</em>
+              </div>
+              <small>Email addresses are locked for security. Contact System Admin to change.</small>
+            </label>
+
+            <label className="edit-staff-field">
+              <span>Full Name</span>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                disabled={isSubmitting}
+                required
+              />
+            </label>
+
+            <div className="edit-staff-role-head">
+              <span>Assigned Roles</span>
+              <button type="button">Manage Role Templates</button>
+            </div>
+
+            <div className="edit-staff-role-grid">
+              <label className={`edit-staff-role-option ${selectedRoles.includes('hr') ? 'selected' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={selectedRoles.includes('hr')}
+                  onChange={() => toggleRole('hr')}
+                  disabled={isSubmitting}
+                />
+                <span><i className="fa-solid fa-users-gear"></i></span>
+                <div>
+                  <strong>HR</strong>
+                  <small>Full access to candidate sourcing and recruitment management tools.</small>
+                </div>
+              </label>
+
+              <label className={`edit-staff-role-option ${selectedRoles.includes('interviewer') ? 'selected' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={selectedRoles.includes('interviewer')}
+                  onChange={() => toggleRole('interviewer')}
+                  disabled={isSubmitting}
+                />
+                <span><i className="fa-solid fa-clipboard-list"></i></span>
+                <div>
+                  <strong>Interviewer</strong>
+                  <small>Can view assigned interviews, candidate profiles and submit evaluation feedback.</small>
+                </div>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <footer className="edit-staff-actions">
+          <small>All changes will be logged for security purposes.</small>
+          <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
+          </button>
+        </footer>
+      </form>
+    </div>
+  )
+}
+
+function StaffDetailView({
+  staffMember,
+  onBack,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onViewLogs,
+}: {
+  staffMember: StaffMember
+  onBack: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onToggleStatus: () => void
+  onViewLogs: () => void
+}) {
+  const getInitials = (name: string) => {
+    if (!name) return 'U'
+    const parts = name.split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Oct 12, 2023'
+    try {
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return dateStr
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    } catch {
+      return dateStr
+    }
+  }
+
+  const roleList = staffMember.userRole 
+    ? staffMember.userRole.split(', ').map(r => r.trim())
+    : []
+
+  const isActive = staffMember.status === 'ACTIVE'
+  const isPending = staffMember.status === 'PENDING'
+  const isDisabled = staffMember.status === 'DISABLED'
+
+  return (
+    <div className="role-content staff-detail-content">
+      <div className="tenant-breadcrumb">
+        <i className="fa-solid fa-house"></i>
+        <span style={{ cursor: 'pointer' }} onClick={onBack}>Home</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <span style={{ cursor: 'pointer' }} onClick={onBack}>Staff Management</span>
+        <i className="fa-solid fa-chevron-right"></i>
+        <strong>Staff Detail</strong>
+      </div>
+
+      <section className="staff-header-profile">
+        <div className="staff-header-avatar">
+          {getInitials(staffMember.fullName)}
+        </div>
+        <div className="staff-header-info">
+          <h1>{staffMember.fullName}</h1>
+          <div className="staff-header-meta">
+            <span>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 4).toUpperCase()}`}</span>
+            <span>•</span>
+            <span>Created on {formatDate(staffMember.createdAt)}</span>
+          </div>
+        </div>
+        <div className="staff-detail-actions">
+          <button type="button" className="btn-delete" onClick={onDelete}>
+            Delete
+          </button>
+          <button type="button" className="btn-edit" onClick={onEdit}>
+            Edit Profile
+          </button>
+          <button 
+            type="button" 
+            className={isActive ? "btn-deactivate" : "btn-activate"} 
+            onClick={onToggleStatus}
+          >
+            {isActive ? 'Deactivate Account' : 'Activate Account'}
+          </button>
+        </div>
+      </section>
+
+      <div className="staff-detail-grid">
+        {/* Left Column */}
+        <div>
+          <section className="staff-detail-card">
+            <header style={{ borderBottom: '1px solid #f0d7d0', paddingBottom: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ width: '36px', height: '36px', borderRadius: '5px', background: '#ffedea', color: '#d93408', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}><i className="fa-regular fa-user"></i></span>
+              <h2 style={{ flex: 1, margin: 0, color: '#101c33', fontSize: '16px' }}>Personal Information</h2>
+              <i className="fa-solid fa-ellipsis-vertical" style={{ color: '#667085', cursor: 'pointer' }}></i>
+            </header>
+            <div className="staff-detail-info-grid">
+              <div>
+                <small>Full Name</small>
+                <strong>{staffMember.fullName}</strong>
+              </div>
+              <div>
+                <small>Primary Email</small>
+                <strong>
+                  {staffMember.email} <i className="fa-solid fa-lock" style={{ color: '#667085', marginLeft: '6px', fontSize: '12px' }}></i>
+                </strong>
+              </div>
+              <div>
+                <small>Phone Number</small>
+                <strong>{staffMember.phone || '+1 (555) 234-8891'}</strong>
+              </div>
+              <div>
+                <small>Office Location</small>
+                <strong>{staffMember.officeLocation || 'San Francisco, CA (HQ)'}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="staff-detail-card">
+            <header style={{ borderBottom: '1px solid #f0d7d0', paddingBottom: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ width: '36px', height: '36px', borderRadius: '5px', background: '#ffedea', color: '#d93408', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}><i className="fa-regular fa-id-badge"></i></span>
+              <h2 style={{ flex: 1, margin: 0, color: '#101c33', fontSize: '16px' }}>Role Assignments</h2>
+            </header>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {roleList.map(role => (
+                <span key={role} className="staff-badge">{role}</span>
+              ))}
+            </div>
+            <div className="staff-universal-access">
+              <i className="fa-solid fa-circle-nodes"></i>
+              <div>
+                <strong>Universal Access Enabled</strong>
+                <p>This account can switch workspaces seamlessly within the Tenant infrastructure.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column */}
+        <div>
+          <section className="staff-status-panel">
+            <div className={`staff-status-box ${isPending ? 'status-pending' : isDisabled ? 'status-disabled' : ''}`}>
+              <strong>
+                <i className="fa-solid fa-circle" style={{ fontSize: '8px' }}></i>
+                {isActive ? 'Active' : isPending ? 'Pending' : 'Disabled'}
+              </strong>
+              <span>SINCE {formatDate(staffMember.createdAt).toUpperCase()}</span>
+            </div>
+            <div className="staff-login-meta">
+              <div className="staff-login-row">
+                <span>Last Login</span>
+                <strong>2 hours ago</strong>
+              </div>
+              <div className="staff-login-row">
+                <span>Login Location</span>
+                <strong>San Francisco, US (IP: 192.168.1.1)</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="staff-detail-card">
+            <header style={{ borderBottom: '1px solid #f0d7d0', paddingBottom: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, color: '#101c33', fontSize: '16px' }}>Recent Activity</h2>
+              <button type="button" className="staff-view-logs-btn" onClick={onViewLogs}>View All Logs</button>
+            </header>
+            <div className="activity-list-container" style={{ marginTop: '16px' }}>
+              <div className="activity-item">
+                <div className="activity-icon-wrapper">
+                  <div className="activity-icon"><i className="fa-solid fa-pen"></i></div>
+                  <div className="activity-line"></div>
+                </div>
+                <div className="activity-details">
+                  <p>Modified Job Post: <strong>"Sr. Engineer"</strong></p>
+                  <small>TODAY • 11:45 AM</small>
+                </div>
+              </div>
+
+              <div className="activity-item">
+                <div className="activity-icon-wrapper">
+                  <div className="activity-icon"><i className="fa-solid fa-user-plus"></i></div>
+                  <div className="activity-line"></div>
+                </div>
+                <div className="activity-details">
+                  <p>Assigned to <strong>"Team Alpha"</strong></p>
+                  <small>YESTERDAY • 04:20 PM</small>
+                </div>
+              </div>
+
+              <div className="activity-item">
+                <div className="activity-icon-wrapper">
+                  <div className="activity-icon"><i className="fa-solid fa-key"></i></div>
+                  <div className="activity-line"></div>
+                </div>
+                <div className="activity-details">
+                  <p>Authenticated via SSO</p>
+                  <small>NOV 12 • 09:00 AM</small>
+                </div>
+              </div>
+
+              <div className="activity-item">
+                <div className="activity-icon-wrapper">
+                  <div className="activity-icon"><i className="fa-solid fa-gear"></i></div>
+                  <div className="activity-line"></div>
+                </div>
+                <div className="activity-details">
+                  <p>Updated Notification Settings</p>
+                  <small>NOV 10 • 02:15 PM</small>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StaffActivityLogView({
+  staffMember,
+  onBack,
+}: {
+  staffMember: StaffMember
+  onBack: () => void
+}) {
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Oct 12, 2023'
+
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  }
+
+  return (
+    <div className="role-content staff-log-content">
+      <div className="tenant-breadcrumb staff-log-breadcrumb">
+        <i className="fa-solid fa-house"></i>
+        <button type="button" onClick={onBack}>Home</button>
+        <i className="fa-solid fa-chevron-right"></i>
+        <button type="button" onClick={onBack}>Staff Management</button>
+        <i className="fa-solid fa-chevron-right"></i>
+        <button type="button" onClick={onBack}>Staff Detail</button>
+        <i className="fa-solid fa-chevron-right"></i>
+        <strong>Staff Activity Log</strong>
+      </div>
+
+      <header className="staff-log-header">
+        <div>
+          <h1>Staff Activity Log</h1>
+          <p><i className="fa-regular fa-clock"></i> Real-time auditing and security trail for tenant administrators.</p>
+        </div>
+        <button type="button" className="staff-log-export-btn">Export to Excel</button>
+      </header>
+
+      <section className="staff-log-subject">
+        <h2>{staffMember.fullName}</h2>
+        <p>
+          <span>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 6).toUpperCase()}`}</span>
+          <span>Created on {formatDate(staffMember.createdAt)}</span>
+        </p>
+      </section>
+
+      <section className="staff-log-filter-card">
+        <strong><i className="fa-solid fa-filter"></i> Filter Logs:</strong>
+        <div>
+          <button type="button">All Event Types <i className="fa-solid fa-chevron-down"></i></button>
+          <button type="button"><i className="fa-regular fa-calendar"></i> Oct 12, 2023 - Oct 19, 2023</button>
+          <button type="button" className="clear">Clear All</button>
+        </div>
+      </section>
+
+      <section className="staff-log-empty-state">
+        <i className="fa-regular fa-user-plus"></i>
+        <span><i className="fa-regular fa-calendar-check"></i></span>
+        <p>No activity recorded for this account yet.</p>
       </section>
     </div>
   )
@@ -170,6 +899,155 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  // CRUD Staff States
+  const [staffList, setStaffList] = useState<StaffMember[]>([])
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false)
+  const [staffError, setStaffError] = useState('')
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null)
+  
+  // Modals & Save states
+  const [deleteConfirmStaff, setDeleteConfirmStaff] = useState<StaffMember | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // API load staff
+  useEffect(() => {
+    if (
+      activeView !== 'staffManagement' &&
+      activeView !== 'staffCreate' &&
+      activeView !== 'staffEdit' &&
+      activeView !== 'staffDetail' &&
+      activeView !== 'staffActivityLog'
+    ) {
+      return
+    }
+
+    let isActive = true
+    setIsLoadingStaff(true)
+    setStaffError('')
+
+    adminApi.getStaffList(1, 100)
+      .then((response: any) => {
+        if (!isActive) return
+        const payload = response?.data || response
+        const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.content) ? payload.content : [])
+        setStaffList(list)
+      })
+      .catch((error) => {
+        if (!isActive) return
+        setStaffError(error instanceof Error ? error.message : 'Failed to load staff accounts')
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingStaff(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, refreshKey])
+
+  // Handlers
+  const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
+    setIsSaving(true)
+    try {
+      await adminApi.createStaff({
+        fullName: payload.fullName,
+        email: payload.email,
+        role: payload.role,
+        status: payload.status,
+      })
+      triggerToast?.('Staff account created successfully. Invitation email sent.', 'success')
+      setRefreshKey(prev => prev + 1)
+      changeView('staffManagement')
+    } catch (error) {
+      triggerToast?.(error instanceof Error ? error.message : 'Create staff account failed.', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
+    if (!selectedStaff) return
+    setIsSaving(true)
+    try {
+      await adminApi.updateStaff(selectedStaff.id, {
+        fullName: payload.fullName,
+        email: payload.email,
+        role: payload.role,
+        status: payload.status,
+      })
+      triggerToast?.('Staff account updated successfully.', 'success')
+      
+      setSelectedStaff(prev => {
+        if (!prev) return null
+        return {
+          ...prev,
+          fullName: payload.fullName,
+          userRole: payload.role.join(', '),
+          status: payload.status,
+        }
+      })
+
+      setRefreshKey(prev => prev + 1)
+      changeView('staffManagement')
+    } catch (error) {
+      triggerToast?.(error instanceof Error ? error.message : 'Update staff account failed.', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteStaffConfirm = async () => {
+    if (!deleteConfirmStaff) return
+    setIsDeleting(true)
+    try {
+      await adminApi.deleteStaff(deleteConfirmStaff.id)
+      triggerToast?.('Staff account deleted successfully.', 'success')
+      setDeleteConfirmStaff(null)
+      
+      if (selectedStaff?.id === deleteConfirmStaff.id) {
+        setSelectedStaff(null)
+        changeView('staffManagement')
+      }
+      
+      setRefreshKey(prev => prev + 1)
+    } catch (error) {
+      triggerToast?.(error instanceof Error ? error.message : 'Delete staff account failed.', 'error')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleToggleStatus = async (staff: StaffMember) => {
+    const nextStatus = staff.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
+    const roles = staff.userRole ? staff.userRole.split(', ').map(r => r.trim() === 'HR' ? 'HR' : 'Interviewer') : ['HR']
+    
+    setIsSaving(true)
+    try {
+      await adminApi.updateStaff(staff.id, {
+        fullName: staff.fullName,
+        email: staff.email,
+        role: roles,
+        status: nextStatus,
+      })
+      triggerToast?.(`Account ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
+      
+      setSelectedStaff(prev => {
+        if (!prev) return null
+        return { ...prev, status: nextStatus }
+      })
+      
+      setRefreshKey(prev => prev + 1)
+    } catch (error) {
+      triggerToast?.(error instanceof Error ? error.message : 'Failed to update account status.', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout} onChangePassword={() => changeView('settings')}>
       {activeView === 'settings' ? (
@@ -177,13 +1055,58 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       ) : activeView === 'staffCreate' ? (
         <CreateStaffAccountView
           onCancel={() => changeView('staffManagement')}
-          onConfirm={() => {
-            triggerToast?.('Staff account invitation sent successfully.', 'success')
-            changeView('staffManagement')
-          }}
+          onConfirm={handleCreateStaffSubmit}
+          isSubmitting={isSaving}
+        />
+      ) : activeView === 'staffEdit' ? (
+        selectedStaff ? (
+          <EditStaffAccountView
+            staffMember={selectedStaff}
+            onCancel={() => changeView('staffManagement')}
+            onConfirm={handleUpdateStaffSubmit}
+            isSubmitting={isSaving}
+          />
+        ) : (
+          <div className="role-content staff-management-content">
+            <div className="tenant-list-table-state">Select a staff account before editing.</div>
+          </div>
+        )
+      ) : activeView === 'staffDetail' && selectedStaff ? (
+        <StaffDetailView
+          staffMember={selectedStaff}
+          onBack={() => changeView('staffManagement')}
+          onEdit={() => changeView('staffEdit')}
+          onDelete={() => setDeleteConfirmStaff(selectedStaff)}
+          onToggleStatus={() => handleToggleStatus(selectedStaff)}
+          onViewLogs={() => changeView('staffActivityLog')}
+        />
+      ) : activeView === 'staffActivityLog' && selectedStaff ? (
+        <StaffActivityLogView
+          staffMember={selectedStaff}
+          onBack={() => changeView('staffDetail')}
         />
       ) : activeView === 'staffManagement' ? (
-        <StaffManagementView onCreate={() => changeView('staffCreate')} />
+        <StaffManagementView 
+          staffList={staffList}
+          isLoading={isLoadingStaff}
+          error={staffError}
+          maxStaffQuota={10}
+          onCreate={() => {
+            setSelectedStaff(null)
+            changeView('staffCreate')
+          }}
+          onEdit={(staff) => {
+            setSelectedStaff(staff)
+            changeView('staffEdit')
+          }}
+          onDelete={(staff) => {
+            setDeleteConfirmStaff(staff)
+          }}
+          onSelectStaff={(staff) => {
+            setSelectedStaff(staff)
+            changeView('staffDetail')
+          }}
+        />
       ) : (
       <div className="role-content">
         <div className="role-metrics four">
@@ -250,8 +1173,19 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         </div>
       </div>
       )}
+
+      {deleteConfirmStaff && (
+        <ConfirmActionModal
+          isSubmitting={isDeleting}
+          title="Confirm Delete"
+          message={`Are you sure you want to delete the staff account for ${deleteConfirmStaff.fullName}? This action cannot be undone.`}
+          cancelLabel="Cancel"
+          confirmLabel="Delete"
+          submittingLabel="Deleting..."
+          onCancel={() => setDeleteConfirmStaff(null)}
+          onConfirm={handleDeleteStaffConfirm}
+        />
+      )}
     </DashboardShell>
   )
 }
-
-

@@ -1,38 +1,83 @@
 import { useState } from 'react'
 import { getRoleHomeNav, interviewerNav } from '../../data/adminNavigation'
 import type { RoleHomeView } from '../../types/admin.types'
+import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/staffWorkspace'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 
 export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<RoleHomeView>('dashboard')
   const navItems = getRoleHomeNav(interviewerNav, activeView, setActiveView)
+  const canSwitchWorkspace = hasMultipleStaffWorkspaces()
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => setActiveView('settings')} showWorkspaceSwitcher>
+    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => setActiveView('settings')} showWorkspaceSwitcher={canSwitchWorkspace} onWorkspaceSwitch={() => switchStaffWorkspace('hr')}>
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => setActiveView('dashboard')} triggerToast={triggerToast} />
       ) : (
       <div className="role-content interviewer-content">
         <h1>Interviewer Dashboard</h1>
         <p>Tuesday, October 24, 2024</p>
-        <div className="role-grid interviewer-grid">
-          <section className="role-panel schedule-panel">
-            <div className="role-panel-head"><h2>Today&apos;s Schedule</h2><small>4 Candidates</small></div>
-            {['Le Dang Khoa - Senior Frontend Engineer', 'Tran Hoang Nam - Product Designer', 'Mai Thuy Chi - Backend Developer'].map((item, index) => (
-              <article className={index === 0 ? 'selected' : ''} key={item}><span className="role-avatar">{item.slice(0, 2).toUpperCase()}</span><strong>{item}</strong><em>{['09:30 AM', '11:00 AM', '02:30 PM'][index]}</em></article>
+
+        <div className="interviewer-dashboard-grid">
+          <section className="role-panel interviewer-schedule-panel">
+            <div className="role-panel-head">
+              <h2>Today&apos;s Schedule</h2>
+              <small><strong>4</strong> Candidates</small>
+            </div>
+            {[
+              ['LK', 'Le Dang Khoa', 'Senior Frontend Engineer', '09:30 AM', 'Room 402', 'Technical'],
+              ['HN', 'Tran Hoang Nam', 'Product Designer', '11:00 AM', 'Online (Meet)', 'Design'],
+              ['TC', 'Mai Thuy Chi', 'Backend Developer', '02:30 PM', 'Room 301', 'Systems'],
+            ].map(([initials, name, title, time, location, type], index) => (
+              <article className={index === 0 ? 'selected' : ''} key={name}>
+                <span className="role-avatar">{initials}</span>
+                <div>
+                  <strong>{name}</strong>
+                  <small>{title}</small>
+                  <p><em>{location}</em><em>{type}</em></p>
+                </div>
+                <time>{time}</time>
+              </article>
             ))}
           </section>
-          <section className="role-panel scoring-panel">
+
+          <section className="role-panel interviewer-scoring-panel">
             <h2>Notes & Scoring</h2>
             <label>General Assessment</label>
             <textarea placeholder="Enter quick feedback about the candidate..." />
-            <div><span>Technical Skills <strong>8</strong>/10</span><span>Soft Skills <strong>7</strong>/10</span></div>
-            <button><i className="fa-regular fa-paper-plane"></i> Complete & Submit Evaluation</button>
+            <div className="interviewer-score-grid">
+              <span>Technical Skills <strong>8</strong> / 10</span>
+              <span>Soft Skills <strong>7</strong> / 10</span>
+            </div>
+            <button type="button"><i className="fa-regular fa-paper-plane"></i> Complete & Submit Evaluation</button>
           </section>
-          <section className="role-panel skill-panel"><h2>Skill Matrix</h2><div className="skill-radar"><span /></div></section>
-          <section className="role-panel ai-match-panel"><h2>AI Insights</h2><div><span>Match Score</span><strong>88%</strong></div><i /><p>Candidate has a strong Frontend foundation but needs further verification on system algorithmic thinking.</p></section>
+
+          <div className="interviewer-right-rail">
+            <section className="role-panel interviewer-skill-panel">
+              <h2>Skill Matrix</h2>
+              <div className="skill-radar">
+                <span className="axis top">React</span>
+                <span className="axis left">Node.js</span>
+                <span className="axis right">System</span>
+                <span className="axis bottom">Soft Skills</span>
+                <i></i>
+              </div>
+            </section>
+
+            <section className="role-panel interviewer-ai-panel">
+              <h2>AI Insights</h2>
+              <div><span>Match Score</span><strong>88%</strong></div>
+              <i><span></span></i>
+              <p>&quot;Candidate has a strong Frontend foundation but needs further verification on system algorithmic thinking.&quot;</p>
+            </section>
+          </div>
         </div>
+
+        <footer className="interviewer-footer">
+          <div><strong>JobFusion AI</strong><span>© 2024 JobFusion AI. All rights reserved.</span></div>
+          <nav><a href="#privacy">Privacy Policy</a><a href="#terms">Terms of Service</a><a href="#help">Help Center</a></nav>
+        </footer>
       </div>
       )}
     </DashboardShell>

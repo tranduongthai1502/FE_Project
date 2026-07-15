@@ -1,5 +1,13 @@
 import type { CreatePlanPayload, CreateTenantPayload, UpdatePlanPayload, UpdateTenantPayload } from '../types/admin.types'
 
+function normalizeResourceStatus(status?: string) {
+  const normalizedStatus = String(status || '').trim().toUpperCase()
+
+  if (!normalizedStatus) return 'ACTIVE'
+  if (normalizedStatus === 'INACTIVE') return 'DISABLED'
+  return normalizedStatus
+}
+
 export function buildPlanPayload(payload: CreatePlanPayload & { status?: string }) {
   const monthlyPrice = Number(payload.monthlyPrice)
   const maxStaffAccount = payload.maxStaffAccount === null ? null : Number(payload.maxStaffAccount)
@@ -17,7 +25,7 @@ export function buildPlanPayload(payload: CreatePlanPayload & { status?: string 
       "key": String(feature.key),
       "status": String(feature.status),
     })),
-    "status": payload.status ? String(payload.status).trim().toUpperCase() : 'ACTIVE',
+    "status": normalizeResourceStatus(payload.status),
   }
 }
 
@@ -45,7 +53,7 @@ export function buildTenantUpdatePayload(payload: UpdateTenantPayload) {
     "domain": payload.domain.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
     "industry": payload.industry.trim(),
     "region": payload.region.trim(),
-    "status": payload.status.trim().toUpperCase() || 'ACTIVE',
+    "status": normalizeResourceStatus(payload.status),
     "planId": payload.planId,
   }
 }
