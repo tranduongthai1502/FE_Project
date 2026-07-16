@@ -1069,7 +1069,8 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                     const staffPercent = getUsagePercent(tenant.userQuotaUsed, staffLimit)
                     const jobUsage = getDerivedJobUsage(index, selectedPlan)
                     const status = tenant.status.toLowerCase()
-                    const statusLabel = status.includes('expir') ? 'Expiring' : status === 'active' ? 'Active' : tenant.status
+                    const statusLabel = status.includes('expir') ? 'Expiring' : status === 'active' ? 'Active' : 'Inactive'
+                    const statusClassName = statusLabel.toLowerCase()
 
                     return (
                       <div className="plan-subscriber-row" key={tenant.id}>
@@ -1084,7 +1085,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                           <i><em style={{ width: `${jobUsage.percent}%` }} /></i>
                         </div>
                         <span>{formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'}</span>
-                        <em className={statusLabel.toLowerCase() === 'active' ? 'active' : 'expiring'}>{statusLabel}</em>
+                        <em className={statusClassName}>{statusLabel}</em>
                       </div>
                     )
                   })}
