@@ -62,6 +62,8 @@ function StaffManagementView({
   const totalElements = filteredStaff.length
   const totalPages = Math.max(1, Math.ceil(totalElements / pageSize))
   const paginatedStaff = filteredStaff.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * pageSize) + 1
+  const displayEnd = Math.min(currentPage * pageSize, totalElements)
 
   useEffect(() => {
     // Reset to page 1 when filter changes
@@ -169,17 +171,17 @@ function StaffManagementView({
               : []
             const isActive = staff.status === 'ACTIVE'
             const isPending = staff.status === 'PENDING'
-            const isDisabled = staff.status === 'DISABLED'
 
             return (
               <div className="staff-list-table-row" key={staff.id}>
                 <strong 
-                  className="staff-clickable-name"
+                  className="staff-clickable-name staff-truncate-text"
+                  title={staff.fullName}
                   onClick={() => onSelectStaff(staff)}
                 >
                   {staff.fullName}
                 </strong>
-                <span>{staff.email}</span>
+                <span className="staff-truncate-text" title={staff.email}>{staff.email}</span>
                 <div>
                   {roleList.map(r => (
                     <span key={r} className="staff-badge">{r}</span>
@@ -211,7 +213,7 @@ function StaffManagementView({
           })}
 
           <footer>
-            <span>Showing {paginatedStaff.length} of {totalElements} staff account{totalElements === 1 ? '' : 's'}</span>
+            <span>Showing {displayStart}-{displayEnd} of {totalElements} staff account{totalElements === 1 ? '' : 's'}</span>
             <div>
               <button 
                 type="button" 
@@ -510,7 +512,7 @@ function EditStaffAccountView({
           <aside className="edit-staff-profile-card">
             <div className="edit-staff-profile-banner"></div>
             <div className="edit-staff-avatar">{getInitials(staffMember.fullName)}</div>
-            <strong>{staffMember.fullName}</strong>
+            <strong className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</strong>
             <small>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 6).toUpperCase()}`}</small>
 
             <div className="edit-staff-meta-list">
@@ -663,7 +665,7 @@ function StaffDetailView({
           {getInitials(staffMember.fullName)}
         </div>
         <div className="staff-header-info">
-          <h1>{staffMember.fullName}</h1>
+          <h1 className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</h1>
           <div className="staff-header-meta">
             <span>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 4).toUpperCase()}`}</span>
             <span>•</span>
@@ -699,7 +701,7 @@ function StaffDetailView({
             <div className="staff-detail-info-grid">
               <div>
                 <small>Full Name</small>
-                <strong>{staffMember.fullName}</strong>
+                <strong className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</strong>
               </div>
               <div>
                 <small>Primary Email</small>
@@ -713,27 +715,17 @@ function StaffDetailView({
               </div>
               <div>
                 <small>Office Location</small>
-                <strong>{staffMember.officeLocation || 'San Francisco, CA (HQ)'}</strong>
+                <strong>San Francisco, CA (HQ)</strong>
               </div>
             </div>
           </section>
 
-          <section className="staff-detail-card">
-            <header style={{ borderBottom: '1px solid #f0d7d0', paddingBottom: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ width: '36px', height: '36px', borderRadius: '5px', background: '#ffedea', color: '#d93408', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}><i className="fa-regular fa-id-badge"></i></span>
-              <h2 style={{ flex: 1, margin: 0, color: '#101c33', fontSize: '16px' }}>Role Assignments</h2>
-            </header>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <section className="staff-detail-card staff-role-assignment-card">
+            <h2>Role Assignments</h2>
+            <div className="staff-role-assignment-list">
               {roleList.map(role => (
                 <span key={role} className="staff-badge">{role}</span>
               ))}
-            </div>
-            <div className="staff-universal-access">
-              <i className="fa-solid fa-circle-nodes"></i>
-              <div>
-                <strong>Universal Access Enabled</strong>
-                <p>This account can switch workspaces seamlessly within the Tenant infrastructure.</p>
-              </div>
             </div>
           </section>
         </div>
@@ -859,7 +851,7 @@ function StaffActivityLogView({
       </header>
 
       <section className="staff-log-subject">
-        <h2>{staffMember.fullName}</h2>
+        <h2 className="staff-truncate-text" title={staffMember.fullName}>{staffMember.fullName}</h2>
         <p>
           <span>EMPLOYEE ID: {staffMember.employeeCode || `JF-${staffMember.id.slice(0, 6).toUpperCase()}`}</span>
           <span>Created on {formatDate(staffMember.createdAt)}</span>
@@ -1116,60 +1108,70 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           <MetricCard icon="fa-calendar-check" label="Interviews Today" value="5" note="Today" />
         </div>
 
-        <div className="role-grid tenant-grid">
-          <section className="role-panel funnel-panel">
-            <div className="role-panel-head">
-              <div>
-                <h2>Recruitment Funnel</h2>
-                <p>Applicant conversion through hiring stages</p>
+        <div className="tenant-dashboard-grid">
+          <div className="tenant-dashboard-top">
+            <section className="role-panel funnel-panel">
+              <div className="role-panel-head">
+                <div>
+                  <h2>Recruitment Funnel</h2>
+                  <p>Applicant conversion through hiring stages</p>
+                </div>
+                <a href="#reports">View Detailed Report <i className="fa-solid fa-arrow-right"></i></a>
               </div>
-              <a href="#reports">View Detailed Report <i className="fa-solid fa-arrow-right"></i></a>
+              {[
+                ['Applied', '143', '98%'],
+                ['Screening', '89', '65%'],
+                ['Shortlisted', '42', '29%'],
+                ['Interviewing', '21', '15%'],
+                ['Offered', '6', '5%'],
+              ].map(([label, value, width]) => (
+                <div className="funnel-row" key={label}>
+                  <div><span>{label}</span><strong>{value}</strong></div>
+                  <span className="funnel-track"><span style={{ width }} /></span>
+                </div>
+              ))}
+            </section>
+
+            <div className="tenant-dashboard-top-side">
+              <section className="role-panel quota-panel">
+                <div className="role-panel-head"><h2>Staff Quota</h2><small>8 / 10 Seats</small></div>
+                <div className="quota-ring"><strong>8/10</strong><span>Used</span></div>
+                <p>You have 2 seats available in your current professional plan.</p>
+              </section>
+
+              <section className="role-panel plan-panel">
+                <small><i className="fa-regular fa-circle-dot"></i> Active Plan</small>
+                <h2>Professional</h2>
+                <p>Full AI-Assisted Recruitment Suite</p>
+                <footer><span>Renewal Date<br /><strong>Oct 24, 2024</strong></span><button type="button">Manage</button></footer>
+              </section>
             </div>
-            {[
-              ['Applied', '143', '98%'],
-              ['Screening', '89', '65%'],
-              ['Shortlisted', '42', '29%'],
-              ['Interviewing', '21', '15%'],
-              ['Offered', '6', '5%'],
-            ].map(([label, value, width]) => (
-              <div className="funnel-row" key={label}>
-                <div><span>{label}</span><strong>{value}</strong></div>
-                <span className="funnel-track"><span style={{ width }} /></span>
+          </div>
+
+          <div className="tenant-dashboard-bottom">
+            <section className="role-panel interview-list">
+              <div className="role-panel-head">
+                <div><h2>Upcoming Interviews</h2><p>Scheduled for today & tomorrow</p></div>
+                <i className="fa-solid fa-ellipsis-vertical"></i>
               </div>
-            ))}
-          </section>
+              {['Sarah Jenkins - Senior DevOps Engineer', 'Marcus Thorne - Product Manager'].map((item, index) => (
+                <article key={item}>
+                  <span className="role-avatar">{index === 0 ? 'SJ' : 'MT'}</span>
+                  <div><strong>{item}</strong><small>Interviewer: {index === 0 ? 'David Chen' : 'Elena Rodriguez'}</small></div>
+                  <em>{index === 0 ? '10:00 AM' : '02:30 PM'}</em>
+                </article>
+              ))}
+            </section>
 
-          <section className="role-panel quota-panel">
-            <div className="role-panel-head"><h2>Staff Quota</h2><small>8 / 10 Seats</small></div>
-            <div className="quota-ring"><strong>8/10</strong><span>Used</span></div>
-            <p>You have 2 seats available in your current professional plan.</p>
-          </section>
-
-          <section className="role-panel interview-list">
-            <div className="role-panel-head"><h2>Upcoming Interviews</h2><i className="fa-solid fa-ellipsis-vertical"></i></div>
-            {['Sarah Jenkins - Senior DevOps Engineer', 'Marcus Thorne - Product Manager'].map((item, index) => (
-              <article key={item}>
-                <span className="role-avatar">{index === 0 ? 'SJ' : 'MT'}</span>
-                <div><strong>{item}</strong><small>Interviewer: {index === 0 ? 'David Chen' : 'Elena Rodriguez'}</small></div>
-                <em>{index === 0 ? '10:00 AM' : '02:30 PM'}</em>
-              </article>
-            ))}
-          </section>
-
-          <section className="role-panel plan-panel">
-            <small>Active Plan</small>
-            <h2>Professional</h2>
-            <p>Full AI-Assisted Recruitment Suite</p>
-            <button type="button">Manage</button>
-          </section>
-
-          <section className="role-panel insights-panel">
-            <h2><i className="fa-solid fa-wand-magic-sparkles"></i> AI Insights (DSS)</h2>
-            <div className="tag-list"><span>Cloud Architecture</span><span>Go Lang</span><span>Data Security</span></div>
-            <div className="insight-row"><span>Senior DevOps Engineer</span><strong>43 Days Open</strong></div>
-            <div className="insight-row"><span>ML Ops Specialist</span><strong>31 Days Open</strong></div>
-            <button type="button">View full AI report <i className="fa-solid fa-arrow-up-right-from-square"></i></button>
-          </section>
+            <section className="role-panel insights-panel">
+              <h2><i className="fa-solid fa-wand-magic-sparkles"></i> AI Insights (DSS)</h2>
+              <div className="tag-list"><span>Cloud Architecture</span><span>Go Lang</span><span>Data Security</span></div>
+              <small>Difficult to fill positions</small>
+              <div className="insight-row"><span>Senior DevOps Engineer</span><strong>43 Days Open</strong></div>
+              <div className="insight-row"><span>ML Ops Specialist</span><strong>31 Days Open</strong></div>
+              <button type="button">View full AI report <i className="fa-solid fa-arrow-up-right-from-square"></i></button>
+            </section>
+          </div>
         </div>
       </div>
       )}
