@@ -685,6 +685,82 @@
   color: #d93408;
 }
 
+.tenant-dashboard-metrics .role-metric {
+  min-height: 86px;
+  padding: 18px 74px 16px 22px;
+  border-color: #dde5f0;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06);
+}
+
+.tenant-dashboard-metrics .role-metric > span {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #fff1ee;
+  color: #f24e1e;
+}
+
+.tenant-dashboard-metrics .role-metric:nth-child(2) > span {
+  background: #eef6ff;
+  color: #2f6fed;
+}
+
+.tenant-dashboard-metrics .role-metric:nth-child(3) > span {
+  background: #fff7ed;
+  color: #f24e1e;
+}
+
+.tenant-dashboard-metrics .role-metric:nth-child(4) > span {
+  background: #f7edff;
+  color: #8b3dff;
+}
+
+.tenant-dashboard-metrics .role-metric small {
+  margin-top: 0;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.tenant-dashboard-metrics .role-metric strong {
+  display: inline-block;
+  margin-top: 9px;
+  color: #0b1c30;
+  font-size: 24px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.tenant-dashboard-metrics .role-metric em {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #12b76a;
+  font-size: 8px;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
+.tenant-dashboard-metrics .role-metric em.negative {
+  background: #fff1ee;
+  color: #f04438;
+}
+
+.tenant-dashboard-metrics .role-metric em:not(.positive):not(.negative) {
+  background: #eef6ff;
+  color: #2f6fed;
+}
+
 .tenant-grid {
   display: flex;
   flex-direction: row;
@@ -737,7 +813,8 @@
 }
 
 .tenant-dashboard-bottom .insights-panel {
-  min-height: 178px;
+  min-height: 320px;
+  padding: 26px;
 }
 
 .super-dashboard-container {
@@ -895,6 +972,17 @@
   grid-column: span 1;
 }
 
+.interview-list .role-panel-head {
+  margin-bottom: 18px;
+}
+
+.interview-list .role-panel-head p {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .interview-list article,
 .tenant-table article,
 .prompt-panel article,
@@ -909,6 +997,24 @@
   background: #f6f8fc;
 }
 
+.interview-list article {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1.25fr) minmax(92px, 0.7fr) minmax(72px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #f6f8fc;
+}
+
+.interview-list .role-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #526f96;
+}
+
 .interview-list article + article,
 .prompt-panel article + article,
 .schedule-panel article + article,
@@ -917,21 +1023,42 @@
   margin-top: 10px;
 }
 
-.interview-list div,
+.interview-list .interview-candidate,
 .schedule-panel strong {
-  flex: 1;
+  min-width: 0;
 }
 
-.interview-list strong,
+.interview-list .interview-candidate strong,
 .schedule-panel strong {
   display: block;
   font-size: 12px;
 }
 
-.interview-list small {
+.interview-list .interview-candidate small {
   display: block;
   color: #667085;
   font-size: 10px;
+}
+
+.interview-list .interview-interviewer {
+  min-width: 0;
+  text-align: right;
+}
+
+.interview-list .interview-interviewer small {
+  display: block;
+  color: #667085;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.interview-list .interview-interviewer strong {
+  display: block;
+  color: #0b1c30;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .interview-list em,
@@ -941,6 +1068,20 @@
   font-size: 11px;
   font-style: normal;
   font-weight: 900;
+}
+
+.interview-list em {
+  display: block;
+  text-align: right;
+}
+
+.interview-list em small {
+  display: block;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .plan-panel {
@@ -990,13 +1131,29 @@
   color: #ffffff;
 }
 
-.insights-panel h2 i {
+.insights-panel h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0b1c30;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.insights-panel h2 i,
+.insights-panel h2 svg {
+  flex: 0 0 auto;
   color: #ff5a1d;
+}
+
+.insights-panel h2 svg {
+  width: 22px;
+  height: 22px;
 }
 
 .insights-panel > small {
   display: block;
-  margin-top: 10px;
+  margin-top: 14px;
   color: #667085;
   font-size: 9px;
   font-weight: 900;
@@ -1008,28 +1165,63 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 12px 0;
+  margin: 12px 0 0;
 }
 
 .tag-list span {
-  padding: 6px 9px;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #f3b7b2;
+  border-radius: 6px;
   background: #fff1ee;
-  color: #d93408;
+  color: #ba1515;
   font-size: 10px;
   font-weight: 800;
 }
 
+.tag-list span.tag-muted {
+  border-color: #ffc78d;
+  background: #fff8ed;
+  color: #c43e05;
+}
+
+.tag-list span i {
+  font-size: 8px;
+}
+
 .insight-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 11px 0;
-  border-bottom: 1px solid #edf0f5;
+  min-height: 42px;
+  margin-top: 10px;
+  padding: 0 12px;
+  border: 1px solid #edf0f5;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #0b1c30;
   font-size: 12px;
+  font-weight: 800;
+}
+
+.insight-row strong {
+  color: #c30f0f;
+  font-size: 11px;
+}
+
+.insight-row + .insight-row strong {
+  color: #f24e1e;
 }
 
 .insights-panel button,
 .quick-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   min-height: 32px;
   margin-top: 12px;
@@ -1037,6 +1229,23 @@
   border-radius: 5px;
   background: #fff8f6;
   color: #d93408;
+}
+
+.insights-panel button {
+  gap: 8px;
+  min-height: 38px;
+  margin-top: 16px;
+  border-color: #ff9b83;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #28384c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.insights-panel button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .tenant-table article {
@@ -1776,6 +1985,17 @@
   font-size: 12px;
 }
 
+.staff-fieldset label:not(.staff-role-option) > div:has(input.has-error) {
+  border-color: #f04438;
+}
+
+.staff-field-error {
+  color: #f04438;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+}
+
 .staff-role-option {
   position: relative;
   min-height: 62px;
@@ -2087,9 +2307,20 @@
   padding: 0 14px;
 }
 
+.edit-staff-field input.has-error {
+  border-color: #f04438;
+}
+
 .edit-staff-field small {
   color: #667085;
   font-size: 10px;
+}
+
+.edit-staff-field .edit-staff-field-error {
+  margin-top: 6px;
+  color: #f04438;
+  text-align: right;
+  font-weight: 700;
 }
 
 .edit-staff-readonly-input {
@@ -2335,6 +2566,11 @@
   font-size: 12px;
 }
 
+.tenant-breadcrumb .breadcrumb-separator {
+  color: #98a2b3;
+  font-weight: 800;
+}
+
 .tenant-breadcrumb .fa-house{
   font-size:18px;
 }
@@ -2473,6 +2709,11 @@
   padding: 0 22px;
   background: #d93408;
   color: #ffffff;
+}
+
+.tenant-create-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .tenant-management-metrics {
@@ -2839,7 +3080,7 @@
 }
 
 .tenant-list-table-card {
-  width: min(1080px, calc(100% - 60px));
+  width: 90%;
   margin: 26px auto 0;
   overflow: hidden;
   border: 1px solid #f0b8a8;
@@ -3397,7 +3638,7 @@
 }
 
 .subscription-table-card {
-  width: min(1080px, calc(100% - 60px));
+  width: 90%;
   margin: 26px auto 0;
   overflow: hidden;
   border: 1px solid #f0b8a8;
@@ -4734,7 +4975,7 @@
 }
 
 .prompt-table-card {
-  width: min(1080px, calc(100% - 60px));
+  width: 90%;
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid #f0b8a8;
@@ -5880,6 +6121,17 @@
     padding: 16px;
   }
 
+  .tenant-dashboard-metrics .role-metric {
+    min-height: 82px;
+    padding: 16px 64px 14px 16px;
+  }
+
+  .tenant-dashboard-metrics .role-metric > span {
+    right: 16px;
+    width: 34px;
+    height: 34px;
+  }
+
   .role-metric strong,
   .subscription-plan-card strong,
   .prompt-summary-card strong {
@@ -6153,7 +6405,7 @@
 
 /* Staff Management Custom Table Styles */
 .staff-list-table-card {
-  width: min(1080px, calc(100% - 60px));
+  width: 90%;
   margin: 26px auto 0;
   overflow: hidden;
   border: 1px solid #f0b8a8;
@@ -6355,7 +6607,7 @@
   padding: 0 16px;
   border-radius: 5px;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -6396,13 +6648,19 @@
 }
 
 .staff-detail-actions button.btn-activate {
+  max-width: 118px;
+  min-height: 48px;
+  padding: 0 14px;
   border: 0;
-  background: #12b76a;
+  background: #d93408;
   color: #ffffff;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .staff-detail-actions button.btn-activate:hover {
-  background: #0e9255;
+  background: #b52703;
 }
 
 .staff-detail-grid {
@@ -6579,6 +6837,15 @@
   margin-bottom: 26px;
 }
 
+.staff-status-panel-label {
+  display: block;
+  margin-bottom: 14px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .staff-status-box {
   background: #ecfdf3;
   color: #12b76a;
@@ -6596,19 +6863,20 @@
 }
 
 .staff-status-box.status-disabled {
-  background: #fef3f2;
-  color: #f04438;
+  border: 1px solid #e7ebf2;
+  background: #ffffff;
+  color: #98a2b3;
 }
 
 .staff-status-box strong {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .staff-status-box span {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -6854,8 +7122,9 @@
 
 /* Custom styles for Edit/Create Access cards */
 .staff-role-card-option {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
+  align-items: center;
   gap: 16px;
   padding: 16px;
   border: 1px solid #f0b8a8;
@@ -6874,10 +7143,11 @@
 
 .staff-role-card-option input[type="checkbox"],
 .staff-role-card-option input[type="radio"] {
-  margin-top: 4px;
-  accent-color: #d93408;
-  width: 18px;
-  height: 18px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .staff-role-card-option > span {
@@ -6893,7 +7163,7 @@
 }
 
 .staff-role-card-option > div {
-  flex: 1;
+  min-width: 0;
 }
 
 .staff-role-card-option strong {
@@ -6913,6 +7183,20 @@
 .staff-role-card-option.selected > span {
   background: #d93408;
   color: #ffffff;
+}
+
+.staff-role-card-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #d0d5dd;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.staff-role-card-option.selected .staff-role-card-dot {
+  border-color: #d93408;
+  background: #d93408;
+  box-shadow: inset 0 0 0 3px #ffffff;
 }
 
 @media (max-width: 980px) {

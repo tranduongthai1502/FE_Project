@@ -33,6 +33,18 @@ export const authApi = {
     return axiosClient.post('/api/auth/reset-password', { email, otp, newPassword: password })
   },
 
+  async activate(token: string) {
+    return axiosClient.get(`/api/auth/activate?token=${token}`)
+  },
+
+  async resendActivation(email: string) {
+    return axiosClient.post('/api/auth/resend-activate', { email })
+  },
+
+  async confirmActivation(token: string) {
+    return axiosClient.post('/api/auth/activate', { token })
+  },
+
   async changePassword(payload: ChangePasswordPayload) {
     return axiosClient.post('/api/auth/change-password', {
       oldPassword: payload.currentPassword,

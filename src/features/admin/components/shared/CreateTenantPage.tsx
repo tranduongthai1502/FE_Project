@@ -27,9 +27,9 @@ export function CreateTenantPage({
       <div className="tenant-breadcrumb create-tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBackToList}>Tenant Management</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Create New Tenant</strong>
       </div>
 
