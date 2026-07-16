@@ -1,5 +1,7 @@
-import { useEffect, useState, useRef, FormEvent } from 'react'
-import { useSearchParams, NavigateFunction } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import type { FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import type { NavigateFunction } from 'react-router-dom'
 import { authApi } from '@/features/auth/services/authApi'
 
 type ActivationStatus = 'loading' | 'verified' | 'success' | 'error'
