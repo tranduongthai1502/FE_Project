@@ -85,7 +85,7 @@ POST /api/auth/change-password
 
 ```bash
 npm install
-```
+````
 
 2. Chay moi truong phat trien:
 
