@@ -2546,15 +2546,20 @@
 }
 
 .tenant-detail-title-row > div {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .tenant-detail-title-row h1 {
+  min-width: 0;
+  max-width: 100%;
   color: #101c33;
   font-size: 24px;
   line-height: 1.1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tenant-detail-title-row em {
@@ -2661,7 +2666,7 @@
   display: block;
   margin-bottom: 6px;
   color: #667085;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2673,12 +2678,21 @@
   color: #101c33;
   font-size: 11px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .tenant-detail-info-grid strong i,
 .tenant-subscription-metrics strong i {
   margin-right: 6px;
   color: #667085;
+}
+
+.tenant-company-name-value {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tenant-domain-link {
@@ -2848,17 +2862,23 @@
   padding: 0 28px;
   border-bottom: 1px solid #f0d7d0;
   color: #243044;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .tenant-list-table-head {
-  min-height: 50px;
+  min-height: 54px;
   background: #eef3ff;
-  color: #667085;
-  font-size: 14px;
+  color: #667084;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.tenant-list-table-row.tenant-list-table-head > *,
+.subscription-table-row.subscription-table-head > *,
+.prompt-table-row.prompt-table-head > * {
+  color: #667084;
 }
 
 .tenant-list-table-row > * {
@@ -2867,7 +2887,7 @@
 
 .tenant-list-table-row strong {
   color: #101c33;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .tenant-list-table-row strong,
@@ -2891,7 +2911,7 @@
 
 .tenant-expiration-date {
   color: #101c33;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -2900,7 +2920,7 @@
   align-items: center;
   gap: 12px;
   color: #101c33;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .tenant-quota i {
@@ -2921,7 +2941,7 @@
 
 .tenant-quota strong {
   color: #101c33;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -2935,7 +2955,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 14px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 900;
 }
@@ -3449,10 +3469,10 @@
 }
 
 .subscription-table-head {
-  min-height: 50px;
+  min-height: 54px;
   background: #eef3ff;
-  color: #667085;
-  font-size: 10px;
+  color: #667084;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3479,7 +3499,7 @@
 .subscription-table-row strong {
   overflow: hidden;
   color: #101c33;
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3499,7 +3519,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 900;
 }
@@ -4726,7 +4746,7 @@
 .prompt-table-head {
   min-height: 54px;
   background: #eef3ff;
-  color: #667085;
+  color: #667084;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -4781,6 +4801,11 @@
   background: transparent;
   color: #344054;
   cursor: pointer;
+}
+
+.prompt-table-row button svg {
+  width: 28px;
+  height: 28px;
 }
 
 .prompt-table-card footer {
