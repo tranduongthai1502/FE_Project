@@ -540,10 +540,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 <header>
                   <span><i className="fa-regular fa-building"></i></span>
                   <h2>Company Information</h2>
-                  <i className="fa-solid fa-ellipsis-vertical"></i>
                 </header>
                 <div className="tenant-detail-info-grid">
-                  <div><small>Company Name</small><strong>{selectedTenant.name}</strong></div>
+                  <div><small>Company Name</small><strong className="tenant-company-name-value">{selectedTenant.name}</strong></div>
                   <div><small>Domain</small><strong className="tenant-domain-link">{tenantDomain} <i className="fa-solid fa-arrow-up-right-from-square"></i></strong></div>
                   <div><small>Industry</small><strong>{tenantIndustry}</strong></div>
                   <div><small>Company Size</small><strong><i className="fa-solid fa-users"></i> {quotaLabel} Employees</strong></div>
@@ -586,8 +585,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 <div className="tenant-subscription-lines">
                   <span>Start Date <strong>{tenantCreatedDate}</strong></span>
                   <span>ExpirationDate <strong>{tenantExpirationDate}</strong></span>
-                  <span>Renewal Cycle <strong>Annual</strong></span>
-                  <span>Trailing <strong>Enabled</strong></span>
                 </div>
               </section>
 
