@@ -3759,6 +3759,7 @@
 .plan-config-grid strong {
   color: #101c33;
   font-size: 12px;
+  font-weight: 400;
   line-height: 1.35;
 }
 
@@ -3784,19 +3785,13 @@
   color: #bd2609;
   font-size: 12px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 400;
   text-transform: uppercase;
 }
 
 .plan-feature-tags em.disabled {
   background: #f2f4f7;
   color: #667085;
-}
-
-.active-subscribers-card {
-  min-height: 270px;
-  margin-top: 10px;
-  overflow: hidden;
 }
 
 .plan-detail-card-head {
@@ -3813,6 +3808,22 @@
   gap: 18px;
   color: #667085;
   font-size: 12px;
+}
+
+.active-subscribers-section {
+  margin-top: 10px;
+}
+
+.active-subscribers-section > h2 {
+  margin: 0 0 18px;
+  color: #101c33;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.active-subscribers-card {
+  min-height: 270px;
+  overflow: hidden;
 }
 
 .plan-no-tenants {
@@ -3853,7 +3864,6 @@
 
 .plan-subscriber-table {
   overflow: hidden;
-  border-top: 1px solid #f0d7d0;
 }
 
 .plan-subscriber-row {
