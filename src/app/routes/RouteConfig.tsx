@@ -7,6 +7,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { RoleDashboardPage } from '@/pages/RoleDashboardPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { TenantActivationDemoPage } from '@/pages/TenantActivationDemoPage'
+import { ActivationPage } from '@/pages/ActivationPage'
 import type { AppRole } from '@/features/auth'
 
 export type AppPage = AppRole
@@ -75,7 +76,23 @@ export function RouteConfig({
       />
       <Route
         path="/tenant/activate"
-        element={<TenantActivationDemoPage onGoToLogin={() => navigate('/login')} />}
+        element={
+          <ActivationPage
+            navigate={navigate}
+            onSignInSuccess={onSignInSuccess}
+            triggerToast={triggerToast}
+          />
+        }
+      />
+      <Route
+        path="/activate"
+        element={
+          <ActivationPage
+            navigate={navigate}
+            onSignInSuccess={onSignInSuccess}
+            triggerToast={triggerToast}
+          />
+        }
       />
       <Route
         path="/candidate/*"

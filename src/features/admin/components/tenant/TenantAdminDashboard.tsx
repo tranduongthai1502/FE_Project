@@ -86,13 +86,14 @@ function StaffManagementView({
   }
 
   const quotaPercent = Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
+  const hasReachedStaffQuota = staffList.length >= maxStaffQuota
 
   return (
     <div className="role-content staff-management-content">
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Staff Management</strong>
       </div>
 
@@ -126,7 +127,7 @@ function StaffManagementView({
             <option value="all">All Status</option>
             <option value="activated">Active</option>
             <option value="pending">Pending</option>
-            <option value="disabled">Disabled</option>
+            <option value="disabled">Inactive</option>
           </select>
         </label>
         <div className="staff-search">
@@ -138,7 +139,14 @@ function StaffManagementView({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <button type="button" className="tenant-create-btn" onClick={onCreate}>Create Staff Account</button>
+        <button
+          type="button"
+          className="tenant-create-btn"
+          onClick={onCreate}
+          disabled={hasReachedStaffQuota}
+        >
+          Create Staff Account
+        </button>
       </div>
 
       {isLoading ? (
@@ -189,7 +197,7 @@ function StaffManagementView({
                 </div>
                 <em className={isActive ? 'active' : isPending ? 'pending' : 'disabled'}>
                   <i className="fa-solid fa-circle" style={{ fontSize: '6px' }}></i>
-                  {isActive ? 'Active' : isPending ? 'Pending' : 'Disabled'}
+                  {isActive ? 'Active' : isPending ? 'Pending' : 'Inactive'}
                 </em>
                 <span>{formatDate(staff.createdAt)}</span>
                 <div className="staff-actions">
@@ -198,7 +206,11 @@ function StaffManagementView({
                     aria-label={`Edit ${staff.fullName}`}
                     onClick={() => onEdit(staff)}
                   >
-                    <i className="fa-regular fa-pen-to-square"></i>
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </button>
                   <button 
                     type="button" 
@@ -249,11 +261,13 @@ function StaffManagementView({
 
 function CreateStaffAccountView({
   staffMember,
+  staffList = [],
   onCancel,
   onConfirm,
   isSubmitting = false,
 }: {
   staffMember?: StaffMember
+  staffList?: StaffMember[]
   onCancel: () => void
   onConfirm: (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => void
   isSubmitting?: boolean
@@ -261,6 +275,8 @@ function CreateStaffAccountView({
   const isEdit = !!staffMember
   const [fullName, setFullName] = useState(staffMember?.fullName || '')
   const [email, setEmail] = useState(staffMember?.email || '')
+  const [fullNameError, setFullNameError] = useState('')
+  const [emailError, setEmailError] = useState('')
   
   // Parse roles
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
@@ -282,13 +298,51 @@ function CreateStaffAccountView({
     })
   }
 
+  const validateEmail = (value: string) => {
+    const trimmedEmail = value.trim()
+    const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
+
+    if (!trimmedEmail) return 'Please enter an email address.'
+    if (!emailPattern.test(trimmedEmail)) {
+      const [localPart = '', domainPart = ''] = trimmedEmail.split('@')
+      const topLevelDomain = domainPart.includes('.') ? domainPart.split('.').pop() || '' : ''
+
+      if (/[^A-Za-z0-9._%+-]/.test(localPart) || /[^A-Za-z0-9.-]/.test(domainPart)) {
+        return 'Please enter a valid email address.'
+      }
+
+      if (topLevelDomain.length < 2) {
+        return 'Please enter a valid email address.'
+      }
+
+      return 'Please enter a valid email address.'
+    }
+
+    const isEmailRegistered = staffList.some((staff) => staff.email.trim().toLowerCase() === trimmedEmail.toLowerCase())
+    if (!isEdit && isEmailRegistered) {
+      return 'This email address is already registered. Please use a different email.'
+    }
+
+    return ''
+  }
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+    const nextFullNameError = fullName.trim() ? '' : "Please enter the staff member's full name."
+    const nextEmailError = validateEmail(email)
+
+    setFullNameError(nextFullNameError)
+    setEmailError(nextEmailError)
+
+    if (nextFullNameError || nextEmailError) {
+      return
+    }
+
     // Map roles to uppercase: "HR" or "Interviewer" (matching backend validation regexp ^(HR|Interviewer)$)
     const rolePayload = selectedRoles.map(r => r === 'hr' ? 'HR' : 'Interviewer')
     onConfirm({
       fullName,
-      email,
+      email: email.trim(),
       role: rolePayload,
       status,
     })
@@ -299,10 +353,10 @@ function CreateStaffAccountView({
       <div className="tenant-breadcrumb create-staff-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <span>Staff Management</span>
-        <i className="fa-solid fa-chevron-right"></i>
-        <strong>{isEdit ? 'Edit Staff Account' : 'Create New Staff account'}</strong>
+        <span className="breadcrumb-separator">/</span>
+        <strong>{isEdit ? 'Edit Staff Account' : 'Create New Staff Account'}</strong>
       </div>
 
       <section className="create-staff-card">
@@ -317,37 +371,45 @@ function CreateStaffAccountView({
           <span className="system-status"><i className="fa-solid fa-circle"></i> SYSTEM ONLINE</span>
         </header>
 
-        <form className="create-staff-form" onSubmit={handleSubmit}>
+        <form className="create-staff-form" onSubmit={handleSubmit} noValidate>
           <div className="create-staff-grid">
             <fieldset className="staff-fieldset">
               <legend>Identity Details</legend>
               <label>
-                <span>Full Name *</span>
+                <span>Full Name</span>
                 <div>
                   <i className="fa-regular fa-user"></i>
                   <input 
+                    className={fullNameError ? 'has-error' : ''}
                     type="text" 
                     placeholder="e.g. Sarah Jenkins" 
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required 
+                    onChange={(e) => {
+                      setFullName(e.target.value)
+                      if (fullNameError) setFullNameError('')
+                    }}
                     disabled={isSubmitting}
                   />
                 </div>
+                {fullNameError && <small className="staff-field-error">{fullNameError}</small>}
               </label>
               <label>
-                <span>Corporate Email Address *</span>
+                <span>Corporate Email Address</span>
                 <div>
                   <i className="fa-regular fa-envelope"></i>
                   <input 
+                    className={emailError ? 'has-error' : ''}
                     type="email" 
                     placeholder="sarah.j@jobfusion.com" 
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required 
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (emailError) setEmailError('')
+                    }}
                     disabled={isEdit || isSubmitting}
                   />
                 </div>
+                {emailError && <small className="staff-field-error">{emailError}</small>}
               </label>
               {isEdit && (
                 <label style={{ marginTop: '16px' }}>
@@ -359,9 +421,9 @@ function CreateStaffAccountView({
                       disabled={isSubmitting}
                       style={{ width: '100%', border: 0, outline: 0, background: 'transparent', font: 'inherit', fontSize: '14px', fontWeight: 'bold' }}
                     >
-                      <option value="ACTIVE">Activated</option>
+                      <option value="ACTIVE">Active</option>
                       <option value="PENDING">Pending</option>
-                      <option value="DISABLED">Disabled</option>
+                      <option value="DISABLED">Inactive</option>
                     </select>
                   </div>
                 </label>
@@ -385,6 +447,7 @@ function CreateStaffAccountView({
                   <strong>HR</strong>
                   <small>Full access to candidate sourcing and recruitment management tools.</small>
                 </div>
+                <i className="staff-role-card-dot" aria-hidden="true"></i>
               </div>
               <div 
                 className={`staff-role-card-option ${selectedRoles.includes('interviewer') ? 'selected' : ''}`}
@@ -401,6 +464,7 @@ function CreateStaffAccountView({
                   <strong>Interviewer</strong>
                   <small>Can view assigned interviews, candidate profiles and submit evaluation feedback.</small>
                 </div>
+                <i className="staff-role-card-dot" aria-hidden="true"></i>
               </div>
             </fieldset>
           </div>
@@ -414,10 +478,10 @@ function CreateStaffAccountView({
           </div>
 
           <footer className="create-staff-actions">
-            <small><i className="fa-regular fa-circle-question"></i> Required fields marked with *</small>
+            <small><i className="fa-regular fa-circle-question"></i> Required fields are validated before submission.</small>
             <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
             <button type="submit" className="tenant-create-btn" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : isEdit ? 'Update' : 'Confirm'}
+              {isSubmitting ? 'Saving...' : isEdit ? 'Update Account' : 'Confirm'}
             </button>
           </footer>
         </form>
@@ -438,6 +502,8 @@ function EditStaffAccountView({
   isSubmitting?: boolean
 }) {
   const [fullName, setFullName] = useState(staffMember.fullName)
+  const [fullNameError, setFullNameError] = useState('')
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
     const roles = staffMember.userRole
       ? staffMember.userRole.split(',').map((role) => role.trim().toLowerCase())
@@ -459,11 +525,16 @@ function EditStaffAccountView({
     const date = new Date(dateStr)
     if (Number.isNaN(date.getTime())) return dateStr
 
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
+    const diffMs = Date.now() - date.getTime()
+    const diffMinutes = Math.max(1, Math.round(Math.abs(diffMs) / 60000))
+
+    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+
+    const diffHours = Math.round(diffMinutes / 60)
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+
+    const diffDays = Math.round(diffHours / 24)
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
   }
 
   const toggleRole = (role: string) => {
@@ -478,6 +549,11 @@ function EditStaffAccountView({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+    if (!fullName.trim()) {
+      setFullNameError('Full name cannot be empty.')
+      return
+    }
+
     const rolePayload = selectedRoles.map((role) => role === 'hr' ? 'HR' : 'Interviewer')
 
     onConfirm({
@@ -489,16 +565,16 @@ function EditStaffAccountView({
   }
 
   const isActive = staffMember.status === 'ACTIVE'
-  const statusLabel = isActive ? 'Verified' : staffMember.status === 'PENDING' ? 'Pending' : 'Disabled'
+  const statusLabel = isActive ? 'Active' : staffMember.status === 'PENDING' ? 'Pending' : 'Inactive'
 
   return (
     <div className="role-content edit-staff-content">
       <div className="tenant-breadcrumb create-staff-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <span>Staff Management</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Edit Staff Account</strong>
       </div>
 
@@ -507,7 +583,7 @@ function EditStaffAccountView({
         <p>Modify permissions and personal details for {staffMember.fullName}.</p>
       </header>
 
-      <form className="edit-staff-form" onSubmit={handleSubmit}>
+      <form className="edit-staff-form" onSubmit={handleSubmit} noValidate>
         <div className="edit-staff-layout">
           <aside className="edit-staff-profile-card">
             <div className="edit-staff-profile-banner"></div>
@@ -545,12 +621,16 @@ function EditStaffAccountView({
             <label className="edit-staff-field">
               <span>Full Name</span>
               <input
+                className={fullNameError ? 'has-error' : ''}
                 type="text"
                 value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
+                onChange={(event) => {
+                  setFullName(event.target.value)
+                  if (fullNameError) setFullNameError('')
+                }}
                 disabled={isSubmitting}
-                required
               />
+              {fullNameError && <small className="edit-staff-field-error">{fullNameError}</small>}
             </label>
 
             <div className="edit-staff-role-head">
@@ -592,12 +672,23 @@ function EditStaffAccountView({
 
         <footer className="edit-staff-actions">
           <small>All changes will be logged for security purposes.</small>
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+          <button type="button" onClick={() => setShowCancelConfirm(true)} disabled={isSubmitting}>Cancel</button>
           <button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>
         </footer>
       </form>
+      {showCancelConfirm && (
+        <ConfirmActionModal
+          isSubmitting={false}
+          title="Confirm Action"
+          message="Are you sure you want to cancel? Your changes will not be saved."
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          onCancel={() => setShowCancelConfirm(false)}
+          onConfirm={onCancel}
+        />
+      )}
     </div>
   )
 }
@@ -654,9 +745,9 @@ function StaffDetailView({
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span style={{ cursor: 'pointer' }} onClick={onBack}>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <span style={{ cursor: 'pointer' }} onClick={onBack}>Staff Management</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Staff Detail</strong>
       </div>
 
@@ -684,7 +775,7 @@ function StaffDetailView({
             className={isActive ? "btn-deactivate" : "btn-activate"} 
             onClick={onToggleStatus}
           >
-            {isActive ? 'Deactivate Account' : 'Activate Account'}
+            {isActive ? 'Deactivate Account' : 'Resend activation email'}
           </button>
         </div>
       </section>
@@ -694,9 +785,10 @@ function StaffDetailView({
         <div>
           <section className="staff-detail-card">
             <header style={{ borderBottom: '1px solid #f0d7d0', paddingBottom: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ width: '36px', height: '36px', borderRadius: '5px', background: '#ffedea', color: '#d93408', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}><i className="fa-regular fa-user"></i></span>
               <h2 style={{ flex: 1, margin: 0, color: '#101c33', fontSize: '16px' }}>Personal Information</h2>
-              <i className="fa-solid fa-ellipsis-vertical" style={{ color: '#667085', cursor: 'pointer' }}></i>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V7C0 6.45 0.195833 5.97917 0.5875 5.5875C0.979167 5.19583 1.45 5 2 5H7V2C7 1.45 7.19583 0.979167 7.5875 0.5875C7.97917 0.195833 8.45 0 9 0H11C11.55 0 12.0208 0.195833 12.4125 0.5875C12.8042 0.979167 13 1.45 13 2V5H18C18.55 5 19.0208 5.19583 19.4125 5.5875C19.8042 5.97917 20 6.45 20 7V18C20 18.55 19.8042 19.0208 19.4125 19.4125C19.0208 19.8042 18.55 20 18 20H2ZM2 18H18V7H13C13 7.55 12.8042 8.02083 12.4125 8.4125C12.0208 8.80417 11.55 9 11 9H9C8.45 9 7.97917 8.80417 7.5875 8.4125C7.19583 8.02083 7 7.55 7 7H2V18ZM4 16H10V15.55C10 15.2667 9.92083 15.0042 9.7625 14.7625C9.60417 14.5208 9.38333 14.3333 9.1 14.2C8.76667 14.05 8.42917 13.9375 8.0875 13.8625C7.74583 13.7875 7.38333 13.75 7 13.75C6.61667 13.75 6.25417 13.7875 5.9125 13.8625C5.57083 13.9375 5.23333 14.05 4.9 14.2C4.61667 14.3333 4.39583 14.5208 4.2375 14.7625C4.07917 15.0042 4 15.2667 4 15.55V16ZM12 14.5H16V13H12V14.5ZM7 13C7.41667 13 7.77083 12.8542 8.0625 12.5625C8.35417 12.2708 8.5 11.9167 8.5 11.5C8.5 11.0833 8.35417 10.7292 8.0625 10.4375C7.77083 10.1458 7.41667 10 7 10C6.58333 10 6.22917 10.1458 5.9375 10.4375C5.64583 10.7292 5.5 11.0833 5.5 11.5C5.5 11.9167 5.64583 12.2708 5.9375 12.5625C6.22917 12.8542 6.58333 13 7 13ZM12 11.5H16V10H12V11.5ZM9 7H11V2H9V7Z" fill="#565E74" />
+              </svg>
             </header>
             <div className="staff-detail-info-grid">
               <div>
@@ -733,12 +825,13 @@ function StaffDetailView({
         {/* Right Column */}
         <div>
           <section className="staff-status-panel">
+            <small className="staff-status-panel-label">Account Status</small>
             <div className={`staff-status-box ${isPending ? 'status-pending' : isDisabled ? 'status-disabled' : ''}`}>
               <strong>
                 <i className="fa-solid fa-circle" style={{ fontSize: '8px' }}></i>
-                {isActive ? 'Active' : isPending ? 'Pending' : 'Disabled'}
+                {isActive ? 'Active' : isPending ? 'Pending' : 'Inactive'}
               </strong>
-              <span>SINCE {formatDate(staffMember.createdAt).toUpperCase()}</span>
+              <span>SINCE {isDisabled ? 'JAN 2026' : formatDate(staffMember.createdAt).toUpperCase()}</span>
             </div>
             <div className="staff-login-meta">
               <div className="staff-login-row">
@@ -834,11 +927,11 @@ function StaffActivityLogView({
       <div className="tenant-breadcrumb staff-log-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <button type="button" onClick={onBack}>Home</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBack}>Staff Management</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBack}>Staff Detail</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Staff Activity Log</strong>
       </div>
 
@@ -899,6 +992,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   
   // Modals & Save states
   const [deleteConfirmStaff, setDeleteConfirmStaff] = useState<StaffMember | null>(null)
+  const [statusConfirmStaff, setStatusConfirmStaff] = useState<StaffMember | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -997,7 +1091,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setIsDeleting(true)
     try {
       await adminApi.deleteStaff(deleteConfirmStaff.id)
-      triggerToast?.('Staff account deleted successfully.', 'success')
+      triggerToast?.('Account permanently deleted.', 'success')
       setDeleteConfirmStaff(null)
       
       if (selectedStaff?.id === deleteConfirmStaff.id) {
@@ -1025,7 +1119,13 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         role: roles,
         status: nextStatus,
       })
-      triggerToast?.(`Account ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
+      triggerToast?.(
+        nextStatus === 'ACTIVE'
+          ? `Activation email successfully resent to ${staff.email}.`
+          : 'Account deactivated successfully.',
+        'success',
+      )
+      setStatusConfirmStaff(null)
       
       setSelectedStaff(prev => {
         if (!prev) return null
@@ -1046,6 +1146,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         <AccountSettingsView onBack={() => changeView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'staffCreate' ? (
         <CreateStaffAccountView
+          staffList={staffList}
           onCancel={() => changeView('staffManagement')}
           onConfirm={handleCreateStaffSubmit}
           isSubmitting={isSaving}
@@ -1069,7 +1170,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           onBack={() => changeView('staffManagement')}
           onEdit={() => changeView('staffEdit')}
           onDelete={() => setDeleteConfirmStaff(selectedStaff)}
-          onToggleStatus={() => handleToggleStatus(selectedStaff)}
+          onToggleStatus={() => setStatusConfirmStaff(selectedStaff)}
           onViewLogs={() => changeView('staffActivityLog')}
         />
       ) : activeView === 'staffActivityLog' && selectedStaff ? (
@@ -1101,7 +1202,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         />
       ) : (
       <div className="role-content">
-        <div className="role-metrics four">
+        <div className="role-metrics four tenant-dashboard-metrics">
           <MetricCard icon="fa-briefcase" label="Active Job Postings" value="24" note="+12%" />
           <MetricCard icon="fa-users" label="Total Applicants" value="842" note="+340" />
           <MetricCard icon="fa-clock" label="Time-to-Hire" value="18 Days" note="-3d" />
@@ -1136,11 +1237,16 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
               <section className="role-panel quota-panel">
                 <div className="role-panel-head"><h2>Staff Quota</h2><small>8 / 10 Seats</small></div>
                 <div className="quota-ring"><strong>8/10</strong><span>Used</span></div>
-                <p>You have 2 seats available in your current professional plan.</p>
+                <p>You have 2 seats available in your current professional plan. Optimize your team allocation now.</p>
               </section>
 
               <section className="role-panel plan-panel">
-                <small><i className="fa-regular fa-circle-dot"></i> Active Plan</small>
+                <small>
+                  <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M5.7 15.75L4.275 13.35L1.575 12.75L1.8375 9.975L0 7.875L1.8375 5.775L1.575 3L4.275 2.4L5.7 0L8.25 1.0875L10.8 0L12.225 2.4L14.925 3L14.6625 5.775L16.5 7.875L14.6625 9.975L14.925 12.75L12.225 13.35L10.8 15.75L8.25 14.6625L5.7 15.75ZM6.3375 13.8375L8.25 13.0125L10.2 13.8375L11.25 12.0375L13.3125 11.55L13.125 9.45L14.5125 7.875L13.125 6.2625L13.3125 4.1625L11.25 3.7125L10.1625 1.9125L8.25 2.7375L6.3 1.9125L5.25 3.7125L3.1875 4.1625L3.375 6.2625L1.9875 7.875L3.375 9.45L3.1875 11.5875L5.25 12.0375L6.3375 13.8375ZM7.4625 10.5375L11.7 6.3L10.65 5.2125L7.4625 8.4L5.85 6.825L4.8 7.875L7.4625 10.5375Z" fill="#FFB5A1" />
+                  </svg>
+                  Active Plan
+                </small>
                 <h2>Professional</h2>
                 <p>Full AI-Assisted Recruitment Suite</p>
                 <footer><span>Renewal Date<br /><strong>Oct 24, 2024</strong></span><button type="button">Manage</button></footer>
@@ -1154,22 +1260,56 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
                 <div><h2>Upcoming Interviews</h2><p>Scheduled for today & tomorrow</p></div>
                 <i className="fa-solid fa-ellipsis-vertical"></i>
               </div>
-              {['Sarah Jenkins - Senior DevOps Engineer', 'Marcus Thorne - Product Manager'].map((item, index) => (
-                <article key={item}>
-                  <span className="role-avatar">{index === 0 ? 'SJ' : 'MT'}</span>
-                  <div><strong>{item}</strong><small>Interviewer: {index === 0 ? 'David Chen' : 'Elena Rodriguez'}</small></div>
-                  <em>{index === 0 ? '10:00 AM' : '02:30 PM'}</em>
+              {[
+                { initials: 'SJ', name: 'Sarah Jenkins', role: 'Senior DevOps Engineer', interviewer: 'David Chen', time: '10:00 AM', wait: 'In 45 mins' },
+                { initials: 'MT', name: 'Marcus Thorne', role: 'Product Manager', interviewer: 'Elena Rodriguez', time: '02:30 PM', wait: 'Today' },
+              ].map((item) => (
+                <article key={item.name}>
+                  <span className="role-avatar">{item.initials}</span>
+                  <div className="interview-candidate">
+                    <strong>{item.name}</strong>
+                    <small>{item.role}</small>
+                  </div>
+                  <div className="interview-interviewer">
+                    <small>Interviewer</small>
+                    <strong>{item.interviewer}</strong>
+                  </div>
+                  <em>
+                    {item.time}
+                    <small>{item.wait}</small>
+                  </em>
                 </article>
               ))}
             </section>
 
             <section className="role-panel insights-panel">
-              <h2><i className="fa-solid fa-wand-magic-sparkles"></i> AI Insights (DSS)</h2>
-              <div className="tag-list"><span>Cloud Architecture</span><span>Go Lang</span><span>Data Security</span></div>
+              <h2>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M18 8L16.75 5.25L14 4L16.75 2.75L18 0L19.25 2.75L22 4L19.25 5.25L18 8ZM18 22L16.75 19.25L14 18L16.75 16.75L18 14L19.25 16.75L22 18L19.25 19.25L18 22ZM8 19L5.5 13.5L0 11L5.5 8.5L8 3L10.5 8.5L16 11L10.5 13.5L8 19Z" fill="#F24E1E" />
+                </svg>
+                AI Insights (DSS)
+              </h2>
+              <div className="tag-list">
+                <span>Cloud Architecture <i className="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+                <span>Go Lang <i className="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+                <span className="tag-muted">Data Security</span>
+              </div>
               <small>Difficult to fill positions</small>
               <div className="insight-row"><span>Senior DevOps Engineer</span><strong>43 Days Open</strong></div>
               <div className="insight-row"><span>ML Ops Specialist</span><strong>31 Days Open</strong></div>
-              <button type="button">View full AI report <i className="fa-solid fa-arrow-up-right-from-square"></i></button>
+              <button type="button">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <g clipPath="url(#ai-report-chart-icon)">
+                    <path d="M15 10H12V3H15V10ZM0 8H3V13H0V8ZM11 12H10V13H8V0H11V12ZM4 3H7V13H4V3ZM16 13V14H14V16H13V14H11V13H13V11H14V13H16Z" fill="#0B1C30" fillOpacity="0.9" />
+                  </g>
+                  <defs>
+                    <clipPath id="ai-report-chart-icon">
+                      <rect width="16" height="16" fill="white" />
+                    </clipPath>
+                  </defs>
+                </svg>
+                View full AI report <i className="fa-solid fa-arrow-up-right-from-square"></i>
+              </button>
             </section>
           </div>
         </div>
@@ -1179,13 +1319,29 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       {deleteConfirmStaff && (
         <ConfirmActionModal
           isSubmitting={isDeleting}
-          title="Confirm Delete"
-          message={`Are you sure you want to delete the staff account for ${deleteConfirmStaff.fullName}? This action cannot be undone.`}
+          title="Confirm Action"
+          message={`Are you sure you want to permanently delete ${deleteConfirmStaff.fullName}'s account? This action cannot be undone. All role assignments will be removed.`}
           cancelLabel="Cancel"
-          confirmLabel="Delete"
-          submittingLabel="Deleting..."
+          confirmLabel="Confirm"
+          submittingLabel="Confirming..."
           onCancel={() => setDeleteConfirmStaff(null)}
           onConfirm={handleDeleteStaffConfirm}
+        />
+      )}
+      {statusConfirmStaff && (
+        <ConfirmActionModal
+          isSubmitting={isSaving}
+          title="Confirm Action"
+          message={
+            statusConfirmStaff.status === 'ACTIVE'
+              ? `Are you sure you want to deactivate ${statusConfirmStaff.fullName}'s account? They will lose access immediately and any active session will be terminated.`
+              : `A new activation email will be sent to ${statusConfirmStaff.email}. The previous activation link will be immediately invalidated. Do you want to proceed?`
+          }
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          submittingLabel="Confirming..."
+          onCancel={() => setStatusConfirmStaff(null)}
+          onConfirm={() => handleToggleStatus(statusConfirmStaff)}
         />
       )}
     </DashboardShell>

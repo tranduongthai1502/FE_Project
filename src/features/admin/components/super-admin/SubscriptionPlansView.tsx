@@ -210,7 +210,7 @@ function CreatePlanView({
     setIsSavingPlan(true)
     try {
       await adminApi.createPlan(payload)
-      triggerToast?.('Subscription plan saved successfully', 'success')
+      triggerToast?.('Subscription plan created successfully', 'success')
       onCreated()
     } catch (error) {
       setPlanError(error instanceof Error ? error.message : 'Create plan failed')
@@ -246,9 +246,9 @@ function CreatePlanView({
       <div className="tenant-breadcrumb create-plan-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <button type="button" onClick={onHome}>Home</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBack}>Subscription Plans</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Create New Plan</strong>
       </div>
 
@@ -612,11 +612,11 @@ function EditPlanDetailView({
       <div className="tenant-breadcrumb create-plan-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <button type="button" onClick={onHome}>Home</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onPlans}>Subscription Plans</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBack}>Plan Detail</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Edit Plan</strong>
       </div>
 
@@ -975,9 +975,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         <div className="tenant-breadcrumb">
           <i className="fa-solid fa-house"></i>
           <button type="button" onClick={onHome}>Home</button>
-          <i className="fa-solid fa-chevron-right"></i>
+          <span className="breadcrumb-separator">/</span>
           <button type="button" onClick={closePlanDetail}>Subscription Plans</button>
-          <i className="fa-solid fa-chevron-right"></i>
+          <span className="breadcrumb-separator">/</span>
           <strong>Plan Detail</strong>
         </div>
 
@@ -1161,7 +1161,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <button type="button" onClick={onHome}>Home</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Subscription Plans</strong>
       </div>
 
