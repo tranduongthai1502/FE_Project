@@ -106,5 +106,11 @@ export function normalizeTenant(tenant: any): Tenant | null {
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
     status: String(tenant?.status || (tenant?.active === false ? 'Inactive' : 'Active')),
+    adminFullName: tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || tenant?.admin?.fullName || tenant?.admin?.name
+      ? String(tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || tenant?.admin?.fullName || tenant?.admin?.name)
+      : undefined,
+    adminEmail: tenant?.adminEmail || tenant?.tenantAdminEmail || tenant?.admin?.email
+      ? String(tenant?.adminEmail || tenant?.tenantAdminEmail || tenant?.admin?.email)
+      : undefined,
   }
 }

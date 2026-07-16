@@ -55,5 +55,7 @@ export function buildTenantUpdatePayload(payload: UpdateTenantPayload) {
     "region": payload.region.trim(),
     "status": normalizeResourceStatus(payload.status),
     "planId": payload.planId,
+    "adminFullName": payload.adminFullName.trim(),
+    "adminEmail": payload.adminEmail.trim(),
   }
 }

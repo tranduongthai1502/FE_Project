@@ -29,8 +29,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false)
+  const [isPlanConfirmOpen, setIsPlanConfirmOpen] = useState(false)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isUpdatingTenantStatus, setIsUpdatingTenantStatus] = useState(false)
+  const [isUpdatingTenantPlan, setIsUpdatingTenantPlan] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
@@ -42,6 +44,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [tenantPage, setTenantPage] = useState(1)
   const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
+  const [pendingTenantPlanId, setPendingTenantPlanId] = useState('')
   const [tenantForm, setTenantForm] = useState<CreateTenantForm>(emptyTenantForm)
 
   useEffect(() => {
@@ -250,6 +253,20 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       ? planById.get(tenant.subscriptionPlanId)
       : planByName.get(tenant.subscriptionPlan.toLowerCase())
   )
+  const selectedTenant = useMemo(() => (
+    tenants.find((tenant) => tenant.id === selectedTenantId)
+  ), [selectedTenantId, tenants])
+  const selectedTenantPlan = selectedTenant ? getTenantPlan(selectedTenant) : undefined
+
+  useEffect(() => {
+    if (activeView !== 'detail' || !selectedTenant) {
+      setPendingTenantPlanId('')
+      return
+    }
+
+    setPendingTenantPlanId(selectedTenant.subscriptionPlanId || selectedTenantPlan?.id || '')
+  }, [activeView, selectedTenant, selectedTenantPlan?.id])
+
   const isHighestPricedPlan = (tenant: Tenant, plan?: SubscriptionPlan) => {
     if (plan) {
       return highestPlanIds.has(plan.id)
@@ -257,6 +274,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
     return highestPlanNames.has(tenant.subscriptionPlan.toLowerCase())
   }
+  const getTenantAdminPayload = (tenant: Tenant) => ({
+    adminFullName: tenant.adminFullName || 'Tenant Admin',
+    adminEmail: tenant.adminEmail || `admin@${tenant.domain || 'tenant'}.com`,
+  })
   const planFilterOptions = useMemo(() => {
     const optionsByKey = new Map<string, string>()
 
@@ -363,6 +384,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setTenantListError('')
 
     try {
+      const tenantAdminPayload = getTenantAdminPayload(selectedTenant)
       await adminApi.updateTenant(selectedTenant.id, {
         companyName: selectedTenant.name,
         domain: selectedTenant.domain || selectedTenant.id,
@@ -370,6 +392,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         region: selectedTenant.region || 'VietNam',
         status: nextStatus,
         planId,
+        ...tenantAdminPayload,
       })
       setIsStatusConfirmOpen(false)
       setRefreshTenantsKey((value) => value + 1)
@@ -382,6 +405,43 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       triggerToast?.('Error system. Please try again', 'error')
     } finally {
       setIsUpdatingTenantStatus(false)
+    }
+  }
+  const requestChangeTenantPlan = () => {
+    if (!selectedTenant || !pendingTenantPlanId) return
+
+    const currentPlanId = selectedTenant.subscriptionPlanId || selectedTenantPlan?.id || ''
+    if (pendingTenantPlanId === currentPlanId) {
+      return
+    }
+
+    setIsPlanConfirmOpen(true)
+  }
+  const confirmUpdateTenantPlan = async () => {
+    if (!selectedTenant || !pendingTenantPlanId) return
+
+    setIsUpdatingTenantPlan(true)
+    setTenantListError('')
+
+    try {
+      const tenantAdminPayload = getTenantAdminPayload(selectedTenant)
+      await adminApi.updateTenant(selectedTenant.id, {
+        companyName: selectedTenant.name,
+        domain: selectedTenant.domain || selectedTenant.id,
+        industry: selectedTenant.industry || 'Media & Advertising',
+        region: selectedTenant.region || 'VietNam',
+        status: selectedTenant.status,
+        planId: pendingTenantPlanId,
+        ...tenantAdminPayload,
+      })
+      setIsPlanConfirmOpen(false)
+      setRefreshTenantsKey((value) => value + 1)
+      triggerToast?.('Subscription plan updated successfully.', 'success')
+    } catch (error) {
+      setTenantListError(error instanceof Error ? error.message : 'Update subscription plan failed')
+      triggerToast?.('Error system. Please try again', 'error')
+    } finally {
+      setIsUpdatingTenantPlan(false)
     }
   }
 
@@ -428,8 +488,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   }
 
   if (activeView === 'detail') {
-    const selectedTenant = tenants.find((tenant) => tenant.id === selectedTenantId)
-    const selectedPlan = selectedTenant ? getTenantPlan(selectedTenant) : undefined
+    const selectedPlan = selectedTenantPlan
+    const nextSelectedPlan = pendingTenantPlanId ? planById.get(pendingTenantPlanId) : undefined
+    const currentPlanId = selectedTenant?.subscriptionPlanId || selectedPlan?.id || ''
+    const hasSelectedDifferentPlan = Boolean(pendingTenantPlanId && pendingTenantPlanId !== currentPlanId)
     const isActive = selectedTenant?.status.toLowerCase() === 'active'
     const quotaLabel = selectedTenant
       ? selectedTenant.userQuotaLimit > 0
@@ -441,6 +503,8 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const tenantRegion = selectedTenant?.region || 'VietNam'
     const tenantExpirationDate = selectedTenant ? formatPlanDate(selectedTenant.expirationDate) || selectedTenant.expirationDate : '-'
     const tenantCreatedDate = tenantExpirationDate !== '-' ? tenantExpirationDate : '-'
+    const tenantAdminFullName = selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-'
+    const tenantAdminEmail = selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-'
 
     return (
       <div className="role-content tenant-detail-content">
@@ -497,13 +561,26 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 <header>
                   <span><i className="fa-regular fa-id-badge"></i></span>
                   <h2>Subscription Plan</h2>
-                  <i className="fa-solid fa-chevron-down tenant-plan-chevron"></i>
-                  <button type="button">Change Plan</button>
+                  <label className="tenant-plan-picker">
+                    <i className="fa-solid fa-chevron-down tenant-plan-chevron"></i>
+                    <select
+                      aria-label="Select subscription plan"
+                      value={pendingTenantPlanId}
+                      onChange={(event) => setPendingTenantPlanId(event.target.value)}
+                      disabled={isUpdatingTenantPlan || subscriptionPlans.length === 0}
+                    >
+                      {subscriptionPlans.map((plan) => (
+                        <option key={plan.id} value={plan.id}>{plan.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button type="button" onClick={requestChangeTenantPlan} disabled={!hasSelectedDifferentPlan || isUpdatingTenantPlan}>
+                    Change Plan
+                  </button>
                 </header>
-                <strong className="tenant-plan-heading">{selectedPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
-                <small className="tenant-plan-tier">{selectedPlan?.description || '-'}</small>
+                <strong className="tenant-plan-heading">{nextSelectedPlan?.name || selectedPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
                 <div className="tenant-subscription-metrics">
-                  <div><small>Monthly Billing</small><strong>{selectedPlan ? `$${selectedPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</strong></div>
+                  <div><small>Monthly Billing</small><strong>{(nextSelectedPlan || selectedPlan) ? `$${(nextSelectedPlan || selectedPlan)!.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</strong></div>
                   <div><small>Days Remaining</small><strong><i className="fa-regular fa-calendar-check"></i> 365 Days</strong></div>
                 </div>
                 <div className="tenant-subscription-lines">
@@ -521,8 +598,8 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 </header>
                 <div className={styles.tenantAdminLayout}>
                   <div className={styles.tenantAdminAvatar}><i className="fa-regular fa-user"></i><b /></div>
-                  <div><small>Full Name</small><strong>Tenant Admin</strong></div>
-                  <div><small>Email Address</small><strong>admin@{selectedTenant.domain || 'tenant'}.com</strong></div>
+                  <div><small>Full Name</small><strong>{tenantAdminFullName}</strong></div>
+                  <div><small>Email Address</small><strong>{tenantAdminEmail}</strong></div>
                   <div><small>Current Status</small><em className={isActive ? styles.active : styles.inactive}>{selectedTenant.status}</em></div>
                   <div><small>Activated Date</small><strong>{tenantCreatedDate}</strong></div>
                 </div>
@@ -539,6 +616,21 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 submittingLabel={isActive ? 'Deactivating...' : 'Activating...'}
                 onCancel={() => setIsStatusConfirmOpen(false)}
                 onConfirm={confirmUpdateTenantStatus}
+              />
+            )}
+
+            {isPlanConfirmOpen && (
+              <ConfirmActionModal
+                isSubmitting={isUpdatingTenantPlan}
+                title="Confirm Action"
+                message={`Are you sure you want to change the subscription plan for ${selectedTenant.name} to ${nextSelectedPlan?.name || 'the selected plan'}?`}
+                cancelLabel="Cancel"
+                confirmLabel="Confirm"
+                submittingLabel="Updating..."
+                onCancel={() => {
+                  if (!isUpdatingTenantPlan) setIsPlanConfirmOpen(false)
+                }}
+                onConfirm={confirmUpdateTenantPlan}
               />
             )}
           </>
