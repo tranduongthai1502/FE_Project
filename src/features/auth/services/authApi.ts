@@ -42,7 +42,7 @@ export const authApi = {
   },
 
   async confirmActivation(token: string) {
-    return axiosClient.post('/api/auth/activate', { token })
+    return axiosClient.post(`/api/auth/activate?token=${token}`)
   },
 
   async changePassword(payload: ChangePasswordPayload) {
