@@ -85,6 +85,16 @@ export function RouteConfig({
         }
       />
       <Route
+        path="/tenant/active"
+        element={
+          <ActivationPage
+            navigate={navigate}
+            onSignInSuccess={onSignInSuccess}
+            triggerToast={triggerToast}
+          />
+        }
+      />
+      <Route
         path="/activate"
         element={
           <ActivationPage
