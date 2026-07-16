@@ -1043,18 +1043,16 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
               </div>
             </section>
 
-            <section className="plan-detail-card active-subscribers-card">
-              <div className="plan-detail-card-head">
-                <h2>Active Subscribers</h2>
-              </div>
-
-              {matchingTenants.length === 0 ? (
-                <div className="plan-no-tenants">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                  <span>No tenants found.</span>
-                </div>
-              ) : (
-                <div className="plan-subscriber-table">
+            <section className="active-subscribers-section">
+              <h2>Active Subscribers</h2>
+              <div className="plan-detail-card active-subscribers-card">
+                {matchingTenants.length === 0 ? (
+                  <div className="plan-no-tenants">
+                    <i className="fa-solid fa-triangle-exclamation"></i>
+                    <span>No tenants found.</span>
+                  </div>
+                ) : (
+                  <div className="plan-subscriber-table">
                   <div className="plan-subscriber-row plan-subscriber-head">
                     <span>Company Name</span>
                     <span>Domain</span>
@@ -1098,8 +1096,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                       <button type="button" disabled><i className="fa-solid fa-chevron-right"></i></button>
                     </div>
                   </footer>
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </section>
           </>
         )}
