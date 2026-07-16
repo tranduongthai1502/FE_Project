@@ -3945,10 +3945,21 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #12b76a;
   font-size: 11px;
   font-style: normal;
   font-weight: 900;
+}
+
+.plan-subscriber-row > em.active {
+  color: #12b76a;
+}
+
+.plan-subscriber-row > em.expiring {
+  color: #f79009;
+}
+
+.plan-subscriber-row > em.inactive {
+  color: #98a2b3;
 }
 
 .plan-subscriber-row > em::before {
