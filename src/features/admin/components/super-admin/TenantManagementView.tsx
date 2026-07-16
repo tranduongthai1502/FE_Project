@@ -511,9 +511,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         <div className="tenant-breadcrumb">
           <i className="fa-solid fa-house"></i>
           <span>Home</span>
-          <i className="fa-solid fa-chevron-right"></i>
+          <span className="breadcrumb-separator">/</span>
           <button type="button" onClick={closeTenantDetail}>Tenant Management</button>
-          <i className="fa-solid fa-chevron-right"></i>
+          <span className="breadcrumb-separator">/</span>
           <strong>Tenant detail</strong>
         </div>
 
@@ -641,7 +641,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Tenant Management</strong>
       </div>
 

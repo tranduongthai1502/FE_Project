@@ -26,9 +26,9 @@ SEO-optimized, and free of bias.`)
       <div className="tenant-breadcrumb create-plan-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBack}>Prompt Management</button>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Create New Prompt</strong>
       </div>
 
@@ -142,7 +142,7 @@ export function PromptManagementView() {
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
         <span>Home</span>
-        <i className="fa-solid fa-chevron-right"></i>
+        <span className="breadcrumb-separator">/</span>
         <strong>Prompt Management</strong>
       </div>
 
