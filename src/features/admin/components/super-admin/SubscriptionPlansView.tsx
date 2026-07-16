@@ -494,6 +494,14 @@ function EditPlanDetailView({
     event.preventDefault()
     setPlanError('')
     const nextFieldErrors: CreatePlanFieldErrors = {}
+    const generalConfigurationIsEmpty = !planName.trim() &&
+      !description.trim() &&
+      !monthlyPrice.trim()
+
+    if (generalConfigurationIsEmpty) {
+      setFieldErrors({ planName: 'Please fill in all required fields.' })
+      return
+    }
 
     if (!planName.trim()) {
       nextFieldErrors.planName = 'Please fill in all required fields.'
@@ -597,6 +605,7 @@ function EditPlanDetailView({
   }
 
   const activeTenantLabel = `${activeAssignedTenantCount} active tenant${activeAssignedTenantCount === 1 ? '' : 's'}`
+  const assignedTenantLabel = `${assignedTenantCount} tenant${assignedTenantCount === 1 ? '' : 's'}`
 
   return (
     <form className="role-content edit-plan-content" onSubmit={handleSavePlan} noValidate>
@@ -631,7 +640,7 @@ function EditPlanDetailView({
                 {fieldErrors.planName && <small className="create-plan-field-error">{fieldErrors.planName}</small>}
               </label>
               <label>
-                <span>Short Tagline</span>
+                <span>Short Description</span>
                 <input
                   className={fieldErrors.description ? 'has-error' : ''}
                   value={description}
@@ -782,7 +791,7 @@ function EditPlanDetailView({
         <ConfirmActionModal
           isSubmitting={isSavingPlan}
           title="Confirm Action"
-          message={`This plan is currently assigned to ${assignedTenantCount} tenant(s). Saving changes will immediately update their resource limits and pricing.`}
+          message={`This plan is currently assigned to ${assignedTenantLabel}. Saving changes will immediately update their resource limits and pricing.`}
           cancelLabel="Cancel"
           confirmLabel="Confirm"
           onCancel={() => {

@@ -43,6 +43,8 @@ export type UpdateTenantPayload = {
   region: string
   status: string
   planId: string
+  adminFullName: string
+  adminEmail: string
 }
 
 export type CreatePlanFeature = {
@@ -92,6 +94,8 @@ export type Tenant = {
   userQuotaUsed: number
   userQuotaLimit: number
   status: string
+  adminFullName?: string
+  adminEmail?: string
 }
 
 export type PlanListRequest = {
