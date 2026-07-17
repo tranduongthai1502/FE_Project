@@ -37,11 +37,24 @@ function getStoredTenantId() {
   }
 }
 
+function formatDashboardDate(value?: string) {
+  if (!value || value === '-') return '-'
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return value
+
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  }).format(new Date(parsed))
+}
+
 function StaffManagementView({
   staffList,
   isLoading,
   error,
   maxStaffQuota = 10,
+  isStaffQuotaUnlimited = false,
   onCreate,
   onEdit,
   onDelete,
@@ -51,6 +64,7 @@ function StaffManagementView({
   isLoading: boolean
   error: string
   maxStaffQuota?: number
+  isStaffQuotaUnlimited?: boolean
   onCreate: () => void
   onEdit: (staff: StaffMember) => void
   onDelete: (staff: StaffMember) => void
@@ -113,8 +127,8 @@ function StaffManagementView({
     }
   }
 
-  const quotaPercent = Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
-  const hasReachedStaffQuota = staffList.length >= maxStaffQuota
+  const quotaPercent = isStaffQuotaUnlimited ? Math.min(100, Math.max(8, staffList.length * 8)) : Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
+  const hasReachedStaffQuota = !isStaffQuotaUnlimited && staffList.length >= maxStaffQuota
 
   return (
     <div className="role-content staff-management-content">
@@ -133,10 +147,10 @@ function StaffManagementView({
         <section className="staff-quota-card">
           <div>
             <span>Staff Accounts</span>
-            <strong>{staffList.length} / {maxStaffQuota}</strong>
+            <strong>{staffList.length} / {isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}</strong>
           </div>
           <i><span style={{ width: `${quotaPercent}%`, background: '#ff5f2b' }} /></i>
-          <small>{Math.max(0, maxStaffQuota - staffList.length)} seats remaining</small>
+          <small>{isStaffQuotaUnlimited ? 'Unlimited seats available' : `${Math.max(0, maxStaffQuota - staffList.length)} seats remaining`}</small>
         </section>
       </div>
 
@@ -1091,21 +1105,6 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
         setTenantDetail(tenant)
         setTenantPlan(tenant.subscriptionPlanDetail || null)
-
-        if (!tenant.subscriptionPlanId) {
-          return
-        }
-
-        try {
-          const plan = await adminApi.getPlanById(tenant.subscriptionPlanId)
-          if (isActive) {
-            setTenantPlan(plan)
-          }
-        } catch {
-          if (isActive) {
-            setTenantPlan(tenant.subscriptionPlanDetail || null)
-          }
-        }
       } catch (error) {
         if (isActive) {
           setTenantDetail(null)
@@ -1126,9 +1125,20 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     }
   }, [activeView, tenantId])
 
-  const maxStaffQuota = tenantPlan?.staffAccountUnlimited
-    ? Math.max(staffList.length, tenantDetail?.userQuotaLimit || 0, 10)
+  const hasTenantQuota = Boolean(tenantDetail)
+  const isStaffQuotaUnlimited = Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0)
+  const maxStaffQuota = isStaffQuotaUnlimited
+    ? Math.max(staffList.length, 1)
     : tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
+  const staffQuotaSummary = `${staffList.length} / ${isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}`
+  const staffQuotaRingLabel = isStaffQuotaUnlimited ? 'Unlimited' : `${staffList.length}/${maxStaffQuota}`
+  const remainingStaffSeats = Math.max(0, maxStaffQuota - staffList.length)
+  const staffQuotaDescription = isStaffQuotaUnlimited
+    ? 'Your current plan includes unlimited staff seats.'
+    : `You have ${remainingStaffSeats} seat${remainingStaffSeats === 1 ? '' : 's'} available in your current plan.`
+  const currentPlanName = tenantPlan?.name || tenantDetail?.subscriptionPlan || 'Current Plan'
+  const currentPlanDescription = tenantPlan?.description || 'Tenant subscription plan'
+  const renewalDateLabel = formatDashboardDate(tenantDetail?.expirationDate)
 
   // Handlers
   const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
@@ -1282,6 +1292,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           isLoading={isLoadingStaff || isLoadingTenantDetail}
           error={staffError}
           maxStaffQuota={maxStaffQuota}
+          isStaffQuotaUnlimited={isStaffQuotaUnlimited}
           onCreate={() => {
             setSelectedStaff(null)
             changeView('staffCreate')
@@ -1333,9 +1344,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
             <div className="tenant-dashboard-top-side">
               <section className="role-panel quota-panel">
-                <div className="role-panel-head"><h2>Staff Quota</h2><small>8 / 10 Seats</small></div>
-                <div className="quota-ring"><strong>8/10</strong><span>Used</span></div>
-                <p>You have 2 seats available in your current professional plan. Optimize your team allocation now.</p>
+                <div className="role-panel-head"><h2>Staff Quota</h2><small>{staffQuotaSummary} Seats</small></div>
+                <div className="quota-ring"><strong>{staffQuotaRingLabel}</strong><span>Used</span></div>
+                <p>{staffQuotaDescription}</p>
               </section>
 
               <section className="role-panel plan-panel">
@@ -1345,9 +1356,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
                   </svg>
                   Active Plan
                 </small>
-                <h2>Professional</h2>
-                <p>Full AI-Assisted Recruitment Suite</p>
-                <footer><span>Renewal Date<br /><strong>Oct 24, 2024</strong></span><button type="button">Manage</button></footer>
+                <h2>{currentPlanName}</h2>
+                <p>{currentPlanDescription}</p>
+                <footer><span>Renewal Date<br /><strong>{renewalDateLabel}</strong></span><button type="button">Manage</button></footer>
               </section>
             </div>
           </div>

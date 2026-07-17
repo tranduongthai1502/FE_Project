@@ -69,7 +69,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
   const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
   const [tenantAdminUser, setTenantAdminUser] = useState<TenantAdminUser | null>(null)
-  const [tenantPlanDetail, setTenantPlanDetail] = useState<SubscriptionPlan | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
@@ -80,7 +79,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [isUpdatingTenantPlan, setIsUpdatingTenantPlan] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
-  const [isLoadingTenantPlanDetail, setIsLoadingTenantPlanDetail] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
   const [tenantListError, setTenantListError] = useState('')
@@ -366,57 +364,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   ), [selectedTenantId, tenantDetail, tenants])
   const selectedTenantListPlan = selectedTenant ? getTenantPlan(selectedTenant) : undefined
   const selectedTenantNestedPlan = selectedTenant?.subscriptionPlanDetail
-  const selectedTenantPlan = (
-    tenantPlanDetail &&
-    selectedTenant &&
-    (
-      tenantPlanDetail.id === selectedTenant.subscriptionPlanId ||
-      tenantPlanDetail.name.toLowerCase() === selectedTenant.subscriptionPlan.toLowerCase()
-    )
-  )
-    ? tenantPlanDetail
-    : selectedTenantNestedPlan || selectedTenantListPlan
-
-  useEffect(() => {
-    const planId = selectedTenant?.subscriptionPlanId || ''
-
-    if (activeView !== 'detail' || !planId) {
-      setTenantPlanDetail(null)
-      return
-    }
-
-    let isActive = true
-    setIsLoadingTenantPlanDetail(true)
-
-    adminApi.getPlanById(planId)
-      .then((plan) => {
-        if (!isActive) return
-
-        setTenantPlanDetail(plan)
-        setSubscriptionPlans((current) => {
-          const existingIndex = current.findIndex((item) => item.id === plan.id)
-          if (existingIndex === -1) return [...current, plan]
-
-          const next = [...current]
-          next[existingIndex] = plan
-          return next
-        })
-      })
-      .catch(() => {
-        if (isActive) {
-          setTenantPlanDetail(selectedTenant?.subscriptionPlanDetail || null)
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoadingTenantPlanDetail(false)
-        }
-      })
-
-    return () => {
-      isActive = false
-    }
-  }, [activeView, selectedTenant?.subscriptionPlanId])
+  const selectedTenantPlan = selectedTenantNestedPlan || selectedTenantListPlan
 
   useEffect(() => {
     if (activeView !== 'detail' || !selectedTenant) {
@@ -653,8 +601,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const hasSelectedDifferentPlan = Boolean(pendingTenantPlanId && pendingTenantPlanId !== currentPlanId)
     const tenantStatus = getTenantStatusMeta(selectedTenant?.status || '')
     const isActive = tenantStatus.isActive
+    const activeSubscriptionPlan = nextSelectedPlan || selectedPlan
+    const hasUnlimitedStaffQuota = Boolean(activeSubscriptionPlan?.staffAccountUnlimited)
     const quotaLabel = selectedTenant
-      ? selectedTenant.userQuotaLimit > 0
+      ? hasUnlimitedStaffQuota
+        ? 'Unlimited'
+        : selectedTenant.userQuotaLimit > 0
         ? `${selectedTenant.userQuotaUsed}/${selectedTenant.userQuotaLimit}`
         : String(selectedTenant.userQuotaUsed)
       : '-'
@@ -664,12 +616,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const tenantExpirationDate = selectedTenant ? formatTenantDate(selectedTenant.expirationDate) : '-'
     const tenantStartDate = selectedTenant ? formatTenantDate(selectedTenant.startDate || selectedTenant.createdAt) : '-'
     const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
-    const activeSubscriptionPlan = nextSelectedPlan || selectedPlan
-    const monthlyBillingLabel = isLoadingTenantPlanDetail
-      ? 'Loading...'
-      : activeSubscriptionPlan
-        ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mo`
-        : '-'
+    const monthlyBillingLabel = activeSubscriptionPlan
+      ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mo`
+      : '-'
     const daysRemainingLabel = getDaysRemainingLabel(selectedTenant?.expirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
     const tenantAdminEmail = tenantAdminUser?.email || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-')

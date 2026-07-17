@@ -42,18 +42,51 @@ export function getTenantList(payload: any): any[] {
   return []
 }
 
-export function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
-  const id = plan?.id || plan?.planId || plan?.uuid
+function isTruthyFlag(value: unknown) {
+  if (typeof value === 'boolean') return value
+  const normalized = String(value ?? '').trim().toLowerCase()
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'y'
+}
+
+function isUnlimitedValue(value: unknown) {
+  return String(value ?? '').trim().toLowerCase() === 'unlimited'
+}
+
+export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): SubscriptionPlan | null {
+  const id = plan?.id || plan?.planId || plan?.uuid || fallbackId
   if (!id) return null
 
   const name = plan?.name || plan?.planName || plan?.title || 'Subscription Plan'
-  const price = Number(plan?.monthlyPrice ?? plan?.price ?? plan?.amount ?? 0)
-  const maxStaffAccountValue = plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? 0
-  const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? 0
-  const isUnlimitedValue = (value: unknown) => String(value).trim().toLowerCase() === 'unlimited'
+  const price = Number(plan?.monthlyPrice ?? plan?.monthly_price ?? plan?.price ?? plan?.amount ?? 0)
+  const hasStaffLimitField =
+    plan?.maxStaffAccount !== undefined ||
+    plan?.maxStaffAccounts !== undefined ||
+    plan?.max_staff_account !== undefined ||
+    plan?.max_staff_accounts !== undefined
+  const hasJobLimitField =
+    plan?.maxActiveJobPosting !== undefined ||
+    plan?.maxActiveJobPostings !== undefined ||
+    plan?.max_active_job_posting !== undefined ||
+    plan?.max_active_job_postings !== undefined
+  const maxStaffAccountValue = plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? plan?.max_staff_account ?? plan?.max_staff_accounts ?? null
+  const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? plan?.max_active_job_posting ?? plan?.max_active_job_postings ?? null
   const maxStaffAccount = Number(maxStaffAccountValue)
   const maxActiveJobPosting = Number(maxActiveJobPostingValue)
   const billingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
+  const staffAccountUnlimited =
+    isTruthyFlag(plan?.staffAccountUnlimited) ||
+    isTruthyFlag(plan?.staff_account_unlimited) ||
+    isTruthyFlag(plan?.maxStaffAccountUnlimited) ||
+    isTruthyFlag(plan?.max_staff_account_unlimited) ||
+    isUnlimitedValue(maxStaffAccountValue) ||
+    (hasStaffLimitField && maxStaffAccountValue == null)
+  const activeJobPostingUnlimited =
+    isTruthyFlag(plan?.activeJobPostingUnlimited) ||
+    isTruthyFlag(plan?.active_job_posting_unlimited) ||
+    isTruthyFlag(plan?.maxActiveJobPostingUnlimited) ||
+    isTruthyFlag(plan?.max_active_job_posting_unlimited) ||
+    isUnlimitedValue(maxActiveJobPostingValue) ||
+    (hasJobLimitField && maxActiveJobPostingValue == null)
   const featureList = Array.isArray(plan?.features)
     ? plan.features
     : Array.isArray(plan?.planFeatures)
@@ -69,9 +102,9 @@ export function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
     description: String(plan?.description || plan?.shortDescription || plan?.tagline || ''),
     monthlyPrice: Number.isFinite(price) ? price : 0,
     maxStaffAccount: Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
-    staffAccountUnlimited: Boolean(plan?.staffAccountUnlimited) || isUnlimitedValue(maxStaffAccountValue),
+    staffAccountUnlimited,
     maxActiveJobPosting: Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
-    activeJobPostingUnlimited: Boolean(plan?.activeJobPostingUnlimited) || isUnlimitedValue(maxActiveJobPostingValue),
+    activeJobPostingUnlimited,
     status: String(plan?.status || (plan?.active === false ? 'Inactive' : 'Active')),
     createdAt: String(plan?.createdAt || plan?.createdDate || plan?.created_at || plan?.createAt || ''),
     features: featureList.map((feature: any) => ({
@@ -86,7 +119,7 @@ export function normalizeTenant(tenant: any): Tenant | null {
   const id = tenant?.id || tenant?.tenantId || tenant?.uuid || tenant?.domain
   if (!id) return null
 
-  const plan = tenant?.plan || tenant?.subscriptionPlan || tenant?.subscription_plan || tenant?.subscription || tenant?.currentPlan || {}
+  const plan = tenant?.plan || tenant?.subscriptionPlan || tenant?.subscription_plan || tenant?.subscriptionPlanDetail || tenant?.planDetail || tenant?.subscription?.plan || tenant?.subscription || tenant?.currentPlan || {}
   const planObject = typeof plan === 'object' && plan !== null ? plan : {}
   const planId =
     tenant?.planId ||
@@ -112,14 +145,25 @@ export function normalizeTenant(tenant: any): Tenant | null {
     admin?.id ||
     admin?.userId ||
     admin?.uuid
-  const nestedPlan = normalizeSubscriptionPlan(planObject)
+  const planSource = Object.keys(planObject).length > 0
+    ? { ...planObject, id: planObject?.id || planObject?.planId || planId }
+    : {
+      id: planId,
+      name: tenant?.planName || tenant?.subscriptionPlanName,
+      monthlyPrice: tenant?.monthlyPrice ?? tenant?.planPrice,
+      maxStaffAccount: tenant?.maxStaffAccount ?? tenant?.maxStaffAccounts,
+      staffAccountUnlimited: tenant?.staffAccountUnlimited,
+      maxActiveJobPosting: tenant?.maxActiveJobPosting ?? tenant?.maxActiveJobPostings,
+      activeJobPostingUnlimited: tenant?.activeJobPostingUnlimited,
+    }
+  const nestedPlan = normalizeSubscriptionPlan(planSource, planId ? String(planId) : undefined)
   const quotaLimit = Number(
     tenant?.userQuotaLimit ??
     tenant?.maxUsers ??
     tenant?.maxStaffAccount ??
     tenant?.maxStaffAccounts ??
-    plan?.maxStaffAccount ??
-    plan?.maxStaffAccounts ??
+    planObject?.maxStaffAccount ??
+    planObject?.maxStaffAccounts ??
     0
   )
 
