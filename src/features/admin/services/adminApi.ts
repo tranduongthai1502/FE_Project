@@ -71,7 +71,8 @@ export const adminApi = {
   },
 
   async createTenant(payload: CreateTenantPayload) {
-    return axiosClient.post('/api/tenant', buildTenantCreatePayload(payload))
+    const response = await axiosClient.post('/api/tenant', buildTenantCreatePayload(payload))
+    return normalizeTenant(getResponsePayload(response))
   },
 
   async updateTenant(tenantId: string, payload: UpdateTenantPayload) {

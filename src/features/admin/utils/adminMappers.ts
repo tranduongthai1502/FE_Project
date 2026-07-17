@@ -187,7 +187,7 @@ export function normalizeTenant(tenant: any): Tenant | null {
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
-    status: String(tenant?.status || (tenant?.active === false ? 'Inactive' : 'Active')),
+    status: String(tenant?.status ?? tenant?.accountStatus ?? tenant?.tenantStatus ?? (tenant?.active === true ? 'Active' : 'Inactive')),
     adminUserId: adminUserId ? String(adminUserId) : undefined,
     adminFullName: tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || admin?.fullName || admin?.full_name || admin?.name
       ? String(tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || admin?.fullName || admin?.full_name || admin?.name)
