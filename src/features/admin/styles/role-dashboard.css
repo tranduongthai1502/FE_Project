@@ -4063,7 +4063,7 @@
 }
 
 .active-subscribers-card {
-  min-height: 270px;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -4223,11 +4223,11 @@
 }
 
 .plan-subscriber-table footer {
-  min-height: 50px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 26px;
+  padding: 6px 26px;
   color: #6b4b43;
   font-size: 11px;
 }
@@ -4238,8 +4238,8 @@
 }
 
 .plan-subscriber-table footer button {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: 1px solid #efc3b8;
   border-radius: 5px;
   background: #ffffff;
