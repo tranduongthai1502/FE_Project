@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { adminApi } from '../../services/adminApi'
 import type { CreatePlanPayload, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
+import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
@@ -154,6 +155,7 @@ function CreatePlanView({
 
     if (planDetailsAreEmpty) {
       setFieldErrors({ planName: 'Please fill in all required fields.' })
+      triggerToast?.('Please fill in all required fields.', 'error')
       return
     }
 
@@ -185,7 +187,9 @@ function CreatePlanView({
     }
 
     if (!features.some((feature) => feature.enabled)) {
-      setPlanError('Please enable at least one feature for this plan.')
+      const message = 'Please enable at least one feature for this plan.'
+      setPlanError(message)
+      triggerToast?.(message, 'error')
       return
     }
 
@@ -213,8 +217,9 @@ function CreatePlanView({
       triggerToast?.('Subscription plan created successfully', 'success')
       onCreated()
     } catch (error) {
-      setPlanError(error instanceof Error ? error.message : 'Create plan failed')
-      triggerToast?.('Error system. Please try again.', 'error')
+      const message = getAdminErrorMessage(error, 'Create plan failed')
+      setPlanError(message)
+      triggerToast?.(message, 'error')
     } finally {
       setIsSavingPlan(false)
     }
@@ -386,9 +391,6 @@ function CreatePlanView({
         <h2><i className="fa-solid fa-wand-magic-sparkles"></i> Feature Permissions</h2>
         <div className="create-plan-divider" />
 
-        {planError === 'Please enable at least one feature for this plan.' && (
-          <p className="create-plan-error feature-permission-error">{planError}</p>
-        )}
         <div className="feature-permission-grid">
           {features.map((feature) => (
             <article className={`feature-permission-card ${feature.enabled ? '' : 'disabled'}`} key={feature.key}>
@@ -408,8 +410,6 @@ function CreatePlanView({
           ))}
         </div>
       </section>
-
-      {planError && planError !== 'Please enable at least one feature for this plan.' && <p className="create-plan-error">{planError}</p>}
 
       <footer className="create-plan-actions">
         <button type="button" onClick={handleCancelCreatePlan} disabled={isSavingPlan}>Cancel</button>
@@ -500,6 +500,7 @@ function EditPlanDetailView({
 
     if (generalConfigurationIsEmpty) {
       setFieldErrors({ planName: 'Please fill in all required fields.' })
+      triggerToast?.('Please fill in all required fields.', 'error')
       return
     }
 
@@ -529,7 +530,9 @@ function EditPlanDetailView({
     }
 
     if (!features.some((feature) => feature.enabled)) {
-      setPlanError('Please enable at least one feature for this plan.')
+      const message = 'Please enable at least one feature for this plan.'
+      setPlanError(message)
+      triggerToast?.(message, 'error')
       return
     }
 
@@ -559,9 +562,10 @@ function EditPlanDetailView({
       triggerToast?.('Subscription plan updated successfully.', 'success')
       onSaved()
     } catch (error) {
+      const message = getAdminErrorMessage(error, 'Update plan failed')
       setIsSaveConfirmOpen(false)
-      setPlanError(error instanceof Error ? error.message : 'Update plan failed')
-      triggerToast?.('Error system. Please try again.', 'error')
+      setPlanError(message)
+      triggerToast?.(message, 'error')
     } finally {
       setIsSavingPlan(false)
     }
@@ -677,7 +681,6 @@ function EditPlanDetailView({
                 <strong>Active Status</strong>
               </div>
             </div>
-            {planError && planError !== 'Please enable at least one feature for this plan.' && <p className="create-plan-error">{planError}</p>}
           </section>
 
           <section className="create-plan-card edit-plan-card">
@@ -753,9 +756,6 @@ function EditPlanDetailView({
         <section className="create-plan-card edit-plan-card edit-feature-panel">
           <h2><i className="fa-solid fa-bolt"></i> Plan Features <small>AI ENABLED</small></h2>
           <div className="create-plan-divider" />
-          {planError === 'Please enable at least one feature for this plan.' && (
-            <p className="create-plan-error feature-permission-error">{planError}</p>
-          )}
           <div className="edit-feature-list">
             {features.map((feature) => (
               <article key={feature.key} className={feature.enabled ? '' : 'disabled'}>

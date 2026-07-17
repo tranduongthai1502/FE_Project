@@ -3,7 +3,6 @@ import type { CreateTenantForm, SubscriptionPlan } from '../../types/admin.types
 
 export function CreateTenantPage({
   form,
-  error,
   plans,
   isLoadingPlans,
   isSubmitting,
@@ -129,8 +128,6 @@ export function CreateTenantPage({
               />
             </label>
           </div>
-
-          {error && <p className="tenant-modal-error">{error}</p>}
 
           <footer className="tenant-modal-actions">
             <button type="button" onClick={onClose} disabled={isSubmitting}>Cancel</button>

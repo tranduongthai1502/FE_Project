@@ -7,6 +7,7 @@ import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
+import { getAdminErrorMessage } from '../../utils/adminErrors'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
 
@@ -295,7 +296,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setTenantError('')
 
     if (!tenantForm.companyName.trim() || !tenantForm.domain.trim() || !tenantForm.industry.trim() || !tenantForm.region.trim() || !tenantForm.planId || !tenantForm.adminFullName.trim() || !tenantForm.adminEmail.trim()) {
-      setTenantError('Please fill in all required fields.')
+      const message = 'Please fill in all required fields.'
+      setTenantError(message)
+      triggerToast?.(message, 'error')
       return
     }
 
@@ -332,9 +335,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
+      const message = getAdminErrorMessage(error, 'Create tenant failed')
       setIsCreateConfirmOpen(false)
-      setTenantError(error instanceof Error ? error.message : 'Create tenant failed')
-      triggerToast?.('Error system. Please try again', 'error')
+      setTenantError(message)
+      triggerToast?.(message, 'error')
     } finally {
       setIsSubmittingTenant(false)
     }
@@ -510,9 +514,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     if (!currentTenant) return
 
     const selectedPlan = getTenantPlan(currentTenant)
-    if (!getTenantStatusMeta(currentTenant.status).isActive) return
+    const currentTenantStatus = getTenantStatusMeta(currentTenant.status)
+    if (currentTenantStatus.className === 'pending') return
 
-    const nextStatus = 'INACTIVE'
+    const nextStatus = currentTenantStatus.isActive ? 'INACTIVE' : 'ACTIVE'
     const planId = currentTenant.subscriptionPlanId || selectedPlan?.id || ''
 
     setIsUpdatingTenantStatus(true)
@@ -535,7 +540,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       )))
       setIsStatusConfirmOpen(false)
       setRefreshTenantsKey((value) => value + 1)
-      triggerToast?.('Tenant admin account deactivated successfully.', 'success')
+      triggerToast?.(`Tenant ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
     } catch (error) {
       setTenantListError(error instanceof Error ? error.message : 'Update tenant status failed')
       triggerToast?.('Error system. Please try again', 'error')
@@ -654,11 +659,17 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const tenantAdminStatus = selectedTenant?.status || tenantAdminUser?.status || '-'
     const tenantAdminStatusMeta = getTenantStatusMeta(tenantAdminStatus)
     const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.createdAt || '') || tenantAdminUser?.createdAt || tenantCreatedDate
+    const canUpdateTenantStatus = tenantStatus.className !== 'pending'
     const statusActionLabel = isActive
-      ? 'Deactivate Tenant'
+      ? 'Inactive'
       : tenantStatus.className === 'pending'
         ? 'Pending Activation'
-        : 'Inactive'
+        : 'Active'
+    const statusActionClassName = isActive ? 'status-deactivate' : 'status-activate'
+    const statusActionMessage = isActive
+      ? 'Are you sure you want to deactivate this tenant?'
+      : 'Are you sure you want to activate this tenant?'
+    const statusActionSubmittingLabel = isActive ? 'Deactivating...' : 'Activating...'
 
     return (
       <div className="role-content tenant-detail-content">
@@ -684,7 +695,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 <h1>{selectedTenant.name}</h1>
                 <em className={tenantStatus.className}>{tenantStatus.label}</em>
               </div>
-              <button type="button" onClick={() => isActive && setIsStatusConfirmOpen(true)} disabled={!isActive || isUpdatingTenantStatus}>
+              <button
+                type="button"
+                className={statusActionClassName}
+                onClick={() => canUpdateTenantStatus && setIsStatusConfirmOpen(true)}
+                disabled={!canUpdateTenantStatus || isUpdatingTenantStatus}
+              >
                 {statusActionLabel}
               </button>
             </div>
@@ -761,10 +777,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
               <ConfirmActionModal
                 isSubmitting={isUpdatingTenantStatus}
                 title="Confirm Action"
-                message="Are you sure you want to deactivate this tenant?"
+                message={statusActionMessage}
                 cancelLabel="Cancel"
                 confirmLabel="Confirm"
-                submittingLabel="Deactivating..."
+                submittingLabel={statusActionSubmittingLabel}
                 onCancel={() => setIsStatusConfirmOpen(false)}
                 onConfirm={confirmUpdateTenantStatus}
               />
