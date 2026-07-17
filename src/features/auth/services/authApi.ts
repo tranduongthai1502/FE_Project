@@ -34,7 +34,7 @@ export const authApi = {
   },
 
   async activate(token: string) {
-    return axiosClient.get(`/api/auth/activate?token=${token}`)
+    return axiosClient.get(`/api/auth/activate?token=${encodeURIComponent(token)}`)
   },
 
   async resendActivation(email: string) {
@@ -42,7 +42,7 @@ export const authApi = {
   },
 
   async confirmActivation(token: string) {
-    return axiosClient.post(`/api/auth/activate?token=${token}`)
+    return axiosClient.post('/api/auth/activate', { token })
   },
 
   async changePassword(payload: ChangePasswordPayload) {
