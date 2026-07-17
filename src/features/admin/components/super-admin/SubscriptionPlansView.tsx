@@ -391,7 +391,7 @@ function CreatePlanView({
         )}
         <div className="feature-permission-grid">
           {features.map((feature) => (
-            <article className="feature-permission-card" key={feature.key}>
+            <article className={`feature-permission-card ${feature.enabled ? '' : 'disabled'}`} key={feature.key}>
               <div className="feature-icon"><i className={`fa-solid ${feature.icon}`}></i></div>
               <button
                 type="button"

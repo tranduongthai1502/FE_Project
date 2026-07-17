@@ -44,6 +44,7 @@ export function buildTenantCreatePayload(payload: CreateTenantPayload) {
     "planId": payload.planId,
     "adminFullName": payload.adminFullName.trim(),
     "adminEmail": payload.adminEmail.trim(),
+    "status": 'PENDING',
   }
 }
 

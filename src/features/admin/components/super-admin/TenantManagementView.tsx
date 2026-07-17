@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { adminApi } from '../../services/adminApi'
-import type { CreateTenantForm, SubscriptionPlan, Tenant } from '../../types/admin.types'
+import type { CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser } from '../../types/admin.types'
 import { formatPlanDate } from '../../utils/adminFormatters'
 import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
@@ -9,6 +9,48 @@ import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
+
+function getTenantStatusMeta(statusValue: string) {
+  const normalized = statusValue.trim().toLowerCase()
+  const isActive = normalized === 'active' || normalized === 'activated' || normalized === 'enabled'
+  const isPending = normalized === 'pending' || normalized === 'invited' || normalized === 'waiting_activation'
+  const isInactive = normalized === 'inactive' || normalized === 'disabled' || normalized === 'deactivated' || normalized === 'suspended'
+
+  if (isActive) {
+    return { className: 'active', label: 'Active', isActive: true }
+  }
+
+  if (isPending) {
+    return { className: 'pending', label: 'Pending', isActive: false }
+  }
+
+  if (isInactive) {
+    return { className: 'inactive', label: 'Inactive', isActive: false }
+  }
+
+  return {
+    className: 'inactive',
+    label: statusValue ? statusValue.trim() : 'Inactive',
+    isActive: false,
+  }
+}
+
+function formatTenantDate(value?: string) {
+  return value ? formatPlanDate(value) || value : '-'
+}
+
+function getDaysRemainingLabel(expirationDate?: string) {
+  if (!expirationDate || expirationDate === '-') return '-'
+
+  const expirationTime = Date.parse(expirationDate)
+  if (Number.isNaN(expirationTime)) return '-'
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const daysRemaining = Math.ceil((expirationTime - today.getTime()) / 86_400_000)
+  return `${Math.max(0, daysRemaining)} Day${Math.max(0, daysRemaining) === 1 ? '' : 's'}`
+}
 
 const emptyTenantForm: CreateTenantForm = {
   companyName: '',
@@ -25,6 +67,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     getTenantDetailIdFromUrl() ? 'detail' : 'list'
   ))
   const [selectedTenantId, setSelectedTenantId] = useState(() => getTenantDetailIdFromUrl())
+  const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
+  const [tenantAdminUser, setTenantAdminUser] = useState<TenantAdminUser | null>(null)
+  const [tenantPlanDetail, setTenantPlanDetail] = useState<SubscriptionPlan | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl())
   const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
@@ -34,9 +79,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [isUpdatingTenantStatus, setIsUpdatingTenantStatus] = useState(false)
   const [isUpdatingTenantPlan, setIsUpdatingTenantPlan] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
+  const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
+  const [isLoadingTenantPlanDetail, setIsLoadingTenantPlanDetail] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
   const [tenantListError, setTenantListError] = useState('')
+  const [tenantDetailError, setTenantDetailError] = useState('')
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>('all')
   const [tenantPlanFilter, setTenantPlanFilter] = useState('')
@@ -135,6 +183,64 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   }, [isCreateModalOpen, subscriptionPlans.length])
 
   useEffect(() => {
+    if (activeView !== 'detail' || !selectedTenantId) {
+      setTenantDetail(null)
+      setTenantAdminUser(null)
+      setTenantDetailError('')
+      return
+    }
+
+    let isActive = true
+    setIsLoadingTenantDetail(true)
+    setTenantDetailError('')
+    setTenantAdminUser(null)
+
+    const fetchTenantDetail = async () => {
+      try {
+        const tenant = await adminApi.getTenantById(selectedTenantId)
+        if (!isActive) return
+
+        setTenantDetail(tenant)
+        setTenants((current) => {
+          const existingIndex = current.findIndex((item) => item.id === tenant.id)
+          if (existingIndex === -1) return [tenant, ...current]
+
+          const next = [...current]
+          next[existingIndex] = tenant
+          return next
+        })
+
+        if (!tenant.adminUserId) return
+
+        try {
+          const user = await adminApi.getUserById(tenant.adminUserId)
+          if (isActive) {
+            setTenantAdminUser(user)
+          }
+        } catch {
+          if (isActive) {
+            setTenantAdminUser(null)
+          }
+        }
+      } catch (error) {
+        if (isActive) {
+          setTenantDetailError(error instanceof Error ? error.message : 'Load tenant details failed')
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingTenantDetail(false)
+        }
+      }
+    }
+
+    fetchTenantDetail()
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, selectedTenantId])
+
+  useEffect(() => {
     const handlePopState = () => {
       const tenantId = getTenantDetailIdFromUrl()
       setSelectedTenantId(tenantId)
@@ -212,7 +318,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   }
 
   const activeTenantCount = useMemo(() => (
-    tenants.filter((tenant) => tenant.status.toLowerCase() === 'active').length
+    tenants.filter((tenant) => getTenantStatusMeta(tenant.status).isActive).length
   ), [tenants])
   const inactiveTenantCount = tenants.length - activeTenantCount
   const planById = useMemo(() => (
@@ -254,9 +360,63 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       : planByName.get(tenant.subscriptionPlan.toLowerCase())
   )
   const selectedTenant = useMemo(() => (
-    tenants.find((tenant) => tenant.id === selectedTenantId)
-  ), [selectedTenantId, tenants])
-  const selectedTenantPlan = selectedTenant ? getTenantPlan(selectedTenant) : undefined
+    tenantDetail?.id === selectedTenantId
+      ? tenantDetail
+      : tenants.find((tenant) => tenant.id === selectedTenantId)
+  ), [selectedTenantId, tenantDetail, tenants])
+  const selectedTenantListPlan = selectedTenant ? getTenantPlan(selectedTenant) : undefined
+  const selectedTenantNestedPlan = selectedTenant?.subscriptionPlanDetail
+  const selectedTenantPlan = (
+    tenantPlanDetail &&
+    selectedTenant &&
+    (
+      tenantPlanDetail.id === selectedTenant.subscriptionPlanId ||
+      tenantPlanDetail.name.toLowerCase() === selectedTenant.subscriptionPlan.toLowerCase()
+    )
+  )
+    ? tenantPlanDetail
+    : selectedTenantNestedPlan || selectedTenantListPlan
+
+  useEffect(() => {
+    const planId = selectedTenant?.subscriptionPlanId || ''
+
+    if (activeView !== 'detail' || !planId) {
+      setTenantPlanDetail(null)
+      return
+    }
+
+    let isActive = true
+    setIsLoadingTenantPlanDetail(true)
+
+    adminApi.getPlanById(planId)
+      .then((plan) => {
+        if (!isActive) return
+
+        setTenantPlanDetail(plan)
+        setSubscriptionPlans((current) => {
+          const existingIndex = current.findIndex((item) => item.id === plan.id)
+          if (existingIndex === -1) return [...current, plan]
+
+          const next = [...current]
+          next[existingIndex] = plan
+          return next
+        })
+      })
+      .catch(() => {
+        if (isActive) {
+          setTenantPlanDetail(selectedTenant?.subscriptionPlanDetail || null)
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingTenantPlanDetail(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, selectedTenant?.subscriptionPlanId])
 
   useEffect(() => {
     if (activeView !== 'detail' || !selectedTenant) {
@@ -306,12 +466,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       const plan = getTenantPlan(tenant)
       const planName = plan?.name || tenant.subscriptionPlan || ''
       const planKey = plan?.id || tenant.subscriptionPlan
-      const status = tenant.status.toLowerCase()
+      const status = getTenantStatusMeta(tenant.status)
       const matchesStatus =
         tenantStatusFilter === 'all' ||
         tenantStatusFilter === 'plan' ||
-        (tenantStatusFilter === 'active' && status === 'active') ||
-        (tenantStatusFilter === 'inactive' && status !== 'active')
+        (tenantStatusFilter === 'active' && status.isActive) ||
+        (tenantStatusFilter === 'inactive' && !status.isActive)
       const matchesPlan = tenantStatusFilter !== 'plan' || !tenantPlanFilter || planKey === tenantPlanFilter
       const matchesSearch = !normalizedSearch || [
         tenant.name,
@@ -377,7 +537,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     if (!selectedTenant) return
 
     const selectedPlan = getTenantPlan(selectedTenant)
-    const nextStatus = selectedTenant.status.toLowerCase() === 'active' ? 'DISABLED' : 'ACTIVE'
+    if (!getTenantStatusMeta(selectedTenant.status).isActive) return
+
+    const nextStatus = 'INACTIVE'
     const planId = selectedTenant.subscriptionPlanId || selectedPlan?.id || ''
 
     setIsUpdatingTenantStatus(true)
@@ -396,10 +558,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       })
       setIsStatusConfirmOpen(false)
       setRefreshTenantsKey((value) => value + 1)
-      triggerToast?.(
-        nextStatus === 'DISABLED' ? 'Tenant admin account disabled successfully.' : 'Tenant admin account activated successfully.',
-        'success',
-      )
+      triggerToast?.('Tenant admin account deactivated successfully.', 'success')
     } catch (error) {
       setTenantListError(error instanceof Error ? error.message : 'Update tenant status failed')
       triggerToast?.('Error system. Please try again', 'error')
@@ -492,7 +651,8 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const nextSelectedPlan = pendingTenantPlanId ? planById.get(pendingTenantPlanId) : undefined
     const currentPlanId = selectedTenant?.subscriptionPlanId || selectedPlan?.id || ''
     const hasSelectedDifferentPlan = Boolean(pendingTenantPlanId && pendingTenantPlanId !== currentPlanId)
-    const isActive = selectedTenant?.status.toLowerCase() === 'active'
+    const tenantStatus = getTenantStatusMeta(selectedTenant?.status || '')
+    const isActive = tenantStatus.isActive
     const quotaLabel = selectedTenant
       ? selectedTenant.userQuotaLimit > 0
         ? `${selectedTenant.userQuotaUsed}/${selectedTenant.userQuotaLimit}`
@@ -501,10 +661,26 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const tenantDomain = selectedTenant?.domain ? `${selectedTenant.domain}.jobfusion.ai` : selectedTenant?.id || '-'
     const tenantIndustry = selectedTenant?.industry || 'Media & Advertising'
     const tenantRegion = selectedTenant?.region || 'VietNam'
-    const tenantExpirationDate = selectedTenant ? formatPlanDate(selectedTenant.expirationDate) || selectedTenant.expirationDate : '-'
-    const tenantCreatedDate = tenantExpirationDate !== '-' ? tenantExpirationDate : '-'
-    const tenantAdminFullName = selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-'
-    const tenantAdminEmail = selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-'
+    const tenantExpirationDate = selectedTenant ? formatTenantDate(selectedTenant.expirationDate) : '-'
+    const tenantStartDate = selectedTenant ? formatTenantDate(selectedTenant.startDate || selectedTenant.createdAt) : '-'
+    const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
+    const activeSubscriptionPlan = nextSelectedPlan || selectedPlan
+    const monthlyBillingLabel = isLoadingTenantPlanDetail
+      ? 'Loading...'
+      : activeSubscriptionPlan
+        ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mo`
+        : '-'
+    const daysRemainingLabel = getDaysRemainingLabel(selectedTenant?.expirationDate)
+    const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
+    const tenantAdminEmail = tenantAdminUser?.email || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-')
+    const tenantAdminStatus = tenantAdminUser?.status || selectedTenant?.status || '-'
+    const tenantAdminStatusMeta = getTenantStatusMeta(tenantAdminStatus)
+    const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.createdAt || '') || tenantAdminUser?.createdAt || tenantCreatedDate
+    const statusActionLabel = isActive
+      ? 'Deactivate Tenant'
+      : tenantStatus.className === 'pending'
+        ? 'Pending Activation'
+        : 'Inactive'
 
     return (
       <div className="role-content tenant-detail-content">
@@ -517,10 +693,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           <strong>Tenant detail</strong>
         </div>
 
-        {isLoadingTenants ? (
+        {isLoadingTenants || isLoadingTenantDetail ? (
           <div className="tenant-list-table-state">Loading tenant details...</div>
-        ) : tenantListError ? (
-          <div className="tenant-list-table-state error">{tenantListError}</div>
+        ) : tenantDetailError || tenantListError ? (
+          <div className="tenant-list-table-state error">{tenantDetailError || tenantListError}</div>
         ) : !selectedTenant ? (
           <div className="tenant-list-table-state">Tenant not found.</div>
         ) : (
@@ -528,10 +704,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
             <div className="tenant-detail-title-row">
               <div>
                 <h1>{selectedTenant.name}</h1>
-                <em className={isActive ? 'active' : 'inactive'}>{selectedTenant.status}</em>
+                <em className={tenantStatus.className}>{tenantStatus.label}</em>
               </div>
-              <button type="button" onClick={() => setIsStatusConfirmOpen(true)} disabled={isUpdatingTenantStatus}>
-                {isActive ? 'Deactivate Tenant' : 'Activate Tenant'}
+              <button type="button" onClick={() => isActive && setIsStatusConfirmOpen(true)} disabled={!isActive || isUpdatingTenantStatus}>
+                {statusActionLabel}
               </button>
             </div>
 
@@ -577,14 +753,14 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                     Change Plan
                   </button>
                 </header>
-                <strong className="tenant-plan-heading">{nextSelectedPlan?.name || selectedPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
+                <strong className="tenant-plan-heading">{activeSubscriptionPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
                 <div className="tenant-subscription-metrics">
-                  <div><small>Monthly Billing</small><strong>{(nextSelectedPlan || selectedPlan) ? `$${(nextSelectedPlan || selectedPlan)!.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</strong></div>
-                  <div><small>Days Remaining</small><strong><i className="fa-regular fa-calendar-check"></i> 365 Days</strong></div>
+                  <div><small>Monthly Billing</small><strong>{monthlyBillingLabel}</strong></div>
+                  <div><small>Days Remaining</small><strong><i className="fa-regular fa-calendar-check"></i> {daysRemainingLabel}</strong></div>
                 </div>
                 <div className="tenant-subscription-lines">
-                  <span>Start Date <strong>{tenantCreatedDate}</strong></span>
-                  <span>ExpirationDate <strong>{tenantExpirationDate}</strong></span>
+                  <span>Start Date <strong>{tenantStartDate}</strong></span>
+                  <span>Expiration Date <strong>{tenantExpirationDate}</strong></span>
                 </div>
               </section>
 
@@ -594,11 +770,11 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                   <h2>Tenant Admin</h2>
                 </header>
                 <div className={styles.tenantAdminLayout}>
-                  <div className={styles.tenantAdminAvatar}><i className="fa-regular fa-user"></i><b /></div>
+                  <div className={styles.tenantAdminAvatar}><i className="fa-regular fa-user"></i></div>
                   <div><small>Full Name</small><strong>{tenantAdminFullName}</strong></div>
                   <div><small>Email Address</small><strong>{tenantAdminEmail}</strong></div>
-                  <div><small>Current Status</small><em className={isActive ? styles.active : styles.inactive}>{selectedTenant.status}</em></div>
-                  <div><small>Activated Date</small><strong>{tenantCreatedDate}</strong></div>
+                  <div><small>Current Status</small><em className={styles[tenantAdminStatusMeta.className]}>{tenantAdminStatusMeta.label}</em></div>
+                  <div><small>Activated Date</small><strong>{tenantAdminActivatedDate}</strong></div>
                 </div>
               </section>
             </div>
@@ -607,10 +783,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
               <ConfirmActionModal
                 isSubmitting={isUpdatingTenantStatus}
                 title="Confirm Action"
-                message={`Are you sure you want to ${isActive ? 'deactivate' : 'activate'} this tenant admin account?`}
+                message="Are you sure you want to deactivate this tenant admin account?"
                 cancelLabel="Cancel"
                 confirmLabel="Confirm"
-                submittingLabel={isActive ? 'Deactivating...' : 'Activating...'}
+                submittingLabel="Deactivating..."
                 onCancel={() => setIsStatusConfirmOpen(false)}
                 onConfirm={confirmUpdateTenantStatus}
               />
@@ -705,7 +881,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           <div className="tenant-list-table-state">No tenants found.</div>
         ) : (
           paginatedTenants.map((tenant) => {
-            const isActive = tenant.status.toLowerCase() === 'active'
+            const status = getTenantStatusMeta(tenant.status)
             const tenantPlan = getTenantPlan(tenant)
             const hasUnlimitedQuota = tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0
             const quotaPercent = tenant.userQuotaLimit > 0
@@ -724,7 +900,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                   {!hasUnlimitedQuota && <i><b style={{ width: `${quotaPercent}%` }} /></i>}
                   <strong>{hasUnlimitedQuota ? 'Unlimited' : `${tenant.userQuotaUsed}/${tenant.userQuotaLimit}`}</strong>
                 </span>
-                <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : 'Inactive'}</em>
+                <em className={status.className}>{status.label}</em>
                 <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}>
                   <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

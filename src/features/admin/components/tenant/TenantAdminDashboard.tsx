@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { getTenantAdminNav } from '../../data/adminNavigation'
-import type { TenantAdminView, StaffMember, UserStatus } from '../../types/admin.types'
+import type { TenantAdminView, StaffMember, UserStatus, Tenant, SubscriptionPlan } from '../../types/admin.types'
 import { getInitialTenantAdminView, updateTenantAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
@@ -8,6 +8,34 @@ import { MetricCard } from '../shared/MetricCard'
 import { adminApi } from '../../services/adminApi'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 
+function getStoredTenantId() {
+  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
+  if (!rawUser) return ''
+
+  try {
+    const user = JSON.parse(rawUser)
+    const tenant =
+      user?.tenant ||
+      user?.tenantInfo ||
+      user?.company ||
+      user?.workspace ||
+      {}
+    const tenantId =
+      user?.tenantId ||
+      user?.tenant_id ||
+      user?.companyId ||
+      user?.company_id ||
+      user?.workspaceId ||
+      user?.workspace_id ||
+      tenant?.id ||
+      tenant?.tenantId ||
+      tenant?.uuid
+
+    return tenantId ? String(tenantId) : ''
+  } catch {
+    return ''
+  }
+}
 
 function StaffManagementView({
   staffList,
@@ -971,6 +999,9 @@ function StaffActivityLogView({
 
 export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<TenantAdminView>(() => getInitialTenantAdminView())
+  const [tenantId] = useState(() => getStoredTenantId())
+  const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
+  const [tenantPlan, setTenantPlan] = useState<SubscriptionPlan | null>(null)
   const changeView = (view: TenantAdminView) => {
     setActiveView(view)
     updateTenantAdminViewUrl(view)
@@ -987,6 +1018,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   // CRUD Staff States
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [isLoadingStaff, setIsLoadingStaff] = useState(false)
+  const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [staffError, setStaffError] = useState('')
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null)
   
@@ -1013,7 +1045,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setIsLoadingStaff(true)
     setStaffError('')
 
-    adminApi.getStaffList(1, 100)
+    adminApi.getStaffList(1, 100, tenantId)
       .then((response: any) => {
         if (!isActive) return
         const payload = response?.data || response
@@ -1033,7 +1065,70 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [activeView, refreshKey])
+  }, [activeView, refreshKey, tenantId])
+
+  useEffect(() => {
+    if (
+      !tenantId ||
+      (
+        activeView !== 'staffManagement' &&
+        activeView !== 'staffCreate' &&
+        activeView !== 'staffEdit' &&
+        activeView !== 'staffDetail' &&
+        activeView !== 'staffActivityLog'
+      )
+    ) {
+      return
+    }
+
+    let isActive = true
+    setIsLoadingTenantDetail(true)
+
+    const fetchTenantDetail = async () => {
+      try {
+        const tenant = await adminApi.getTenantById(tenantId)
+        if (!isActive) return
+
+        setTenantDetail(tenant)
+        setTenantPlan(tenant.subscriptionPlanDetail || null)
+
+        if (!tenant.subscriptionPlanId) {
+          return
+        }
+
+        try {
+          const plan = await adminApi.getPlanById(tenant.subscriptionPlanId)
+          if (isActive) {
+            setTenantPlan(plan)
+          }
+        } catch {
+          if (isActive) {
+            setTenantPlan(tenant.subscriptionPlanDetail || null)
+          }
+        }
+      } catch (error) {
+        if (isActive) {
+          setTenantDetail(null)
+          setTenantPlan(null)
+          setStaffError(error instanceof Error ? error.message : 'Failed to load tenant details')
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingTenantDetail(false)
+        }
+      }
+    }
+
+    fetchTenantDetail()
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, tenantId])
+
+  const maxStaffQuota = tenantPlan?.staffAccountUnlimited
+    ? Math.max(staffList.length, tenantDetail?.userQuotaLimit || 0, 10)
+    : tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
 
   // Handlers
   const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
@@ -1044,6 +1139,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         email: payload.email,
         role: payload.role,
         status: payload.status,
+        ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.('Staff account created successfully. Invitation email sent.', 'success')
       setRefreshKey(prev => prev + 1)
@@ -1064,6 +1160,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         email: payload.email,
         role: payload.role,
         status: payload.status,
+        ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.('Staff account updated successfully.', 'success')
       
@@ -1118,6 +1215,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         email: staff.email,
         role: roles,
         status: nextStatus,
+        ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.(
         nextStatus === 'ACTIVE'
@@ -1181,9 +1279,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       ) : activeView === 'staffManagement' ? (
         <StaffManagementView 
           staffList={staffList}
-          isLoading={isLoadingStaff}
+          isLoading={isLoadingStaff || isLoadingTenantDetail}
           error={staffError}
-          maxStaffQuota={10}
+          maxStaffQuota={maxStaffQuota}
           onCreate={() => {
             setSelectedStaff(null)
             changeView('staffCreate')
