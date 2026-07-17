@@ -196,7 +196,6 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
                     <small>{formatTenantCreatedAt(tenant)}</small>
                     <div>
                       <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}><i className="fa-regular fa-eye"></i></button>
-                      <button type="button" aria-label={`Delete ${tenant.name}`}><i className="fa-regular fa-trash-can"></i></button>
                     </div>
                   </article>
                   ))}

@@ -1,4 +1,9 @@
-import type { CreatePlanFeature, SubscriptionPlan, Tenant } from '../types/admin.types'
+import type { CreatePlanFeature, SubscriptionPlan, Tenant, TenantAdminUser } from '../types/admin.types'
+
+export function getResponsePayload(payload: any): any {
+  const body = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  return body?.data && typeof body.data === 'object' ? body.data : body
+}
 
 export function getSubscriptionPlanList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
@@ -37,18 +42,51 @@ export function getTenantList(payload: any): any[] {
   return []
 }
 
-export function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
-  const id = plan?.id || plan?.planId || plan?.uuid
+function isTruthyFlag(value: unknown) {
+  if (typeof value === 'boolean') return value
+  const normalized = String(value ?? '').trim().toLowerCase()
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'y'
+}
+
+function isUnlimitedValue(value: unknown) {
+  return String(value ?? '').trim().toLowerCase() === 'unlimited'
+}
+
+export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): SubscriptionPlan | null {
+  const id = plan?.id || plan?.planId || plan?.uuid || fallbackId
   if (!id) return null
 
   const name = plan?.name || plan?.planName || plan?.title || 'Subscription Plan'
-  const price = Number(plan?.monthlyPrice ?? plan?.price ?? plan?.amount ?? 0)
-  const maxStaffAccountValue = plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? 0
-  const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? 0
-  const isUnlimitedValue = (value: unknown) => String(value).trim().toLowerCase() === 'unlimited'
+  const price = Number(plan?.monthlyPrice ?? plan?.monthly_price ?? plan?.price ?? plan?.amount ?? 0)
+  const hasStaffLimitField =
+    plan?.maxStaffAccount !== undefined ||
+    plan?.maxStaffAccounts !== undefined ||
+    plan?.max_staff_account !== undefined ||
+    plan?.max_staff_accounts !== undefined
+  const hasJobLimitField =
+    plan?.maxActiveJobPosting !== undefined ||
+    plan?.maxActiveJobPostings !== undefined ||
+    plan?.max_active_job_posting !== undefined ||
+    plan?.max_active_job_postings !== undefined
+  const maxStaffAccountValue = plan?.maxStaffAccount ?? plan?.maxStaffAccounts ?? plan?.max_staff_account ?? plan?.max_staff_accounts ?? null
+  const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? plan?.max_active_job_posting ?? plan?.max_active_job_postings ?? null
   const maxStaffAccount = Number(maxStaffAccountValue)
   const maxActiveJobPosting = Number(maxActiveJobPostingValue)
   const billingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
+  const staffAccountUnlimited =
+    isTruthyFlag(plan?.staffAccountUnlimited) ||
+    isTruthyFlag(plan?.staff_account_unlimited) ||
+    isTruthyFlag(plan?.maxStaffAccountUnlimited) ||
+    isTruthyFlag(plan?.max_staff_account_unlimited) ||
+    isUnlimitedValue(maxStaffAccountValue) ||
+    (hasStaffLimitField && maxStaffAccountValue == null)
+  const activeJobPostingUnlimited =
+    isTruthyFlag(plan?.activeJobPostingUnlimited) ||
+    isTruthyFlag(plan?.active_job_posting_unlimited) ||
+    isTruthyFlag(plan?.maxActiveJobPostingUnlimited) ||
+    isTruthyFlag(plan?.max_active_job_posting_unlimited) ||
+    isUnlimitedValue(maxActiveJobPostingValue) ||
+    (hasJobLimitField && maxActiveJobPostingValue == null)
   const featureList = Array.isArray(plan?.features)
     ? plan.features
     : Array.isArray(plan?.planFeatures)
@@ -64,9 +102,9 @@ export function normalizeSubscriptionPlan(plan: any): SubscriptionPlan | null {
     description: String(plan?.description || plan?.shortDescription || plan?.tagline || ''),
     monthlyPrice: Number.isFinite(price) ? price : 0,
     maxStaffAccount: Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
-    staffAccountUnlimited: Boolean(plan?.staffAccountUnlimited) || isUnlimitedValue(maxStaffAccountValue),
+    staffAccountUnlimited,
     maxActiveJobPosting: Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
-    activeJobPostingUnlimited: Boolean(plan?.activeJobPostingUnlimited) || isUnlimitedValue(maxActiveJobPostingValue),
+    activeJobPostingUnlimited,
     status: String(plan?.status || (plan?.active === false ? 'Inactive' : 'Active')),
     createdAt: String(plan?.createdAt || plan?.createdDate || plan?.created_at || plan?.createAt || ''),
     features: featureList.map((feature: any) => ({
@@ -81,14 +119,51 @@ export function normalizeTenant(tenant: any): Tenant | null {
   const id = tenant?.id || tenant?.tenantId || tenant?.uuid || tenant?.domain
   if (!id) return null
 
-  const plan = tenant?.plan || tenant?.subscriptionPlan || tenant?.subscription_plan || {}
+  const plan = tenant?.plan || tenant?.subscriptionPlan || tenant?.subscription_plan || tenant?.subscriptionPlanDetail || tenant?.planDetail || tenant?.subscription?.plan || tenant?.subscription || tenant?.currentPlan || {}
+  const planObject = typeof plan === 'object' && plan !== null ? plan : {}
+  const planId =
+    tenant?.planId ||
+    tenant?.subscriptionPlanId ||
+    tenant?.subscription_plan_id ||
+    tenant?.subscription?.planId ||
+    tenant?.subscription?.subscriptionPlanId ||
+    tenant?.subscription?.plan?.id ||
+    tenant?.subscription?.plan?.planId ||
+    tenant?.currentPlanId ||
+    tenant?.currentPlan?.id ||
+    tenant?.currentPlan?.planId ||
+    planObject?.id ||
+    planObject?.planId ||
+    (typeof plan === 'string' ? plan : '')
+  const admin = tenant?.admin || tenant?.tenantAdmin || tenant?.adminUser || tenant?.user || tenant?.owner || {}
+  const adminUserId =
+    tenant?.adminUserId ||
+    tenant?.tenantAdminId ||
+    tenant?.tenantAdminUserId ||
+    tenant?.adminId ||
+    tenant?.userId ||
+    admin?.id ||
+    admin?.userId ||
+    admin?.uuid
+  const planSource = Object.keys(planObject).length > 0
+    ? { ...planObject, id: planObject?.id || planObject?.planId || planId }
+    : {
+      id: planId,
+      name: tenant?.planName || tenant?.subscriptionPlanName,
+      monthlyPrice: tenant?.monthlyPrice ?? tenant?.planPrice,
+      maxStaffAccount: tenant?.maxStaffAccount ?? tenant?.maxStaffAccounts,
+      staffAccountUnlimited: tenant?.staffAccountUnlimited,
+      maxActiveJobPosting: tenant?.maxActiveJobPosting ?? tenant?.maxActiveJobPostings,
+      activeJobPostingUnlimited: tenant?.activeJobPostingUnlimited,
+    }
+  const nestedPlan = normalizeSubscriptionPlan(planSource, planId ? String(planId) : undefined)
   const quotaLimit = Number(
     tenant?.userQuotaLimit ??
     tenant?.maxUsers ??
     tenant?.maxStaffAccount ??
     tenant?.maxStaffAccounts ??
-    plan?.maxStaffAccount ??
-    plan?.maxStaffAccounts ??
+    planObject?.maxStaffAccount ??
+    planObject?.maxStaffAccounts ??
     0
   )
 
@@ -98,19 +173,42 @@ export function normalizeTenant(tenant: any): Tenant | null {
     domain: tenant?.domain ? String(tenant.domain) : undefined,
     industry: tenant?.industry ? String(tenant.industry) : undefined,
     region: tenant?.region ? String(tenant.region) : undefined,
-    subscriptionPlanId: tenant?.planId || tenant?.subscriptionPlanId || plan?.id || plan?.planId
-      ? String(tenant?.planId || tenant?.subscriptionPlanId || plan?.id || plan?.planId)
+    createdAt: tenant?.createdAt || tenant?.createdDate || tenant?.created_at || tenant?.activatedAt
+      ? String(tenant?.createdAt || tenant?.createdDate || tenant?.created_at || tenant?.activatedAt)
       : undefined,
-    subscriptionPlan: String(plan?.name || tenant?.planName || tenant?.subscriptionPlanName || tenant?.subscriptionPlan || '-'),
+    startDate: tenant?.startDate || tenant?.startedAt || tenant?.subscriptionStartDate || tenant?.subscriptionStartedAt || tenant?.planStartDate
+      ? String(tenant?.startDate || tenant?.startedAt || tenant?.subscriptionStartDate || tenant?.subscriptionStartedAt || tenant?.planStartDate)
+      : undefined,
+    subscriptionPlanId: planId
+      ? String(planId)
+      : undefined,
+    subscriptionPlanDetail: nestedPlan || undefined,
+    subscriptionPlan: String(planObject?.name || tenant?.planName || tenant?.subscriptionPlanName || (typeof plan === 'string' ? plan : '') || '-'),
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
     status: String(tenant?.status || (tenant?.active === false ? 'Inactive' : 'Active')),
-    adminFullName: tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || tenant?.admin?.fullName || tenant?.admin?.name
-      ? String(tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || tenant?.admin?.fullName || tenant?.admin?.name)
+    adminUserId: adminUserId ? String(adminUserId) : undefined,
+    adminFullName: tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || admin?.fullName || admin?.full_name || admin?.name
+      ? String(tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || admin?.fullName || admin?.full_name || admin?.name)
       : undefined,
-    adminEmail: tenant?.adminEmail || tenant?.tenantAdminEmail || tenant?.admin?.email
-      ? String(tenant?.adminEmail || tenant?.tenantAdminEmail || tenant?.admin?.email)
+    adminEmail: tenant?.adminEmail || tenant?.tenantAdminEmail || admin?.email
+      ? String(tenant?.adminEmail || tenant?.tenantAdminEmail || admin?.email)
+      : undefined,
+  }
+}
+
+export function normalizeTenantAdminUser(user: any): TenantAdminUser | null {
+  const id = user?.id || user?.userId || user?.uuid
+  if (!id) return null
+
+  return {
+    id: String(id),
+    fullName: String(user?.fullName || user?.full_name || user?.name || user?.username || 'Tenant Admin'),
+    email: String(user?.email || user?.username || ''),
+    status: user?.status || user?.accountStatus ? String(user?.status || user?.accountStatus) : undefined,
+    createdAt: user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt
+      ? String(user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt)
       : undefined,
   }
 }

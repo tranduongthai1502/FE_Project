@@ -1322,6 +1322,10 @@
   text-transform: uppercase;
 }
 
+.super-tenant-table-header span:last-child {
+  justify-self: center;
+}
+
 .super-tenant-table strong,
 .super-tenant-table small {
   min-width: 0;
@@ -1374,6 +1378,7 @@
 }
 
 .super-tenant-table article div {
+  justify-self: center;
   display: inline-flex;
   align-items: center;
   gap: 16px;
@@ -2820,6 +2825,11 @@
   color: #039855;
 }
 
+.tenant-detail-title-row em.pending {
+  background: #fff7dc;
+  color: #b54708;
+}
+
 .tenant-detail-title-row em.inactive {
   background: #f2f4f7;
   color: #667085;
@@ -3212,6 +3222,10 @@
 
 .tenant-list-table-row em.active {
   color: #12b76a;
+}
+
+.tenant-list-table-row em.pending {
+  color: #f79009;
 }
 
 .tenant-list-table-row em.inactive {
@@ -4063,6 +4077,7 @@
 }
 
 .active-subscribers-card {
+  height: fit-content;
   min-height: 0;
   overflow: hidden;
 }
@@ -4104,6 +4119,8 @@
 }
 
 .plan-subscriber-table {
+  display: block;
+  height: fit-content;
   overflow: hidden;
 }
 
@@ -4223,11 +4240,12 @@
 }
 
 .plan-subscriber-table footer {
-  min-height: 36px;
+  height: 40px;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 26px;
+  padding: 0 26px;
   color: #6b4b43;
   font-size: 11px;
 }
@@ -4369,6 +4387,12 @@
   box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
 }
 
+.create-plan-details-grid input::selection,
+.create-plan-details-grid textarea::selection {
+  background: rgba(217, 52, 8, 0.16);
+  color: #101c33;
+}
+
 .create-plan-details-grid input.has-error,
 .create-plan-details-grid textarea.has-error,
 .edit-plan-general-grid input.has-error,
@@ -4401,10 +4425,32 @@
   overflow: hidden;
 }
 
+.price-input:focus-within,
+.limit-input:focus-within {
+  border-color: #d93408;
+  box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
+}
+
+.price-input:has(input:not(:placeholder-shown)),
+.limit-input:has(input:not(:placeholder-shown)) {
+  border-color: #d93408;
+}
+
+.price-input.has-error,
+.limit-input.has-error {
+  border-color: #dc2626;
+  box-shadow: none;
+}
+
 .price-input span {
   padding-left: 10px;
   color: #475467;
   font-size: 12px;
+}
+
+.price-input:focus-within span,
+.price-input:has(input:not(:placeholder-shown)) span {
+  color: #d93408;
 }
 
 .price-input input,
@@ -4415,6 +4461,7 @@
   box-shadow: none;
 }
 
+.price-input input:focus,
 .limit-input input:focus {
   border: 0;
   box-shadow: none;
@@ -4524,6 +4571,11 @@
   background: #ffffff;
 }
 
+.feature-permission-card.disabled {
+  border-color: #e4e7ec;
+  background: #f9fafb;
+}
+
 .feature-icon {
   width: 26px;
   height: 26px;
@@ -4536,6 +4588,11 @@
   font-size: 12px;
 }
 
+.feature-permission-card.disabled .feature-icon {
+  background: #f2f4f7;
+  color: #98a2b3;
+}
+
 .feature-permission-card strong {
   display: block;
   color: #101c33;
@@ -4543,11 +4600,19 @@
   line-height: 1.25;
 }
 
+.feature-permission-card.disabled strong {
+  color: #667085;
+}
+
 .feature-permission-card p {
   margin-top: 5px;
   color: #667085;
   font-size: 10px;
   line-height: 1.35;
+}
+
+.feature-permission-card.disabled p {
+  color: #98a2b3;
 }
 
 .feature-permission-error {

@@ -18,7 +18,7 @@ type ActivationPageProps = {
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
-// Helpers để trích xuất role tương tự như trong LoginFeature
+// Extract roles in the same shape used by LoginFeature.
 function normalizeRoleValue(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.flatMap((item) => normalizeRoleValue(item))
@@ -77,14 +77,14 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
   const token = searchParams.get('token')
 
   const [status, setStatus] = useState<ActivationStatus>('loading')
-  const [message, setMessage] = useState('Hệ thống đang xác thực liên kết kích hoạt của bạn. Vui lòng đợi trong giây lát...')
+  const [message, setMessage] = useState('We are verifying your activation link. Please wait a moment...')
   const [activationDetails, setActivationDetails] = useState<ActivationDetails | null>(null)
   
-  // State phục vụ Resend
+  // Resend state
   const [email, setEmail] = useState('')
   const [isResending, setIsResending] = useState(false)
   
-  // State phục vụ Kích hoạt
+  // Activation state
   const [isActivating, setIsActivating] = useState(false)
 
   const hasCalledApi = useRef(false)
@@ -95,7 +95,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
 
     if (!token) {
       setStatus('error')
-      setMessage('Liên kết kích hoạt không hợp lệ. Không tìm thấy mã xác thực token.')
+      setMessage('Invalid activation link. No verification token was found.')
       return
     }
 
@@ -104,7 +104,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
         const response: any = await authApi.activate(token)
         const payload = response?.data && typeof response.data === 'object' ? response.data : response
         
-        // Lưu thông tin chi tiết kích hoạt
+        // Store activation details.
         setActivationDetails({
           workspaceName: payload?.workspaceName || payload?.companyName || payload?.tenantName || 'JobFusion Workspace',
           role: payload?.role || payload?.roleName || 'Staff Member',
@@ -112,10 +112,10 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
         })
         
         setStatus('verified')
-        setMessage('Xác nhận thông tin lời mời của bạn dưới đây và click nút để kích hoạt tài khoản của bạn.')
+        setMessage('Review your invitation details below, then click the button to activate your account.')
       } catch (error: any) {
         setStatus('error')
-        const errorMsg = error?.message || 'Mã kích hoạt không hợp lệ, đã được sử dụng hoặc đã hết hạn.'
+        const errorMsg = error?.message || 'This activation code is invalid, has already been used, or has expired.'
         setMessage(errorMsg)
         triggerToast?.(errorMsg, 'error')
       }
@@ -138,7 +138,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
       const userRole = getAuthUserRole(user, payload)
       const emailVal = user?.email || activationDetails?.email || ''
 
-      // Lưu trữ tokens vào Storage tương tự luồng Login
+      // Store tokens using the same flow as Login.
       const storage = window.localStorage
       window.sessionStorage.removeItem('access_token')
       window.sessionStorage.removeItem('refresh_token')
@@ -155,16 +155,16 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
       }
 
       setStatus('success')
-      setMessage('Tài khoản của bạn đã được kích hoạt thành công! Hệ thống đang chuyển hướng tới Dashboard...')
-      triggerToast?.('Kích hoạt và đăng nhập thành công!', 'success')
+      setMessage('Your account has been activated successfully. Redirecting you to the dashboard...')
+      triggerToast?.('Account activated and signed in successfully.', 'success')
 
-      // Gọi onSignInSuccess để tự động định tuyến về Dashboard thích hợp
+      // Let the app route the user to the correct dashboard.
       setTimeout(() => {
         onSignInSuccess(emailVal, true, userRole)
       }, 1500)
 
     } catch (error: any) {
-      const errorMsg = error?.message || 'Kích hoạt tài khoản thất bại. Vui lòng thử lại.'
+      const errorMsg = error?.message || 'Account activation failed. Please try again.'
       triggerToast?.(errorMsg, 'error')
     } finally {
       setIsActivating(false)
@@ -174,23 +174,23 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
   const handleResend = async (e: FormEvent) => {
     e.preventDefault()
     if (!email.trim()) {
-      triggerToast?.('Vui lòng nhập địa chỉ email!', 'error')
+      triggerToast?.('Please enter your email address.', 'error')
       return
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      triggerToast?.('Địa chỉ email không đúng định dạng!', 'error')
+      triggerToast?.('Please enter a valid email address.', 'error')
       return
     }
 
     setIsResending(true)
     try {
       await authApi.resendActivation(email)
-      triggerToast?.('Yêu cầu gửi lại liên kết thành công! Vui lòng kiểm tra email của bạn.', 'success')
+      triggerToast?.('Activation link resent successfully. Please check your email.', 'success')
       setEmail('')
     } catch (error: any) {
-      const errorMsg = error?.message || 'Có lỗi xảy ra khi gửi lại yêu cầu kích hoạt.'
+      const errorMsg = error?.message || 'Something went wrong while resending the activation link.'
       triggerToast?.(errorMsg, 'error')
     } finally {
       setIsResending(false)
@@ -222,12 +222,12 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
         </div>
 
         <div className="tenant-activation-copy">
-          <span>Hệ thống JobFusion</span>
+          <span>JobFusion System</span>
           <h2 id="tenant-activation-title">
-            {status === 'loading' && 'Đang xác thực liên kết'}
-            {status === 'verified' && 'Xác thực lời mời làm việc'}
-            {status === 'success' && 'Kích hoạt thành công'}
-            {status === 'error' && 'Kích hoạt thất bại'}
+            {status === 'loading' && 'Verifying Activation Link'}
+            {status === 'verified' && 'Verify Your Invitation'}
+            {status === 'success' && 'Activation Successful'}
+            {status === 'error' && 'Activation Failed'}
           </h2>
           <p>{message}</p>
         </div>
@@ -235,15 +235,15 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
         {status === 'verified' && activationDetails && (
           <div className="tenant-activation-summary">
             <div>
-              <small>Workspace / Doanh nghiệp</small>
+              <small>Workspace / Company</small>
               <strong>{activationDetails.workspaceName}</strong>
             </div>
             <div>
-              <small>Vai trò</small>
+              <small>Role</small>
               <strong>{activationDetails.role}</strong>
             </div>
             <div>
-              <small>Địa chỉ Email</small>
+              <small>Email Address</small>
               <strong>{activationDetails.email}</strong>
             </div>
           </div>
@@ -260,10 +260,10 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
             {isActivating ? (
               <>
                 <i className="fa-solid fa-spinner fa-spin"></i>
-                Đang kích hoạt...
+                Activating...
               </>
             ) : (
-              'Active Account'
+              'Activate Account'
             )}
           </button>
         )}
@@ -272,7 +272,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
           <form onSubmit={handleResend} style={{ width: '100%', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ textAlign: 'left' }}>
               <label htmlFor="resend-email" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
-                Nhập Email để nhận lại liên kết:
+                Enter your email to receive a new activation link:
               </label>
               <input
                 id="resend-email"
@@ -303,10 +303,10 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
               {isResending ? (
                 <>
                   <i className="fa-solid fa-spinner fa-spin"></i>
-                  Đang gửi...
+                  Sending...
                 </>
               ) : (
-                'Gửi lại yêu cầu kích hoạt'
+                'Resend Activation Link'
               )}
             </button>
           </form>
@@ -314,7 +314,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
 
         {status === 'error' && (
           <button type="button" className="tenant-activation-secondary" onClick={handleGoToLogin} style={{ width: '100%', marginTop: '0.5rem' }}>
-            Quay lại trang Đăng nhập
+            Back to Login
           </button>
         )}
       </section>

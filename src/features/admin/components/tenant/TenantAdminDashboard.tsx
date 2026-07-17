@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { getTenantAdminNav } from '../../data/adminNavigation'
-import type { TenantAdminView, StaffMember, UserStatus } from '../../types/admin.types'
+import type { TenantAdminView, StaffMember, UserStatus, Tenant, SubscriptionPlan } from '../../types/admin.types'
 import { getInitialTenantAdminView, updateTenantAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
@@ -8,12 +8,53 @@ import { MetricCard } from '../shared/MetricCard'
 import { adminApi } from '../../services/adminApi'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 
+function getStoredTenantId() {
+  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
+  if (!rawUser) return ''
+
+  try {
+    const user = JSON.parse(rawUser)
+    const tenant =
+      user?.tenant ||
+      user?.tenantInfo ||
+      user?.company ||
+      user?.workspace ||
+      {}
+    const tenantId =
+      user?.tenantId ||
+      user?.tenant_id ||
+      user?.companyId ||
+      user?.company_id ||
+      user?.workspaceId ||
+      user?.workspace_id ||
+      tenant?.id ||
+      tenant?.tenantId ||
+      tenant?.uuid
+
+    return tenantId ? String(tenantId) : ''
+  } catch {
+    return ''
+  }
+}
+
+function formatDashboardDate(value?: string) {
+  if (!value || value === '-') return '-'
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return value
+
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  }).format(new Date(parsed))
+}
 
 function StaffManagementView({
   staffList,
   isLoading,
   error,
   maxStaffQuota = 10,
+  isStaffQuotaUnlimited = false,
   onCreate,
   onEdit,
   onDelete,
@@ -23,6 +64,7 @@ function StaffManagementView({
   isLoading: boolean
   error: string
   maxStaffQuota?: number
+  isStaffQuotaUnlimited?: boolean
   onCreate: () => void
   onEdit: (staff: StaffMember) => void
   onDelete: (staff: StaffMember) => void
@@ -85,8 +127,8 @@ function StaffManagementView({
     }
   }
 
-  const quotaPercent = Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
-  const hasReachedStaffQuota = staffList.length >= maxStaffQuota
+  const quotaPercent = isStaffQuotaUnlimited ? Math.min(100, Math.max(8, staffList.length * 8)) : Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
+  const hasReachedStaffQuota = !isStaffQuotaUnlimited && staffList.length >= maxStaffQuota
 
   return (
     <div className="role-content staff-management-content">
@@ -105,10 +147,10 @@ function StaffManagementView({
         <section className="staff-quota-card">
           <div>
             <span>Staff Accounts</span>
-            <strong>{staffList.length} / {maxStaffQuota}</strong>
+            <strong>{staffList.length} / {isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}</strong>
           </div>
           <i><span style={{ width: `${quotaPercent}%`, background: '#ff5f2b' }} /></i>
-          <small>{Math.max(0, maxStaffQuota - staffList.length)} seats remaining</small>
+          <small>{isStaffQuotaUnlimited ? 'Unlimited seats available' : `${Math.max(0, maxStaffQuota - staffList.length)} seats remaining`}</small>
         </section>
       </div>
 
@@ -971,6 +1013,9 @@ function StaffActivityLogView({
 
 export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<TenantAdminView>(() => getInitialTenantAdminView())
+  const [tenantId] = useState(() => getStoredTenantId())
+  const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
+  const [tenantPlan, setTenantPlan] = useState<SubscriptionPlan | null>(null)
   const changeView = (view: TenantAdminView) => {
     setActiveView(view)
     updateTenantAdminViewUrl(view)
@@ -987,6 +1032,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   // CRUD Staff States
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [isLoadingStaff, setIsLoadingStaff] = useState(false)
+  const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [staffError, setStaffError] = useState('')
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null)
   
@@ -1013,7 +1059,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setIsLoadingStaff(true)
     setStaffError('')
 
-    adminApi.getStaffList(1, 100)
+    adminApi.getStaffList(1, 100, tenantId)
       .then((response: any) => {
         if (!isActive) return
         const payload = response?.data || response
@@ -1033,7 +1079,66 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [activeView, refreshKey])
+  }, [activeView, refreshKey, tenantId])
+
+  useEffect(() => {
+    if (
+      !tenantId ||
+      (
+        activeView !== 'staffManagement' &&
+        activeView !== 'staffCreate' &&
+        activeView !== 'staffEdit' &&
+        activeView !== 'staffDetail' &&
+        activeView !== 'staffActivityLog'
+      )
+    ) {
+      return
+    }
+
+    let isActive = true
+    setIsLoadingTenantDetail(true)
+
+    const fetchTenantDetail = async () => {
+      try {
+        const tenant = await adminApi.getTenantById(tenantId)
+        if (!isActive) return
+
+        setTenantDetail(tenant)
+        setTenantPlan(tenant.subscriptionPlanDetail || null)
+      } catch (error) {
+        if (isActive) {
+          setTenantDetail(null)
+          setTenantPlan(null)
+          setStaffError(error instanceof Error ? error.message : 'Failed to load tenant details')
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingTenantDetail(false)
+        }
+      }
+    }
+
+    fetchTenantDetail()
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, tenantId])
+
+  const hasTenantQuota = Boolean(tenantDetail)
+  const isStaffQuotaUnlimited = Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0)
+  const maxStaffQuota = isStaffQuotaUnlimited
+    ? Math.max(staffList.length, 1)
+    : tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
+  const staffQuotaSummary = `${staffList.length} / ${isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}`
+  const staffQuotaRingLabel = isStaffQuotaUnlimited ? 'Unlimited' : `${staffList.length}/${maxStaffQuota}`
+  const remainingStaffSeats = Math.max(0, maxStaffQuota - staffList.length)
+  const staffQuotaDescription = isStaffQuotaUnlimited
+    ? 'Your current plan includes unlimited staff seats.'
+    : `You have ${remainingStaffSeats} seat${remainingStaffSeats === 1 ? '' : 's'} available in your current plan.`
+  const currentPlanName = tenantPlan?.name || tenantDetail?.subscriptionPlan || 'Current Plan'
+  const currentPlanDescription = tenantPlan?.description || 'Tenant subscription plan'
+  const renewalDateLabel = formatDashboardDate(tenantDetail?.expirationDate)
 
   // Handlers
   const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
@@ -1044,6 +1149,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         email: payload.email,
         role: payload.role,
         status: payload.status,
+        ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.('Staff account created successfully. Invitation email sent.', 'success')
       setRefreshKey(prev => prev + 1)
@@ -1064,6 +1170,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         email: payload.email,
         role: payload.role,
         status: payload.status,
+        ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.('Staff account updated successfully.', 'success')
       
@@ -1118,6 +1225,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         email: staff.email,
         role: roles,
         status: nextStatus,
+        ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.(
         nextStatus === 'ACTIVE'
@@ -1181,9 +1289,10 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       ) : activeView === 'staffManagement' ? (
         <StaffManagementView 
           staffList={staffList}
-          isLoading={isLoadingStaff}
+          isLoading={isLoadingStaff || isLoadingTenantDetail}
           error={staffError}
-          maxStaffQuota={10}
+          maxStaffQuota={maxStaffQuota}
+          isStaffQuotaUnlimited={isStaffQuotaUnlimited}
           onCreate={() => {
             setSelectedStaff(null)
             changeView('staffCreate')
@@ -1235,9 +1344,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
             <div className="tenant-dashboard-top-side">
               <section className="role-panel quota-panel">
-                <div className="role-panel-head"><h2>Staff Quota</h2><small>8 / 10 Seats</small></div>
-                <div className="quota-ring"><strong>8/10</strong><span>Used</span></div>
-                <p>You have 2 seats available in your current professional plan. Optimize your team allocation now.</p>
+                <div className="role-panel-head"><h2>Staff Quota</h2><small>{staffQuotaSummary} Seats</small></div>
+                <div className="quota-ring"><strong>{staffQuotaRingLabel}</strong><span>Used</span></div>
+                <p>{staffQuotaDescription}</p>
               </section>
 
               <section className="role-panel plan-panel">
@@ -1247,9 +1356,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
                   </svg>
                   Active Plan
                 </small>
-                <h2>Professional</h2>
-                <p>Full AI-Assisted Recruitment Suite</p>
-                <footer><span>Renewal Date<br /><strong>Oct 24, 2024</strong></span><button type="button">Manage</button></footer>
+                <h2>{currentPlanName}</h2>
+                <p>{currentPlanDescription}</p>
+                <footer><span>Renewal Date<br /><strong>{renewalDateLabel}</strong></span><button type="button">Manage</button></footer>
               </section>
             </div>
           </div>
