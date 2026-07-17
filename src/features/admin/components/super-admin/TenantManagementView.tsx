@@ -14,7 +14,14 @@ function getTenantStatusMeta(statusValue: string) {
   const normalized = statusValue.trim().toLowerCase()
   const isActive = normalized === 'active' || normalized === 'activated' || normalized === 'enabled'
   const isPending = normalized === 'pending' || normalized === 'invited' || normalized === 'waiting_activation'
-  const isInactive = normalized === 'inactive' || normalized === 'disabled' || normalized === 'deactivated' || normalized === 'suspended'
+  const isInactive =
+    normalized === 'inactive' ||
+    normalized === 'in_active' ||
+    normalized === 'not_active' ||
+    normalized === 'not active' ||
+    normalized === 'disabled' ||
+    normalized === 'deactivated' ||
+    normalized === 'suspended'
 
   if (isActive) {
     return { className: 'active', label: 'Active', isActive: true }
@@ -299,7 +306,25 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setIsSubmittingTenant(true)
 
     try {
-      await adminApi.createTenant(tenantForm)
+      const createdTenant = await adminApi.createTenant(tenantForm)
+      if (createdTenant?.id && getTenantStatusMeta(createdTenant.status).isActive) {
+        await adminApi.updateTenant(createdTenant.id, {
+          companyName: tenantForm.companyName,
+          domain: tenantForm.domain,
+          industry: tenantForm.industry,
+          region: tenantForm.region,
+          status: 'INACTIVE',
+          planId: tenantForm.planId,
+          adminFullName: tenantForm.adminFullName,
+          adminEmail: tenantForm.adminEmail,
+        })
+      }
+      if (createdTenant) {
+        setTenants((currentTenants) => {
+          const inactiveTenant = { ...createdTenant, status: 'INACTIVE' }
+          return [inactiveTenant, ...currentTenants.filter((tenant) => tenant.id !== inactiveTenant.id)]
+        })
+      }
       setTenantForm(emptyTenantForm)
       setIsCreateModalOpen(false)
       setIsCreateConfirmOpen(false)
@@ -481,29 +506,33 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     updateTenantCreateUrl()
   }
   const confirmUpdateTenantStatus = async () => {
-    const selectedTenant = tenants.find((tenant) => tenant.id === selectedTenantId)
-    if (!selectedTenant) return
+    const currentTenant = selectedTenant || tenants.find((tenant) => tenant.id === selectedTenantId)
+    if (!currentTenant) return
 
-    const selectedPlan = getTenantPlan(selectedTenant)
-    if (!getTenantStatusMeta(selectedTenant.status).isActive) return
+    const selectedPlan = getTenantPlan(currentTenant)
+    if (!getTenantStatusMeta(currentTenant.status).isActive) return
 
     const nextStatus = 'INACTIVE'
-    const planId = selectedTenant.subscriptionPlanId || selectedPlan?.id || ''
+    const planId = currentTenant.subscriptionPlanId || selectedPlan?.id || ''
 
     setIsUpdatingTenantStatus(true)
     setTenantListError('')
 
     try {
-      const tenantAdminPayload = getTenantAdminPayload(selectedTenant)
-      await adminApi.updateTenant(selectedTenant.id, {
-        companyName: selectedTenant.name,
-        domain: selectedTenant.domain || selectedTenant.id,
-        industry: selectedTenant.industry || 'Media & Advertising',
-        region: selectedTenant.region || 'VietNam',
+      const tenantAdminPayload = getTenantAdminPayload(currentTenant)
+      await adminApi.updateTenant(currentTenant.id, {
+        companyName: currentTenant.name,
+        domain: currentTenant.domain || currentTenant.id,
+        industry: currentTenant.industry || 'Media & Advertising',
+        region: currentTenant.region || 'VietNam',
         status: nextStatus,
         planId,
         ...tenantAdminPayload,
       })
+      setTenantDetail((tenant) => tenant?.id === currentTenant.id ? { ...tenant, status: nextStatus } : tenant)
+      setTenants((currentTenants) => currentTenants.map((tenant) => (
+        tenant.id === currentTenant.id ? { ...tenant, status: nextStatus } : tenant
+      )))
       setIsStatusConfirmOpen(false)
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant admin account deactivated successfully.', 'success')
@@ -622,7 +651,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const daysRemainingLabel = getDaysRemainingLabel(selectedTenant?.expirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
     const tenantAdminEmail = tenantAdminUser?.email || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-')
-    const tenantAdminStatus = tenantAdminUser?.status || selectedTenant?.status || '-'
+    const tenantAdminStatus = selectedTenant?.status || tenantAdminUser?.status || '-'
     const tenantAdminStatusMeta = getTenantStatusMeta(tenantAdminStatus)
     const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.createdAt || '') || tenantAdminUser?.createdAt || tenantCreatedDate
     const statusActionLabel = isActive
@@ -732,7 +761,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
               <ConfirmActionModal
                 isSubmitting={isUpdatingTenantStatus}
                 title="Confirm Action"
-                message="Are you sure you want to deactivate this tenant admin account?"
+                message="Are you sure you want to deactivate this tenant?"
                 cancelLabel="Cancel"
                 confirmLabel="Confirm"
                 submittingLabel="Deactivating..."

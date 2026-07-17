@@ -2847,6 +2847,12 @@
   font-weight: 900;
 }
 
+.tenant-detail-title-row > button:disabled {
+  background: #e4e7ec;
+  color: #667085;
+  cursor: not-allowed;
+}
+
 .tenant-detail-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
