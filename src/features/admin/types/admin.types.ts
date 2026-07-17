@@ -88,14 +88,26 @@ export type Tenant = {
   domain?: string
   industry?: string
   region?: string
+  createdAt?: string
+  startDate?: string
   subscriptionPlanId?: string
+  subscriptionPlanDetail?: SubscriptionPlan
   subscriptionPlan: string
   expirationDate: string
   userQuotaUsed: number
   userQuotaLimit: number
   status: string
+  adminUserId?: string
   adminFullName?: string
   adminEmail?: string
+}
+
+export type TenantAdminUser = {
+  id: string
+  fullName: string
+  email: string
+  status?: string
+  createdAt?: string
 }
 
 export type PlanListRequest = {
