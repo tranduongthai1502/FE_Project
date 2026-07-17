@@ -7,6 +7,7 @@ import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
+import { getAdminErrorMessage } from '../../utils/adminErrors'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
 
@@ -295,7 +296,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setTenantError('')
 
     if (!tenantForm.companyName.trim() || !tenantForm.domain.trim() || !tenantForm.industry.trim() || !tenantForm.region.trim() || !tenantForm.planId || !tenantForm.adminFullName.trim() || !tenantForm.adminEmail.trim()) {
-      setTenantError('Please fill in all required fields.')
+      const message = 'Please fill in all required fields.'
+      setTenantError(message)
+      triggerToast?.(message, 'error')
       return
     }
 
@@ -332,9 +335,10 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
+      const message = getAdminErrorMessage(error, 'Create tenant failed')
       setIsCreateConfirmOpen(false)
-      setTenantError(error instanceof Error ? error.message : 'Create tenant failed')
-      triggerToast?.('Error system. Please try again', 'error')
+      setTenantError(message)
+      triggerToast?.(message, 'error')
     } finally {
       setIsSubmittingTenant(false)
     }
