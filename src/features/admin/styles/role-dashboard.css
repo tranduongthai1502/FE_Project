@@ -2847,6 +2847,16 @@
   font-weight: 900;
 }
 
+.tenant-detail-title-row > button.status-activate {
+  background: #d93408;
+  color: #ffffff;
+}
+
+.tenant-detail-title-row > button.status-deactivate {
+  background: #d93408;
+  color: #ffffff;
+}
+
 .tenant-detail-title-row > button:disabled {
   background: #e4e7ec;
   color: #667085;

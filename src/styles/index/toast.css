@@ -2,12 +2,13 @@
 .toast-notification {
   position: fixed;
   top: 24px;
-  right: 24px;
+  right: 24px !important;
+  left: auto !important;
   z-index: 2000;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: clamp(360px, 32vw, 520px);
+  width: clamp(260px, 24vw, 360px);
   min-height: 42px;
   padding: 8px 11px;
   border-radius: 8px;
@@ -86,9 +87,9 @@
 @media (max-width: 640px) {
   .toast-notification {
     top: 14px;
-    right: 14px;
-    left: 14px;
-    width: auto;
+    right: 14px !important;
+    left: auto !important;
+    width: calc(100vw - 28px);
     min-height: 42px;
     gap: 8px;
     padding: 8px 10px;
