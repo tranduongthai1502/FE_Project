@@ -5,6 +5,7 @@ import { getPageForUserRole, unsupportedRoleMessage } from '../utils/authRole'
 import {
   AUTH_EXPIRED_EVENT_NAME,
   clearAuthStorage,
+  getStoredRequirePasswordChange,
   getStoredAuthRole,
   saveAuthRole,
 } from '../utils/authStorage'
@@ -17,13 +18,30 @@ const pathByAuthRole = {
   interviewer: '/interviewer',
 }
 
+const passwordChangePathByAuthRole = {
+  candidate: '/candidate/change-password',
+  tenantAdmin: '/tenant-admin/settings',
+  superAdmin: '/super-admin/settings',
+  hr: '/hr',
+  interviewer: '/interviewer',
+}
+
 export function useAuthSession(
   navigate: NavigateFunction,
   triggerToast: (message: string, type?: 'success' | 'error') => void,
 ) {
   const currentRole = getStoredAuthRole()
-  const defaultPath = currentRole ? pathByAuthRole[currentRole] : '/landingpage'
-  const loginRedirect = currentRole ? pathByAuthRole[currentRole] : null
+  const requirePasswordChange = getStoredRequirePasswordChange()
+  const defaultPath = currentRole
+    ? requirePasswordChange
+      ? passwordChangePathByAuthRole[currentRole]
+      : pathByAuthRole[currentRole]
+    : '/landingpage'
+  const loginRedirect = currentRole
+    ? requirePasswordChange
+      ? passwordChangePathByAuthRole[currentRole]
+      : pathByAuthRole[currentRole]
+    : null
 
   useEffect(() => {
     const handleAuthExpired = () => {
@@ -36,7 +54,12 @@ export function useAuthSession(
     return () => window.removeEventListener(AUTH_EXPIRED_EVENT_NAME, handleAuthExpired)
   }, [navigate, triggerToast])
 
-  const handleSignInSuccess = useCallback((_: string, keepLoggedIn: boolean, userRole: string) => {
+  const handleSignInSuccess = useCallback((
+    _: string,
+    keepLoggedIn: boolean,
+    userRole: string,
+    options?: { requirePasswordChange?: boolean },
+  ) => {
     const targetPage = getPageForUserRole(userRole)
 
     if (!targetPage) {
@@ -45,7 +68,12 @@ export function useAuthSession(
     }
 
     saveAuthRole(targetPage, keepLoggedIn)
-    navigate(pathByAuthRole[targetPage], { replace: true })
+    navigate(
+      options?.requirePasswordChange
+        ? passwordChangePathByAuthRole[targetPage]
+        : pathByAuthRole[targetPage],
+      { replace: true },
+    )
     triggerToast('Logged in successfully.')
     return true
   }, [navigate, triggerToast])
@@ -71,5 +99,6 @@ export function useAuthSession(
     handleSignInSuccess,
     loginRedirect,
     pathByAuthRole,
+    requirePasswordChange,
   }
 }

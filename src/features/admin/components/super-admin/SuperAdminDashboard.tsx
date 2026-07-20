@@ -164,7 +164,6 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       subtitle="Super Admin"
       onLogout={onLogout}
       onChangePassword={() => selectView('settings')}
-      searchPlaceholder="Search tenants, plans, prompts..."
       className="super-admin-shell"
     >
       {activeView === 'tenantManagement' ? (

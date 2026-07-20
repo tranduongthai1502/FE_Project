@@ -310,5 +310,17 @@ export function normalizeTenantAdminUser(user: any): TenantAdminUser | null {
     createdAt: user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt
       ? String(user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt)
       : undefined,
+    activatedAt: user?.activatedAt || user?.activatedDate || user?.activated_at
+      ? String(user?.activatedAt || user?.activatedDate || user?.activated_at)
+      : undefined,
+    lastLoginAt: user?.lastLoginAt || user?.lastLogin || user?.last_login_at || user?.last_login
+      ? String(user?.lastLoginAt || user?.lastLogin || user?.last_login_at || user?.last_login)
+      : undefined,
+    lastLoginLocation: user?.lastLoginLocation || user?.loginLocation || user?.last_login_location
+      ? String(user?.lastLoginLocation || user?.loginLocation || user?.last_login_location)
+      : undefined,
+    lastLoginIp: user?.lastLoginIp || user?.loginIp || user?.ipAddress || user?.last_login_ip
+      ? String(user?.lastLoginIp || user?.loginIp || user?.ipAddress || user?.last_login_ip)
+      : undefined,
   }
 }

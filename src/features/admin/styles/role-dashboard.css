@@ -947,6 +947,39 @@
   border-radius: 50%;
 }
 
+.quota-panel-unlimited .role-panel-head small {
+  padding: 10px 15px;
+  border-radius: 999px;
+  background: #e9f8ee;
+  color: #0da34a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.quota-panel-unlimited .quota-ring {
+  width: 136px;
+  height: 136px;
+  margin: 46px auto 40px;
+  border-width: 12px;
+}
+
+.quota-panel-unlimited .quota-ring strong {
+  font-size: 24px;
+}
+
+.quota-panel-unlimited .quota-ring span {
+  transform: translateY(22px);
+  color: #344054;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.quota-panel-unlimited p {
+  max-width: 320px;
+  color: #58657c;
+  font-size: 14px;
+}
+
 .quota-ring strong,
 .quota-ring span {
   grid-area: 1 / 1;

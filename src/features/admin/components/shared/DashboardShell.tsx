@@ -60,7 +60,6 @@ export function DashboardShell({
   onChangePassword,
   showWorkspaceSwitcher = false,
   onWorkspaceSwitch,
-  searchPlaceholder = 'Search candidates, skills, or locations...',
   className = '',
 }: {
   children: ReactNode
@@ -70,7 +69,6 @@ export function DashboardShell({
   onChangePassword?: () => void
   showWorkspaceSwitcher?: boolean
   onWorkspaceSwitch?: () => void
-  searchPlaceholder?: string
   className?: string
 }) {
   const user = useMemo(() => getStoredUser(), [])
@@ -133,10 +131,6 @@ export function DashboardShell({
             </span>
           </button>
 
-          <div className="role-search">
-            <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="search" placeholder={searchPlaceholder} aria-label="Search" />
-          </div>
           {showWorkspaceSwitcher && <button type="button" className="role-switcher" onClick={onWorkspaceSwitch}>Workspace Switcher</button>}
           <div className="role-icons">
             <i className="fa-regular fa-bell"></i>

@@ -23,10 +23,17 @@ import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, bui
 
 export const ADMIN_LIST_PAGE_SIZE = 5
 
+function toZeroBasedPage(page: number) {
+  return Math.max(0, page - 1)
+}
+
 function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
+  const page = params?.page ?? defaults.page
+
   return {
     ...defaults,
     ...params,
+    page: toZeroBasedPage(page),
     filters: params?.filters ?? defaults.filters,
   }
 }
@@ -34,9 +41,9 @@ function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): 
 export const adminApi = {
   async getTenants(params?: AdminListParams) {
     const request = buildListRequest({
-      "sortField": 'companyName',
+      "sortField": 'createdAt',
       "filters": {},
-      "sortBy": 'ASC',
+      "sortBy": 'DESC',
       "page": 1,
       "size": ADMIN_LIST_PAGE_SIZE,
     }, params) satisfies TenantListRequest
@@ -114,7 +121,7 @@ export const adminApi = {
       sortField: 'fullName',
       filters: tenantId ? { tenantId } : {},
       sortBy: 'ASC',
-      page,
+      page: toZeroBasedPage(page),
       size,
     }
 

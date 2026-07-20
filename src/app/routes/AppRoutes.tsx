@@ -16,6 +16,7 @@ function AppRouteContent() {
     handleLogout,
     handleSignInSuccess,
     loginRedirect,
+    requirePasswordChange,
   } = useAuthSession(navigate, triggerToast)
 
   useEffect(() => {
@@ -30,7 +31,11 @@ function AppRouteContent() {
 
   const protect = (page: AppPage, element: ReactElement) => (
     <ProtectedRoute allowedRole={page} currentRole={currentRole} fallback={<Navigate to="/login" replace />}>
-      {element}
+      {requirePasswordChange && page === 'tenantAdmin' && location.pathname !== '/tenant-admin/settings' ? (
+        <Navigate to="/tenant-admin/settings" replace />
+      ) : (
+        element
+      )}
     </ProtectedRoute>
   )
 
