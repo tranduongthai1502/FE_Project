@@ -1018,7 +1018,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 </div>
                 <div>
                   <span>Base Price</span>
-                  <strong className="price">{selectedPlan.priceLabel || `$${selectedPlan.monthlyPrice.toFixed(2)} / mo`}</strong>
+                  <strong className="price">{selectedPlan.priceLabel || `$${selectedPlan.monthlyPrice.toFixed(2)} / month`}</strong>
                 </div>
                 <div>
                   <span>Staff Limit</span>
@@ -1257,7 +1257,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   }}
                 >
                   <strong>{plan.name}</strong>
-                  <span className="subscription-price-cell">{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / mo`}</span>
+                  <span className="subscription-price-cell">{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / month`}</span>
                   <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                   <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                   <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : 'Inactive'}</em>

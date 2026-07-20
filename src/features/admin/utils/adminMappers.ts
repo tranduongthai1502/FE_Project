@@ -113,6 +113,16 @@ function isUnlimitedValue(value: unknown) {
   return String(value ?? '').trim().toLowerCase() === 'unlimited'
 }
 
+function formatBillingCycle(value: unknown) {
+  const normalized = String(value ?? '').trim()
+  if (!normalized) return 'month'
+
+  const normalizedLower = normalized.toLowerCase()
+  if (normalizedLower === 'mo' || normalizedLower === 'monthly') return 'month'
+
+  return normalized
+}
+
 export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): SubscriptionPlan | null {
   const id = plan?.id || plan?.planId || plan?.uuid || fallbackId
   if (!id) return null
@@ -133,7 +143,7 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
   const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? plan?.max_active_job_posting ?? plan?.max_active_job_postings ?? null
   const maxStaffAccount = Number(maxStaffAccountValue)
   const maxActiveJobPosting = Number(maxActiveJobPostingValue)
-  const billingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
+  const billingCycle = formatBillingCycle(plan?.billingCycle || plan?.cycle || plan?.interval)
   const staffAccountUnlimited =
     isTruthyFlag(plan?.staffAccountUnlimited) ||
     isTruthyFlag(plan?.staff_account_unlimited) ||
@@ -154,7 +164,7 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
       ? plan.planFeatures
       : []
   const priceLabel = Number.isFinite(price)
-    ? `$${price.toFixed(2)}${billingCycle ? `/${billingCycle}` : ' / mo'}`
+    ? `$${price.toFixed(2)} / ${billingCycle}`
     : undefined
 
   return {

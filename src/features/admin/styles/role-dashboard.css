@@ -3245,9 +3245,10 @@
   display: grid;
   grid-template-columns:
     minmax(0, 1.25fr)
-    minmax(0, 1.1fr)
-    minmax(104px, 1fr)
-    minmax(120px, 1.05fr)
+    minmax(0, 1fr)
+    minmax(96px, 0.85fr)
+    minmax(104px, 0.95fr)
+    minmax(120px, 1fr)
     minmax(82px, 0.75fr)
     minmax(34px, 0.45fr);
   align-items: center;
@@ -3286,6 +3287,7 @@
 
 .tenant-list-table-row strong,
 .tenant-list-table-row .tenant-plan-name,
+.tenant-list-table-row .tenant-monthly-price,
 .tenant-list-table-row .tenant-expiration-date {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3301,6 +3303,12 @@
 
 .tenant-plan-name.premium-plan {
   color: #d93408;
+}
+
+.tenant-monthly-price {
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .tenant-expiration-date {
@@ -6427,10 +6435,11 @@
 
   .tenant-list-table-row > :nth-child(1)::before { content: 'Tenant'; }
   .tenant-list-table-row > :nth-child(2)::before { content: 'Plan'; }
-  .tenant-list-table-row > :nth-child(3)::before { content: 'Expires'; }
-  .tenant-list-table-row > :nth-child(4)::before { content: 'Quota'; }
-  .tenant-list-table-row > :nth-child(5)::before { content: 'Status'; }
-  .tenant-list-table-row > :nth-child(6)::before { content: 'Action'; }
+  .tenant-list-table-row > :nth-child(3)::before { content: 'Monthly Price'; }
+  .tenant-list-table-row > :nth-child(4)::before { content: 'Expires'; }
+  .tenant-list-table-row > :nth-child(5)::before { content: 'Quota'; }
+  .tenant-list-table-row > :nth-child(6)::before { content: 'Status'; }
+  .tenant-list-table-row > :nth-child(7)::before { content: 'Action'; }
 
   .subscription-table-row > :nth-child(1)::before { content: 'Plan'; }
   .subscription-table-row > :nth-child(2)::before { content: 'Price'; }
