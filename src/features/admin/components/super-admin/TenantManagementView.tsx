@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { adminApi } from '../../services/adminApi'
-import type { CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser } from '../../types/admin.types'
+import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
+import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser } from '../../types/admin.types'
 import { formatPlanDate } from '../../utils/adminFormatters'
 import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
@@ -70,6 +70,40 @@ const emptyTenantForm: CreateTenantForm = {
   adminEmail: '',
 }
 
+function buildTenantListParams(
+  statusFilter: TenantStatusFilter,
+  planFilter: string,
+  searchQuery: string,
+  page: number,
+): AdminListParams {
+  const filters: Record<string, unknown> = {}
+  const keyword = searchQuery.trim()
+
+  if (statusFilter === 'active') {
+    filters.status = 'ACTIVE'
+  }
+
+  if (statusFilter === 'inactive') {
+    filters.status = 'INACTIVE'
+  }
+
+  if (statusFilter === 'plan' && planFilter) {
+    filters.planId = planFilter
+  }
+
+  if (keyword) {
+    filters.keyword = keyword
+  }
+
+  return {
+    sortField: 'companyName',
+    filters,
+    sortBy: 'ASC',
+    page,
+    size: ADMIN_LIST_PAGE_SIZE,
+  }
+}
+
 export function TenantManagementView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<'list' | 'detail'>(() => (
     getTenantDetailIdFromUrl() ? 'detail' : 'list'
@@ -106,7 +140,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setIsLoadingTenants(true)
     setTenantListError('')
 
-    adminApi.getTenants()
+    const listParams = buildTenantListParams(tenantStatusFilter, tenantPlanFilter, tenantSearchQuery, tenantPage)
+
+    adminApi.getTenants(listParams)
       .then((items) => {
         if (isActive) {
           setTenants(items)
@@ -114,7 +150,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       })
       .catch((error) => {
         if (isActive) {
-          setTenantListError(error instanceof Error ? error.message : 'Load tenants failed')
+          setTenantListError(getAdminErrorMessage(error, 'Không tải được danh sách tenant.'))
         }
       })
       .finally(() => {
@@ -126,7 +162,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     return () => {
       isActive = false
     }
-  }, [refreshTenantsKey])
+  }, [refreshTenantsKey, tenantPage, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
 
   useEffect(() => {
     let isActive = true
@@ -175,7 +211,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       })
       .catch((error) => {
         if (!isActive) return
-        setTenantError(error instanceof Error ? error.message : 'Load subscription plans failed')
+        setTenantError(getAdminErrorMessage(error, 'Không tải được danh sách gói đăng ký.'))
       })
       .finally(() => {
         if (isActive) {
@@ -230,7 +266,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         }
       } catch (error) {
         if (isActive) {
-          setTenantDetailError(error instanceof Error ? error.message : 'Load tenant details failed')
+          setTenantDetailError(getAdminErrorMessage(error, 'Không tải được thông tin tenant.'))
         }
       } finally {
         if (isActive) {
@@ -422,58 +458,20 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       optionsByKey.set(plan.id, plan.name)
     })
 
-    tenants.forEach((tenant) => {
-      const plan = getTenantPlan(tenant)
-      const key = plan?.id || tenant.subscriptionPlan
-      const label = plan?.name || tenant.subscriptionPlan
-
-      if (key && label && label !== '-') {
-        optionsByKey.set(key, label)
-      }
-    })
-
     return Array.from(optionsByKey.entries())
       .map(([value, label]) => ({ value, label }))
       .sort((left, right) => left.label.localeCompare(right.label))
-  }, [planById, planByName, subscriptionPlans, tenants])
-  const filteredTenants = useMemo(() => {
-    const normalizedSearch = tenantSearchQuery.trim().toLowerCase()
-
-    return tenants.filter((tenant) => {
-      const plan = getTenantPlan(tenant)
-      const planName = plan?.name || tenant.subscriptionPlan || ''
-      const planKey = plan?.id || tenant.subscriptionPlan
-      const status = getTenantStatusMeta(tenant.status)
-      const matchesStatus =
-        tenantStatusFilter === 'all' ||
-        tenantStatusFilter === 'plan' ||
-        (tenantStatusFilter === 'active' && status.isActive) ||
-        (tenantStatusFilter === 'inactive' && !status.isActive)
-      const matchesPlan = tenantStatusFilter !== 'plan' || !tenantPlanFilter || planKey === tenantPlanFilter
-      const matchesSearch = !normalizedSearch || [
-        tenant.name,
-        tenant.domain || '',
-        tenant.id,
-        planName,
-        tenant.status,
-      ].some((value) => value.toLowerCase().includes(normalizedSearch))
-
-      return matchesStatus && matchesPlan && matchesSearch
-    })
-  }, [planById, planByName, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter, tenants])
-  const tenantsPerPage = 5
-  const tenantPageCount = Math.max(1, Math.ceil(filteredTenants.length / tenantsPerPage))
-  const currentTenantPage = Math.min(tenantPage, tenantPageCount)
-  const paginatedTenants = filteredTenants.slice(
-    (currentTenantPage - 1) * tenantsPerPage,
-    currentTenantPage * tenantsPerPage,
-  )
-  const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * tenantsPerPage) + 1
-  const tenantDisplayEnd = Math.min(currentTenantPage * tenantsPerPage, filteredTenants.length)
+  }, [subscriptionPlans])
+  const filteredTenants = tenants
+  const tenantPageCount = tenantPage + (filteredTenants.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
+  const currentTenantPage = tenantPage
+  const paginatedTenants = filteredTenants
+  const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
+  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : tenantDisplayStart + filteredTenants.length - 1
 
   useEffect(() => {
     setTenantPage(1)
-  }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter, tenants.length])
+  }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
 
   const selectTenantFilter = (filter: TenantStatusFilter) => {
     setTenantStatusFilter(filter)
@@ -542,7 +540,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.(`Tenant ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
     } catch (error) {
-      setTenantListError(error instanceof Error ? error.message : 'Update tenant status failed')
+      setTenantListError(getAdminErrorMessage(error, 'Không cập nhật được trạng thái tenant.'))
       triggerToast?.('Error system. Please try again', 'error')
     } finally {
       setIsUpdatingTenantStatus(false)
@@ -579,7 +577,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Subscription plan updated successfully.', 'success')
     } catch (error) {
-      setTenantListError(error instanceof Error ? error.message : 'Update subscription plan failed')
+      setTenantListError(getAdminErrorMessage(error, 'Không cập nhật được gói đăng ký.'))
       triggerToast?.('Error system. Please try again', 'error')
     } finally {
       setIsUpdatingTenantPlan(false)

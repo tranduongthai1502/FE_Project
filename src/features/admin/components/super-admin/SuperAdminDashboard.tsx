@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { superNav } from '../../data/adminNavigation'
 import { adminApi } from '../../services/adminApi'
 import type { SubscriptionPlan, SuperAdminView, Tenant } from '../../types/admin.types'
+import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getInitialSuperAdminView, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
@@ -41,7 +42,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       })
       .catch((error) => {
         if (isActive) {
-          setDashboardError(error instanceof Error ? error.message : 'Load dashboard failed')
+          setDashboardError(getAdminErrorMessage(error, 'Không tải được dashboard.'))
         }
       })
       .finally(() => {

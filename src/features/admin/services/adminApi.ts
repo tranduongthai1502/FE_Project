@@ -1,5 +1,6 @@
 import axiosClient from '../../../api/axiosClient'
 import type {
+  AdminListParams,
   CreatePlanPayload,
   CreateTenantPayload,
   PlanListRequest,
@@ -19,15 +20,28 @@ import {
 } from '../utils/adminMappers'
 import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../utils/adminPayload'
 
+export const ADMIN_LIST_PAGE_SIZE = 5
+
+function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
+  return {
+    ...defaults,
+    ...params,
+    filters: params?.filters ?? defaults.filters,
+  }
+}
+
 export const adminApi = {
-  async getTenants() {
-    const response = await axiosClient.post('/api/tenant/list', {
+  async getTenants(params?: AdminListParams) {
+    const request = buildListRequest({
       "sortField": 'companyName',
       "filters": {},
       "sortBy": 'ASC',
       "page": 1,
-      "size": 100,
-    } satisfies TenantListRequest)
+      "size": ADMIN_LIST_PAGE_SIZE,
+    }, params) satisfies TenantListRequest
+
+    console.log('[adminApi.getTenants] request payload', request)
+    const response = await axiosClient.post('/api/tenant/list', request)
 
     return getTenantList(response)
       .map(normalizeTenant)
@@ -45,14 +59,17 @@ export const adminApi = {
     return tenant
   },
 
-  async getSubscriptionPlans() {
-    const response = await axiosClient.post('/api/plan/list', {
+  async getSubscriptionPlans(params?: AdminListParams) {
+    const request = buildListRequest({
       "sortField": 'name',
       "filters": {},
       "sortBy": 'ASC',
       "page": 1,
-      "size": 100,
-    } satisfies PlanListRequest)
+      "size": ADMIN_LIST_PAGE_SIZE,
+    }, params) satisfies PlanListRequest
+
+    console.log('[adminApi.getSubscriptionPlans] request payload', request)
+    const response = await axiosClient.post('/api/plan/list', request)
 
     return getSubscriptionPlanList(response)
       .map(normalizeSubscriptionPlan)
@@ -91,14 +108,17 @@ export const adminApi = {
     return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
   },
 
-  async getStaffList(page = 1, size = 100, tenantId?: string) {
-    return axiosClient.post('/api/user/staff/list', {
+  async getStaffList(page = 1, size = ADMIN_LIST_PAGE_SIZE, tenantId?: string) {
+    const request = {
       sortField: 'fullName',
       filters: tenantId ? { tenantId } : {},
       sortBy: 'ASC',
       page,
       size,
-    })
+    }
+
+    console.log('[adminApi.getStaffList] request payload', request)
+    return axiosClient.post('/api/user/staff/list', request)
   },
 
   async getUserById(id: string) {

@@ -364,12 +364,20 @@
   height: 16px;
 }
 
+.login-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
 .check-row {
   display: flex;
   align-items: center;
   gap: 8px;
   width: max-content;
-  margin-top: 12px;
+  margin-top: 0;
   color: #6b4d48;
   font-size: 13px;
   line-height: 1;
@@ -378,7 +386,7 @@
 }
 
 .login-page:not(.signup-page) .check-row {
-  margin-top: 16px;
+  margin-top: 0;
   font-size: 13px;
 }
 

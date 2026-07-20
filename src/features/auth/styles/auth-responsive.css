@@ -180,9 +180,14 @@
     gap: 12px;
   }
 
-  .check-row {
-    width: 100%;
+  .login-options-row {
+    gap: 12px;
     margin-top: 4px;
+  }
+
+  .check-row {
+    width: max-content;
+    margin-top: 0;
   }
 
   .login-page:not(.signup-page) .submit-button,
