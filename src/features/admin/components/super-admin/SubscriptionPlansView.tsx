@@ -5,6 +5,7 @@ import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
+import { getListPageCount } from '../../utils/adminMappers'
 
 const planFeatureDefaults = [
   {
@@ -844,6 +845,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [planListError, setPlanListError] = useState('')
   const [refreshPlansKey, setRefreshPlansKey] = useState(0)
   const [planPage, setPlanPage] = useState(1)
+  const [planPageCount, setPlanPageCount] = useState(1)
   const [planSort, setPlanSort] = useState<PlanSortOption>('newest')
 
   useEffect(() => {
@@ -857,6 +859,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       .then((items) => {
         if (isActive) {
           setPlans(items)
+          setPlanPageCount(getListPageCount(items, planPage, ADMIN_LIST_PAGE_SIZE))
         }
       })
       .catch((error) => {
@@ -909,11 +912,16 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
   ), null)
   const sortedPlans = plans
-  const planPageCount = planPage + (sortedPlans.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
   const safePlanPage = planPage
   const pagedPlans = sortedPlans
   const visiblePlanStart = sortedPlans.length === 0 ? 0 : (safePlanPage - 1) * ADMIN_LIST_PAGE_SIZE + 1
   const visiblePlanEnd = visiblePlanStart === 0 ? 0 : visiblePlanStart + sortedPlans.length - 1
+  useEffect(() => {
+    if (!isLoadingPlans && !planListError && plans.length === 0 && planPage > 1) {
+      setPlanPage((page) => Math.max(1, page - 1))
+    }
+  }, [isLoadingPlans, planListError, planPage, plans.length])
+
   const handlePlanCreated = () => {
     setActiveView('list')
     setSelectedPlanId('')

@@ -15,13 +15,15 @@ import { ResetPasswordForm } from './ResetPasswordForm'
 import { getPasswordStrength } from '../utils/passwordStrength'
 import { validateEmail, validateRequired } from '../utils/validation'
 import { authApi } from '../services/authApi'
-import { getAppErrorMessage } from '../../../utils/errorManager'
+import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
 
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = 'Account not found. Please check your email.'
 const forgotAccountNotFoundMessage = 'This email address is not registered in our system.'
-const systemErrorMessage = 'The system is currently unavailable. Please try again.'
+const systemErrorMessage = 'Error system. Please try again.'
 const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
+const accountDeactivatedMessage = 'Your account has been deactivated. Please contact your Tenant Admin for assistance.'
+const workspaceSuspendedMessage = "Your organization's workspace is currently suspended. Please contact your platform administrator."
 const expiredOtpMessage = 'OTP has expired. Please request a new one.'
 const invalidOtpMessage = 'Invalid OTP. Please retry.'
 const rememberedEmailStorageKey = 'jobfusion_remembered_email'
@@ -180,6 +182,62 @@ function getOtpErrorMessage(message = '', isKnownExpiredOtp = false) {
   return isKnownExpiredOtp || isExpiredOtpError(message) ? expiredOtpMessage : invalidOtpMessage
 }
 
+function isIncorrectPasswordError(message = '', code = '') {
+  const normalizedMessage = message.toLowerCase()
+  const normalizedCode = code.toLowerCase()
+
+  return (
+    normalizedCode === 'wrong_password' ||
+    normalizedMessage.includes('wrong_password') ||
+    normalizedMessage.includes('wrong password') ||
+    normalizedMessage.includes('password is incorrect') ||
+    normalizedMessage.includes('incorrect password')
+  )
+}
+
+function isAccountDeactivatedError(message = '', code = '') {
+  const normalizedMessage = message.toLowerCase()
+  const normalizedCode = code.toLowerCase()
+
+  return (
+    normalizedCode === 'user_account_is_not_active' ||
+    normalizedCode === 'inactive_user' ||
+    normalizedCode === 'account_deactivated' ||
+    normalizedCode === 'user_deactivated' ||
+    normalizedMessage.includes('user_account_is_not_active') ||
+    normalizedMessage.includes('account has been deactivated') ||
+    normalizedMessage.includes('user account is not active')
+  )
+}
+
+function isWorkspaceSuspendedError(message = '', code = '') {
+  const normalizedMessage = message.toLowerCase()
+  const normalizedCode = code.toLowerCase()
+
+  return (
+    normalizedCode === 'tenant_deactivated' ||
+    normalizedCode === 'tenant_suspended' ||
+    normalizedCode === 'workspace_suspended' ||
+    normalizedMessage.includes('tenant_deactivated') ||
+    normalizedMessage.includes('tenant_suspended') ||
+    normalizedMessage.includes('workspace_suspended') ||
+    normalizedMessage.includes('workspace is currently suspended') ||
+    normalizedMessage.includes('tenant has been deactivated')
+  )
+}
+
+function getLoginFailureMessage(error: unknown, fallbackMessage = incorrectPasswordMessage) {
+  const message = getAppErrorMessage(error, fallbackMessage)
+  const code = getErrorCode(error)
+
+  if (isAccountNotFoundError(message)) return accountNotFoundMessage
+  if (isWorkspaceSuspendedError(message, code)) return workspaceSuspendedMessage
+  if (isAccountDeactivatedError(message, code)) return accountDeactivatedMessage
+  if (isIncorrectPasswordError(message, code)) return incorrectPasswordMessage
+
+  return message || fallbackMessage
+}
+
 function isSystemApiError(error: any) {
   const status = Number(error?.status ?? 0)
   return status === 0 || status >= 500
@@ -251,6 +309,10 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     updatePassword(event.target.value)
   }
 
+  const validateForgotEmail = (value: string) => (
+    value.trim() ? validateEmail(value) : 'Please enter your email address.'
+  )
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
@@ -272,6 +334,15 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       if (isAccountNotFoundError(responseMessage)) {
         setEmailError('')
         setPasswordError(accountNotFoundMessage)
+      } else if (isWorkspaceSuspendedError(responseMessage, getErrorCode(response))) {
+        setEmailError('')
+        setPasswordError(workspaceSuspendedMessage)
+      } else if (isAccountDeactivatedError(responseMessage, getErrorCode(response))) {
+        setEmailError('')
+        setPasswordError(accountDeactivatedMessage)
+      } else if (isIncorrectPasswordError(responseMessage, getErrorCode(response))) {
+        setEmailError('')
+        setPasswordError(incorrectPasswordMessage)
       } else if (isLoginSuccessResponse(response)) {
         const token = getAuthToken(payload)
         const refreshToken = getRefreshToken(payload)
@@ -302,7 +373,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
           window.localStorage.removeItem(rememberedEmailStorageKey)
         }
       } else {
-        setPasswordError(incorrectPasswordMessage)
+        setEmailError('')
+        setPasswordError(getLoginFailureMessage(response))
       }
     } catch (error: any) {
       if (isSystemApiError(error)) {
@@ -311,7 +383,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         setEmailError('')
         setPasswordError(accountNotFoundMessage)
       } else {
-        setPasswordError(incorrectPasswordMessage)
+        setEmailError('')
+        setPasswordError(getLoginFailureMessage(error))
       }
     } finally {
       setIsLoading(false)
@@ -321,7 +394,9 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   const handleSendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const nextEmailError = validateEmail(forgotEmail)
+    const nextEmailError = forgotEmail.trim()
+      ? validateEmail(forgotEmail)
+      : 'Please enter your email address.'
     setForgotEmailError(nextEmailError)
 
     if (nextEmailError) {
@@ -339,7 +414,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       } else if (isAccountNotFoundError(response?.message)) {
         setForgotEmailError(forgotAccountNotFoundMessage)
       } else {
-        triggerToast?.(systemErrorMessage, 'error')
+        setForgotEmailError(getAppErrorMessage(response, forgotAccountNotFoundMessage))
       }
     } catch (error: any) {
       if (isAccountNotFoundError(error.message)) {
@@ -347,7 +422,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       } else if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        triggerToast?.(systemErrorMessage, 'error')
+        setForgotEmailError(getAppErrorMessage(error, forgotAccountNotFoundMessage))
       }
     } finally {
       setIsSendingCode(false)
@@ -474,7 +549,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       } else if (isAccountNotFoundError(response?.message)) {
         setOtpError(forgotAccountNotFoundMessage)
       } else {
-        triggerToast?.(systemErrorMessage, 'error')
+        setOtpError(getOtpErrorMessage(response?.message))
       }
     } catch (error: any) {
       if (isAccountNotFoundError(error.message)) {
@@ -482,7 +557,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       } else if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        triggerToast?.(systemErrorMessage, 'error')
+        setOtpError(getOtpErrorMessage(error.message))
       }
     } finally {
       setIsResendingCode(false)
@@ -640,7 +715,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
                 emailError={forgotEmailError}
                 setEmailError={setForgotEmailError}
                 isLoading={isSendingCode}
-                validateEmail={validateEmail}
+                validateEmail={validateForgotEmail}
                 handleSendCode={handleSendCode}
                 handleBackToLogin={handleCloseForgotPassword}
               />

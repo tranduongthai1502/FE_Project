@@ -8,6 +8,7 @@ import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
+import { getListPageCount } from '../../utils/adminMappers'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
 
@@ -162,6 +163,7 @@ export function TenantManagementView({
   const [tenantPlanFilter, setTenantPlanFilter] = useState('')
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
   const [tenantPage, setTenantPage] = useState(1)
+  const [tenantPageCount, setTenantPageCount] = useState(1)
   const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [pendingTenantPlanId, setPendingTenantPlanId] = useState('')
@@ -178,6 +180,7 @@ export function TenantManagementView({
       .then((items) => {
         if (isActive) {
           setTenants(items)
+          setTenantPageCount(getListPageCount(items, tenantPage, ADMIN_LIST_PAGE_SIZE))
         }
       })
       .catch((error) => {
@@ -492,34 +495,7 @@ export function TenantManagementView({
       .map(([value, label]) => ({ value, label }))
       .sort((left, right) => left.label.localeCompare(right.label))
   }, [subscriptionPlans])
-  const filteredTenants = useMemo(() => {
-    const selectedPlan = tenantPlanFilter ? planById.get(tenantPlanFilter) : undefined
-    const normalizedSearch = normalizeFilterValue(tenantSearchQuery)
-
-    return tenants.filter((tenant) => {
-      const status = getTenantStatusMeta(tenant.status)
-      const tenantPlan = tenant.subscriptionPlanId
-        ? planById.get(tenant.subscriptionPlanId)
-        : planByName.get(tenant.subscriptionPlan.toLowerCase())
-      const planName = tenantPlan?.name || tenant.subscriptionPlan || ''
-      const matchesStatus =
-        tenantStatusFilter === 'all' ||
-        (tenantStatusFilter === 'active' && status.isActive) ||
-        (tenantStatusFilter === 'inactive' && !status.isActive)
-      const matchesPlan =
-        !tenantPlanFilter ||
-        tenantMatchesPlanFilter(tenant, tenantPlanFilter, selectedPlan)
-      const matchesSearch =
-        !normalizedSearch ||
-        normalizeFilterValue(tenant.name).includes(normalizedSearch) ||
-        normalizeFilterValue(tenant.domain).includes(normalizedSearch) ||
-        normalizeFilterValue(planName).includes(normalizedSearch) ||
-        normalizeFilterValue(status.label).includes(normalizedSearch)
-
-      return matchesStatus && matchesPlan && matchesSearch
-    })
-  }, [planById, planByName, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter, tenants])
-  const tenantPageCount = tenantPage + (filteredTenants.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
+  const filteredTenants = tenants
   const currentTenantPage = tenantPage
   const paginatedTenants = filteredTenants
   const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
@@ -528,6 +504,12 @@ export function TenantManagementView({
   useEffect(() => {
     setTenantPage(1)
   }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
+
+  useEffect(() => {
+    if (!isLoadingTenants && !tenantListError && tenants.length === 0 && tenantPage > 1) {
+      setTenantPage((page) => Math.max(1, page - 1))
+    }
+  }, [isLoadingTenants, tenantListError, tenantPage, tenants.length])
 
   const selectTenantFilter = (filter: TenantStatusFilter) => {
     setTenantStatusFilter(filter)

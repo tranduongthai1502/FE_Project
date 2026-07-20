@@ -98,6 +98,10 @@ function getRefreshTokenRequest() {
   return refreshTokenRequest
 }
 
+function isAuthEndpoint(url = '') {
+  return /^\/?api\/auth\//.test(url)
+}
+
 axiosClient.interceptors.request.use(
   (config) => {
     const token = getStoredToken('access_token')
@@ -138,7 +142,7 @@ axiosClient.interceptors.response.use(
     const message = getAppErrorMessage(error, getErrorMessage(errorData, getHttpStatusMessage(status)))
     const originalRequest = error.config
 
-    if ((status === 401 || status === 403) && originalRequest && !originalRequest._retry) {
+    if ((status === 401 || status === 403) && originalRequest && !originalRequest._retry && !hasBackendMessage && !isAuthEndpoint(originalRequest.url || '') && getStoredToken('refresh_token')) {
       originalRequest._retry = true
 
       try {
