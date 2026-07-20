@@ -3,6 +3,8 @@ import type { FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { NavigateFunction } from 'react-router-dom'
 import { authApi } from '@/features/auth/services/authApi'
+import { getAppErrorMessage } from '@/utils/errorManager'
+import { shouldToastHttpError } from '@/utils/httpStatusManager'
 
 type ActivationStatus = 'loading' | 'verified' | 'success' | 'error'
 
@@ -82,6 +84,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
   
   // Resend state
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [isResending, setIsResending] = useState(false)
   
   // Activation state
@@ -164,7 +167,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
       }, 1500)
 
     } catch (error: any) {
-      const errorMsg = error?.message || 'Account activation failed. Please try again.'
+      const errorMsg = getAppErrorMessage(error, 'Account activation failed. Please try again.')
       triggerToast?.(errorMsg, 'error')
     } finally {
       setIsActivating(false)
@@ -173,14 +176,16 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
 
   const handleResend = async (e: FormEvent) => {
     e.preventDefault()
+    setEmailError('')
+
     if (!email.trim()) {
-      triggerToast?.('Please enter your email address.', 'error')
+      setEmailError('Please enter your email address.')
       return
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      triggerToast?.('Please enter a valid email address.', 'error')
+      setEmailError('Please enter a valid email address.')
       return
     }
 
@@ -190,8 +195,12 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
       triggerToast?.('Activation link resent successfully. Please check your email.', 'success')
       setEmail('')
     } catch (error: any) {
-      const errorMsg = error?.message || 'Something went wrong while resending the activation link.'
-      triggerToast?.(errorMsg, 'error')
+      const errorMsg = getAppErrorMessage(error, 'Something went wrong while resending the activation link.')
+      if (shouldToastHttpError(error)) {
+        triggerToast?.(errorMsg, 'error')
+      } else {
+        setEmailError(errorMsg)
+      }
     } finally {
       setIsResending(false)
     }
@@ -279,7 +288,10 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
                 type="email"
                 placeholder="email@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (emailError) setEmailError('')
+                }}
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
@@ -293,6 +305,11 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
                 }}
                 disabled={isResending}
               />
+              {emailError && (
+                <p style={{ margin: '0.5rem 0 0', color: '#ef4444', fontSize: '0.85rem', fontWeight: 700 }}>
+                  {emailError}
+                </p>
+              )}
             </div>
             <button
               type="submit"

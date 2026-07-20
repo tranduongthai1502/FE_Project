@@ -72,7 +72,7 @@ export const adminApi = {
     const response = await axiosClient.post('/api/plan/list', request)
 
     return getSubscriptionPlanList(response)
-      .map(normalizeSubscriptionPlan)
+      .map((plan) => normalizeSubscriptionPlan(plan))
       .filter((plan): plan is SubscriptionPlan => Boolean(plan))
   },
 

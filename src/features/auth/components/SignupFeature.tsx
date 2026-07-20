@@ -10,6 +10,8 @@ import {
 } from '../utils/validation'
 import { getPasswordStrength } from '../utils/passwordStrength'
 import { authApi } from '../services/authApi'
+import { getAppErrorMessage } from '../../../utils/errorManager'
+import { shouldToastHttpError } from '../../../utils/httpStatusManager'
 
 type SignupFeatureProps = {
   onGoToSignin: () => void
@@ -73,14 +75,20 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
         triggerToast?.('Register successed. Please log in.', 'success')
         onGoToSignin()
       } else {
-        triggerToast?.(response?.message || 'Error system. Please try again.', 'error')
+        const message = getAppErrorMessage(response, 'An error occurred. Please try again.')
+        if (shouldToastHttpError(response)) {
+          triggerToast?.(message, 'error')
+        } else {
+          setEmailError(message)
+        }
       }
     } catch (error: any) {
-      const status = Number(error?.status ?? 0)
-      const message = status === 0 || status >= 500
-        ? 'Error system. Please try again.'
-        : error?.message || 'Error system. Please try again.'
-      triggerToast?.(message, 'error')
+      const message = getAppErrorMessage(error, 'An error occurred. Please try again.')
+      if (shouldToastHttpError(error)) {
+        triggerToast?.(message, 'error')
+      } else {
+        setEmailError(message)
+      }
     } finally {
       setIsLoading(false)
     }
