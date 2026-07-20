@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { adminApi } from '../../services/adminApi'
-import type { CreatePlanPayload, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
+import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
+import type { AdminListParams, CreatePlanPayload, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
@@ -93,6 +93,22 @@ function hasFeatureChanges(features: typeof planFeatureDefaults) {
 }
 
 type PlanSortOption = 'price-asc' | 'price-desc' | 'newest' | 'oldest'
+
+function buildPlanListParams(sort: PlanSortOption, page: number): AdminListParams {
+  if (sort === 'price-asc') {
+    return { sortField: 'monthlyPrice', sortBy: 'ASC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+  }
+
+  if (sort === 'price-desc') {
+    return { sortField: 'monthlyPrice', sortBy: 'DESC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+  }
+
+  if (sort === 'oldest') {
+    return { sortField: 'createdAt', sortBy: 'ASC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+  }
+
+  return { sortField: 'createdAt', sortBy: 'DESC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+}
 
 function getUsagePercent(used: number, limit: number) {
   if (limit <= 0) return 100
@@ -843,7 +859,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     setIsLoadingPlans(true)
     setPlanListError('')
 
-    adminApi.getSubscriptionPlans()
+    adminApi.getSubscriptionPlans(buildPlanListParams(planSort, planPage))
       .then((items) => {
         if (isActive) {
           setPlans(items)
@@ -851,7 +867,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       })
       .catch((error) => {
         if (isActive) {
-          setPlanListError(error instanceof Error ? error.message : 'Load subscription plans failed')
+          setPlanListError(getAdminErrorMessage(error, 'Không tải được danh sách gói đăng ký.'))
         }
       })
       .finally(() => {
@@ -875,7 +891,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     return () => {
       isActive = false
     }
-  }, [activeView, refreshPlansKey])
+  }, [activeView, planPage, planSort, refreshPlansKey])
 
   useEffect(() => {
     const handlePopState = () => {
@@ -894,28 +910,16 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  useEffect(() => {
-    setPlanPage(1)
-  }, [plans.length])
-
   const activePlansCount = plans.filter((plan) => plan.status.toLowerCase() === 'active').length
   const topTier = plans.reduce<SubscriptionPlan | null>((current, plan) => (
     !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
   ), null)
-  const sortedPlans = [...plans].sort((firstPlan, secondPlan) => {
-    if (planSort === 'price-asc') return firstPlan.monthlyPrice - secondPlan.monthlyPrice
-    if (planSort === 'price-desc') return secondPlan.monthlyPrice - firstPlan.monthlyPrice
-
-    const firstTime = new Date(firstPlan.createdAt).getTime() || 0
-    const secondTime = new Date(secondPlan.createdAt).getTime() || 0
-    return planSort === 'newest' ? secondTime - firstTime : firstTime - secondTime
-  })
-  const planPageSize = 8
-  const planPageCount = Math.max(1, Math.ceil(sortedPlans.length / planPageSize))
-  const safePlanPage = Math.min(planPage, planPageCount)
-  const pagedPlans = sortedPlans.slice((safePlanPage - 1) * planPageSize, safePlanPage * planPageSize)
-  const visiblePlanStart = sortedPlans.length === 0 ? 0 : (safePlanPage - 1) * planPageSize + 1
-  const visiblePlanEnd = Math.min(safePlanPage * planPageSize, sortedPlans.length)
+  const sortedPlans = plans
+  const planPageCount = planPage + (sortedPlans.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
+  const safePlanPage = planPage
+  const pagedPlans = sortedPlans
+  const visiblePlanStart = sortedPlans.length === 0 ? 0 : (safePlanPage - 1) * ADMIN_LIST_PAGE_SIZE + 1
+  const visiblePlanEnd = visiblePlanStart === 0 ? 0 : visiblePlanStart + sortedPlans.length - 1
   const handlePlanCreated = () => {
     setActiveView('list')
     setSelectedPlanId('')

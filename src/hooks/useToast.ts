@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { getHttpErrorToastMessage, shouldToastHttpStatus, getHttpStatus, type HttpStatusToastOptions } from '@/utils/httpStatusManager'
 
 export type ToastType = 'success' | 'error'
+export type ToastOptions = {
+  enabled?: boolean
+}
 
 export function useToast() {
   const [showToast, setShowToast] = useState(false)
@@ -17,7 +21,9 @@ export function useToast() {
     }
   }, [])
 
-  const triggerToast = (message = "Password reset successfully.", type: ToastType = 'success') => {
+  const triggerToast = (message = "Password reset successfully.", type: ToastType = 'success', options?: ToastOptions) => {
+    if (options?.enabled === false) return
+
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
 
@@ -35,11 +41,19 @@ export function useToast() {
     }, 3400)
   }
 
+  const triggerHttpErrorToast = (error: unknown, options?: HttpStatusToastOptions) => {
+    const status = getHttpStatus(error)
+    if (!shouldToastHttpStatus(status, options)) return
+
+    triggerToast(getHttpErrorToastMessage(error, options), 'error')
+  }
+
   return {
     showToast,
     toastFadeOut,
     toastMessage,
     toastType,
     triggerToast,
+    triggerHttpErrorToast,
   }
 }

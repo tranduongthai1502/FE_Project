@@ -142,6 +142,10 @@ function isAccountNotFoundError(message = '') {
     normalizedMessage.includes('account_not_found') ||
     normalizedMessage.includes('user_not_found') ||
     normalizedMessage.includes('email_not_found') ||
+    normalizedMessage.includes('không tìm thấy') ||
+    normalizedMessage.includes('khong tim thay') ||
+    normalizedMessage.includes('chưa được đăng ký') ||
+    normalizedMessage.includes('chua duoc dang ky') ||
     normalizedMessage.includes('not registered') ||
     normalizedMessage.includes('does not exist')
   )
@@ -162,6 +166,10 @@ function isExpiredOtpError(message = '') {
     normalizedMessage.includes('not latest') ||
     normalizedMessage.includes('new otp') ||
     normalizedMessage.includes('new code') ||
+    normalizedMessage.includes('otp đã hết hạn') ||
+    normalizedMessage.includes('otp da het han') ||
+    normalizedMessage.includes('mã otp đã hết hạn') ||
+    normalizedMessage.includes('ma otp da het han') ||
     normalizedMessage.includes('expired') ||
     normalizedMessage.includes('expire')
   )
@@ -557,9 +565,6 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
           <div className="field-group password-group">
             <div className="label-row">
               <label htmlFor="password">Password</label>
-              <button type="button" className="text-link-button" onClick={() => setShowForgotPassword(true)}>
-                Forgot password?
-              </button>
             </div>
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
@@ -590,16 +595,21 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             )}
           </div>
 
-          <label className="check-row" htmlFor="keep-logged-in">
-            <input
-              id="keep-logged-in"
-              name="keep-logged-in"
-              type="checkbox"
-              checked={keepLoggedIn}
-              onChange={(event) => setKeepLoggedIn(event.target.checked)}
-            />
-            <span>Keep me logged in</span>
-          </label>
+          <div className="login-options-row">
+            <label className="check-row" htmlFor="keep-logged-in">
+              <input
+                id="keep-logged-in"
+                name="keep-logged-in"
+                type="checkbox"
+                checked={keepLoggedIn}
+                onChange={(event) => setKeepLoggedIn(event.target.checked)}
+              />
+              <span>Keep me logged in</span>
+            </label>
+            <button type="button" className="text-link-button" onClick={() => setShowForgotPassword(true)}>
+              Forgot password?
+            </button>
+          </div>
 
           <button type="submit" className="submit-button" disabled={isLoading}>
             {isLoading ? 'Logging in' : 'Login'}
