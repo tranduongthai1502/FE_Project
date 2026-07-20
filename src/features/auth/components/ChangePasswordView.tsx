@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { passwordRequirementLabels } from '../data/passwordRequirements'
 import { authApi } from '../services/authApi'
 import { getPasswordStrength } from '../utils/passwordStrength'
+import { getErrorCode } from '../../../utils/errorManager'
 
 type CandidateChangePasswordViewProps = {
   onBack: () => void
@@ -108,9 +109,10 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
       } else {
         setShowSaveConfirm(false)
         const errMsg = error?.message || ''
-        if (errMsg.includes('wrong_password')) {
+        const errCode = getErrorCode(error)
+        if (errCode === 'wrong_password') {
           setCurrentPasswordError('Current password is incorrect.')
-        } else if (errMsg.includes('old_password_can_not_be_the_same_with_new_password')) {
+        } else if (errCode === 'old_password_can_not_be_the_same_with_new_password') {
           setNewPasswordError('New password cannot be the same as the current password.')
         } else {
           setCurrentPasswordError(errMsg || 'Current password is incorrect.')

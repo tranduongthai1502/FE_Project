@@ -5,8 +5,9 @@ import { getInitialTenantAdminView, updateTenantAdminViewUrl } from '../../utils
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 import { MetricCard } from '../shared/MetricCard'
-import { adminApi } from '../../services/adminApi'
+import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
+import { getAdminErrorMessage } from '../../utils/adminErrors'
 
 function getStoredTenantId() {
   const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
@@ -59,6 +60,8 @@ function StaffManagementView({
   onEdit,
   onDelete,
   onSelectStaff,
+  currentPage,
+  onPageChange,
 }: {
   staffList: StaffMember[]
   isLoading: boolean
@@ -69,12 +72,12 @@ function StaffManagementView({
   onEdit: (staff: StaffMember) => void
   onDelete: (staff: StaffMember) => void
   onSelectStaff: (staff: StaffMember) => void
+  currentPage: number
+  onPageChange: (page: number) => void
 }) {
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 5
 
   const filteredStaff = staffList.filter(staff => {
     // 1. Search Query
@@ -100,17 +103,15 @@ function StaffManagementView({
     return matchesSearch && matchesRole && matchesStatus
   })
 
-  // Pagination local calculations
   const totalElements = filteredStaff.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize))
-  const paginatedStaff = filteredStaff.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * pageSize) + 1
-  const displayEnd = Math.min(currentPage * pageSize, totalElements)
+  const totalPages = currentPage + (totalElements === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
+  const paginatedStaff = filteredStaff
+  const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
+  const displayEnd = displayStart === 0 ? 0 : displayStart + totalElements - 1
 
   useEffect(() => {
-    // Reset to page 1 when filter changes
-    setCurrentPage(1)
-  }, [roleFilter, statusFilter, searchQuery])
+    onPageChange(1)
+  }, [roleFilter, statusFilter, searchQuery, onPageChange])
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Oct 12, 2023'
@@ -272,7 +273,7 @@ function StaffManagementView({
               <button 
                 type="button" 
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               >
                 <i className="fa-solid fa-chevron-left"></i>
               </button>
@@ -281,7 +282,7 @@ function StaffManagementView({
                   key={p} 
                   type="button" 
                   className={currentPage === p ? 'active' : ''}
-                  onClick={() => setCurrentPage(p)}
+                  onClick={() => onPageChange(p)}
                 >
                   {p}
                 </button>
@@ -289,7 +290,7 @@ function StaffManagementView({
               <button 
                 type="button" 
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               >
                 <i className="fa-solid fa-chevron-right"></i>
               </button>
@@ -1042,6 +1043,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [staffPage, setStaffPage] = useState(1)
 
   // API load staff
   useEffect(() => {
@@ -1059,7 +1061,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setIsLoadingStaff(true)
     setStaffError('')
 
-    adminApi.getStaffList(1, 100, tenantId)
+    adminApi.getStaffList(staffPage, ADMIN_LIST_PAGE_SIZE, tenantId)
       .then((response: any) => {
         if (!isActive) return
         const payload = response?.data || response
@@ -1068,7 +1070,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       })
       .catch((error) => {
         if (!isActive) return
-        setStaffError(error instanceof Error ? error.message : 'Failed to load staff accounts')
+        setStaffError(getAdminErrorMessage(error, 'Không tải được danh sách nhân sự.'))
       })
       .finally(() => {
         if (isActive) {
@@ -1079,7 +1081,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [activeView, refreshKey, tenantId])
+  }, [activeView, refreshKey, staffPage, tenantId])
 
   useEffect(() => {
     if (
@@ -1109,7 +1111,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         if (isActive) {
           setTenantDetail(null)
           setTenantPlan(null)
-          setStaffError(error instanceof Error ? error.message : 'Failed to load tenant details')
+          setStaffError(getAdminErrorMessage(error, 'Không tải được thông tin tenant.'))
         }
       } finally {
         if (isActive) {
@@ -1155,7 +1157,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {
-      triggerToast?.(error instanceof Error ? error.message : 'Create staff account failed.', 'error')
+      triggerToast?.(getAdminErrorMessage(error, 'Không tạo được tài khoản nhân sự.'), 'error')
     } finally {
       setIsSaving(false)
     }
@@ -1187,7 +1189,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {
-      triggerToast?.(error instanceof Error ? error.message : 'Update staff account failed.', 'error')
+      triggerToast?.(getAdminErrorMessage(error, 'Không cập nhật được tài khoản nhân sự.'), 'error')
     } finally {
       setIsSaving(false)
     }
@@ -1208,7 +1210,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       
       setRefreshKey(prev => prev + 1)
     } catch (error) {
-      triggerToast?.(error instanceof Error ? error.message : 'Delete staff account failed.', 'error')
+      triggerToast?.(getAdminErrorMessage(error, 'Không xóa được tài khoản nhân sự.'), 'error')
     } finally {
       setIsDeleting(false)
     }
@@ -1242,7 +1244,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       
       setRefreshKey(prev => prev + 1)
     } catch (error) {
-      triggerToast?.(error instanceof Error ? error.message : 'Failed to update account status.', 'error')
+      triggerToast?.(getAdminErrorMessage(error, 'Không cập nhật được trạng thái tài khoản.'), 'error')
     } finally {
       setIsSaving(false)
     }
@@ -1308,6 +1310,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             setSelectedStaff(staff)
             changeView('staffDetail')
           }}
+          currentPage={staffPage}
+          onPageChange={setStaffPage}
         />
       ) : (
       <div className="role-content">

@@ -119,3 +119,5 @@ export type PlanListRequest = {
 }
 
 export type TenantListRequest = PlanListRequest
+
+export type AdminListParams = Partial<PlanListRequest>
