@@ -166,6 +166,32 @@ export function normalizeTenant(tenant: any): Tenant | null {
     planObject?.maxStaffAccounts ??
     0
   )
+  const activeJobPostingLimit = Number(
+    tenant?.activeJobPostingLimit ??
+    tenant?.maxActiveJobPosting ??
+    tenant?.maxActiveJobPostings ??
+    tenant?.jobPostingLimit ??
+    tenant?.jobPostingsLimit ??
+    planObject?.maxActiveJobPosting ??
+    planObject?.maxActiveJobPostings ??
+    0
+  )
+  const activeJobPostingUsed = Number(
+    tenant?.activeJobPostingUsed ??
+    tenant?.activeJobPostingsUsed ??
+    tenant?.usedActiveJobPosting ??
+    tenant?.usedActiveJobPostings ??
+    tenant?.activeJobCount ??
+    tenant?.activeJobs ??
+    tenant?.jobCount ??
+    0
+  )
+  const efficiencyScore = Number(
+    tenant?.efficiencyScore ??
+    tenant?.resourceEfficiencyScore ??
+    tenant?.usageEfficiencyScore ??
+    tenant?.efficiency
+  )
 
   return {
     id: String(id),
@@ -187,6 +213,9 @@ export function normalizeTenant(tenant: any): Tenant | null {
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
+    activeJobPostingUsed: Number.isFinite(activeJobPostingUsed) ? activeJobPostingUsed : undefined,
+    activeJobPostingLimit: Number.isFinite(activeJobPostingLimit) ? activeJobPostingLimit : undefined,
+    efficiencyScore: Number.isFinite(efficiencyScore) ? efficiencyScore : undefined,
     status: String(tenant?.status ?? tenant?.accountStatus ?? tenant?.tenantStatus ?? (tenant?.active === true ? 'Active' : 'Inactive')),
     adminUserId: adminUserId ? String(adminUserId) : undefined,
     adminFullName: tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || admin?.fullName || admin?.full_name || admin?.name
