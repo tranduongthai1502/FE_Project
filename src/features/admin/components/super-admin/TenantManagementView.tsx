@@ -688,7 +688,7 @@ export function TenantManagementView({
     const tenantStartDate = selectedTenant ? formatTenantDate(selectedTenant.startDate || selectedTenant.createdAt) : '-'
     const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
     const monthlyBillingLabel = activeSubscriptionPlan
-      ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mo`
+      ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month`
       : '-'
     const daysRemainingLabel = getDaysRemainingLabel(selectedTenant?.expirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
@@ -925,6 +925,7 @@ export function TenantManagementView({
         <div className="tenant-list-table-row tenant-list-table-head">
           <span>Full Name</span>
           <span>Subscription Plan</span>
+          <span>Monthly Price</span>
           <span>Expiration Date</span>
           <span>User Quota</span>
           <span>Status</span>
@@ -948,6 +949,9 @@ export function TenantManagementView({
               ? Math.min(100, Math.round((tenant.userQuotaUsed / tenant.userQuotaLimit) * 100))
               : 0
             const expirationDateLabel = formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'
+            const monthlyPriceLabel = tenantPlan
+              ? tenantPlan.priceLabel || `$${tenantPlan.monthlyPrice.toFixed(2)} / month`
+              : '-'
 
             return (
               <div className="tenant-list-table-row" key={tenant.id}>
@@ -955,6 +959,7 @@ export function TenantManagementView({
                 <span className={`tenant-plan-name ${isHighestPricedPlan(tenant, tenantPlan) ? 'premium-plan' : ''}`}>
                   {tenantPlan?.name || tenant.subscriptionPlan || '-'}
                 </span>
+                <span className="tenant-monthly-price">{monthlyPriceLabel}</span>
                 <span className="tenant-expiration-date">{expirationDateLabel}</span>
                 <span className={`tenant-quota ${hasUnlimitedQuota ? 'unlimited' : ''}`}>
                   {!hasUnlimitedQuota && <i><b style={{ width: `${quotaPercent}%` }} /></i>}
