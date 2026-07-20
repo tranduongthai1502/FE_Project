@@ -1,9 +1,10 @@
+import { authErrorMessages } from '../errors'
+
 export function validateEmail(value: string) {
   const normalizedValue = value.trim()
-  const invalidEmailMessage = 'Invalid email address. Please retry.'
 
   if (!normalizedValue) {
-    return 'Please enter your email.'
+    return authErrorMessages.emailRequired
   }
 
   // Sign-up emails must use plain ASCII characters. This explicitly rejects
@@ -13,11 +14,11 @@ export function validateEmail(value: string) {
     normalizedValue.length > 254 ||
     !/^[\p{ASCII}]+$/u.test(normalizedValue)
   ) {
-    return invalidEmailMessage
+    return authErrorMessages.invalidEmail
   }
 
   const parts = normalizedValue.split('@')
-  if (parts.length !== 2) return invalidEmailMessage
+  if (parts.length !== 2) return authErrorMessages.invalidEmail
 
   const [localPart, domain] = parts
   if (
@@ -28,7 +29,7 @@ export function validateEmail(value: string) {
     localPart.endsWith('.') ||
     localPart.includes('..')
   ) {
-    return invalidEmailMessage
+    return authErrorMessages.invalidEmail
   }
 
   const domainLabels = domain.split('.')
@@ -43,10 +44,17 @@ export function validateEmail(value: string) {
   )
 
   if (domainLabels.length < 2 || hasInvalidDomainLabel || !/^[A-Za-z]{2,}$/.test(topLevelDomain)) {
-    return invalidEmailMessage
+    return authErrorMessages.invalidEmail
   }
 
   return ''
+}
+
+export function validateGmail(value: string) {
+  const emailError = validateEmail(value)
+  if (emailError) return value.trim() ? authErrorMessages.invalidGmail : emailError
+
+  return value.trim().toLowerCase().endsWith('@gmail.com') ? '' : authErrorMessages.invalidGmail
 }
 
 export function validateRequired(value: string, message: string) {
@@ -55,11 +63,11 @@ export function validateRequired(value: string, message: string) {
 
 export function validateFullName(value: string) {
   if (!value.trim()) {
-    return 'Please enter your full name.'
+    return authErrorMessages.fullNameRequired
   }
 
-  if (value.trim().length < 2) {
-    return 'Full name must be at least 2 characters.'
+  if (/[^A-Za-z\s]/.test(value.trim())) {
+    return authErrorMessages.fullNameSpecialCharacters
   }
 
   return ''
@@ -69,11 +77,11 @@ export function validatePhone(value: string) {
   const normalizedValue = value.trim()
 
   if (!normalizedValue) {
-    return 'Please enter your phone number.'
+    return authErrorMessages.phoneRequired
   }
 
   if (!/^0\d{9}$/.test(normalizedValue)) {
-    return 'Phone number must start with 0 and contain exactly 10 digits.'
+    return authErrorMessages.invalidPhone
   }
 
   return ''
@@ -81,11 +89,15 @@ export function validatePhone(value: string) {
 
 export function validatePassword(value: string) {
   if (!value) {
-    return 'Please enter your password.'
+    return authErrorMessages.passwordRequired
   }
 
-  if (value.length < 8) {
-    return 'Password must be at least 8 characters.'
+  if (value.length < 8 || value.length > 20) {
+    return authErrorMessages.passwordLength
+  }
+
+  if (!/[A-Za-z]/.test(value) || !/\d/.test(value) || !/[^\p{L}\p{N}\s]/u.test(value)) {
+    return authErrorMessages.passwordComplexity
   }
 
   return ''
@@ -93,11 +105,11 @@ export function validatePassword(value: string) {
 
 export function validateConfirmPassword(value: string, password: string) {
   if (!value) {
-    return 'Please confirm your password.'
+    return authErrorMessages.confirmPasswordRequired
   }
 
   if (value !== password) {
-    return 'Passwords do not match.'
+    return authErrorMessages.passwordsDoNotMatch
   }
 
   return ''

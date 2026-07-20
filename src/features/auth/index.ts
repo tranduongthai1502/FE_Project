@@ -11,9 +11,22 @@ export { useAuthSession } from './hooks/useAuthSession'
 
 export { getPasswordStrength } from './utils/passwordStrength'
 export {
+  authErrorMessages,
+  backendAuthErrorMessages,
+  getLoginFailureMessage,
+  getOtpErrorMessage,
+  isAccountDeactivatedError,
+  isAccountNotFoundError,
+  isExpiredOtpError,
+  isIncorrectPasswordError,
+  isSystemApiError,
+  isWorkspaceSuspendedError,
+} from './errors'
+export {
   validateConfirmPassword,
   validateEmail,
   validateFullName,
+  validateGmail,
   validatePassword,
   validatePhone,
   validateRequired,

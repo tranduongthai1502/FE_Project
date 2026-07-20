@@ -3,6 +3,8 @@ import { passwordRequirementLabels } from '../data/passwordRequirements'
 import { authApi } from '../services/authApi'
 import { getPasswordStrength } from '../utils/passwordStrength'
 import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
+import { authErrorMessages } from '../errors'
+import { clearAuthStorage, clearRequirePasswordChange } from '../utils/authStorage'
 
 type CandidateChangePasswordViewProps = {
   onBack: () => void
@@ -95,27 +97,30 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
       const isSuccess = response?.success === true || (status >= 200 && status < 300)
 
       if (!isSuccess) {
-        triggerToast?.('The system is currently unavailable. Please try again.', 'error')
+        triggerToast?.(authErrorMessages.systemError, 'error')
         return
       }
 
       setShowSaveConfirm(false)
       resetForm()
-      setSaveMessage('Password changed successfully.')
+      clearRequirePasswordChange()
+      clearAuthStorage()
+      triggerToast?.('Password changed successfully. Please log in again.', 'success')
+      window.location.assign('/login')
     } catch (error: any) {
       const status = Number(error?.status ?? 0)
       if (status === 0 || status >= 500) {
-        triggerToast?.('The system is currently unavailable. Please try again.', 'error')
+        triggerToast?.(authErrorMessages.systemError, 'error')
       } else {
         setShowSaveConfirm(false)
         const errMsg = error?.message || ''
         const errCode = getErrorCode(error)
         if (errCode === 'wrong_password') {
-          setCurrentPasswordError('Current password is incorrect.')
+          setCurrentPasswordError(authErrorMessages.currentPasswordIncorrect)
         } else if (errCode === 'old_password_can_not_be_the_same_with_new_password') {
-          setNewPasswordError('New password cannot be the same as the current password.')
+          setNewPasswordError(authErrorMessages.newPasswordDuplicatesCurrent)
         } else {
-          setCurrentPasswordError(getAppErrorMessage(error, errMsg || 'Current password is incorrect.'))
+          setCurrentPasswordError(getAppErrorMessage(error, errMsg || authErrorMessages.currentPasswordIncorrect))
         }
       }
     } finally {
@@ -128,30 +133,33 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
     let hasError = false
 
     if (!currentPassword.trim()) {
-      setCurrentPasswordError('Please enter your current password.')
+      setCurrentPasswordError(authErrorMessages.currentPasswordRequired)
       hasError = true
     } else {
       setCurrentPasswordError('')
     }
 
     if (!newPassword) {
-      setNewPasswordError('Please enter a new password.')
+      setNewPasswordError(authErrorMessages.newPasswordRequired)
       hasError = true
     } else if (newPassword === currentPassword) {
-      setNewPasswordError('New password duplicates current password.')
+      setNewPasswordError(authErrorMessages.newPasswordDuplicatesCurrent)
+      hasError = true
+    } else if (newPassword.length < 8 || newPassword.length > 20) {
+      setNewPasswordError(authErrorMessages.passwordLength)
       hasError = true
     } else if (missingRequirements.length > 0) {
-      setNewPasswordError(`Password is missing: ${missingRequirements.join(', ')}.`)
+      setNewPasswordError(authErrorMessages.passwordComplexity)
       hasError = true
     } else {
       setNewPasswordError('')
     }
 
     if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your password.')
+      setConfirmPasswordError(authErrorMessages.confirmNewPasswordRequired)
       hasError = true
     } else if (confirmPassword !== newPassword) {
-      setConfirmPasswordError('Passwords do not match.')
+      setConfirmPasswordError(authErrorMessages.passwordsDoNotMatch)
       hasError = true
     } else {
       setConfirmPasswordError('')
@@ -217,7 +225,7 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
                   type={showCurrentPassword ? 'text' : 'password'}
                   placeholder="Enter current password"
                   value={currentPassword}
-                  autoComplete="current-password"
+                  autoComplete="off"
                   onChange={(event) => {
                     const nextCurrentPassword = event.target.value
                     setCurrentPassword(nextCurrentPassword)
@@ -258,7 +266,7 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
                     if (!nextPassword) {
                       setNewPasswordError('')
                     } else if (nextPassword === currentPassword) {
-                      setNewPasswordError('New password duplicates current password.')
+                      setNewPasswordError(authErrorMessages.newPasswordDuplicatesCurrent)
                     } else if (newPasswordError && nextMissingRequirements.length === 0) {
                       setNewPasswordError('')
                     }

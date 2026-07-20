@@ -3,8 +3,8 @@ import { AuthLayout } from '@/components/layout/AuthLayout'
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '@/components/icons/Icons'
 import {
   validateConfirmPassword,
-  validateEmail,
   validateFullName,
+  validateGmail,
   validatePassword,
   validatePhone,
 } from '../utils/validation'
@@ -12,6 +12,7 @@ import { getPasswordStrength } from '../utils/passwordStrength'
 import { authApi } from '../services/authApi'
 import { getAppErrorMessage } from '../../../utils/errorManager'
 import { shouldToastHttpError } from '../../../utils/httpStatusManager'
+import { authErrorMessages } from '../errors'
 
 type SignupFeatureProps = {
   onGoToSignin: () => void
@@ -47,7 +48,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
     event.preventDefault()
 
     const nextFullNameError = validateFullName(fullName)
-    const nextEmailError = validateEmail(email)
+    const nextEmailError = validateGmail(email)
     const nextPhoneError = validatePhone(phone)
     const nextPasswordError = validatePassword(password)
     const nextConfirmPasswordError = validateConfirmPassword(confirmPassword, password)
@@ -72,10 +73,10 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
     try {
       const response: any = await authApi.register({ fullName, email, phone, password })
       if (response && response.success) {
-        triggerToast?.('Register successed. Please log in.', 'success')
+        triggerToast?.(authErrorMessages.registerSuccess, 'success')
         onGoToSignin()
       } else {
-        const message = getAppErrorMessage(response, 'An error occurred. Please try again.')
+        const message = getAppErrorMessage(response, authErrorMessages.systemError)
         if (shouldToastHttpError(response)) {
           triggerToast?.(message, 'error')
         } else {
@@ -83,7 +84,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
         }
       }
     } catch (error: any) {
-      const message = getAppErrorMessage(error, 'An error occurred. Please try again.')
+      const message = getAppErrorMessage(error, authErrorMessages.systemError)
       if (shouldToastHttpError(error)) {
         triggerToast?.(message, 'error')
       } else {
@@ -141,7 +142,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
                 type="email"
                 value={email}
                 onChange={handleInput(setEmail, (value) => {
-                  if (emailError) setEmailError(validateEmail(value))
+                  if (emailError) setEmailError(validateGmail(value))
                 })}
                 placeholder="name@company.com"
                 autoComplete="email"

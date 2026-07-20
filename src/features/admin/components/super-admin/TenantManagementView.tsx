@@ -123,9 +123,9 @@ function buildTenantListParams(
   }
 
   return {
-    sortField: 'companyName',
+    sortField: 'createdAt',
     filters,
-    sortBy: 'ASC',
+    sortBy: 'DESC',
     page,
     size: ADMIN_LIST_PAGE_SIZE,
   }
@@ -380,22 +380,9 @@ export function TenantManagementView({
 
     try {
       const createdTenant = await adminApi.createTenant(tenantForm)
-      if (createdTenant?.id && getTenantStatusMeta(createdTenant.status).isActive) {
-        await adminApi.updateTenant(createdTenant.id, {
-          companyName: tenantForm.companyName,
-          domain: tenantForm.domain,
-          industry: tenantForm.industry,
-          region: tenantForm.region,
-          status: 'INACTIVE',
-          planId: tenantForm.planId,
-          adminFullName: tenantForm.adminFullName,
-          adminEmail: tenantForm.adminEmail,
-        })
-      }
       if (createdTenant) {
         setTenants((currentTenants) => {
-          const inactiveTenant = { ...createdTenant, status: 'INACTIVE' }
-          return [inactiveTenant, ...currentTenants.filter((tenant) => tenant.id !== inactiveTenant.id)]
+          return [createdTenant, ...currentTenants.filter((tenant) => tenant.id !== createdTenant.id)]
         })
       }
       setTenantForm(emptyTenantForm)

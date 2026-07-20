@@ -25,7 +25,12 @@ type RouteConfigProps = {
   loginRedirect: string | null
   navigate: NavigateFunction
   onLogout: () => void
-  onSignInSuccess: (email: string, keepLoggedIn: boolean, userRole: string) => boolean
+  onSignInSuccess: (
+    email: string,
+    keepLoggedIn: boolean,
+    userRole: string,
+    options?: { requirePasswordChange?: boolean },
+  ) => boolean
   protect: (page: AppPage, element: ReactElement) => ReactElement
   triggerToast: (message: string, type?: 'success' | 'error') => void
 }

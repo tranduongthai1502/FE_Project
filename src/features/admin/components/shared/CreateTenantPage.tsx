@@ -12,6 +12,7 @@ const industryOptions = [
   'Logistics',
   'Hospitality',
   'Real Estate',
+  'Other',
 ]
 
 const regionOptions = [
@@ -25,6 +26,7 @@ const regionOptions = [
   'Middle East',
   'Africa',
   'VietNam',
+  'Other',
 ]
 
 export function CreateTenantPage({

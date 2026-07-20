@@ -16,16 +16,18 @@ import { getPasswordStrength } from '../utils/passwordStrength'
 import { validateEmail, validateRequired } from '../utils/validation'
 import { authApi } from '../services/authApi'
 import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
+import { authErrorMessages } from '../errors'
+import { saveRequirePasswordChange } from '../utils/authStorage'
 
 const emptyOtp = ['', '', '', '', '', '']
-const accountNotFoundMessage = 'Account not found. Please check your email.'
-const forgotAccountNotFoundMessage = 'This email address is not registered in our system.'
-const systemErrorMessage = 'Error system. Please try again.'
-const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
-const accountDeactivatedMessage = 'Your account has been deactivated. Please contact your Tenant Admin for assistance.'
-const workspaceSuspendedMessage = "Your organization's workspace is currently suspended. Please contact your platform administrator."
-const expiredOtpMessage = 'OTP has expired. Please request a new one.'
-const invalidOtpMessage = 'Invalid OTP. Please retry.'
+const accountNotFoundMessage = authErrorMessages.accountNotFound
+const forgotAccountNotFoundMessage = authErrorMessages.forgotAccountNotFound
+const systemErrorMessage = authErrorMessages.systemError
+const incorrectPasswordMessage = authErrorMessages.incorrectPassword
+const accountDeactivatedMessage = authErrorMessages.accountDeactivated
+const workspaceSuspendedMessage = authErrorMessages.workspaceSuspended
+const expiredOtpMessage = authErrorMessages.expiredOtp
+const invalidOtpMessage = authErrorMessages.invalidOtp
 const rememberedEmailStorageKey = 'jobfusion_remembered_email'
 const resendOtpCountdownSeconds = 59
 type ForgotStep = 'email' | 'otp' | 'reset'
@@ -36,6 +38,10 @@ function getAuthResponsePayload(response: any) {
 
 function getAuthUser(payload: any) {
   return payload?.user || payload?.user_info || payload?.userInfo || null
+}
+
+function getStoredUserPayload(user: any, payload: any) {
+  return user && typeof user === 'object' ? { ...payload, ...user } : payload
 }
 
 function normalizeRoleValue(value: unknown): string[] {
@@ -131,6 +137,20 @@ function getAuthToken(payload: any) {
 
 function getRefreshToken(payload: any) {
   return payload?.refresh_token || payload?.refreshToken || ''
+}
+
+function getRequirePasswordChange(payload: any, user: any) {
+  const userType = String(payload?.userType ?? payload?.user_type ?? user?.userType ?? user?.user_type ?? '')
+    .trim()
+    .toUpperCase()
+  const requiresPasswordChange = Boolean(
+    payload?.requirePasswordChange ??
+      payload?.require_password_change ??
+      user?.requirePasswordChange ??
+      user?.require_password_change
+  )
+
+  return userType === 'TENANT' && requiresPasswordChange
 }
 
 function isAccountNotFoundError(message = '') {
@@ -245,7 +265,12 @@ function isSystemApiError(error: any) {
 
 type LoginFeatureProps = {
   onGoToSignup: () => void
-  onSignInSuccess: (email: string, keepLoggedIn: boolean, userRole: string) => boolean
+  onSignInSuccess: (
+    email: string,
+    keepLoggedIn: boolean,
+    userRole: string,
+    options?: { requirePasswordChange?: boolean },
+  ) => boolean
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
@@ -348,10 +373,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         const refreshToken = getRefreshToken(payload)
         const user = getAuthUser(payload)
         const userRole = getAuthUserRole(user, payload)
-
-        if (!onSignInSuccess(email, keepLoggedIn, userRole)) {
-          return
-        }
+        const requirePasswordChange = getRequirePasswordChange(payload, user)
+        const storedUser = getStoredUserPayload(user, payload)
 
         const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
         const inactiveStorage = keepLoggedIn ? window.sessionStorage : window.localStorage
@@ -364,13 +387,18 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         if (refreshToken) {
           storage.setItem('refresh_token', refreshToken)
         }
-        if (user) {
-          storage.setItem('user_info', JSON.stringify(user))
+        if (storedUser) {
+          storage.setItem('user_info', JSON.stringify(storedUser))
         }
+        saveRequirePasswordChange(requirePasswordChange, keepLoggedIn)
         if (keepLoggedIn) {
           window.localStorage.setItem(rememberedEmailStorageKey, email)
         } else {
           window.localStorage.removeItem(rememberedEmailStorageKey)
+        }
+
+        if (!onSignInSuccess(email, keepLoggedIn, userRole, { requirePasswordChange })) {
+          return
         }
       } else {
         setEmailError('')
@@ -494,7 +522,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
 
     const otpCode = otp.join('')
     if (otpCode.length < 6) {
-      setOtpError('Please enter the OTP code.')
+      setOtpError(authErrorMessages.otpRequired)
       return
     }
 
@@ -569,18 +597,18 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     let hasError = false
 
     if (!newPassword) {
-      setNewPasswordError('Please enter new password.')
+      setNewPasswordError(authErrorMessages.newPasswordRequired)
       hasError = true
     } else if (strength.score < 4) {
-      setNewPasswordError('Password does not meet requirements.')
+      setNewPasswordError(authErrorMessages.passwordComplexity)
       hasError = true
     }
 
     if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your password.')
+      setConfirmPasswordError(authErrorMessages.resetConfirmPasswordRequired)
       hasError = true
     } else if (newPassword !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match.')
+      setConfirmPasswordError(authErrorMessages.passwordsDoNotMatch)
       hasError = true
     }
 
@@ -591,7 +619,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       const response: any = await authApi.resetPassword(forgotEmail, otp.join(''), newPassword)
       if (response && response.success) {
         handleCloseForgotPassword()
-        triggerToast?.('Password reset successfully.', 'success')
+        triggerToast?.(authErrorMessages.passwordResetSuccess, 'success')
       } else {
         triggerToast?.(systemErrorMessage, 'error')
       }
@@ -599,7 +627,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        setConfirmPasswordError(getAppErrorMessage(error, 'Password reset failed. Please try again.'))
+        setConfirmPasswordError(getAppErrorMessage(error, authErrorMessages.systemError))
       }
     } finally {
       setIsSendingCode(false)
