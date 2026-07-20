@@ -171,7 +171,6 @@ function CreatePlanView({
 
     if (planDetailsAreEmpty) {
       setFieldErrors({ planName: 'Please fill in all required fields.' })
-      triggerToast?.('Please fill in all required fields.', 'error')
       return
     }
 
@@ -205,7 +204,6 @@ function CreatePlanView({
     if (!features.some((feature) => feature.enabled)) {
       const message = 'Please enable at least one feature for this plan.'
       setPlanError(message)
-      triggerToast?.(message, 'error')
       return
     }
 
@@ -233,9 +231,8 @@ function CreatePlanView({
       triggerToast?.('Subscription plan created successfully', 'success')
       onCreated()
     } catch (error) {
-      const message = getAdminErrorMessage(error, 'Create plan failed')
+      const message = getAdminErrorMessage(error, 'Failed to create subscription plan.')
       setPlanError(message)
-      triggerToast?.(message, 'error')
     } finally {
       setIsSavingPlan(false)
     }
@@ -516,7 +513,6 @@ function EditPlanDetailView({
 
     if (generalConfigurationIsEmpty) {
       setFieldErrors({ planName: 'Please fill in all required fields.' })
-      triggerToast?.('Please fill in all required fields.', 'error')
       return
     }
 
@@ -548,7 +544,6 @@ function EditPlanDetailView({
     if (!features.some((feature) => feature.enabled)) {
       const message = 'Please enable at least one feature for this plan.'
       setPlanError(message)
-      triggerToast?.(message, 'error')
       return
     }
 
@@ -578,10 +573,9 @@ function EditPlanDetailView({
       triggerToast?.('Subscription plan updated successfully.', 'success')
       onSaved()
     } catch (error) {
-      const message = getAdminErrorMessage(error, 'Update plan failed')
+      const message = getAdminErrorMessage(error, 'Failed to update subscription plan.')
       setIsSaveConfirmOpen(false)
       setPlanError(message)
-      triggerToast?.(message, 'error')
     } finally {
       setIsSavingPlan(false)
     }
@@ -867,7 +861,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       })
       .catch((error) => {
         if (isActive) {
-          setPlanListError(getAdminErrorMessage(error, 'Không tải được danh sách gói đăng ký.'))
+          setPlanListError(getAdminErrorMessage(error, 'Failed to load subscription plans.'))
         }
       })
       .finally(() => {

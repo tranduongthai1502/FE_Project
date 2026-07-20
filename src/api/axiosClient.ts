@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage } from '@/features/auth'
-import { getAppErrorMessage } from '@/utils/errorManager'
+import { getAppErrorMessage, hasBackendErrorMessage } from '@/utils/errorManager'
 import { getHttpStatusMessage } from '@/utils/httpStatusManager'
 
 const API_URL = import.meta.env.VITE_BACKEND_API_URL
@@ -49,11 +49,7 @@ function getRefreshToken(payload: any) {
 function getErrorMessage(errorData: any, fallbackMessage: string) {
   return (
     errorData?.message ||
-    errorData?.error ||
-    errorData?.code ||
     errorData?.data?.message ||
-    errorData?.data?.error ||
-    errorData?.data?.code ||
     fallbackMessage ||
     'An error occurred'
   )
@@ -138,7 +134,8 @@ axiosClient.interceptors.response.use(
     const errorData = error.response?.data
     const code = getErrorCode(errorData)
     const status = error.response?.status ?? 0
-    const message = getAppErrorMessage(error, getErrorMessage(errorData, getHttpStatusMessage(status) || error.message))
+    const hasBackendMessage = hasBackendErrorMessage(error)
+    const message = getAppErrorMessage(error, getErrorMessage(errorData, getHttpStatusMessage(status)))
     const originalRequest = error.config
 
     if ((status === 401 || status === 403) && originalRequest && !originalRequest._retry) {
@@ -159,7 +156,7 @@ axiosClient.interceptors.response.use(
       notifyAuthExpired()
     }
 
-    return Promise.reject(Object.assign(new Error(message), { status, code }))
+    return Promise.reject(Object.assign(new Error(message), { status, code, hasBackendMessage, isAppErrorMessage: true }))
   }
 )
 

@@ -1,39 +1,56 @@
-export const errorMessagesVi: Record<string, string> = {
-  email_already_exists: 'Email đã tồn tại. Vui lòng sử dụng email khác.',
-  domain_already_exists: 'Tên miền đã tồn tại. Vui lòng sử dụng tên miền khác.',
-  tenant_already_exists: 'Tenant đã tồn tại.',
-  name_already_exists: 'Tên đã tồn tại. Vui lòng sử dụng tên khác.',
-  user_not_found: 'Không tìm thấy người dùng.',
-  invalid_token: 'Token không hợp lệ. Vui lòng đăng nhập lại.',
-  wrong_email: 'Email không đúng.',
-  wrong_password: 'Mật khẩu không đúng.',
-  access_denied: 'Bạn không có quyền thực hiện thao tác này.',
-  user_account_is_not_active: 'Tài khoản người dùng chưa được kích hoạt.',
-  must_fill_number_or_choose_unlimited: 'Vui lòng nhập số hợp lệ hoặc chọn Không giới hạn.',
-  an_unexpected_error_occured_please_try_again_later: 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.',
-  old_password_can_not_be_the_same_with_new_password: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
-  otp_has_expired_please_request_a_new_one: 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.',
-  plan_not_found: 'Không tìm thấy gói đăng ký.',
-  role_not_found: 'Không tìm thấy vai trò.',
-  tenant_not_found: 'Không tìm thấy tenant.',
-  plan_already_exists: 'Gói đăng ký đã tồn tại.',
-  max_staff_limit_reached: 'Đã đạt giới hạn số lượng nhân sự.',
-  staff_already_active_or_disabled: 'Tài khoản nhân sự đã ở trạng thái kích hoạt hoặc vô hiệu hóa.',
-  invalid_request: 'Yêu cầu không hợp lệ. Vui lòng kiểm tra thông tin và thử lại.',
-  forbidden: 'Bạn không có quyền thực hiện thao tác này.',
-  unauthorized: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+export const errorMessages: Record<string, string> = {
+  email_already_exists: 'Email already exists. Please use another email address.',
+  domain_already_exists: 'Domain already exists. Please use another domain.',
+  tenant_already_exists: 'Tenant already exists.',
+  name_already_exists: 'Name already exists. Please use another name.',
+  user_not_found: 'User not found.',
+  invalid_token: 'Invalid token. Please sign in again.',
+  wrong_email: 'Email address is incorrect.',
+  wrong_password: 'Password is incorrect.',
+  access_denied: 'You do not have permission to perform this action.',
+  user_account_is_not_active: 'User account is not active.',
+  must_fill_number_or_choose_unlimited: 'Please enter a valid number or choose Unlimited.',
+  an_unexpected_error_occured_please_try_again_later: 'An unexpected error occurred. Please try again later.',
+  old_password_can_not_be_the_same_with_new_password: 'New password cannot be the same as the current password.',
+  otp_has_expired_please_request_a_new_one: 'OTP has expired. Please request a new one.',
+  plan_not_found: 'Subscription plan not found.',
+  role_not_found: 'Role not found.',
+  tenant_not_found: 'Tenant not found.',
+  plan_already_exists: 'Subscription plan already exists.',
+  max_staff_limit_reached: 'Maximum staff limit reached.',
+  staff_already_active_or_disabled: 'Staff account is already active or disabled.',
+  invalid_request: 'Invalid request. Please check your information and try again.',
+  forbidden: 'You do not have permission to perform this action.',
+  unauthorized: 'Your session has expired. Please sign in again.',
 }
+
+const inputErrorCodes = new Set([
+  'email_already_exists',
+  'domain_already_exists',
+  'tenant_already_exists',
+  'name_already_exists',
+  'wrong_email',
+  'wrong_password',
+  'must_fill_number_or_choose_unlimited',
+  'old_password_can_not_be_the_same_with_new_password',
+  'otp_has_expired_please_request_a_new_one',
+  'plan_already_exists',
+  'max_staff_limit_reached',
+  'staff_already_active_or_disabled',
+  'invalid_request',
+])
 
 function normalizeErrorKey(value: string) {
   return value.trim().toLowerCase()
 }
 
-function humanizeErrorCodeVi(code: string) {
+function humanizeErrorCode(code: string) {
   return code
     .replace(/[_-]+/g, ' ')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .trim()
     .replace(/\s+/g, ' ')
+    .replace(/^./, (value) => value.toUpperCase())
 }
 
 export function getErrorCode(error: unknown) {
@@ -67,6 +84,36 @@ export function getErrorCode(error: unknown) {
     errorObject.response?.data?.data?.error ||
     '',
   )
+}
+
+export function getBackendErrorMessage(error: unknown) {
+  if (!error || typeof error !== 'object') return ''
+
+  const errorObject = error as {
+    isAppErrorMessage?: unknown
+    hasBackendMessage?: unknown
+    message?: unknown
+    response?: {
+      data?: {
+        message?: unknown
+        data?: {
+          message?: unknown
+        }
+      }
+    }
+  }
+
+  return String(
+    errorObject.response?.data?.message ||
+    errorObject.response?.data?.data?.message ||
+    (!(error instanceof Error) ? errorObject.message : '') ||
+    (errorObject.isAppErrorMessage && errorObject.hasBackendMessage ? errorObject.message : '') ||
+    '',
+  )
+}
+
+export function hasBackendErrorMessage(error: unknown) {
+  return Boolean(getBackendErrorMessage(error).trim())
 }
 
 export function getErrorRawMessage(error: unknown) {
@@ -103,24 +150,48 @@ export function getErrorRawMessage(error: unknown) {
 
 export function translateErrorCode(value: string) {
   const key = normalizeErrorKey(value)
-  return errorMessagesVi[key] || ''
+  return errorMessages[key] || ''
+}
+
+export function isInputErrorCode(value: string) {
+  return inputErrorCodes.has(normalizeErrorKey(value))
+}
+
+export function isInputError(error: unknown) {
+  if (!hasBackendErrorMessage(error)) return false
+
+  const code = getErrorCode(error)
+  const rawMessage = getErrorRawMessage(error)
+
+  return Boolean(
+    (code && isInputErrorCode(code)) ||
+    (rawMessage && isInputErrorCode(rawMessage)),
+  )
 }
 
 export function getAppErrorMessage(error: unknown, fallbackMessage: string) {
   const code = getErrorCode(error)
+  const backendMessage = getBackendErrorMessage(error).trim()
+
+  if (backendMessage) {
+    const translatedBackendMessage = translateErrorCode(backendMessage)
+    return translatedBackendMessage || backendMessage
+  }
+
+  if (fallbackMessage) return fallbackMessage
+
   const rawMessage = getErrorRawMessage(error)
-  const translatedCode = code ? translateErrorCode(code) : ''
-
-  if (translatedCode) return translatedCode
-
   const normalizedMessage = rawMessage.trim()
-  if (!normalizedMessage) return fallbackMessage
+  const translatedCode = code ? translateErrorCode(code) : ''
+  if (translatedCode) return translatedCode
 
   const translatedMessage = translateErrorCode(normalizedMessage)
   if (translatedMessage) return translatedMessage
 
+  if (!normalizedMessage) return 'An error occurred. Please try again.'
+
   if (/^[a-z][a-z0-9_-]+$/i.test(normalizedMessage)) {
-    return `Lỗi: ${humanizeErrorCodeVi(normalizedMessage)}.`
+    return `${humanizeErrorCode(normalizedMessage)}.`
   }
 
   return normalizedMessage

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { getHttpErrorToastMessage, shouldToastHttpStatus, getHttpStatus, type HttpStatusToastOptions } from '@/utils/httpStatusManager'
+import { getHttpErrorToastMessage, shouldToastHttpError, type HttpStatusToastOptions } from '@/utils/httpStatusManager'
 
 export type ToastType = 'success' | 'error'
 export type ToastOptions = {
@@ -42,8 +42,7 @@ export function useToast() {
   }
 
   const triggerHttpErrorToast = (error: unknown, options?: HttpStatusToastOptions) => {
-    const status = getHttpStatus(error)
-    if (!shouldToastHttpStatus(status, options)) return
+    if (!shouldToastHttpError(error, options)) return
 
     triggerToast(getHttpErrorToastMessage(error, options), 'error')
   }

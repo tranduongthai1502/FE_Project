@@ -8,6 +8,7 @@ import { MetricCard } from '../shared/MetricCard'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
+import { shouldToastHttpError } from '../../../../utils/httpStatusManager'
 
 function getStoredTenantId() {
   const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
@@ -1070,7 +1071,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       })
       .catch((error) => {
         if (!isActive) return
-        setStaffError(getAdminErrorMessage(error, 'Không tải được danh sách nhân sự.'))
+        setStaffError(getAdminErrorMessage(error, 'Failed to load staff accounts.'))
       })
       .finally(() => {
         if (isActive) {
@@ -1111,7 +1112,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         if (isActive) {
           setTenantDetail(null)
           setTenantPlan(null)
-          setStaffError(getAdminErrorMessage(error, 'Không tải được thông tin tenant.'))
+          setStaffError(getAdminErrorMessage(error, 'Failed to load tenant details.'))
         }
       } finally {
         if (isActive) {
@@ -1157,7 +1158,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {
-      triggerToast?.(getAdminErrorMessage(error, 'Không tạo được tài khoản nhân sự.'), 'error')
+      if (shouldToastHttpError(error)) {
+        triggerToast?.(getAdminErrorMessage(error, 'Failed to create staff account.'), 'error')
+      }
     } finally {
       setIsSaving(false)
     }
@@ -1189,7 +1192,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {
-      triggerToast?.(getAdminErrorMessage(error, 'Không cập nhật được tài khoản nhân sự.'), 'error')
+      if (shouldToastHttpError(error)) {
+        triggerToast?.(getAdminErrorMessage(error, 'Failed to update staff account.'), 'error')
+      }
     } finally {
       setIsSaving(false)
     }
@@ -1210,7 +1215,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       
       setRefreshKey(prev => prev + 1)
     } catch (error) {
-      triggerToast?.(getAdminErrorMessage(error, 'Không xóa được tài khoản nhân sự.'), 'error')
+      if (shouldToastHttpError(error)) {
+        triggerToast?.(getAdminErrorMessage(error, 'Failed to delete staff account.'), 'error')
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -1244,7 +1251,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       
       setRefreshKey(prev => prev + 1)
     } catch (error) {
-      triggerToast?.(getAdminErrorMessage(error, 'Không cập nhật được trạng thái tài khoản.'), 'error')
+      if (shouldToastHttpError(error)) {
+        triggerToast?.(getAdminErrorMessage(error, 'Failed to update account status.'), 'error')
+      }
     } finally {
       setIsSaving(false)
     }

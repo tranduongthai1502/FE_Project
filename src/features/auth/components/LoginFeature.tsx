@@ -15,11 +15,12 @@ import { ResetPasswordForm } from './ResetPasswordForm'
 import { getPasswordStrength } from '../utils/passwordStrength'
 import { validateEmail, validateRequired } from '../utils/validation'
 import { authApi } from '../services/authApi'
+import { getAppErrorMessage } from '../../../utils/errorManager'
 
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = 'Account not found. Please check your email.'
 const forgotAccountNotFoundMessage = 'This email address is not registered in our system.'
-const systemErrorMessage = 'Error system. Please try again.'
+const systemErrorMessage = 'The system is currently unavailable. Please try again.'
 const incorrectPasswordMessage = 'The password is incorrect. Please retry.'
 const expiredOtpMessage = 'OTP has expired. Please request a new one.'
 const invalidOtpMessage = 'Invalid OTP. Please retry.'
@@ -523,7 +524,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        setConfirmPasswordError(error.message || 'Password reset failed. Please try again.')
+        setConfirmPasswordError(getAppErrorMessage(error, 'Password reset failed. Please try again.'))
       }
     } finally {
       setIsSendingCode(false)

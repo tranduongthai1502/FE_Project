@@ -150,7 +150,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       })
       .catch((error) => {
         if (isActive) {
-          setTenantListError(getAdminErrorMessage(error, 'Không tải được danh sách tenant.'))
+          setTenantListError(getAdminErrorMessage(error, 'Failed to load tenants.'))
         }
       })
       .finally(() => {
@@ -211,7 +211,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       })
       .catch((error) => {
         if (!isActive) return
-        setTenantError(getAdminErrorMessage(error, 'Không tải được danh sách gói đăng ký.'))
+        setTenantError(getAdminErrorMessage(error, 'Failed to load subscription plans.'))
       })
       .finally(() => {
         if (isActive) {
@@ -266,7 +266,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         }
       } catch (error) {
         if (isActive) {
-          setTenantDetailError(getAdminErrorMessage(error, 'Không tải được thông tin tenant.'))
+          setTenantDetailError(getAdminErrorMessage(error, 'Failed to load tenant details.'))
         }
       } finally {
         if (isActive) {
@@ -334,7 +334,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     if (!tenantForm.companyName.trim() || !tenantForm.domain.trim() || !tenantForm.industry.trim() || !tenantForm.region.trim() || !tenantForm.planId || !tenantForm.adminFullName.trim() || !tenantForm.adminEmail.trim()) {
       const message = 'Please fill in all required fields.'
       setTenantError(message)
-      triggerToast?.(message, 'error')
       return
     }
 
@@ -371,10 +370,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
-      const message = getAdminErrorMessage(error, 'Create tenant failed')
+      const message = getAdminErrorMessage(error, 'Failed to create tenant.')
       setIsCreateConfirmOpen(false)
       setTenantError(message)
-      triggerToast?.(message, 'error')
     } finally {
       setIsSubmittingTenant(false)
     }
@@ -540,8 +538,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.(`Tenant ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
     } catch (error) {
-      setTenantListError(getAdminErrorMessage(error, 'Không cập nhật được trạng thái tenant.'))
-      triggerToast?.('Error system. Please try again', 'error')
+      setTenantListError(getAdminErrorMessage(error, 'Failed to update tenant status.'))
     } finally {
       setIsUpdatingTenantStatus(false)
     }
@@ -577,8 +574,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Subscription plan updated successfully.', 'success')
     } catch (error) {
-      setTenantListError(getAdminErrorMessage(error, 'Không cập nhật được gói đăng ký.'))
-      triggerToast?.('Error system. Please try again', 'error')
+      setTenantListError(getAdminErrorMessage(error, 'Failed to update subscription plan.'))
     } finally {
       setIsUpdatingTenantPlan(false)
     }
