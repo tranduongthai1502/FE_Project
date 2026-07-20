@@ -62,6 +62,7 @@ function StaffManagementView({
   onEdit,
   onDelete,
   onSelectStaff,
+  onHome,
   currentPage,
   pageCount,
   onPageChange,
@@ -75,6 +76,7 @@ function StaffManagementView({
   onEdit: (staff: StaffMember) => void
   onDelete: (staff: StaffMember) => void
   onSelectStaff: (staff: StaffMember) => void
+  onHome: () => void
   currentPage: number
   pageCount: number
   onPageChange: (page: number) => void
@@ -145,7 +147,7 @@ function StaffManagementView({
     <div className="role-content staff-management-content">
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
-        <span>Home</span>
+        <button type="button" onClick={onHome}>Home</button>
         <span className="breadcrumb-separator">/</span>
         <strong>Staff Management</strong>
       </div>
@@ -1334,6 +1336,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             setSelectedStaff(staff)
             changeView('staffDetail')
           }}
+          onHome={() => changeView('dashboard')}
           currentPage={staffPage}
           pageCount={staffPageCount}
           onPageChange={setStaffPage}

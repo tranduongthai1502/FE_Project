@@ -96,6 +96,9 @@ export type Tenant = {
   expirationDate: string
   userQuotaUsed: number
   userQuotaLimit: number
+  activeJobPostingUsed?: number
+  activeJobPostingLimit?: number
+  efficiencyScore?: number
   status: string
   adminUserId?: string
   adminFullName?: string
