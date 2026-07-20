@@ -8,6 +8,7 @@ import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
+import { getListPageCount } from '../../utils/adminMappers'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
 
@@ -130,6 +131,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [tenantPlanFilter, setTenantPlanFilter] = useState('')
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
   const [tenantPage, setTenantPage] = useState(1)
+  const [tenantPageCount, setTenantPageCount] = useState(1)
   const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [pendingTenantPlanId, setPendingTenantPlanId] = useState('')
@@ -146,6 +148,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       .then((items) => {
         if (isActive) {
           setTenants(items)
+          setTenantPageCount(getListPageCount(items, tenantPage, ADMIN_LIST_PAGE_SIZE))
         }
       })
       .catch((error) => {
@@ -461,7 +464,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       .sort((left, right) => left.label.localeCompare(right.label))
   }, [subscriptionPlans])
   const filteredTenants = tenants
-  const tenantPageCount = tenantPage + (filteredTenants.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
   const currentTenantPage = tenantPage
   const paginatedTenants = filteredTenants
   const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
@@ -470,6 +472,12 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   useEffect(() => {
     setTenantPage(1)
   }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
+
+  useEffect(() => {
+    if (!isLoadingTenants && !tenantListError && tenants.length === 0 && tenantPage > 1) {
+      setTenantPage((page) => Math.max(1, page - 1))
+    }
+  }, [isLoadingTenants, tenantListError, tenantPage, tenants.length])
 
   const selectTenantFilter = (filter: TenantStatusFilter) => {
     setTenantStatusFilter(filter)

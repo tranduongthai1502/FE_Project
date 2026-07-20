@@ -5,6 +5,67 @@ export function getResponsePayload(payload: any): any {
   return body?.data && typeof body.data === 'object' ? body.data : body
 }
 
+export type PaginationMeta = {
+  totalPages?: number
+  totalElements?: number
+  last?: boolean
+  first?: boolean
+}
+
+export function getPaginationMeta(payload: any): PaginationMeta {
+  const candidates = [
+    payload,
+    payload?.data,
+    payload?.data?.data,
+    payload?.page,
+    payload?.data?.page,
+    payload?.data?.data?.page,
+    payload?.pagination,
+    payload?.data?.pagination,
+    payload?.data?.data?.pagination,
+  ].filter(Boolean)
+
+  for (const candidate of candidates) {
+    const totalPages = Number(candidate.totalPages ?? candidate.total_pages ?? candidate.pageCount ?? candidate.totalPage)
+    const totalElements = Number(candidate.totalElements ?? candidate.total_elements ?? candidate.totalItems ?? candidate.total)
+    const last = typeof candidate.last === 'boolean' ? candidate.last : undefined
+    const first = typeof candidate.first === 'boolean' ? candidate.first : undefined
+
+    if (!Number.isNaN(totalPages) || !Number.isNaN(totalElements) || last !== undefined || first !== undefined) {
+      return {
+        totalPages: Number.isNaN(totalPages) ? undefined : totalPages,
+        totalElements: Number.isNaN(totalElements) ? undefined : totalElements,
+        last,
+        first,
+      }
+    }
+  }
+
+  return {}
+}
+
+export function attachPaginationMeta<T>(items: T[], payload: any): T[] {
+  return Object.assign(items, { __pagination: getPaginationMeta(payload) })
+}
+
+export function getListPageCount(items: unknown[], currentPage: number, pageSize: number) {
+  const meta = (items as { __pagination?: PaginationMeta }).__pagination
+
+  if (meta?.totalPages !== undefined) {
+    return Math.max(1, meta.totalPages)
+  }
+
+  if (meta?.totalElements !== undefined) {
+    return Math.max(1, Math.ceil(meta.totalElements / pageSize))
+  }
+
+  if (meta?.last === false) {
+    return currentPage + 1
+  }
+
+  return Math.max(1, currentPage)
+}
+
 export function getSubscriptionPlanList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data

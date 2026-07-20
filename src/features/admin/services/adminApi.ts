@@ -12,6 +12,7 @@ import type {
 } from '../types/admin.types'
 import {
   getResponsePayload,
+  attachPaginationMeta,
   getSubscriptionPlanList,
   getTenantList,
   normalizeTenantAdminUser,
@@ -43,9 +44,9 @@ export const adminApi = {
     console.log('[adminApi.getTenants] request payload', request)
     const response = await axiosClient.post('/api/tenant/list', request)
 
-    return getTenantList(response)
+    return attachPaginationMeta(getTenantList(response)
       .map(normalizeTenant)
-      .filter((tenant): tenant is Tenant => Boolean(tenant))
+      .filter((tenant): tenant is Tenant => Boolean(tenant)), response)
   },
 
   async getTenantById(id: string) {
@@ -71,9 +72,9 @@ export const adminApi = {
     console.log('[adminApi.getSubscriptionPlans] request payload', request)
     const response = await axiosClient.post('/api/plan/list', request)
 
-    return getSubscriptionPlanList(response)
+    return attachPaginationMeta(getSubscriptionPlanList(response)
       .map((plan) => normalizeSubscriptionPlan(plan))
-      .filter((plan): plan is SubscriptionPlan => Boolean(plan))
+      .filter((plan): plan is SubscriptionPlan => Boolean(plan)), response)
   },
 
   async getPlanById(id: string) {
