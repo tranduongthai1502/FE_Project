@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { passwordRequirementLabels } from '../data/passwordRequirements'
 import { authApi } from '../services/authApi'
 import { getPasswordStrength } from '../utils/passwordStrength'
-import { getErrorCode } from '../../../utils/errorManager'
+import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
 
 type CandidateChangePasswordViewProps = {
   onBack: () => void
@@ -95,7 +95,7 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
       const isSuccess = response?.success === true || (status >= 200 && status < 300)
 
       if (!isSuccess) {
-        triggerToast?.('Error system. Please try again.', 'error')
+        triggerToast?.('The system is currently unavailable. Please try again.', 'error')
         return
       }
 
@@ -105,7 +105,7 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
     } catch (error: any) {
       const status = Number(error?.status ?? 0)
       if (status === 0 || status >= 500) {
-        triggerToast?.('Error system. Please try again.', 'error')
+        triggerToast?.('The system is currently unavailable. Please try again.', 'error')
       } else {
         setShowSaveConfirm(false)
         const errMsg = error?.message || ''
@@ -115,7 +115,7 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
         } else if (errCode === 'old_password_can_not_be_the_same_with_new_password') {
           setNewPasswordError('New password cannot be the same as the current password.')
         } else {
-          setCurrentPasswordError(errMsg || 'Current password is incorrect.')
+          setCurrentPasswordError(getAppErrorMessage(error, errMsg || 'Current password is incorrect.'))
         }
       }
     } finally {

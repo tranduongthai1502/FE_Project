@@ -17,6 +17,13 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
   const [dashboardPlans, setDashboardPlans] = useState<SubscriptionPlan[]>([])
   const [isDashboardLoading, setIsDashboardLoading] = useState(false)
   const [dashboardError, setDashboardError] = useState('')
+  const [viewResetKeys, setViewResetKeys] = useState<Record<SuperAdminView, number>>({
+    dashboard: 0,
+    tenantManagement: 0,
+    subscriptionPlans: 0,
+    promptManagement: 0,
+    settings: 0,
+  })
 
   useEffect(() => {
     const handlePopState = () => {
@@ -42,7 +49,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       })
       .catch((error) => {
         if (isActive) {
-          setDashboardError(getAdminErrorMessage(error, 'Không tải được dashboard.'))
+          setDashboardError(getAdminErrorMessage(error, 'Failed to load dashboard.'))
         }
       })
       .finally(() => {
@@ -60,6 +67,14 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
     setActiveView(view)
     updateSuperAdminViewUrl(view)
   }
+  const resetToViewRoot = (view: SuperAdminView) => {
+    setActiveView(view)
+    updateSuperAdminViewUrl(view)
+    setViewResetKeys((current) => ({
+      ...current,
+      [view]: current[view] + 1,
+    }))
+  }
   const openTenantCreate = () => {
     setActiveView('tenantManagement')
     updateTenantCreateUrl()
@@ -72,7 +87,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
     icon: item.icon,
     label: item.label,
     active: item.view === activeView,
-    onClick: () => selectView(item.view as SuperAdminView),
+    onClick: () => resetToViewRoot(item.view as SuperAdminView),
   }))
   const activeTenants = dashboardTenants.filter((tenant) => tenant.status.toLowerCase() === 'active')
   const expiringTenantCount = dashboardTenants.filter((tenant) => {
@@ -153,13 +168,13 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       className="super-admin-shell"
     >
       {activeView === 'tenantManagement' ? (
-        <TenantManagementView triggerToast={triggerToast} />
+        <TenantManagementView key={viewResetKeys.tenantManagement} triggerToast={triggerToast} />
       ) : activeView === 'subscriptionPlans' ? (
-        <SubscriptionPlansView onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <SubscriptionPlansView key={viewResetKeys.subscriptionPlans} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'promptManagement' ? (
-        <PromptManagementView />
+        <PromptManagementView key={viewResetKeys.promptManagement} />
       ) : activeView === 'settings' ? (
-        <AccountSettingsView onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsView key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
         <div className="role-content super-admin-content">
         {dashboardErrorMessage && (
