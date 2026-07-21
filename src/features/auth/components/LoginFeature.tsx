@@ -18,6 +18,7 @@ import { authApi } from '../services/authApi'
 import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
 import { authErrorMessages } from '../errors'
 import { saveRequirePasswordChange } from '../utils/authStorage'
+import { getPageForUserRole } from '../utils/authRole'
 
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = authErrorMessages.accountNotFound
@@ -33,7 +34,8 @@ const resendOtpCountdownSeconds = 59
 type ForgotStep = 'email' | 'otp' | 'reset'
 
 function getAuthResponsePayload(response: any) {
-  return response?.data && typeof response.data === 'object' ? response.data : response
+  const payload = response?.data && typeof response.data === 'object' ? response.data : response
+  return payload?.data && typeof payload.data === 'object' ? payload.data : payload
 }
 
 function getAuthUser(payload: any) {
@@ -139,18 +141,63 @@ function getRefreshToken(payload: any) {
   return payload?.refresh_token || payload?.refreshToken || ''
 }
 
-function getRequirePasswordChange(payload: any, user: any) {
+function readBooleanFlag(source: any, keys: string[]) {
+  for (const key of keys) {
+    const value = source?.[key]
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'number') return value === 1
+    if (typeof value === 'string') {
+      const normalizedValue = value.trim().toLowerCase()
+      if (['true', '1', 'yes', 'y'].includes(normalizedValue)) return true
+      if (['false', '0', 'no', 'n'].includes(normalizedValue)) return false
+    }
+  }
+
+  return undefined
+}
+
+function getRequirePasswordChange(payload: any, user: any, userRole: string) {
   const userType = String(payload?.userType ?? payload?.user_type ?? user?.userType ?? user?.user_type ?? '')
     .trim()
     .toUpperCase()
-  const requiresPasswordChange = Boolean(
-    payload?.requirePasswordChange ??
-      payload?.require_password_change ??
-      user?.requirePasswordChange ??
-      user?.require_password_change
-  )
+  const isTenantAdmin = userType === 'TENANT' || getPageForUserRole(userRole) === 'tenantAdmin'
+  const sources = [payload, user]
+  const mustChangePassword = sources.some((source) => readBooleanFlag(source, [
+    'requirePasswordChange',
+    'require_password_change',
+    'requiresPasswordChange',
+    'requires_password_change',
+    'mustChangePassword',
+    'must_change_password',
+    'forcePasswordChange',
+    'force_password_change',
+    'passwordChangeRequired',
+    'password_change_required',
+    'temporaryPassword',
+    'temporary_password',
+    'isTemporaryPassword',
+    'is_temporary_password',
+    'firstLogin',
+    'first_login',
+    'isFirstLogin',
+    'is_first_login',
+    'firstTimeLogin',
+    'first_time_login',
+  ]) === true)
+  const passwordChanged = sources
+    .map((source) => readBooleanFlag(source, [
+      'passwordChanged',
+      'password_changed',
+      'isPasswordChanged',
+      'is_password_changed',
+      'hasChangedPassword',
+      'has_changed_password',
+      'initialPasswordChanged',
+      'initial_password_changed',
+    ]))
+    .find((value) => value !== undefined)
 
-  return userType === 'TENANT' && requiresPasswordChange
+  return isTenantAdmin && (mustChangePassword || passwordChanged === false)
 }
 
 function isAccountNotFoundError(message = '') {
@@ -373,8 +420,11 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         const refreshToken = getRefreshToken(payload)
         const user = getAuthUser(payload)
         const userRole = getAuthUserRole(user, payload)
-        const requirePasswordChange = getRequirePasswordChange(payload, user)
-        const storedUser = getStoredUserPayload(user, payload)
+        const requirePasswordChange = getRequirePasswordChange(payload, user, userRole)
+        const storedUser = {
+          ...getStoredUserPayload(user, payload),
+          requirePasswordChange,
+        }
 
         const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
         const inactiveStorage = keepLoggedIn ? window.sessionStorage : window.localStorage

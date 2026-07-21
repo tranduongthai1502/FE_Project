@@ -2619,7 +2619,7 @@
 
 .create-tenant-card .tenant-form-grid {
   grid-template-columns: repeat(24, minmax(0, 1fr));
-  gap: 24px 28px;
+  gap: 5px 20px;
   padding: 26px 28px 26px;
 }
 
@@ -3766,6 +3766,29 @@
   font-size: 11px;
 }
 
+.tenant-create-form input[aria-invalid='true'],
+.tenant-create-form select[aria-invalid='true'],
+.tenant-domain-field div.has-error {
+  border-color: #f04438;
+}
+
+.tenant-field-error {
+  height: 16px;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  visibility: visible;
+}
+
+.tenant-field-error[aria-hidden='true'] {
+  visibility: hidden;
+}
+
 .tenant-domain-field {
   grid-column: 1 / 13;
 }
@@ -3781,7 +3804,7 @@
   background: transparent;
 }
 
-.tenant-domain-field small {
+.tenant-domain-field div small {
   flex: 0 0 auto;
   padding-right: 14px;
   color: #475467;
@@ -7610,5 +7633,184 @@
   .staff-log-filter-card button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 980px) {
+  .super-admin-shell {
+    --role-sidebar-width: min(78vw, 280px);
+    --role-sidebar-collapsed-width: 64px;
+    display: block;
+    padding-left: var(--role-sidebar-collapsed-width);
+    overflow-x: hidden;
+  }
+
+  .super-admin-shell .role-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1100;
+    width: var(--role-sidebar-width);
+    max-width: calc(100vw - 48px);
+    height: 100dvh;
+    min-height: 100dvh;
+    padding: 20px 12px;
+    box-shadow: 18px 0 38px rgba(16, 28, 51, 0.16);
+  }
+
+  .super-admin-shell.is-sidebar-hidden .role-sidebar {
+    width: var(--role-sidebar-collapsed-width);
+    max-width: var(--role-sidebar-collapsed-width);
+    padding-inline: 8px;
+    box-shadow: none;
+  }
+
+  .super-admin-shell .role-brand {
+    min-height: 46px;
+    align-items: center;
+  }
+
+  .super-admin-shell.is-sidebar-hidden .role-brand {
+    justify-content: center;
+  }
+
+  .super-admin-shell .role-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .super-admin-shell .role-topbar {
+    min-height: 58px;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 8px 16px;
+  }
+
+  .super-admin-shell .role-icons {
+    margin-left: 0;
+  }
+
+  .super-admin-content,
+  .tenant-management-content,
+  .subscription-plans-content,
+  .prompt-management-content,
+  .account-settings-content {
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .super-admin-content {
+    overflow-x: hidden;
+  }
+
+  .super-admin-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .super-admin-metrics .role-metric {
+    min-height: 104px;
+    padding: 14px 14px 12px;
+  }
+
+  .super-admin-metrics .role-metric strong {
+    padding: 0;
+    font-size: clamp(18px, 4vw, 22px);
+    word-break: break-word;
+  }
+
+  .super-dashboard-container {
+    width: 100%;
+    margin: 0;
+    gap: 14px;
+  }
+
+  .super-dashboard-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .super-dashboard-row > .role-panel,
+  .super-dashboard-row > .role-panel:first-child {
+    min-width: 0;
+  }
+
+  .super-admin-content .quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .super-admin-content .quick-actions button:nth-of-type(3) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .super-admin-shell {
+    --role-sidebar-width: min(82vw, 260px);
+    --role-sidebar-collapsed-width: 56px;
+    padding-left: var(--role-sidebar-collapsed-width);
+  }
+
+  .super-admin-shell .role-sidebar {
+    max-width: calc(100vw - 36px);
+  }
+
+  .super-admin-shell.is-sidebar-hidden .role-sidebar {
+    width: var(--role-sidebar-collapsed-width);
+    max-width: var(--role-sidebar-collapsed-width);
+  }
+
+  .super-admin-shell .role-topbar {
+    min-height: 54px;
+    padding: 8px 12px;
+  }
+
+  .super-admin-shell .role-icons {
+    display: none;
+  }
+
+  .super-admin-shell .role-user {
+    padding: 0;
+  }
+
+  .super-admin-content,
+  .tenant-management-content,
+  .subscription-plans-content,
+  .prompt-management-content,
+  .account-settings-content {
+    padding: 12px 10px 24px;
+  }
+
+  .super-admin-metrics {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .super-admin-metrics .role-metric {
+    min-height: 86px;
+  }
+
+  .super-admin-content .role-panel-head,
+  .super-tenant-table .role-panel-head,
+  .prompt-panel .role-panel-head {
+    padding-inline: 14px;
+  }
+
+  .super-tenant-table article,
+  .super-tenant-table-header,
+  .prompt-panel article,
+  .bar-row,
+  .activity-panel footer {
+    margin-inline: 14px;
+  }
+
+  .super-tenant-table article {
+    padding: 14px;
+  }
+
+  .super-admin-content .activity-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-inline: 14px;
   }
 }
