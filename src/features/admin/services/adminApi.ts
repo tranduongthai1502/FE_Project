@@ -38,9 +38,20 @@ function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): 
   }
 }
 
+function buildOneBasedListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
+  const page = params?.page ?? defaults.page
+
+  return {
+    ...defaults,
+    ...params,
+    page: Math.max(1, page),
+    filters: params?.filters ?? defaults.filters,
+  }
+}
+
 export const adminApi = {
   async getTenants(params?: AdminListParams) {
-    const request = buildListRequest({
+    const request = buildOneBasedListRequest({
       "sortField": 'createdAt',
       "filters": {},
       "sortBy": 'DESC',
