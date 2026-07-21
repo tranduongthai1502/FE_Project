@@ -1,6 +1,18 @@
 import type { FormEvent } from 'react'
 import type { CreateTenantForm, SubscriptionPlan } from '../../types/admin.types'
 
+export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
+
+const requiredFieldMessage = 'Please fill in all required fields.'
+
+function FieldError({ message }: { message?: string }) {
+  return (
+    <small className="tenant-field-error" aria-hidden={!message}>
+      {message || requiredFieldMessage}
+    </small>
+  )
+}
+
 const industryOptions = [
   'Technology',
   'Media',
@@ -32,20 +44,24 @@ const regionOptions = [
 export function CreateTenantPage({
   form,
   plans,
+  fieldErrors = {},
   isLoadingPlans,
   isSubmitting,
   onChange,
   onClose,
+  onGoHome,
   onBackToList,
   onSubmit,
 }: {
   form: CreateTenantForm
   error: string
+  fieldErrors?: CreateTenantFieldErrors
   plans: SubscriptionPlan[]
   isLoadingPlans: boolean
   isSubmitting: boolean
   onChange: (field: keyof CreateTenantForm, value: string) => void
   onClose: () => void
+  onGoHome: () => void
   onBackToList: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }) {
@@ -53,7 +69,7 @@ export function CreateTenantPage({
     <div className="role-content create-tenant-content">
       <div className="tenant-breadcrumb create-tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
-        <span>Home</span>
+        <button type="button" onClick={onGoHome}>Home</button>
         <span className="breadcrumb-separator">/</span>
         <button type="button" onClick={onBackToList}>Tenant Management</button>
         <span className="breadcrumb-separator">/</span>
@@ -68,21 +84,24 @@ export function CreateTenantPage({
           </div>
         </header>
 
-        <form className="tenant-create-form" onSubmit={onSubmit}>
+        <form className="tenant-create-form" onSubmit={onSubmit} noValidate>
           <div className="tenant-form-grid">
             <label>
               <span>Company Name <b>*</b></span>
               <input
+                aria-invalid={Boolean(fieldErrors.companyName)}
                 value={form.companyName}
                 onChange={(event) => onChange('companyName', event.target.value)}
                 placeholder="e.g. Acme Corp"
                 required
               />
+              <FieldError message={fieldErrors.companyName} />
             </label>
 
             <label>
               <span>Subscription Plan <b>*</b></span>
               <select
+                aria-invalid={Boolean(fieldErrors.planId)}
                 value={form.planId}
                 onChange={(event) => onChange('planId', event.target.value)}
                 disabled={isLoadingPlans || isSubmitting}
@@ -95,12 +114,14 @@ export function CreateTenantPage({
                   </option>
                 ))}
               </select>
+              <FieldError message={fieldErrors.planId} />
             </label>
 
             <label className="tenant-domain-field">
               <span>Domain / Identifier <b>*</b></span>
-              <div>
+              <div className={fieldErrors.domain ? 'has-error' : ''}>
                 <input
+                  aria-invalid={Boolean(fieldErrors.domain)}
                   value={form.domain}
                   onChange={(event) => onChange('domain', event.target.value)}
                   placeholder="acme"
@@ -108,11 +129,13 @@ export function CreateTenantPage({
                 />
                 <small>.jobfusion.ai</small>
               </div>
+              <FieldError message={fieldErrors.domain} />
             </label>
 
             <label>
               <span>Industry <b>*</b></span>
               <select
+                aria-invalid={Boolean(fieldErrors.industry)}
                 value={form.industry}
                 onChange={(event) => onChange('industry', event.target.value)}
                 required
@@ -122,11 +145,13 @@ export function CreateTenantPage({
                   <option value={industry} key={industry}>{industry}</option>
                 ))}
               </select>
+              <FieldError message={fieldErrors.industry} />
             </label>
 
             <label>
               <span>Region <b>*</b></span>
               <select
+                aria-invalid={Boolean(fieldErrors.region)}
                 value={form.region}
                 onChange={(event) => onChange('region', event.target.value)}
                 required
@@ -136,6 +161,7 @@ export function CreateTenantPage({
                   <option value={region} key={region}>{region}</option>
                 ))}
               </select>
+              <FieldError message={fieldErrors.region} />
             </label>
           </div>
 
@@ -146,22 +172,26 @@ export function CreateTenantPage({
             <label>
               <span>Admin Full Name <b>*</b></span>
               <input
+                aria-invalid={Boolean(fieldErrors.adminFullName)}
                 value={form.adminFullName}
                 onChange={(event) => onChange('adminFullName', event.target.value)}
                 placeholder="Jane Doe"
                 required
               />
+              <FieldError message={fieldErrors.adminFullName} />
             </label>
 
             <label>
               <span>Admin Email <b>*</b></span>
               <input
+                aria-invalid={Boolean(fieldErrors.adminEmail)}
                 value={form.adminEmail}
                 onChange={(event) => onChange('adminEmail', event.target.value)}
                 placeholder="jane@company.com"
                 type="email"
                 required
               />
+              <FieldError message={fieldErrors.adminEmail} />
             </label>
           </div>
 

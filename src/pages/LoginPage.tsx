@@ -2,7 +2,12 @@ import { LoginFeature } from '@/features/auth'
 
 type LoginPageProps = {
   onGoToSignup: () => void
-  onSignInSuccess: (email: string, keepLoggedIn: boolean, userRole: string) => boolean
+  onSignInSuccess: (
+    email: string,
+    keepLoggedIn: boolean,
+    userRole: string,
+    options?: { requirePasswordChange?: boolean },
+  ) => boolean
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 

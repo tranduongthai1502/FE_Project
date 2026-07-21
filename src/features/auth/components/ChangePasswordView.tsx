@@ -7,11 +7,16 @@ import { authErrorMessages } from '../errors'
 import { clearAuthStorage, clearRequirePasswordChange } from '../utils/authStorage'
 
 type CandidateChangePasswordViewProps = {
+  isPasswordChangeRequired?: boolean
   onBack: () => void
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
-export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateChangePasswordViewProps) {
+export function CandidateChangePasswordView({
+  isPasswordChangeRequired = false,
+  onBack,
+  triggerToast,
+}: CandidateChangePasswordViewProps) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -63,10 +68,20 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
   }
 
   const openCancelConfirm = () => {
+    if (isPasswordChangeRequired) {
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setShowCancelConfirm(true)
   }
 
   const openBackConfirm = () => {
+    if (isPasswordChangeRequired) {
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setShowBackConfirm(true)
   }
 
@@ -184,10 +199,12 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
           </div>
         )}
 
-      <button type="button" className="candidate-back-home" onClick={openBackConfirm}>
-        <i className="fa-solid fa-arrow-left"></i>
-        <span>Back to Home</span>
-      </button>
+      {!isPasswordChangeRequired && (
+        <button type="button" className="candidate-back-home" onClick={openBackConfirm}>
+          <i className="fa-solid fa-arrow-left"></i>
+          <span>Back to Home</span>
+        </button>
+      )}
 
       <h1>Account Settings</h1>
 
@@ -207,9 +224,11 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
         </aside>
 
         <section className="candidate-change-password-card">
-          <button type="button" className="candidate-change-password-close" onClick={openCancelConfirm} aria-label="Close change password">
-            <i className="fa-solid fa-xmark"></i>
-          </button>
+          {!isPasswordChangeRequired && (
+            <button type="button" className="candidate-change-password-close" onClick={openCancelConfirm} aria-label="Close change password">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          )}
 
           <div className="candidate-change-password-heading">
             <h2>Change Password</h2>
@@ -329,7 +348,9 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
             </div>
 
             <div className="candidate-change-password-actions">
-              <button type="button" className="candidate-password-cancel" onClick={openCancelConfirm}>Cancel</button>
+              {!isPasswordChangeRequired && (
+                <button type="button" className="candidate-password-cancel" onClick={openCancelConfirm}>Cancel</button>
+              )}
               <button type="submit" className="candidate-password-save">Save Changes</button>
             </div>
           </form>
@@ -427,4 +448,3 @@ export function CandidateChangePasswordView({ onBack, triggerToast }: CandidateC
     </>
   )
 }
-

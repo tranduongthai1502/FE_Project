@@ -52,6 +52,10 @@ function getUserInitials(name: string) {
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase()
 }
 
+function getInitialSidebarVisibility() {
+  return !window.matchMedia('(max-width: 980px)').matches
+}
+
 export function DashboardShell({
   children,
   navItems,
@@ -75,7 +79,7 @@ export function DashboardShell({
   const displayName = getDisplayName(user)
   const displayRole = getDisplayRole(user, subtitle)
   const userInitials = getUserInitials(displayName)
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true)
+  const [isSidebarVisible, setIsSidebarVisible] = useState(getInitialSidebarVisibility)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const userDropdownRef = useRef<HTMLDivElement | null>(null)
 
