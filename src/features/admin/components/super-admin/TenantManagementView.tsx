@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
 import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser } from '../../types/admin.types'
 import { formatPlanDate } from '../../utils/adminFormatters'
@@ -8,8 +8,9 @@ import { CreateTenantPage } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
+import { getListPageCount } from '../../utils/adminMappers'
 
-type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'plan'
+type TenantStatusFilter = 'all' | 'active' | 'inactive'
 
 function getTenantStatusMeta(statusValue: string) {
   const normalized = statusValue.trim().toLowerCase()
@@ -60,6 +61,35 @@ function getDaysRemainingLabel(expirationDate?: string) {
   return `${Math.max(0, daysRemaining)} Day${Math.max(0, daysRemaining) === 1 ? '' : 's'}`
 }
 
+function normalizeFilterValue(value?: string) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function tenantMatchesPlanFilter(tenant: Tenant, selectedPlanId: string, selectedPlan?: SubscriptionPlan) {
+  if (!selectedPlanId) return true
+
+  const selectedId = normalizeFilterValue(selectedPlanId)
+  const selectedName = normalizeFilterValue(selectedPlan?.name)
+  const tenantPlanId = normalizeFilterValue(tenant.subscriptionPlanId)
+  const tenantPlanName = normalizeFilterValue(tenant.subscriptionPlanDetail?.name || tenant.subscriptionPlan)
+
+  return (
+    tenantPlanId === selectedId ||
+    tenantPlanName === selectedId ||
+    Boolean(selectedName && (tenantPlanName === selectedName || tenantPlanId === selectedName))
+  )
+}
+
+function getUsagePercent(used: number, limit: number) {
+  if (limit <= 0) return 0
+  return Math.min(100, Math.max(0, Math.round((used / limit) * 100)))
+}
+
+function getRemainingLabel(remaining: number, noun: string, unlimited = false) {
+  if (unlimited) return `Unlimited ${noun} available`
+  return `${Math.max(0, remaining)} ${noun} ${Math.max(0, remaining) === 1 ? 'available' : 'available'}`
+}
+
 const emptyTenantForm: CreateTenantForm = {
   companyName: '',
   domain: '',
@@ -78,6 +108,7 @@ function buildTenantListParams(
 ): AdminListParams {
   const filters: Record<string, unknown> = {}
   const keyword = searchQuery.trim()
+  void planFilter
 
   if (statusFilter === 'active') {
     filters.status = 'ACTIVE'
@@ -87,24 +118,26 @@ function buildTenantListParams(
     filters.status = 'INACTIVE'
   }
 
-  if (statusFilter === 'plan' && planFilter) {
-    filters.planId = planFilter
-  }
-
   if (keyword) {
     filters.keyword = keyword
   }
 
   return {
-    sortField: 'companyName',
+    sortField: 'createdAt',
     filters,
-    sortBy: 'ASC',
+    sortBy: 'DESC',
     page,
     size: ADMIN_LIST_PAGE_SIZE,
   }
 }
 
-export function TenantManagementView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
+export function TenantManagementView({
+  onHome,
+  triggerToast,
+}: {
+  onHome: () => void
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
+}) {
   const [activeView, setActiveView] = useState<'list' | 'detail'>(() => (
     getTenantDetailIdFromUrl() ? 'detail' : 'list'
   ))
@@ -130,6 +163,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
   const [tenantPlanFilter, setTenantPlanFilter] = useState('')
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
   const [tenantPage, setTenantPage] = useState(1)
+  const [tenantPageCount, setTenantPageCount] = useState(1)
   const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [pendingTenantPlanId, setPendingTenantPlanId] = useState('')
@@ -146,6 +180,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       .then((items) => {
         if (isActive) {
           setTenants(items)
+          setTenantPageCount(getListPageCount(items, tenantPage, ADMIN_LIST_PAGE_SIZE))
         }
       })
       .catch((error) => {
@@ -345,22 +380,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
 
     try {
       const createdTenant = await adminApi.createTenant(tenantForm)
-      if (createdTenant?.id && getTenantStatusMeta(createdTenant.status).isActive) {
-        await adminApi.updateTenant(createdTenant.id, {
-          companyName: tenantForm.companyName,
-          domain: tenantForm.domain,
-          industry: tenantForm.industry,
-          region: tenantForm.region,
-          status: 'INACTIVE',
-          planId: tenantForm.planId,
-          adminFullName: tenantForm.adminFullName,
-          adminEmail: tenantForm.adminEmail,
-        })
-      }
       if (createdTenant) {
         setTenants((currentTenants) => {
-          const inactiveTenant = { ...createdTenant, status: 'INACTIVE' }
-          return [inactiveTenant, ...currentTenants.filter((tenant) => tenant.id !== inactiveTenant.id)]
+          return [createdTenant, ...currentTenants.filter((tenant) => tenant.id !== createdTenant.id)]
         })
       }
       setTenantForm(emptyTenantForm)
@@ -461,7 +483,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       .sort((left, right) => left.label.localeCompare(right.label))
   }, [subscriptionPlans])
   const filteredTenants = tenants
-  const tenantPageCount = tenantPage + (filteredTenants.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
   const currentTenantPage = tenantPage
   const paginatedTenants = filteredTenants
   const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
@@ -471,21 +492,16 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     setTenantPage(1)
   }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
 
+  useEffect(() => {
+    if (!isLoadingTenants && !tenantListError && tenants.length === 0 && tenantPage > 1) {
+      setTenantPage((page) => Math.max(1, page - 1))
+    }
+  }, [isLoadingTenants, tenantListError, tenantPage, tenants.length])
+
   const selectTenantFilter = (filter: TenantStatusFilter) => {
     setTenantStatusFilter(filter)
-    if (filter !== 'plan') {
-      setTenantPlanFilter('')
-    } else if (!tenantPlanFilter && planFilterOptions[0]) {
-      setTenantPlanFilter(planFilterOptions[0].value)
-    }
   }
   const selectPlanFilter = (planValue: string) => {
-    if (!planValue) {
-      selectTenantFilter('all')
-      return
-    }
-
-    setTenantStatusFilter('plan')
     setTenantPlanFilter(planValue)
   }
   const openTenantDetail = (tenantId: string) => {
@@ -631,12 +647,26 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const isActive = tenantStatus.isActive
     const activeSubscriptionPlan = nextSelectedPlan || selectedPlan
     const hasUnlimitedStaffQuota = Boolean(activeSubscriptionPlan?.staffAccountUnlimited)
+    const hasUnlimitedJobQuota = Boolean(activeSubscriptionPlan?.activeJobPostingUnlimited)
+    const staffLimit = hasUnlimitedStaffQuota
+      ? 0
+      : selectedTenant?.userQuotaLimit || activeSubscriptionPlan?.maxStaffAccount || 0
+    const staffUsed = selectedTenant?.userQuotaUsed || 0
+    const staffUsagePercent = getUsagePercent(staffUsed, staffLimit)
+    const jobLimit = hasUnlimitedJobQuota
+      ? 0
+      : selectedTenant?.activeJobPostingLimit || activeSubscriptionPlan?.maxActiveJobPosting || 0
+    const activeJobPostingUsed = selectedTenant?.activeJobPostingUsed || 0
+    const jobUsagePercent = getUsagePercent(activeJobPostingUsed, jobLimit)
+    const efficiencyScore = selectedTenant?.efficiencyScore
+    const efficiencyScoreLabel = typeof efficiencyScore === 'number' ? `${Math.round(efficiencyScore)}%` : '-'
+    const efficiencyProgress = typeof efficiencyScore === 'number' ? Math.min(100, Math.max(0, Math.round(efficiencyScore))) : 0
     const quotaLabel = selectedTenant
       ? hasUnlimitedStaffQuota
         ? 'Unlimited'
-        : selectedTenant.userQuotaLimit > 0
-        ? `${selectedTenant.userQuotaUsed}/${selectedTenant.userQuotaLimit}`
-        : String(selectedTenant.userQuotaUsed)
+        : staffLimit > 0
+        ? `${staffUsed}/${staffLimit}`
+        : String(staffUsed)
       : '-'
     const tenantDomain = selectedTenant?.domain ? `${selectedTenant.domain}.jobfusion.ai` : selectedTenant?.id || '-'
     const tenantIndustry = selectedTenant?.industry || 'Media & Advertising'
@@ -645,7 +675,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     const tenantStartDate = selectedTenant ? formatTenantDate(selectedTenant.startDate || selectedTenant.createdAt) : '-'
     const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
     const monthlyBillingLabel = activeSubscriptionPlan
-      ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / mo`
+      ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month`
       : '-'
     const daysRemainingLabel = getDaysRemainingLabel(selectedTenant?.expirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
@@ -669,7 +699,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
       <div className="role-content tenant-detail-content">
         <div className="tenant-breadcrumb">
           <i className="fa-solid fa-house"></i>
-          <span>Home</span>
+          <button type="button" onClick={onHome}>Home</button>
           <span className="breadcrumb-separator">/</span>
           <button type="button" onClick={closeTenantDetail}>Tenant Management</button>
           <span className="breadcrumb-separator">/</span>
@@ -715,15 +745,45 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 </div>
               </section>
 
-              <section className="tenant-detail-empty-card">
-                <i className="fa-solid fa-triangle-exclamation"></i>
-                <strong>Usage data temporarily unavailable.</strong>
+              <section className="tenant-detail-card tenant-resource-card">
+                <header>
+                  <span><i className="fa-regular fa-chart-bar"></i></span>
+                  <h2>Resource Usage</h2>
+                </header>
+                <div className="tenant-resource-list">
+                  <article>
+                    <div>
+                      <span>Staff Accounts</span>
+                      <strong>{hasUnlimitedStaffQuota ? `${staffUsed} / Unlimited` : `${staffUsed} / ${staffLimit}`}</strong>
+                    </div>
+                    <i className="tenant-resource-bar staff"><b style={{ width: `${hasUnlimitedStaffQuota ? 100 : staffUsagePercent}%` }} /></i>
+                    <small>{getRemainingLabel(staffLimit - staffUsed, 'seats', hasUnlimitedStaffQuota)}</small>
+                  </article>
+                  <article>
+                    <div>
+                      <span>Active Job Postings</span>
+                      <strong>{hasUnlimitedJobQuota ? `${activeJobPostingUsed} / Unlimited` : `${activeJobPostingUsed} / ${jobLimit}`}</strong>
+                    </div>
+                    <i className="tenant-resource-bar jobs"><b style={{ width: `${hasUnlimitedJobQuota ? 100 : jobUsagePercent}%` }} /></i>
+                    <small>{hasUnlimitedJobQuota ? 'Unlimited slots available' : `${Math.max(0, jobLimit - activeJobPostingUsed)} slots remaining`}</small>
+                  </article>
+                  <article className="tenant-efficiency-row">
+                    <span>Efficiency Score</span>
+                    <strong style={{ '--tenant-efficiency': `${efficiencyProgress}%` } as CSSProperties}>
+                      <i></i>
+                      {efficiencyScoreLabel}
+                    </strong>
+                  </article>
+                </div>
               </section>
 
               <section className="tenant-detail-card tenant-subscription-card">
                 <header>
                   <span><i className="fa-regular fa-id-badge"></i></span>
-                  <h2>Subscription Plan</h2>
+                  <div className="tenant-plan-title-stack">
+                    <h2>Subscription Plan</h2>
+                    <strong>{activeSubscriptionPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
+                  </div>
                   <label className="tenant-plan-picker">
                     <i className="fa-solid fa-chevron-down tenant-plan-chevron"></i>
                     <select
@@ -741,7 +801,6 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                     Change Plan
                   </button>
                 </header>
-                <strong className="tenant-plan-heading">{activeSubscriptionPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
                 <div className="tenant-subscription-metrics">
                   <div><small>Monthly Billing</small><strong>{monthlyBillingLabel}</strong></div>
                   <div><small>Days Remaining</small><strong><i className="fa-regular fa-calendar-check"></i> {daysRemainingLabel}</strong></div>
@@ -804,7 +863,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
     <div className="role-content tenant-management-content">
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
-        <span>Home</span>
+        <button type="button" onClick={onHome}>Home</button>
         <span className="breadcrumb-separator">/</span>
         <strong>Tenant Management</strong>
       </div>
@@ -814,9 +873,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
           <button type="button" className={tenantStatusFilter === 'all' ? 'active' : ''} onClick={() => selectTenantFilter('all')}>All Tenants</button>
           <button type="button" className={tenantStatusFilter === 'active' ? 'active' : ''} onClick={() => selectTenantFilter('active')}>Active</button>
           <button type="button" className={tenantStatusFilter === 'inactive' ? 'active' : ''} onClick={() => selectTenantFilter('inactive')}>Inactive</button>
-          <label className={`tenant-plan-filter-tab ${tenantStatusFilter === 'plan' ? 'active' : ''}`}>
+          <label className={`tenant-plan-filter-tab ${tenantPlanFilter ? 'active' : ''}`}>
             <select
-              value={tenantStatusFilter === 'plan' ? tenantPlanFilter : ''}
+              value={tenantPlanFilter}
               onChange={(event) => selectPlanFilter(event.target.value)}
               aria-label="Filter by plan"
             >
@@ -853,6 +912,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
         <div className="tenant-list-table-row tenant-list-table-head">
           <span>Full Name</span>
           <span>Subscription Plan</span>
+          <span>Monthly Price</span>
           <span>Expiration Date</span>
           <span>User Quota</span>
           <span>Status</span>
@@ -876,6 +936,9 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
               ? Math.min(100, Math.round((tenant.userQuotaUsed / tenant.userQuotaLimit) * 100))
               : 0
             const expirationDateLabel = formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'
+            const monthlyPriceLabel = tenantPlan
+              ? tenantPlan.priceLabel || `$${tenantPlan.monthlyPrice.toFixed(2)} / month`
+              : '-'
 
             return (
               <div className="tenant-list-table-row" key={tenant.id}>
@@ -883,6 +946,7 @@ export function TenantManagementView({ triggerToast }: { triggerToast?: (message
                 <span className={`tenant-plan-name ${isHighestPricedPlan(tenant, tenantPlan) ? 'premium-plan' : ''}`}>
                   {tenantPlan?.name || tenant.subscriptionPlan || '-'}
                 </span>
+                <span className="tenant-monthly-price">{monthlyPriceLabel}</span>
                 <span className="tenant-expiration-date">{expirationDateLabel}</span>
                 <span className={`tenant-quota ${hasUnlimitedQuota ? 'unlimited' : ''}`}>
                   {!hasUnlimitedQuota && <i><b style={{ width: `${quotaPercent}%` }} /></i>}

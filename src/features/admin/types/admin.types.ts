@@ -27,6 +27,10 @@ export type StaffMember = {
   employeeCode?: string
   phone?: string
   createdAt?: string
+  activatedAt?: string
+  lastLoginAt?: string
+  lastLoginLocation?: string
+  lastLoginIp?: string
 }
 
 export type StaffPayload = {
@@ -96,6 +100,9 @@ export type Tenant = {
   expirationDate: string
   userQuotaUsed: number
   userQuotaLimit: number
+  activeJobPostingUsed?: number
+  activeJobPostingLimit?: number
+  efficiencyScore?: number
   status: string
   adminUserId?: string
   adminFullName?: string
@@ -108,6 +115,10 @@ export type TenantAdminUser = {
   email: string
   status?: string
   createdAt?: string
+  activatedAt?: string
+  lastLoginAt?: string
+  lastLoginLocation?: string
+  lastLoginIp?: string
 }
 
 export type PlanListRequest = {

@@ -9,6 +9,10 @@ import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { shouldToastHttpError } from '../../../../utils/httpStatusManager'
+import { getListPageCount, getPaginationMeta } from '../../utils/adminMappers'
+
+const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
+const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
 
 function getStoredTenantId() {
   const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
@@ -39,6 +43,47 @@ function getStoredTenantId() {
   }
 }
 
+function isInactiveTenantStatus(status?: string) {
+  const normalized = String(status || '').trim().toLowerCase()
+
+  return (
+    normalized === 'inactive' ||
+    normalized === 'in_active' ||
+    normalized === 'not_active' ||
+    normalized === 'not active' ||
+    normalized === 'disabled' ||
+    normalized === 'deactivated' ||
+    normalized === 'suspended'
+  )
+}
+
+function getStoredSelectedStaff() {
+  const rawStaff = window.sessionStorage.getItem(selectedTenantStaffStorageKey)
+  if (!rawStaff) return null
+
+  try {
+    return JSON.parse(rawStaff) as StaffMember
+  } catch {
+    return null
+  }
+}
+
+function saveSelectedStaff(staff: StaffMember) {
+  window.sessionStorage.setItem(selectedTenantStaffStorageKey, JSON.stringify(staff))
+}
+
+function clearSelectedStaff() {
+  window.sessionStorage.removeItem(selectedTenantStaffStorageKey)
+}
+
+function normalizeUserStatus(value?: string): UserStatus | null {
+  const normalized = String(value || '').trim().toUpperCase()
+  if (normalized === 'ACTIVE') return 'ACTIVE'
+  if (normalized === 'PENDING') return 'PENDING'
+  if (normalized === 'DISABLED' || normalized === 'INACTIVE' || normalized === 'DEACTIVATED') return 'DISABLED'
+  return null
+}
+
 function formatDashboardDate(value?: string) {
   if (!value || value === '-') return '-'
   const parsed = Date.parse(value)
@@ -61,7 +106,9 @@ function StaffManagementView({
   onEdit,
   onDelete,
   onSelectStaff,
+  onHome,
   currentPage,
+  pageCount,
   onPageChange,
 }: {
   staffList: StaffMember[]
@@ -73,7 +120,9 @@ function StaffManagementView({
   onEdit: (staff: StaffMember) => void
   onDelete: (staff: StaffMember) => void
   onSelectStaff: (staff: StaffMember) => void
+  onHome: () => void
   currentPage: number
+  pageCount: number
   onPageChange: (page: number) => void
 }) {
   const [roleFilter, setRoleFilter] = useState('all')
@@ -105,7 +154,7 @@ function StaffManagementView({
   })
 
   const totalElements = filteredStaff.length
-  const totalPages = currentPage + (totalElements === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
+  const totalPages = pageCount
   const paginatedStaff = filteredStaff
   const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
   const displayEnd = displayStart === 0 ? 0 : displayStart + totalElements - 1
@@ -113,6 +162,12 @@ function StaffManagementView({
   useEffect(() => {
     onPageChange(1)
   }, [roleFilter, statusFilter, searchQuery, onPageChange])
+
+  useEffect(() => {
+    if (!isLoading && !error && staffList.length === 0 && currentPage > 1) {
+      onPageChange(Math.max(1, currentPage - 1))
+    }
+  }, [currentPage, error, isLoading, onPageChange, staffList.length])
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Oct 12, 2023'
@@ -129,14 +184,29 @@ function StaffManagementView({
     }
   }
 
-  const quotaPercent = isStaffQuotaUnlimited ? Math.min(100, Math.max(8, staffList.length * 8)) : Math.min(100, Math.round((staffList.length / maxStaffQuota) * 100))
+  const formatRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
+    if (diffMinutes < 60) return `${diffMinutes || 1} minute${diffMinutes === 1 ? '' : 's'} ago`
+
+    const diffHours = Math.round(diffMinutes / 60)
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+
+    const diffDays = Math.round(diffHours / 24)
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+  }
+
+  const quotaPercent = Math.min(100, Math.round((staffList.length / Math.max(maxStaffQuota, 1)) * 100))
   const hasReachedStaffQuota = !isStaffQuotaUnlimited && staffList.length >= maxStaffQuota
 
   return (
     <div className="role-content staff-management-content">
       <div className="tenant-breadcrumb">
         <i className="fa-solid fa-house"></i>
-        <span>Home</span>
+        <button type="button" onClick={onHome}>Home</button>
         <span className="breadcrumb-separator">/</span>
         <strong>Staff Management</strong>
       </div>
@@ -151,7 +221,9 @@ function StaffManagementView({
             <span>Staff Accounts</span>
             <strong>{staffList.length} / {isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}</strong>
           </div>
-          <i><span style={{ width: `${quotaPercent}%`, background: '#ff5f2b' }} /></i>
+          {!isStaffQuotaUnlimited && (
+            <i><span style={{ width: `${quotaPercent}%`, background: '#ff5f2b' }} /></i>
+          )}
           <small>{isStaffQuotaUnlimited ? 'Unlimited seats available' : `${Math.max(0, maxStaffQuota - staffList.length)} seats remaining`}</small>
         </section>
       </div>
@@ -776,13 +848,19 @@ function StaffDetailView({
     }
   }
 
-  const roleList = staffMember.userRole 
-    ? staffMember.userRole.split(', ').map(r => r.trim())
+  const roleList = staffMember.userRole
+    ? staffMember.userRole.split(',').map(r => r.trim()).filter(Boolean)
     : []
+  const hasUniversalAccess = roleList.length > 1
 
   const isActive = staffMember.status === 'ACTIVE'
   const isPending = staffMember.status === 'PENDING'
   const isDisabled = staffMember.status === 'DISABLED'
+  const statusLabel = isActive ? 'Active' : isPending ? 'Pending Activation' : 'Inactive'
+  const statusSinceDate = staffMember.activatedAt || staffMember.createdAt
+  const loginLocation = staffMember.lastLoginLocation && staffMember.lastLoginIp
+    ? `${staffMember.lastLoginLocation} (IP: ${staffMember.lastLoginIp})`
+    : staffMember.lastLoginLocation || (staffMember.lastLoginIp ? `IP: ${staffMember.lastLoginIp}` : '-')
 
   return (
     <div className="role-content staff-detail-content">
@@ -819,7 +897,7 @@ function StaffDetailView({
             className={isActive ? "btn-deactivate" : "btn-activate"} 
             onClick={onToggleStatus}
           >
-            {isActive ? 'Deactivate Account' : 'Resend activation email'}
+            {isActive ? 'Deactivate Account' : isPending ? 'Resend Activation Email' : 'Activate Account'}
           </button>
         </div>
       </section>
@@ -863,6 +941,15 @@ function StaffDetailView({
                 <span key={role} className="staff-badge">{role}</span>
               ))}
             </div>
+            {hasUniversalAccess && (
+              <div className="staff-universal-access">
+                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                <div>
+                  <strong>Universal Access Enabled</strong>
+                  <p>This account can switch workspaces seamlessly within the Tenant infrastructure.</p>
+                </div>
+              </div>
+            )}
           </section>
         </div>
 
@@ -873,20 +960,29 @@ function StaffDetailView({
             <div className={`staff-status-box ${isPending ? 'status-pending' : isDisabled ? 'status-disabled' : ''}`}>
               <strong>
                 <i className="fa-solid fa-circle" style={{ fontSize: '8px' }}></i>
-                {isActive ? 'Active' : isPending ? 'Pending' : 'Inactive'}
+                {statusLabel}
               </strong>
-              <span>SINCE {isDisabled ? 'JAN 2026' : formatDate(staffMember.createdAt).toUpperCase()}</span>
+              {isActive && <span>SINCE {formatDate(statusSinceDate).toUpperCase()}</span>}
             </div>
-            <div className="staff-login-meta">
-              <div className="staff-login-row">
-                <span>Last Login</span>
-                <strong>2 hours ago</strong>
+            {isPending ? (
+              <div className="staff-login-meta">
+                <div className="staff-login-row">
+                  <span>Waiting for email activation</span>
+                  <button type="button" className="staff-view-logs-btn" onClick={onToggleStatus}>Resend Activation Email</button>
+                </div>
               </div>
-              <div className="staff-login-row">
-                <span>Login Location</span>
-                <strong>San Francisco, US (IP: 192.168.1.1)</strong>
+            ) : isActive ? (
+              <div className="staff-login-meta">
+                <div className="staff-login-row">
+                  <span>Last Login</span>
+                  <strong>{formatRelativeTime(staffMember.lastLoginAt)}</strong>
+                </div>
+                <div className="staff-login-row">
+                  <span>Login Location</span>
+                  <strong>{loginLocation}</strong>
+                </div>
               </div>
-            </div>
+            ) : null}
           </section>
 
           <section className="staff-detail-card">
@@ -1036,7 +1132,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [isLoadingStaff, setIsLoadingStaff] = useState(false)
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [staffError, setStaffError] = useState('')
-  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null)
+  const [staffDetailError, setStaffDetailError] = useState('')
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(() => getStoredSelectedStaff())
   
   // Modals & Save states
   const [deleteConfirmStaff, setDeleteConfirmStaff] = useState<StaffMember | null>(null)
@@ -1045,16 +1142,18 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [isSaving, setIsSaving] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [staffPage, setStaffPage] = useState(1)
+  const [staffPageCount, setStaffPageCount] = useState(1)
+  const shouldLoadTenantWorkspace =
+    activeView === 'dashboard' ||
+    activeView === 'staffManagement' ||
+    activeView === 'staffCreate' ||
+    activeView === 'staffEdit' ||
+    activeView === 'staffDetail' ||
+    activeView === 'staffActivityLog'
 
   // API load staff
   useEffect(() => {
-    if (
-      activeView !== 'staffManagement' &&
-      activeView !== 'staffCreate' &&
-      activeView !== 'staffEdit' &&
-      activeView !== 'staffDetail' &&
-      activeView !== 'staffActivityLog'
-    ) {
+    if (!shouldLoadTenantWorkspace) {
       return
     }
 
@@ -1068,6 +1167,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         const payload = response?.data || response
         const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.content) ? payload.content : [])
         setStaffList(list)
+        setStaffPageCount(getListPageCount(Object.assign([...list], { __pagination: getPaginationMeta(response) }), staffPage, ADMIN_LIST_PAGE_SIZE))
       })
       .catch((error) => {
         if (!isActive) return
@@ -1082,19 +1182,10 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [activeView, refreshKey, staffPage, tenantId])
+  }, [shouldLoadTenantWorkspace, refreshKey, staffPage, tenantId])
 
   useEffect(() => {
-    if (
-      !tenantId ||
-      (
-        activeView !== 'staffManagement' &&
-        activeView !== 'staffCreate' &&
-        activeView !== 'staffEdit' &&
-        activeView !== 'staffDetail' &&
-        activeView !== 'staffActivityLog'
-      )
-    ) {
+    if (!tenantId || !shouldLoadTenantWorkspace) {
       return
     }
 
@@ -1126,25 +1217,87 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [activeView, tenantId])
+  }, [shouldLoadTenantWorkspace, tenantId])
+
+  useEffect(() => {
+    if (
+      !selectedStaff?.id ||
+      (
+        activeView !== 'staffDetail' &&
+        activeView !== 'staffEdit' &&
+        activeView !== 'staffActivityLog'
+      )
+    ) {
+      return
+    }
+
+    let isActive = true
+    setStaffDetailError('')
+
+    adminApi.getUserById(selectedStaff.id)
+      .then((staffDetail) => {
+        if (!isActive) return
+
+        const nextStatus = normalizeUserStatus(staffDetail.status)
+        setSelectedStaff((currentStaff) => {
+          if (!currentStaff || currentStaff.id !== selectedStaff.id) return currentStaff
+
+          const nextStaff = {
+            ...currentStaff,
+            email: staffDetail.email || currentStaff.email,
+            fullName: staffDetail.fullName || currentStaff.fullName,
+            status: nextStatus || currentStaff.status,
+            createdAt: staffDetail.createdAt || currentStaff.createdAt,
+            activatedAt: staffDetail.activatedAt || currentStaff.activatedAt,
+            lastLoginAt: staffDetail.lastLoginAt || currentStaff.lastLoginAt,
+            lastLoginLocation: staffDetail.lastLoginLocation || currentStaff.lastLoginLocation,
+            lastLoginIp: staffDetail.lastLoginIp || currentStaff.lastLoginIp,
+          }
+          saveSelectedStaff(nextStaff)
+          return nextStaff
+        })
+      })
+      .catch((error) => {
+        if (isActive) {
+          setStaffDetailError('Error loading staff details. Please try again.')
+          if (shouldToastHttpError(error)) {
+            triggerToast?.(getAdminErrorMessage(error, 'Error loading staff details. Please try again.'), 'error')
+          }
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, selectedStaff?.id, triggerToast])
 
   const hasTenantQuota = Boolean(tenantDetail)
   const isStaffQuotaUnlimited = Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0)
   const maxStaffQuota = isStaffQuotaUnlimited
     ? Math.max(staffList.length, 1)
     : tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
-  const staffQuotaSummary = `${staffList.length} / ${isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}`
-  const staffQuotaRingLabel = isStaffQuotaUnlimited ? 'Unlimited' : `${staffList.length}/${maxStaffQuota}`
+  const staffQuotaSummary = isStaffQuotaUnlimited ? 'Unlimited Seats' : `${staffList.length} / ${maxStaffQuota} Seats`
+  const staffQuotaRingLabel = isStaffQuotaUnlimited ? String(staffList.length) : `${staffList.length}/${maxStaffQuota}`
   const remainingStaffSeats = Math.max(0, maxStaffQuota - staffList.length)
   const staffQuotaDescription = isStaffQuotaUnlimited
-    ? 'Your current plan includes unlimited staff seats.'
-    : `You have ${remainingStaffSeats} seat${remainingStaffSeats === 1 ? '' : 's'} available in your current plan.`
+    ? 'Your plan includes unlimited staff seats.'
+    : `You have ${remainingStaffSeats} seat${remainingStaffSeats === 1 ? '' : 's'} available in your current plan. Optimize your team allocation now.`
   const currentPlanName = tenantPlan?.name || tenantDetail?.subscriptionPlan || 'Current Plan'
   const currentPlanDescription = tenantPlan?.description || 'Tenant subscription plan'
   const renewalDateLabel = formatDashboardDate(tenantDetail?.expirationDate)
+  const isTenantInactive = isInactiveTenantStatus(tenantDetail?.status)
+
+  const guardTenantActive = () => {
+    if (!isTenantInactive) return true
+
+    triggerToast?.(inactiveTenantActionMessage, 'error')
+    return false
+  }
 
   // Handlers
   const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
+    if (!guardTenantActive()) return
+
     setIsSaving(true)
     try {
       await adminApi.createStaff({
@@ -1168,6 +1321,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
   const handleUpdateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
     if (!selectedStaff) return
+    if (!guardTenantActive()) return
+
     setIsSaving(true)
     try {
       await adminApi.updateStaff(selectedStaff.id, {
@@ -1181,13 +1336,25 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       
       setSelectedStaff(prev => {
         if (!prev) return null
-        return {
+        const nextStaff = {
           ...prev,
           fullName: payload.fullName,
           userRole: payload.role.join(', '),
           status: payload.status,
         }
+        saveSelectedStaff(nextStaff)
+        return nextStaff
       })
+      setStaffList((currentStaffList) => currentStaffList.map((staff) => (
+        staff.id === selectedStaff.id
+          ? {
+            ...staff,
+            fullName: payload.fullName,
+            userRole: payload.role.join(', '),
+            status: payload.status,
+          }
+          : staff
+      )))
 
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
@@ -1202,6 +1369,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
   const handleDeleteStaffConfirm = async () => {
     if (!deleteConfirmStaff) return
+    if (!guardTenantActive()) {
+      setDeleteConfirmStaff(null)
+      return
+    }
+
     setIsDeleting(true)
     try {
       await adminApi.deleteStaff(deleteConfirmStaff.id)
@@ -1209,6 +1381,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setDeleteConfirmStaff(null)
       
       if (selectedStaff?.id === deleteConfirmStaff.id) {
+        clearSelectedStaff()
         setSelectedStaff(null)
         changeView('staffManagement')
       }
@@ -1224,6 +1397,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   }
 
   const handleToggleStatus = async (staff: StaffMember) => {
+    if (!guardTenantActive()) {
+      setStatusConfirmStaff(null)
+      return
+    }
+
     const nextStatus = staff.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
     const roles = staff.userRole ? staff.userRole.split(', ').map(r => r.trim() === 'HR' ? 'HR' : 'Interviewer') : ['HR']
     
@@ -1246,8 +1424,13 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       
       setSelectedStaff(prev => {
         if (!prev) return null
-        return { ...prev, status: nextStatus }
+        const nextStaff = { ...prev, status: nextStatus }
+        saveSelectedStaff(nextStaff)
+        return nextStaff
       })
+      setStaffList((currentStaffList) => currentStaffList.map((currentStaff) => (
+        currentStaff.id === staff.id ? { ...currentStaff, status: nextStatus } : currentStaff
+      )))
       
       setRefreshKey(prev => prev + 1)
     } catch (error) {
@@ -1283,13 +1466,29 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             <div className="tenant-list-table-state">Select a staff account before editing.</div>
           </div>
         )
+      ) : activeView === 'staffDetail' && selectedStaff && staffDetailError ? (
+        <div className="role-content staff-management-content">
+          <div className="tenant-list-table-state error">{staffDetailError}</div>
+          <button type="button" className="tenant-create-btn" onClick={() => changeView('staffManagement')}>
+            Back to Staff Management
+          </button>
+        </div>
       ) : activeView === 'staffDetail' && selectedStaff ? (
         <StaffDetailView
           staffMember={selectedStaff}
           onBack={() => changeView('staffManagement')}
-          onEdit={() => changeView('staffEdit')}
-          onDelete={() => setDeleteConfirmStaff(selectedStaff)}
-          onToggleStatus={() => setStatusConfirmStaff(selectedStaff)}
+          onEdit={() => {
+            if (!guardTenantActive()) return
+            changeView('staffEdit')
+          }}
+          onDelete={() => {
+            if (!guardTenantActive()) return
+            setDeleteConfirmStaff(selectedStaff)
+          }}
+          onToggleStatus={() => {
+            if (!guardTenantActive()) return
+            setStatusConfirmStaff(selectedStaff)
+          }}
           onViewLogs={() => changeView('staffActivityLog')}
         />
       ) : activeView === 'staffActivityLog' && selectedStaff ? (
@@ -1297,6 +1496,13 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           staffMember={selectedStaff}
           onBack={() => changeView('staffDetail')}
         />
+      ) : (activeView === 'staffDetail' || activeView === 'staffActivityLog') ? (
+        <div className="role-content staff-management-content">
+          <div className="tenant-list-table-state">Select a staff account before viewing details.</div>
+          <button type="button" className="tenant-create-btn" onClick={() => changeView('staffManagement')}>
+            Back to Staff Management
+          </button>
+        </div>
       ) : activeView === 'staffManagement' ? (
         <StaffManagementView 
           staffList={staffList}
@@ -1305,21 +1511,29 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           maxStaffQuota={maxStaffQuota}
           isStaffQuotaUnlimited={isStaffQuotaUnlimited}
           onCreate={() => {
+            if (!guardTenantActive()) return
+            clearSelectedStaff()
             setSelectedStaff(null)
             changeView('staffCreate')
           }}
           onEdit={(staff) => {
+            if (!guardTenantActive()) return
+            saveSelectedStaff(staff)
             setSelectedStaff(staff)
             changeView('staffEdit')
           }}
           onDelete={(staff) => {
+            if (!guardTenantActive()) return
             setDeleteConfirmStaff(staff)
           }}
           onSelectStaff={(staff) => {
+            saveSelectedStaff(staff)
             setSelectedStaff(staff)
             changeView('staffDetail')
           }}
+          onHome={() => changeView('dashboard')}
           currentPage={staffPage}
+          pageCount={staffPageCount}
           onPageChange={setStaffPage}
         />
       ) : (
@@ -1356,8 +1570,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             </section>
 
             <div className="tenant-dashboard-top-side">
-              <section className="role-panel quota-panel">
-                <div className="role-panel-head"><h2>Staff Quota</h2><small>{staffQuotaSummary} Seats</small></div>
+              <section className={`role-panel quota-panel ${isStaffQuotaUnlimited ? 'quota-panel-unlimited' : ''}`}>
+                <div className="role-panel-head"><h2>Staff Quota</h2><small>{staffQuotaSummary}</small></div>
                 <div className="quota-ring"><strong>{staffQuotaRingLabel}</strong><span>Used</span></div>
                 <p>{staffQuotaDescription}</p>
               </section>

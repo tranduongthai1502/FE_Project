@@ -5,6 +5,67 @@ export function getResponsePayload(payload: any): any {
   return body?.data && typeof body.data === 'object' ? body.data : body
 }
 
+export type PaginationMeta = {
+  totalPages?: number
+  totalElements?: number
+  last?: boolean
+  first?: boolean
+}
+
+export function getPaginationMeta(payload: any): PaginationMeta {
+  const candidates = [
+    payload,
+    payload?.data,
+    payload?.data?.data,
+    payload?.page,
+    payload?.data?.page,
+    payload?.data?.data?.page,
+    payload?.pagination,
+    payload?.data?.pagination,
+    payload?.data?.data?.pagination,
+  ].filter(Boolean)
+
+  for (const candidate of candidates) {
+    const totalPages = Number(candidate.totalPages ?? candidate.total_pages ?? candidate.pageCount ?? candidate.totalPage)
+    const totalElements = Number(candidate.totalElements ?? candidate.total_elements ?? candidate.totalItems ?? candidate.total)
+    const last = typeof candidate.last === 'boolean' ? candidate.last : undefined
+    const first = typeof candidate.first === 'boolean' ? candidate.first : undefined
+
+    if (!Number.isNaN(totalPages) || !Number.isNaN(totalElements) || last !== undefined || first !== undefined) {
+      return {
+        totalPages: Number.isNaN(totalPages) ? undefined : totalPages,
+        totalElements: Number.isNaN(totalElements) ? undefined : totalElements,
+        last,
+        first,
+      }
+    }
+  }
+
+  return {}
+}
+
+export function attachPaginationMeta<T>(items: T[], payload: any): T[] {
+  return Object.assign(items, { __pagination: getPaginationMeta(payload) })
+}
+
+export function getListPageCount(items: unknown[], currentPage: number, pageSize: number) {
+  const meta = (items as { __pagination?: PaginationMeta }).__pagination
+
+  if (meta?.totalPages !== undefined) {
+    return Math.max(1, meta.totalPages)
+  }
+
+  if (meta?.totalElements !== undefined) {
+    return Math.max(1, Math.ceil(meta.totalElements / pageSize))
+  }
+
+  if (meta?.last === false) {
+    return currentPage + 1
+  }
+
+  return Math.max(1, currentPage)
+}
+
 export function getSubscriptionPlanList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data
@@ -52,6 +113,16 @@ function isUnlimitedValue(value: unknown) {
   return String(value ?? '').trim().toLowerCase() === 'unlimited'
 }
 
+function formatBillingCycle(value: unknown) {
+  const normalized = String(value ?? '').trim()
+  if (!normalized) return 'month'
+
+  const normalizedLower = normalized.toLowerCase()
+  if (normalizedLower === 'mo' || normalizedLower === 'monthly') return 'month'
+
+  return normalized
+}
+
 export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): SubscriptionPlan | null {
   const id = plan?.id || plan?.planId || plan?.uuid || fallbackId
   if (!id) return null
@@ -72,7 +143,7 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
   const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? plan?.max_active_job_posting ?? plan?.max_active_job_postings ?? null
   const maxStaffAccount = Number(maxStaffAccountValue)
   const maxActiveJobPosting = Number(maxActiveJobPostingValue)
-  const billingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
+  const billingCycle = formatBillingCycle(plan?.billingCycle || plan?.cycle || plan?.interval)
   const staffAccountUnlimited =
     isTruthyFlag(plan?.staffAccountUnlimited) ||
     isTruthyFlag(plan?.staff_account_unlimited) ||
@@ -93,7 +164,7 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
       ? plan.planFeatures
       : []
   const priceLabel = Number.isFinite(price)
-    ? `$${price.toFixed(2)}${billingCycle ? `/${billingCycle}` : ' / mo'}`
+    ? `$${price.toFixed(2)} / ${billingCycle}`
     : undefined
 
   return {
@@ -166,6 +237,32 @@ export function normalizeTenant(tenant: any): Tenant | null {
     planObject?.maxStaffAccounts ??
     0
   )
+  const activeJobPostingLimit = Number(
+    tenant?.activeJobPostingLimit ??
+    tenant?.maxActiveJobPosting ??
+    tenant?.maxActiveJobPostings ??
+    tenant?.jobPostingLimit ??
+    tenant?.jobPostingsLimit ??
+    planObject?.maxActiveJobPosting ??
+    planObject?.maxActiveJobPostings ??
+    0
+  )
+  const activeJobPostingUsed = Number(
+    tenant?.activeJobPostingUsed ??
+    tenant?.activeJobPostingsUsed ??
+    tenant?.usedActiveJobPosting ??
+    tenant?.usedActiveJobPostings ??
+    tenant?.activeJobCount ??
+    tenant?.activeJobs ??
+    tenant?.jobCount ??
+    0
+  )
+  const efficiencyScore = Number(
+    tenant?.efficiencyScore ??
+    tenant?.resourceEfficiencyScore ??
+    tenant?.usageEfficiencyScore ??
+    tenant?.efficiency
+  )
 
   return {
     id: String(id),
@@ -187,6 +284,9 @@ export function normalizeTenant(tenant: any): Tenant | null {
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
+    activeJobPostingUsed: Number.isFinite(activeJobPostingUsed) ? activeJobPostingUsed : undefined,
+    activeJobPostingLimit: Number.isFinite(activeJobPostingLimit) ? activeJobPostingLimit : undefined,
+    efficiencyScore: Number.isFinite(efficiencyScore) ? efficiencyScore : undefined,
     status: String(tenant?.status ?? tenant?.accountStatus ?? tenant?.tenantStatus ?? (tenant?.active === true ? 'Active' : 'Inactive')),
     adminUserId: adminUserId ? String(adminUserId) : undefined,
     adminFullName: tenant?.adminFullName || tenant?.adminName || tenant?.tenantAdminName || admin?.fullName || admin?.full_name || admin?.name
@@ -209,6 +309,18 @@ export function normalizeTenantAdminUser(user: any): TenantAdminUser | null {
     status: user?.status || user?.accountStatus ? String(user?.status || user?.accountStatus) : undefined,
     createdAt: user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt
       ? String(user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt)
+      : undefined,
+    activatedAt: user?.activatedAt || user?.activatedDate || user?.activated_at
+      ? String(user?.activatedAt || user?.activatedDate || user?.activated_at)
+      : undefined,
+    lastLoginAt: user?.lastLoginAt || user?.lastLogin || user?.last_login_at || user?.last_login
+      ? String(user?.lastLoginAt || user?.lastLogin || user?.last_login_at || user?.last_login)
+      : undefined,
+    lastLoginLocation: user?.lastLoginLocation || user?.loginLocation || user?.last_login_location
+      ? String(user?.lastLoginLocation || user?.loginLocation || user?.last_login_location)
+      : undefined,
+    lastLoginIp: user?.lastLoginIp || user?.loginIp || user?.ipAddress || user?.last_login_ip
+      ? String(user?.lastLoginIp || user?.loginIp || user?.ipAddress || user?.last_login_ip)
       : undefined,
   }
 }

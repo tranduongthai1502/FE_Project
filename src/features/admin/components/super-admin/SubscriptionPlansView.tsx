@@ -5,6 +5,7 @@ import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
+import { getListPageCount } from '../../utils/adminMappers'
 
 const planFeatureDefaults = [
   {
@@ -844,6 +845,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [planListError, setPlanListError] = useState('')
   const [refreshPlansKey, setRefreshPlansKey] = useState(0)
   const [planPage, setPlanPage] = useState(1)
+  const [planPageCount, setPlanPageCount] = useState(1)
   const [planSort, setPlanSort] = useState<PlanSortOption>('newest')
 
   useEffect(() => {
@@ -857,6 +859,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       .then((items) => {
         if (isActive) {
           setPlans(items)
+          setPlanPageCount(getListPageCount(items, planPage, ADMIN_LIST_PAGE_SIZE))
         }
       })
       .catch((error) => {
@@ -909,11 +912,16 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
   ), null)
   const sortedPlans = plans
-  const planPageCount = planPage + (sortedPlans.length === ADMIN_LIST_PAGE_SIZE ? 1 : 0)
   const safePlanPage = planPage
   const pagedPlans = sortedPlans
   const visiblePlanStart = sortedPlans.length === 0 ? 0 : (safePlanPage - 1) * ADMIN_LIST_PAGE_SIZE + 1
   const visiblePlanEnd = visiblePlanStart === 0 ? 0 : visiblePlanStart + sortedPlans.length - 1
+  useEffect(() => {
+    if (!isLoadingPlans && !planListError && plans.length === 0 && planPage > 1) {
+      setPlanPage((page) => Math.max(1, page - 1))
+    }
+  }, [isLoadingPlans, planListError, planPage, plans.length])
+
   const handlePlanCreated = () => {
     setActiveView('list')
     setSelectedPlanId('')
@@ -1010,7 +1018,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 </div>
                 <div>
                   <span>Base Price</span>
-                  <strong className="price">{selectedPlan.priceLabel || `$${selectedPlan.monthlyPrice.toFixed(2)} / mo`}</strong>
+                  <strong className="price">{selectedPlan.priceLabel || `$${selectedPlan.monthlyPrice.toFixed(2)} / month`}</strong>
                 </div>
                 <div>
                   <span>Staff Limit</span>
@@ -1249,7 +1257,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   }}
                 >
                   <strong>{plan.name}</strong>
-                  <span className="subscription-price-cell">{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / mo`}</span>
+                  <span className="subscription-price-cell">{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / month`}</span>
                   <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                   <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                   <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : 'Inactive'}</em>

@@ -1,6 +1,34 @@
 import type { FormEvent } from 'react'
 import type { CreateTenantForm, SubscriptionPlan } from '../../types/admin.types'
 
+const industryOptions = [
+  'Technology',
+  'Media',
+  'Finance',
+  'Healthcare',
+  'Education',
+  'Retail',
+  'Manufacturing',
+  'Logistics',
+  'Hospitality',
+  'Real Estate',
+  'Other',
+]
+
+const regionOptions = [
+  'America',
+  'North America',
+  'South America',
+  'Europe',
+  'Asia',
+  'Southeast Asia',
+  'Oceania',
+  'Middle East',
+  'Africa',
+  'VietNam',
+  'Other',
+]
+
 export function CreateTenantPage({
   form,
   plans,
@@ -84,22 +112,30 @@ export function CreateTenantPage({
 
             <label>
               <span>Industry <b>*</b></span>
-              <input
+              <select
                 value={form.industry}
                 onChange={(event) => onChange('industry', event.target.value)}
-                placeholder="e.g. Media"
                 required
-              />
+              >
+                <option value="">Select industry</option>
+                {industryOptions.map((industry) => (
+                  <option value={industry} key={industry}>{industry}</option>
+                ))}
+              </select>
             </label>
 
             <label>
               <span>Region <b>*</b></span>
-              <input
+              <select
                 value={form.region}
                 onChange={(event) => onChange('region', event.target.value)}
-                placeholder="e.g. America"
                 required
-              />
+              >
+                <option value="">Select region</option>
+                {regionOptions.map((region) => (
+                  <option value={region} key={region}>{region}</option>
+                ))}
+              </select>
             </label>
           </div>
 

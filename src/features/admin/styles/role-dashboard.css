@@ -947,6 +947,39 @@
   border-radius: 50%;
 }
 
+.quota-panel-unlimited .role-panel-head small {
+  padding: 10px 15px;
+  border-radius: 999px;
+  background: #e9f8ee;
+  color: #0da34a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.quota-panel-unlimited .quota-ring {
+  width: 136px;
+  height: 136px;
+  margin: 46px auto 40px;
+  border-width: 12px;
+}
+
+.quota-panel-unlimited .quota-ring strong {
+  font-size: 24px;
+}
+
+.quota-panel-unlimited .quota-ring span {
+  transform: translateY(22px);
+  color: #344054;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.quota-panel-unlimited p {
+  max-width: 320px;
+  color: #58657c;
+  font-size: 14px;
+}
+
 .quota-ring strong,
 .quota-ring span {
   grid-area: 1 / 1;
@@ -2927,7 +2960,6 @@
   min-width: 0;
 }
 
-.tenant-detail-info-grid small,
 .tenant-subscription-metrics small,
 .tenant-subscription-lines {
   display: block;
@@ -2935,6 +2967,16 @@
   color: #667085;
   font-size: 9px;
   font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-detail-info-grid small {
+  display: block;
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 14px;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -2993,6 +3035,108 @@
   font-size: 76px;
 }
 
+.tenant-resource-card {
+  grid-column: span 4;
+  min-height: 220px;
+  background: #ffd9cf;
+}
+
+.tenant-resource-card header {
+  margin-bottom: 26px;
+}
+
+.tenant-resource-list {
+  display: grid;
+  gap: 18px;
+}
+
+.tenant-resource-list article {
+  display: grid;
+  gap: 7px;
+}
+
+.tenant-resource-list article > div,
+.tenant-efficiency-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.tenant-resource-list span {
+  color: #654941;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tenant-resource-list article > div strong {
+  color: #b82e08;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.tenant-resource-bar {
+  height: 8px;
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f7f8fd;
+}
+
+.tenant-resource-bar b {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+}
+
+.tenant-resource-bar.staff b {
+  background: #bd2f08;
+}
+
+.tenant-resource-bar.jobs b {
+  background: #66758d;
+}
+
+.tenant-resource-list small {
+  justify-self: end;
+  color: #654941;
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.tenant-efficiency-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 22px;
+  border-top: 1px solid #efb8aa;
+}
+
+.tenant-resource-list article.tenant-efficiency-row {
+  display: flex;
+}
+
+.tenant-efficiency-row > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #bd2f08;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tenant-efficiency-row > strong i {
+  width: 28px;
+  height: 28px;
+  display: inline-block;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffd9cf 57%, transparent 58%),
+    conic-gradient(#bd2f08 var(--tenant-efficiency), rgba(189, 47, 8, 0.18) 0);
+}
+
 .tenant-subscription-card {
   grid-column: span 6;
   min-height: 235px;
@@ -3002,8 +3146,23 @@
   margin-bottom: 0;
 }
 
-.tenant-subscription-card header h2 {
-  flex: 0 0 auto;
+.tenant-plan-title-stack {
+  display: grid;
+  gap: 4px;
+}
+
+.tenant-plan-title-stack h2 {
+  color: #101c33;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.tenant-plan-title-stack strong {
+  color: #d93408;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .tenant-subscription-card header > button {
@@ -3030,6 +3189,7 @@
   display: grid;
   place-items: center;
   margin-right: auto;
+  margin-left: 4px;
 }
 
 .tenant-plan-picker select {
@@ -3118,9 +3278,10 @@
   display: grid;
   grid-template-columns:
     minmax(0, 1.25fr)
-    minmax(0, 1.1fr)
-    minmax(104px, 1fr)
-    minmax(120px, 1.05fr)
+    minmax(0, 1fr)
+    minmax(96px, 0.85fr)
+    minmax(104px, 0.95fr)
+    minmax(120px, 1fr)
     minmax(82px, 0.75fr)
     minmax(34px, 0.45fr);
   align-items: center;
@@ -3159,6 +3320,7 @@
 
 .tenant-list-table-row strong,
 .tenant-list-table-row .tenant-plan-name,
+.tenant-list-table-row .tenant-monthly-price,
 .tenant-list-table-row .tenant-expiration-date {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3174,6 +3336,12 @@
 
 .tenant-plan-name.premium-plan {
   color: #d93408;
+}
+
+.tenant-monthly-price {
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .tenant-expiration-date {
@@ -5954,6 +6122,7 @@
 
   .tenant-company-card,
   .tenant-detail-empty-card,
+  .tenant-resource-card,
   .tenant-subscription-card {
     grid-column: auto;
   }
@@ -6299,10 +6468,11 @@
 
   .tenant-list-table-row > :nth-child(1)::before { content: 'Tenant'; }
   .tenant-list-table-row > :nth-child(2)::before { content: 'Plan'; }
-  .tenant-list-table-row > :nth-child(3)::before { content: 'Expires'; }
-  .tenant-list-table-row > :nth-child(4)::before { content: 'Quota'; }
-  .tenant-list-table-row > :nth-child(5)::before { content: 'Status'; }
-  .tenant-list-table-row > :nth-child(6)::before { content: 'Action'; }
+  .tenant-list-table-row > :nth-child(3)::before { content: 'Monthly Price'; }
+  .tenant-list-table-row > :nth-child(4)::before { content: 'Expires'; }
+  .tenant-list-table-row > :nth-child(5)::before { content: 'Quota'; }
+  .tenant-list-table-row > :nth-child(6)::before { content: 'Status'; }
+  .tenant-list-table-row > :nth-child(7)::before { content: 'Action'; }
 
   .subscription-table-row > :nth-child(1)::before { content: 'Plan'; }
   .subscription-table-row > :nth-child(2)::before { content: 'Price'; }
@@ -6375,6 +6545,7 @@
 
   .tenant-company-card,
   .tenant-detail-empty-card,
+  .tenant-resource-card,
   .tenant-subscription-card {
     grid-column: auto;
   }

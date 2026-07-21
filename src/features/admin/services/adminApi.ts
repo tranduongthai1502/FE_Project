@@ -12,6 +12,7 @@ import type {
 } from '../types/admin.types'
 import {
   getResponsePayload,
+  attachPaginationMeta,
   getSubscriptionPlanList,
   getTenantList,
   normalizeTenantAdminUser,
@@ -22,10 +23,17 @@ import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, bui
 
 export const ADMIN_LIST_PAGE_SIZE = 5
 
+function toZeroBasedPage(page: number) {
+  return Math.max(0, page - 1)
+}
+
 function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
+  const page = params?.page ?? defaults.page
+
   return {
     ...defaults,
     ...params,
+    page: toZeroBasedPage(page),
     filters: params?.filters ?? defaults.filters,
   }
 }
@@ -33,9 +41,9 @@ function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): 
 export const adminApi = {
   async getTenants(params?: AdminListParams) {
     const request = buildListRequest({
-      "sortField": 'companyName',
+      "sortField": 'createdAt',
       "filters": {},
-      "sortBy": 'ASC',
+      "sortBy": 'DESC',
       "page": 1,
       "size": ADMIN_LIST_PAGE_SIZE,
     }, params) satisfies TenantListRequest
@@ -43,9 +51,9 @@ export const adminApi = {
     console.log('[adminApi.getTenants] request payload', request)
     const response = await axiosClient.post('/api/tenant/list', request)
 
-    return getTenantList(response)
+    return attachPaginationMeta(getTenantList(response)
       .map(normalizeTenant)
-      .filter((tenant): tenant is Tenant => Boolean(tenant))
+      .filter((tenant): tenant is Tenant => Boolean(tenant)), response)
   },
 
   async getTenantById(id: string) {
@@ -71,9 +79,9 @@ export const adminApi = {
     console.log('[adminApi.getSubscriptionPlans] request payload', request)
     const response = await axiosClient.post('/api/plan/list', request)
 
-    return getSubscriptionPlanList(response)
+    return attachPaginationMeta(getSubscriptionPlanList(response)
       .map((plan) => normalizeSubscriptionPlan(plan))
-      .filter((plan): plan is SubscriptionPlan => Boolean(plan))
+      .filter((plan): plan is SubscriptionPlan => Boolean(plan)), response)
   },
 
   async getPlanById(id: string) {
@@ -113,7 +121,7 @@ export const adminApi = {
       sortField: 'fullName',
       filters: tenantId ? { tenantId } : {},
       sortBy: 'ASC',
-      page,
+      page: toZeroBasedPage(page),
       size,
     }
 
