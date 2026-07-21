@@ -104,8 +104,21 @@ export function DashboardShell({
     <main className={`role-page ${isSidebarVisible ? '' : 'is-sidebar-hidden'} ${className}`.trim()}>
       <aside className={`role-sidebar ${isSidebarVisible ? 'is-open' : ''}`}>
         <div className="role-brand">
-          <strong>JobFusion</strong>
-          <span>AI Talent Suite</span>
+          <div className="role-brand-copy">
+            <strong>JobFusion</strong>
+            <span>AI Talent Suite</span>
+          </div>
+          <button
+            type="button"
+            className={`role-sidebar-trigger ${isSidebarVisible ? 'is-open' : ''}`}
+            aria-label={isSidebarVisible ? 'Hide navigation sidebar' : 'Show navigation sidebar'}
+            aria-expanded={isSidebarVisible}
+            onClick={() => setIsSidebarVisible((value) => !value)}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {isSidebarVisible ? 'arrow_menu_close' : 'arrow_menu_open'}
+            </span>
+          </button>
         </div>
         <nav className="role-nav" aria-label={`${subtitle} navigation`}>
           {navItems.map((item) => (
@@ -119,18 +132,6 @@ export function DashboardShell({
 
       <section className="role-main">
         <header className="role-topbar">
-          <button
-            type="button"
-            className={`role-sidebar-trigger ${isSidebarVisible ? 'is-open' : ''}`}
-            aria-label={isSidebarVisible ? 'Hide navigation sidebar' : 'Show navigation sidebar'}
-            aria-expanded={isSidebarVisible}
-            onClick={() => setIsSidebarVisible((value) => !value)}
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              {isSidebarVisible ? 'arrow_menu_close' : 'arrow_menu_open'}
-            </span>
-          </button>
-
           {showWorkspaceSwitcher && <button type="button" className="role-switcher" onClick={onWorkspaceSwitch}>Workspace Switcher</button>}
           <div className="role-icons">
             <i className="fa-regular fa-bell"></i>
@@ -179,4 +180,3 @@ export function DashboardShell({
     </main>
   )
 }
-
