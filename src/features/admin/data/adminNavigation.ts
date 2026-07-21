@@ -41,12 +41,17 @@ export function getRoleHomeNav(
   return navItems.map((item) => ({
     icon: item.icon,
     label: item.label,
-    active: item.label === 'Settings' ? activeView === 'settings' : item.label === 'Dashboard' && activeView === 'dashboard',
+    active:
+      (item.label === 'Settings' && activeView === 'settings') ||
+      (item.label === 'Dashboard' && activeView === 'dashboard') ||
+      (item.label === 'Jobs' && activeView === 'jobs'),
     onClick: item.label === 'Settings'
       ? () => setActiveView('settings')
       : item.label === 'Dashboard'
         ? () => setActiveView('dashboard')
-        : undefined,
+        : item.label === 'Jobs'
+          ? () => setActiveView('jobs')
+          : undefined,
   }))
 }
 

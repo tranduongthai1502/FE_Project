@@ -1,4 +1,4 @@
-import type { CreatePlanFeature, SubscriptionPlan, Tenant, TenantAdminUser } from '../types/admin.types'
+import type { CreatePlanFeature, JobPosting, SubscriptionPlan, Tenant, TenantAdminUser } from '../types/admin.types'
 
 export function getResponsePayload(payload: any): any {
   const body = payload?.data && typeof payload.data === 'object' ? payload.data : payload
@@ -101,6 +101,48 @@ export function getTenantList(payload: any): any[] {
   if (Array.isArray(payload?.data?.data?.records)) return payload.data.data.records
   if (Array.isArray(payload?.data?.data?.list)) return payload.data.data.list
   return []
+}
+
+export function getJobPostingList(payload: any): any[] {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.result)) return payload.result
+  if (Array.isArray(payload?.results)) return payload.results
+  if (Array.isArray(payload?.content)) return payload.content
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.records)) return payload.records
+  if (Array.isArray(payload?.list)) return payload.list
+  if (Array.isArray(payload?.data?.content)) return payload.data.content
+  if (Array.isArray(payload?.data?.items)) return payload.data.items
+  if (Array.isArray(payload?.data?.records)) return payload.data.records
+  if (Array.isArray(payload?.data?.list)) return payload.data.list
+  return []
+}
+
+export function normalizeJobPosting(job: any): JobPosting | null {
+  const id = job?.id || job?.jobId || job?.job_id || job?.uuid
+  if (!id) return null
+
+  return {
+    id: String(id),
+    title: String(job?.title || job?.jobTitle || job?.job_title || 'Untitled Job'),
+    department: String(job?.department || job?.departmentName || job?.department_name || '-'),
+    level: job?.level || job?.jobLevel || job?.job_level ? String(job?.level || job?.jobLevel || job?.job_level) : undefined,
+    employmentType: String(job?.employmentType || job?.employment_type || job?.type || '-'),
+    locationType: job?.locationType || job?.location_type ? String(job?.locationType || job?.location_type) : undefined,
+    location: job?.location ? String(job.location) : undefined,
+    applicationDeadline: job?.applicationDeadline || job?.application_deadline || job?.deadline
+      ? String(job?.applicationDeadline || job?.application_deadline || job?.deadline)
+      : undefined,
+    description: job?.description ? String(job.description) : undefined,
+    requirements: job?.requirements ? String(job.requirements) : undefined,
+    benefits: job?.benefits ? String(job.benefits) : undefined,
+    salaryMin: job?.salaryMin ?? job?.salary_min ? Number(job?.salaryMin ?? job?.salary_min) : undefined,
+    salaryMax: job?.salaryMax ?? job?.salary_max ? Number(job?.salaryMax ?? job?.salary_max) : undefined,
+    status: String(job?.status || job?.jobStatus || job?.job_status || 'DRAFT'),
+    applicantCount: Number(job?.applicantCount ?? job?.applicantsCount ?? job?.noOfApplicants ?? job?.numberOfApplicants ?? job?.totalApplicants ?? 0) || 0,
+    createdAt: job?.createdAt || job?.createdDate || job?.created_at ? String(job?.createdAt || job?.createdDate || job?.created_at) : undefined,
+  }
 }
 
 function isTruthyFlag(value: unknown) {
@@ -307,6 +349,15 @@ export function normalizeTenantAdminUser(user: any): TenantAdminUser | null {
     fullName: String(user?.fullName || user?.full_name || user?.name || user?.username || 'Tenant Admin'),
     email: String(user?.email || user?.username || ''),
     status: user?.status || user?.accountStatus ? String(user?.status || user?.accountStatus) : undefined,
+    userRole: user?.userRole || user?.user_role || user?.role || user?.roles
+      ? String(Array.isArray(user?.roles) ? user.roles.join(', ') : (user?.userRole || user?.user_role || user?.role || user?.roles))
+      : undefined,
+    employeeCode: user?.employeeCode || user?.employee_code || user?.code
+      ? String(user?.employeeCode || user?.employee_code || user?.code)
+      : undefined,
+    phone: user?.phone || user?.phoneNumber || user?.phone_number
+      ? String(user?.phone || user?.phoneNumber || user?.phone_number)
+      : undefined,
     createdAt: user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt
       ? String(user?.createdAt || user?.createdDate || user?.created_at || user?.activatedAt)
       : undefined,

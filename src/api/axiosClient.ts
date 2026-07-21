@@ -126,6 +126,19 @@ axiosClient.interceptors.response.use(
         configurable: true,
       })
 
+      if (responseData.success === false && !isAuthEndpoint(response.config.url || '')) {
+        const message = getAppErrorMessage(responseData, getErrorMessage(responseData, getHttpStatusMessage(response.status)))
+        const backendMessage = String(responseData.message || responseData.data?.message || '')
+        const code = getErrorCode(responseData) || (/^[a-z][a-z0-9_-]+$/i.test(backendMessage) ? backendMessage : '')
+        return Promise.reject(Object.assign(new Error(message), {
+          status: response.status,
+          code,
+          backendMessage,
+          hasBackendMessage: Boolean(responseData.message || responseData.data?.message),
+          isAppErrorMessage: true,
+        }))
+      }
+
       return responseData
     }
 
@@ -136,7 +149,8 @@ axiosClient.interceptors.response.use(
   },
   async (error) => {
     const errorData = error.response?.data
-    const code = getErrorCode(errorData)
+    const backendMessage = String(errorData?.message || errorData?.data?.message || '')
+    const code = getErrorCode(errorData) || (/^[a-z][a-z0-9_-]+$/i.test(backendMessage) ? backendMessage : '')
     const status = error.response?.status ?? 0
     const hasBackendMessage = hasBackendErrorMessage(error)
     const message = getAppErrorMessage(error, getErrorMessage(errorData, getHttpStatusMessage(status)))
@@ -160,7 +174,7 @@ axiosClient.interceptors.response.use(
       notifyAuthExpired()
     }
 
-    return Promise.reject(Object.assign(new Error(message), { status, code, hasBackendMessage, isAppErrorMessage: true }))
+    return Promise.reject(Object.assign(new Error(message), { status, code, backendMessage, hasBackendMessage, isAppErrorMessage: true }))
   }
 )
 

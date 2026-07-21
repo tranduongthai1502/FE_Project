@@ -5,6 +5,7 @@ import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
+import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { getListPageCount } from '../../utils/adminMappers'
 
 const planFeatureDefaults = [
@@ -95,20 +96,43 @@ function hasFeatureChanges(features: typeof planFeatureDefaults) {
 
 type PlanSortOption = 'price-asc' | 'price-desc' | 'newest' | 'oldest'
 
+type PlanListFilterValues = {
+  search?: string
+  name?: string
+  description?: string
+  status?: 'ACTIVE' | 'INACTIVE' | 'DISABLED'
+}
+
+function buildPlanListFilters(values: PlanListFilterValues = {}) {
+  const filters: Record<string, unknown> = {}
+  const search = values.search?.trim()
+  const name = values.name?.trim()
+  const description = values.description?.trim()
+
+  if (search) filters.search = search
+  if (name) filters.name = name
+  if (description) filters.description = description
+  if (values.status) filters.status = values.status
+
+  return filters
+}
+
 function buildPlanListParams(sort: PlanSortOption, page: number): AdminListParams {
+  const filters = buildPlanListFilters()
+
   if (sort === 'price-asc') {
-    return { sortField: 'monthlyPrice', sortBy: 'ASC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+    return { sortField: 'monthlyPrice', sortBy: 'ASC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
   }
 
   if (sort === 'price-desc') {
-    return { sortField: 'monthlyPrice', sortBy: 'DESC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+    return { sortField: 'monthlyPrice', sortBy: 'DESC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
   }
 
   if (sort === 'oldest') {
-    return { sortField: 'createdAt', sortBy: 'ASC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+    return { sortField: 'createdAt', sortBy: 'ASC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
   }
 
-  return { sortField: 'createdAt', sortBy: 'DESC', filters: {}, page, size: ADMIN_LIST_PAGE_SIZE }
+  return { sortField: 'createdAt', sortBy: 'DESC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
 }
 
 function getUsagePercent(used: number, limit: number) {
@@ -262,14 +286,14 @@ function CreatePlanView({
 
   return (
     <form className="role-content create-plan-content" onSubmit={handleCreatePlan} noValidate>
-      <div className="tenant-breadcrumb create-plan-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <button type="button" onClick={onHome}>Home</button>
-        <span className="breadcrumb-separator">/</span>
-        <button type="button" onClick={onBack}>Subscription Plans</button>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Create New Plan</strong>
-      </div>
+      <AdminBreadcrumb
+        className="create-plan-breadcrumb"
+        items={[
+          { label: 'Home', onClick: onHome },
+          { label: 'Subscription Plans', onClick: onBack },
+          { label: 'Create New Plan' },
+        ]}
+      />
 
       <header className="create-plan-title">
         <h1>Create New Plan</h1>
@@ -407,7 +431,7 @@ function CreatePlanView({
 
         <div className="feature-permission-grid">
           {features.map((feature) => (
-            <article className={`feature-permission-card ${feature.enabled ? '' : 'disabled'}`} key={feature.key}>
+            <article className="feature-permission-card" key={feature.key}>
               <div className="feature-icon"><i className={`fa-solid ${feature.icon}`}></i></div>
               <button
                 type="button"
@@ -482,8 +506,8 @@ function EditPlanDetailView({
   const [planName, setPlanName] = useState(plan.name)
   const [description, setDescription] = useState(plan.description)
   const [monthlyPrice, setMonthlyPrice] = useState(plan.monthlyPrice.toFixed(2))
-  const [maxStaffAccount, setMaxStaffAccount] = useState(String(plan.maxStaffAccount || ''))
-  const [maxActiveJobPosting, setMaxActiveJobPosting] = useState(String(plan.maxActiveJobPosting || ''))
+  const [maxStaffAccount, setMaxStaffAccount] = useState(plan.maxStaffAccount == null ? '' : String(plan.maxStaffAccount))
+  const [maxActiveJobPosting, setMaxActiveJobPosting] = useState(plan.maxActiveJobPosting == null ? '' : String(plan.maxActiveJobPosting))
   const [features, setFeatures] = useState(() => getPlanFeatureState(plan))
   const [isStaffUnlimited, setIsStaffUnlimited] = useState(plan.staffAccountUnlimited)
   const [isJobsUnlimited, setIsJobsUnlimited] = useState(plan.activeJobPostingUnlimited)
@@ -587,8 +611,8 @@ function EditPlanDetailView({
     planName !== plan.name ||
     description !== plan.description ||
     monthlyPrice !== plan.monthlyPrice.toFixed(2) ||
-    maxStaffAccount !== String(plan.maxStaffAccount || '') ||
-    maxActiveJobPosting !== String(plan.maxActiveJobPosting || '') ||
+    maxStaffAccount !== (plan.maxStaffAccount == null ? '' : String(plan.maxStaffAccount)) ||
+    maxActiveJobPosting !== (plan.maxActiveJobPosting == null ? '' : String(plan.maxActiveJobPosting)) ||
     isStaffUnlimited !== plan.staffAccountUnlimited ||
     isJobsUnlimited !== plan.activeJobPostingUnlimited ||
     isActive !== (plan.status.toLowerCase() === 'active') ||
@@ -624,16 +648,15 @@ function EditPlanDetailView({
 
   return (
     <form className="role-content edit-plan-content" onSubmit={handleSavePlan} noValidate>
-      <div className="tenant-breadcrumb create-plan-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <button type="button" onClick={onHome}>Home</button>
-        <span className="breadcrumb-separator">/</span>
-        <button type="button" onClick={onPlans}>Subscription Plans</button>
-        <span className="breadcrumb-separator">/</span>
-        <button type="button" onClick={onBack}>Plan Detail</button>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Edit Plan</strong>
-      </div>
+      <AdminBreadcrumb
+        className="create-plan-breadcrumb"
+        items={[
+          { label: 'Home', onClick: onHome },
+          { label: 'Subscription Plans', onClick: onPlans },
+          { label: 'Plan Detail', onClick: onBack },
+          { label: 'Edit Plan' },
+        ]}
+      />
 
       <div className="edit-plan-layout">
         <div className="edit-plan-main">
@@ -704,17 +727,20 @@ function EditPlanDetailView({
                   <strong>Max Staff Accounts</strong>
                   <p>Number of administrative users allowed</p>
                 </div>
-                <input
-                  className={fieldErrors.maxStaffAccount ? 'has-error' : ''}
-                  type="number"
-                  min="0"
-                  value={maxStaffAccount}
-                  onChange={(event) => {
-                    setMaxStaffAccount(event.target.value)
-                    if (fieldErrors.maxStaffAccount) setFieldErrors((current) => ({ ...current, maxStaffAccount: '' }))
-                  }}
-                  disabled={isStaffUnlimited}
-                />
+                {isStaffUnlimited ? (
+                  <span className="edit-resource-limit-placeholder" aria-hidden="true" />
+                ) : (
+                  <input
+                    className={fieldErrors.maxStaffAccount ? 'has-error' : ''}
+                    type="number"
+                    min="0"
+                    value={maxStaffAccount}
+                    onChange={(event) => {
+                      setMaxStaffAccount(event.target.value)
+                      if (fieldErrors.maxStaffAccount) setFieldErrors((current) => ({ ...current, maxStaffAccount: '' }))
+                    }}
+                  />
+                )}
                 <button
                   type="button"
                   className={`mini-toggle ${isStaffUnlimited ? 'active' : ''}`}
@@ -735,17 +761,20 @@ function EditPlanDetailView({
                   <strong>Max Active Job Postings</strong>
                   <p>Concurrent open roles allowed per tenant</p>
                 </div>
-                <input
-                  className={fieldErrors.maxActiveJobPosting ? 'has-error' : ''}
-                  type="number"
-                  min="0"
-                  value={maxActiveJobPosting}
-                  onChange={(event) => {
-                    setMaxActiveJobPosting(event.target.value)
-                    if (fieldErrors.maxActiveJobPosting) setFieldErrors((current) => ({ ...current, maxActiveJobPosting: '' }))
-                  }}
-                  disabled={isJobsUnlimited}
-                />
+                {isJobsUnlimited ? (
+                  <span className="edit-resource-limit-placeholder" aria-hidden="true" />
+                ) : (
+                  <input
+                    className={fieldErrors.maxActiveJobPosting ? 'has-error' : ''}
+                    type="number"
+                    min="0"
+                    value={maxActiveJobPosting}
+                    onChange={(event) => {
+                      setMaxActiveJobPosting(event.target.value)
+                      if (fieldErrors.maxActiveJobPosting) setFieldErrors((current) => ({ ...current, maxActiveJobPosting: '' }))
+                    }}
+                  />
+                )}
                 <button
                   type="button"
                   className={`mini-toggle ${isJobsUnlimited ? 'active' : ''}`}
@@ -769,7 +798,7 @@ function EditPlanDetailView({
           <div className="create-plan-divider" />
           <div className="edit-feature-list">
             {features.map((feature) => (
-              <article key={feature.key} className={feature.enabled ? '' : 'disabled'}>
+              <article key={feature.key}>
                 <span><i className={`fa-solid ${feature.icon}`}></i>{feature.title}</span>
                 <button type="button" className={`feature-toggle ${feature.enabled ? 'active' : ''}`} onClick={() => toggleFeature(feature.key)} aria-pressed={feature.enabled} aria-label={`Toggle ${feature.title}`}>
                   <span />
@@ -978,14 +1007,13 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
 
     return (
       <div className="role-content subscription-plan-detail-content">
-        <div className="tenant-breadcrumb">
-          <i className="fa-solid fa-house"></i>
-          <button type="button" onClick={onHome}>Home</button>
-          <span className="breadcrumb-separator">/</span>
-          <button type="button" onClick={closePlanDetail}>Subscription Plans</button>
-          <span className="breadcrumb-separator">/</span>
-          <strong>Plan Detail</strong>
-        </div>
+        <AdminBreadcrumb
+          items={[
+            { label: 'Home', onClick: onHome },
+            { label: 'Subscription Plans', onClick: closePlanDetail },
+            { label: 'Plan Detail' },
+          ]}
+        />
 
         {isLoadingPlans ? (
           <div className="subscription-table-state">Loading plan details...</div>
@@ -1164,12 +1192,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
 
   return (
     <div className="role-content subscription-plans-content">
-      <div className="tenant-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <button type="button" onClick={onHome}>Home</button>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Subscription Plans</strong>
-      </div>
+      <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Subscription Plans' }]} />
 
       <div className="subscription-title-row">
         <div>

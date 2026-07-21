@@ -12,7 +12,7 @@ export type CreateTenantForm = CreateTenantPayload
 
 export type SuperAdminView = 'dashboard' | 'tenantManagement' | 'subscriptionPlans' | 'promptManagement' | 'settings'
 
-export type RoleHomeView = 'dashboard' | 'settings'
+export type RoleHomeView = 'dashboard' | 'jobs' | 'settings'
 
 export type TenantAdminView = RoleHomeView | 'staffManagement' | 'staffCreate' | 'staffEdit' | 'staffDetail' | 'staffActivityLog'
 
@@ -31,6 +31,41 @@ export type StaffMember = {
   lastLoginAt?: string
   lastLoginLocation?: string
   lastLoginIp?: string
+}
+
+export type JobPosting = {
+  id: string
+  title: string
+  department: string
+  level?: string
+  employmentType: string
+  locationType?: string
+  location?: string
+  applicationDeadline?: string
+  description?: string
+  requirements?: string
+  benefits?: string
+  salaryMin?: number
+  salaryMax?: number
+  status: string
+  applicantCount: number
+  createdAt?: string
+}
+
+export type JobPostingPayload = {
+  title: string
+  department: string
+  level: string
+  employmentType: string
+  locationType: string
+  location: string
+  applicationDeadline: string
+  description: string
+  requirements: string
+  benefits: string
+  salaryMin: number
+  salaryMax: number
+  status: string
 }
 
 export type StaffPayload = {
@@ -114,6 +149,9 @@ export type TenantAdminUser = {
   fullName: string
   email: string
   status?: string
+  userRole?: string
+  employeeCode?: string
+  phone?: string
   createdAt?: string
   activatedAt?: string
   lastLoginAt?: string

@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import type { CreateTenantForm, SubscriptionPlan } from '../../types/admin.types'
+import { AdminBreadcrumb } from './AdminBreadcrumb'
 
 export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
 
@@ -67,14 +68,14 @@ export function CreateTenantPage({
 }) {
   return (
     <div className="role-content create-tenant-content">
-      <div className="tenant-breadcrumb create-tenant-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <button type="button" onClick={onGoHome}>Home</button>
-        <span className="breadcrumb-separator">/</span>
-        <button type="button" onClick={onBackToList}>Tenant Management</button>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Create New Tenant</strong>
-      </div>
+      <AdminBreadcrumb
+        className="create-tenant-breadcrumb"
+        items={[
+          { label: 'Home', onClick: onGoHome },
+          { label: 'Tenant Management', onClick: onBackToList },
+          { label: 'Create New Tenant' },
+        ]}
+      />
 
       <section className="tenant-modal create-tenant-card" aria-labelledby="create-tenant-title">
         <header className="tenant-modal-header">
