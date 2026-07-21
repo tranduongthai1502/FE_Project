@@ -2607,7 +2607,9 @@
 
 .create-tenant-card {
   width: min(1360px, calc(100% - 24px));
+  max-height: none;
   margin: 0 auto;
+  overflow: visible;
   box-shadow: none;
 }
 
@@ -3424,7 +3426,7 @@
   color: #101c33;
   font-size: 12px;
   font-weight: 900;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .tenant-plan-name.premium-plan {
@@ -7691,6 +7693,7 @@
 
   .super-admin-content,
   .tenant-management-content,
+  .create-tenant-content,
   .subscription-plans-content,
   .prompt-management-content,
   .account-settings-content {
@@ -7742,6 +7745,72 @@
   .super-admin-content .quick-actions button:nth-of-type(3) {
     width: 100%;
   }
+
+  .create-tenant-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: none;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .tenant-modal.create-tenant-card {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .create-tenant-card .tenant-modal-header {
+    padding: 18px 18px 14px;
+  }
+
+  .create-tenant-card .tenant-form-grid,
+  .create-tenant-card .tenant-form-grid.admin {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 20px 18px;
+  }
+
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(1),
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2),
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(4),
+  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(5),
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(1),
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(2),
+  .create-tenant-card .tenant-domain-field {
+    grid-column: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .create-tenant-card .tenant-create-form label,
+  .create-tenant-card .tenant-create-form input,
+  .create-tenant-card .tenant-create-form select,
+  .create-tenant-card .tenant-domain-field div {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .create-tenant-card .tenant-domain-field input {
+    min-width: 0;
+  }
+
+  .create-tenant-card .tenant-domain-field div small {
+    padding-right: 10px;
+    font-size: 11px;
+  }
+
+  .create-tenant-card .tenant-create-form hr {
+    width: calc(100% - 36px);
+  }
+
+  .create-tenant-card .tenant-create-form h3 {
+    padding-inline: 18px;
+  }
+
+  .create-tenant-card .tenant-modal-actions {
+    padding: 14px 18px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -7775,10 +7844,83 @@
 
   .super-admin-content,
   .tenant-management-content,
+  .create-tenant-content,
   .subscription-plans-content,
   .prompt-management-content,
   .account-settings-content {
     padding: 12px 10px 24px;
+  }
+
+  .create-tenant-content {
+    padding-bottom: max(120px, calc(32px + env(safe-area-inset-bottom)));
+  }
+
+  .create-tenant-card {
+    border-radius: 8px;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .tenant-modal.create-tenant-card {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .create-tenant-card .tenant-modal-header {
+    padding: 18px 14px 12px;
+  }
+
+  .create-tenant-card .tenant-modal-header h2 {
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .create-tenant-card .tenant-modal-header p {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .create-tenant-card .tenant-form-grid,
+  .create-tenant-card .tenant-form-grid.admin {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 18px 14px;
+  }
+
+  .create-tenant-card .tenant-create-form input,
+  .create-tenant-card .tenant-create-form select,
+  .create-tenant-card .tenant-domain-field div {
+    height: 46px;
+  }
+
+  .create-tenant-card .tenant-domain-field div small {
+    max-width: 112px;
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+  }
+
+  .create-tenant-card .tenant-create-form hr {
+    width: calc(100% - 28px);
+    margin-bottom: 18px;
+  }
+
+  .create-tenant-card .tenant-create-form h3 {
+    padding-inline: 14px;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .create-tenant-card .tenant-modal-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    padding: 14px;
+  }
+
+  .create-tenant-card .tenant-modal-actions button {
+    width: 100%;
+    min-height: 44px;
   }
 
   .super-admin-metrics {

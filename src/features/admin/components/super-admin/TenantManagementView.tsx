@@ -12,6 +12,8 @@ import { getListPageCount } from '../../utils/adminMappers'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
 const requiredTenantFieldMessage = 'Please fill in all required fields.'
+const duplicateCompanyNameMessage = 'This company name is already register'
+const PLAN_FILTER_LIST_SIZE = 100
 
 function getTenantStatusMeta(statusValue: string) {
   const normalized = statusValue.trim().toLowerCase()
@@ -66,6 +68,13 @@ function normalizeFilterValue(value?: string) {
   return String(value || '').trim().toLowerCase()
 }
 
+function tenantHasCompanyName(tenants: Tenant[], companyName: string) {
+  const normalizedCompanyName = normalizeFilterValue(companyName)
+  if (!normalizedCompanyName) return false
+
+  return tenants.some((tenant) => normalizeFilterValue(tenant.name) === normalizedCompanyName)
+}
+
 function tenantMatchesPlanFilter(tenant: Tenant, selectedPlanId: string, selectedPlan?: SubscriptionPlan) {
   if (!selectedPlanId) return true
 
@@ -109,7 +118,6 @@ function buildTenantListParams(
 ): AdminListParams {
   const filters: Record<string, unknown> = {}
   const keyword = searchQuery.trim()
-  void planFilter
 
   if (statusFilter === 'active') {
     filters.status = 'ACTIVE'
@@ -117,6 +125,13 @@ function buildTenantListParams(
 
   if (statusFilter === 'inactive') {
     filters.status = 'INACTIVE'
+  }
+
+  if (planFilter) {
+    filters.planId = planFilter
+    filters.subscriptionPlanId = planFilter
+    filters.planName = planFilter
+    filters.subscriptionPlan = planFilter
   }
 
   if (keyword) {
@@ -205,7 +220,7 @@ export function TenantManagementView({
     let isActive = true
     setIsLoadingPlans(true)
 
-    adminApi.getSubscriptionPlans()
+    adminApi.getSubscriptionPlans({ page: 1, size: PLAN_FILTER_LIST_SIZE })
       .then((plans) => {
         if (isActive) {
           setSubscriptionPlans(plans)
@@ -234,7 +249,7 @@ export function TenantManagementView({
     setIsLoadingPlans(true)
     setTenantError('')
 
-    adminApi.getSubscriptionPlans()
+    adminApi.getSubscriptionPlans({ page: 1, size: PLAN_FILTER_LIST_SIZE })
       .then((plans) => {
         if (!isActive) return
         setSubscriptionPlans(plans)
@@ -381,7 +396,11 @@ export function TenantManagementView({
     setTenantError('')
     const nextFieldErrors: CreateTenantFieldErrors = {}
 
-    if (!tenantForm.companyName.trim()) nextFieldErrors.companyName = requiredTenantFieldMessage
+    if (!tenantForm.companyName.trim()) {
+      nextFieldErrors.companyName = requiredTenantFieldMessage
+    } else if (tenantHasCompanyName(tenants, tenantForm.companyName)) {
+      nextFieldErrors.companyName = duplicateCompanyNameMessage
+    }
     if (!tenantForm.planId) nextFieldErrors.planId = requiredTenantFieldMessage
     if (!tenantForm.domain.trim()) nextFieldErrors.domain = requiredTenantFieldMessage
     if (!tenantForm.industry.trim()) nextFieldErrors.industry = requiredTenantFieldMessage
@@ -496,17 +515,37 @@ export function TenantManagementView({
     adminEmail: tenant.adminEmail || `admin@${tenant.domain || 'tenant'}.com`,
   })
   const planFilterOptions = useMemo(() => {
-    const optionsByKey = new Map<string, string>()
+    const options: Array<{ value: string; label: string }> = []
+    const optionLabels = new Set<string>()
+
+    const addPlanOption = (value?: string, label?: string) => {
+      const cleanLabel = String(label || '').trim()
+      const cleanValue = String(value || cleanLabel).trim()
+      const normalizedLabel = normalizeFilterValue(cleanLabel)
+
+      if (!cleanLabel || !cleanValue || optionLabels.has(normalizedLabel)) return
+
+      optionLabels.add(normalizedLabel)
+      options.push({ value: cleanValue, label: cleanLabel })
+    }
 
     subscriptionPlans.forEach((plan) => {
-      optionsByKey.set(plan.id, plan.name)
+      addPlanOption(plan.id, plan.name)
     })
 
-    return Array.from(optionsByKey.entries())
-      .map(([value, label]) => ({ value, label }))
+    tenants.forEach((tenant) => {
+      const tenantPlanName = tenant.subscriptionPlanDetail?.name || tenant.subscriptionPlan
+      const tenantPlanValue = tenant.subscriptionPlanId || tenantPlanName
+      addPlanOption(tenantPlanValue, tenantPlanName)
+    })
+
+    return options
       .sort((left, right) => left.label.localeCompare(right.label))
-  }, [subscriptionPlans])
-  const filteredTenants = tenants
+  }, [subscriptionPlans, tenants])
+  const selectedPlanFilter = subscriptionPlans.find((plan) => plan.id === tenantPlanFilter)
+  const filteredTenants = tenants.filter((tenant) => (
+    tenantMatchesPlanFilter(tenant, tenantPlanFilter, selectedPlanFilter)
+  ))
   const currentTenantPage = tenantPage
   const paginatedTenants = filteredTenants
   const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
