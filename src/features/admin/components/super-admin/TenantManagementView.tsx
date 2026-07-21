@@ -4,13 +4,14 @@ import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant, Tenan
 import { formatPlanDate } from '../../utils/adminFormatters'
 import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
-import { CreateTenantPage } from '../shared/CreateTenantPage'
+import { CreateTenantPage, type CreateTenantFieldErrors } from '../shared/CreateTenantPage'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getListPageCount } from '../../utils/adminMappers'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
+const requiredTenantFieldMessage = 'Please fill in all required fields.'
 
 function getTenantStatusMeta(statusValue: string) {
   const normalized = statusValue.trim().toLowerCase()
@@ -156,6 +157,7 @@ export function TenantManagementView({
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
+  const [tenantFieldErrors, setTenantFieldErrors] = useState<CreateTenantFieldErrors>({})
   const [tenantListError, setTenantListError] = useState('')
   const [tenantDetailError, setTenantDetailError] = useState('')
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -236,10 +238,6 @@ export function TenantManagementView({
       .then((plans) => {
         if (!isActive) return
         setSubscriptionPlans(plans)
-        setTenantForm((current) => ({
-          ...current,
-          planId: current.planId || plans[0]?.id || '',
-        }))
         if (plans.length === 0) {
           setTenantError('No subscription plans found.')
         }
@@ -331,6 +329,11 @@ export function TenantManagementView({
 
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
     setTenantError('')
+    setTenantFieldErrors((current) => {
+      if (!current[field]) return current
+      const { [field]: _removed, ...nextErrors } = current
+      return nextErrors
+    })
     setTenantForm((current) => ({ ...current, [field]: value }))
   }
 
@@ -339,8 +342,19 @@ export function TenantManagementView({
     setIsCreateConfirmOpen(false)
     setIsCreateCancelConfirmOpen(false)
     setTenantError('')
+    setTenantFieldErrors({})
     setTenantForm(emptyTenantForm)
     updateSuperAdminViewUrl('tenantManagement')
+  }
+
+  const goHomeFromCreateTenant = () => {
+    setIsCreateModalOpen(false)
+    setIsCreateConfirmOpen(false)
+    setIsCreateCancelConfirmOpen(false)
+    setTenantError('')
+    setTenantFieldErrors({})
+    setTenantForm(emptyTenantForm)
+    onHome()
   }
 
   const hasTenantDraftChanges = Boolean(
@@ -365,13 +379,22 @@ export function TenantManagementView({
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTenantError('')
+    const nextFieldErrors: CreateTenantFieldErrors = {}
 
-    if (!tenantForm.companyName.trim() || !tenantForm.domain.trim() || !tenantForm.industry.trim() || !tenantForm.region.trim() || !tenantForm.planId || !tenantForm.adminFullName.trim() || !tenantForm.adminEmail.trim()) {
-      const message = 'Please fill in all required fields.'
-      setTenantError(message)
+    if (!tenantForm.companyName.trim()) nextFieldErrors.companyName = requiredTenantFieldMessage
+    if (!tenantForm.planId) nextFieldErrors.planId = requiredTenantFieldMessage
+    if (!tenantForm.domain.trim()) nextFieldErrors.domain = requiredTenantFieldMessage
+    if (!tenantForm.industry.trim()) nextFieldErrors.industry = requiredTenantFieldMessage
+    if (!tenantForm.region.trim()) nextFieldErrors.region = requiredTenantFieldMessage
+    if (!tenantForm.adminFullName.trim()) nextFieldErrors.adminFullName = requiredTenantFieldMessage
+    if (!tenantForm.adminEmail.trim()) nextFieldErrors.adminEmail = requiredTenantFieldMessage
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setTenantFieldErrors(nextFieldErrors)
       return
     }
 
+    setTenantFieldErrors({})
     setIsCreateConfirmOpen(true)
   }
 
@@ -386,6 +409,7 @@ export function TenantManagementView({
         })
       }
       setTenantForm(emptyTenantForm)
+      setTenantFieldErrors({})
       setIsCreateModalOpen(false)
       setIsCreateConfirmOpen(false)
       updateSuperAdminViewUrl('tenantManagement')
@@ -518,6 +542,8 @@ export function TenantManagementView({
   const openCreateTenant = () => {
     setSelectedTenantId('')
     setActiveView('list')
+    setTenantError('')
+    setTenantFieldErrors({})
     setIsCreateModalOpen(true)
     updateTenantCreateUrl()
   }
@@ -602,11 +628,13 @@ export function TenantManagementView({
         <CreateTenantPage
           form={tenantForm}
           error={tenantError}
+          fieldErrors={tenantFieldErrors}
           plans={subscriptionPlans}
           isLoadingPlans={isLoadingPlans}
           isSubmitting={isSubmittingTenant}
           onChange={updateTenantForm}
           onClose={requestCloseCreateModal}
+          onGoHome={goHomeFromCreateTenant}
           onBackToList={requestCloseCreateModal}
           onSubmit={handleCreateTenant}
         />

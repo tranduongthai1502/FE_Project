@@ -10,8 +10,10 @@ import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { shouldToastHttpError } from '../../../../utils/httpStatusManager'
 import { getListPageCount, getPaginationMeta } from '../../utils/adminMappers'
+import { getStoredRequirePasswordChange } from '@/features/auth/utils/authStorage'
 
 const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
+const passwordChangeRequiredMessage = 'Please change your password before using Tenant Admin features.'
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
 
 function getStoredTenantId() {
@@ -1110,22 +1112,56 @@ function StaffActivityLogView({
 }
 
 export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
-  const [activeView, setActiveView] = useState<TenantAdminView>(() => getInitialTenantAdminView())
+  const [isPasswordChangeRequired] = useState(() => getStoredRequirePasswordChange())
+  const [activeView, setActiveView] = useState<TenantAdminView>(() => (
+    getStoredRequirePasswordChange() ? 'settings' : getInitialTenantAdminView()
+  ))
   const [tenantId] = useState(() => getStoredTenantId())
   const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
   const [tenantPlan, setTenantPlan] = useState<SubscriptionPlan | null>(null)
   const changeView = (view: TenantAdminView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      updateTenantAdminViewUrl('settings')
+      triggerToast?.(passwordChangeRequiredMessage, 'error')
+      return
+    }
+
     setActiveView(view)
     updateTenantAdminViewUrl(view)
   }
-  const navItems = getTenantAdminNav(activeView, changeView)
+  const navItems = getTenantAdminNav(activeView, changeView).map((item) => (
+    isPasswordChangeRequired && item.label !== 'Settings'
+      ? {
+          ...item,
+          onClick: () => {
+            setActiveView('settings')
+            updateTenantAdminViewUrl('settings')
+            triggerToast?.(passwordChangeRequiredMessage, 'error')
+          },
+        }
+      : item
+  ))
 
   useEffect(() => {
-    const handlePopState = () => setActiveView(getInitialTenantAdminView())
+    if (isPasswordChangeRequired) {
+      setActiveView('settings')
+      updateTenantAdminViewUrl('settings')
+    }
+
+    const handlePopState = () => {
+      if (isPasswordChangeRequired) {
+        setActiveView('settings')
+        updateTenantAdminViewUrl('settings')
+        return
+      }
+
+      setActiveView(getInitialTenantAdminView())
+    }
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
+  }, [isPasswordChangeRequired])
 
   // CRUD Staff States
   const [staffList, setStaffList] = useState<StaffMember[]>([])
@@ -1445,7 +1481,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   return (
     <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout} onChangePassword={() => changeView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsView onBack={() => changeView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsView
+          isPasswordChangeRequired={isPasswordChangeRequired}
+          onBack={() => changeView('dashboard')}
+          triggerToast={triggerToast}
+        />
       ) : activeView === 'staffCreate' ? (
         <CreateStaffAccountView
           staffList={staffList}
