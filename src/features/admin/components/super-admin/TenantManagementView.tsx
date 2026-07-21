@@ -5,6 +5,8 @@ import { formatPlanDate } from '../../utils/adminFormatters'
 import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage, type CreateTenantFieldErrors } from '../shared/CreateTenantPage'
+import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
+import { AdminSearchInput } from '../shared/AdminSearchInput'
 import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
@@ -112,7 +114,7 @@ const emptyTenantForm: CreateTenantForm = {
 
 function buildTenantListParams(
   statusFilter: TenantStatusFilter,
-  planFilter: string,
+  _planFilter: string,
   searchQuery: string,
   page: number,
 ): AdminListParams {
@@ -127,21 +129,14 @@ function buildTenantListParams(
     filters.status = 'INACTIVE'
   }
 
-  if (planFilter) {
-    filters.planId = planFilter
-    filters.subscriptionPlanId = planFilter
-    filters.planName = planFilter
-    filters.subscriptionPlan = planFilter
-  }
-
   if (keyword) {
-    filters.keyword = keyword
+    filters.search = keyword
   }
 
   return {
-    sortField: 'createdAt',
+    sortField: 'companyName',
     filters,
-    sortBy: 'DESC',
+    sortBy: 'ASC',
     page,
     size: ADMIN_LIST_PAGE_SIZE,
   }
@@ -764,14 +759,13 @@ export function TenantManagementView({
 
     return (
       <div className="role-content tenant-detail-content">
-        <div className="tenant-breadcrumb">
-          <i className="fa-solid fa-house"></i>
-          <button type="button" onClick={onHome}>Home</button>
-          <span className="breadcrumb-separator">/</span>
-          <button type="button" onClick={closeTenantDetail}>Tenant Management</button>
-          <span className="breadcrumb-separator">/</span>
-          <strong>Tenant detail</strong>
-        </div>
+        <AdminBreadcrumb
+          items={[
+            { label: 'Home', onClick: onHome },
+            { label: 'Tenant Management', onClick: closeTenantDetail },
+            { label: 'Tenant detail' },
+          ]}
+        />
 
         {isLoadingTenants || isLoadingTenantDetail ? (
           <div className="tenant-list-table-state">Loading tenant details...</div>
@@ -928,12 +922,7 @@ export function TenantManagementView({
 
   return (
     <div className="role-content tenant-management-content">
-      <div className="tenant-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <button type="button" onClick={onHome}>Home</button>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Tenant Management</strong>
-      </div>
+      <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Tenant Management' }]} />
 
       <section className="tenant-filter-card">
         <div className="tenant-filter-tabs">
@@ -953,16 +942,13 @@ export function TenantManagementView({
             </select>
           </label>
         </div>
-        <div className="tenant-filter-search">
-          <i className="fa-solid fa-magnifying-glass"></i>
-          <input
-            type="search"
-            value={tenantSearchQuery}
-            onChange={(event) => setTenantSearchQuery(event.target.value)}
-            placeholder="Search tenants, plans, status..."
-            aria-label="Tenant search"
-          />
-        </div>
+        <AdminSearchInput
+          className="tenant-filter-search"
+          value={tenantSearchQuery}
+          onChange={(event) => setTenantSearchQuery(event.target.value)}
+          placeholder="Search tenants, plans, status..."
+          ariaLabel="Tenant search"
+        />
         <button type="button" className="tenant-create-btn" onClick={openCreateTenant}>
           Create New Tenant
         </button>

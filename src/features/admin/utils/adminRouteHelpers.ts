@@ -4,14 +4,19 @@ export const tenantAdminViewSlugs: Record<TenantAdminView, string> = {
   dashboard: 'dashboard',
   staffManagement: 'staff-management',
   staffCreate: 'staff-management/create',
-  staffEdit: 'staff-management/edit',
-  staffDetail: 'staff-management/detail',
-  staffActivityLog: 'staff-management/activity-log',
+  staffEdit: 'staff-management',
+  staffDetail: 'staff-management',
+  staffActivityLog: 'staff-management',
   settings: 'settings',
 }
 
 export function getInitialTenantAdminView(): TenantAdminView {
   const slug = window.location.pathname.replace(/^\/tenant-admin\/?/, '') || 'dashboard'
+  if (/^staff-management\/create$/.test(slug)) return 'staffCreate'
+  if (/^staff-management\/[^/]+\/edit$/.test(slug)) return 'staffEdit'
+  if (/^staff-management\/[^/]+\/activity-log$/.test(slug)) return 'staffActivityLog'
+  if (/^staff-management\/[^/]+$/.test(slug)) return 'staffDetail'
+
   const match = Object.entries(tenantAdminViewSlugs)
     .sort(([, first], [, second]) => second.length - first.length)
     .find(([, value]) => slug === value || slug.startsWith(`${value}/`))
@@ -19,7 +24,27 @@ export function getInitialTenantAdminView(): TenantAdminView {
   return (match?.[0] as TenantAdminView | undefined) || 'dashboard'
 }
 
-export function updateTenantAdminViewUrl(view: TenantAdminView) {
+export function getTenantAdminStaffIdFromUrl() {
+  const match = window.location.pathname.match(/^\/tenant-admin\/staff-management\/([^/]+)(?:\/(?:edit|activity-log))?$/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
+export function updateTenantAdminViewUrl(view: TenantAdminView, id?: string) {
+  if (id && view === 'staffDetail') {
+    window.history.pushState(null, '', `/tenant-admin/staff-management/${encodeURIComponent(id)}`)
+    return
+  }
+
+  if (id && view === 'staffEdit') {
+    window.history.pushState(null, '', `/tenant-admin/staff-management/${encodeURIComponent(id)}/edit`)
+    return
+  }
+
+  if (id && view === 'staffActivityLog') {
+    window.history.pushState(null, '', `/tenant-admin/staff-management/${encodeURIComponent(id)}/activity-log`)
+    return
+  }
+
   window.history.pushState(null, '', `/tenant-admin/${tenantAdminViewSlugs[view]}`)
 }
 

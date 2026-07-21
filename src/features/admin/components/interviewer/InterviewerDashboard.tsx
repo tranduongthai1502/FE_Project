@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getRoleHomeNav, interviewerNav } from '../../data/adminNavigation'
 import type { RoleHomeView } from '../../types/admin.types'
+import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
 import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/staffWorkspace'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
@@ -10,6 +11,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [activeView, setActiveView] = useState<RoleHomeView>('dashboard')
   const navItems = getRoleHomeNav(interviewerNav, activeView, setActiveView)
   const canSwitchWorkspace = hasMultipleStaffWorkspaces()
+  const isActionLocked = isStoredCurrentUserInactive()
 
   return (
     <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => setActiveView('settings')} showWorkspaceSwitcher={canSwitchWorkspace} onWorkspaceSwitch={() => switchStaffWorkspace('hr')}>
@@ -51,7 +53,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
               <span>Technical Skills <strong>8</strong> / 10</span>
               <span>Soft Skills <strong>7</strong> / 10</span>
             </div>
-            <button type="button"><i className="fa-regular fa-paper-plane"></i> Complete & Submit Evaluation</button>
+            <button type="button" disabled={isActionLocked}><i className="fa-regular fa-paper-plane"></i> Complete & Submit Evaluation</button>
           </section>
 
           <div className={styles.rightRail}>
