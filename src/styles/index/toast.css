@@ -53,15 +53,15 @@
 }
 
 .toast-notification.toast-error {
-  right: auto !important;
-  left: 24px !important;
+  right: 24px !important;
+  left: auto !important;
   color: #d12020;
   background: #fff0ec;
-  animation-name: slideInLeft;
+  animation-name: slideInRight !important;
 }
 
 .toast-notification.toast-error.hide {
-  animation-name: slideOutLeft;
+  animation-name: slideOutRight !important;
 }
 
 .toast-notification.toast-error .toast-icon,
@@ -91,28 +91,6 @@
   }
 }
 
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-36px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideOutLeft {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-36px);
-  }
-}
-
 @media (max-width: 640px) {
   .toast-notification {
     top: 14px;
@@ -125,8 +103,8 @@
   }
 
   .toast-notification.toast-error {
-    right: auto !important;
-    left: 14px !important;
+    right: 14px !important;
+    left: auto !important;
   }
 
   .toast-icon {
