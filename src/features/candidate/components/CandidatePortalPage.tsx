@@ -56,6 +56,18 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
             <strong>JobFusion Pro</strong>
             <span>Candidate Portal</span>
           </div>
+          <button
+            type="button"
+            ref={sidebarTriggerRef}
+            className={`candidate-sidebar-trigger ${isSidebarOpen ? 'is-open' : ''}`}
+            aria-label={isSidebarOpen ? 'Close candidate navigation' : 'Open candidate navigation'}
+            aria-expanded={isSidebarOpen}
+            onClick={() => setIsSidebarOpen((value) => !value)}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {isSidebarOpen ? 'arrow_menu_close' : 'arrow_menu_open'}
+            </span>
+          </button>
         </div>
 
         <nav className="candidate-nav" aria-label="Candidate navigation">
@@ -90,19 +102,6 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
 
       <section className="candidate-main">
         <header className="candidate-topbar">
-          <button
-            type="button"
-            ref={sidebarTriggerRef}
-            className={`candidate-sidebar-trigger ${isSidebarOpen ? 'is-open' : ''}`}
-            aria-label={isSidebarOpen ? 'Close candidate navigation' : 'Open candidate navigation'}
-            aria-expanded={isSidebarOpen}
-            onClick={() => setIsSidebarOpen((value) => !value)}
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              {isSidebarOpen ? 'arrow_menu_close' : 'arrow_menu_open'}
-            </span>
-          </button>
-
           <div className="candidate-search">
             <i className="fa-solid fa-magnifying-glass"></i>
             <input type="search" placeholder="Search jobs, documents..." aria-label="Search jobs and documents" />
