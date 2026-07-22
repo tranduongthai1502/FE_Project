@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getTenantAdminNav } from '../../data/adminNavigation'
 import type { TenantAdminView, StaffMember, UserStatus, Tenant, SubscriptionPlan } from '../../types/admin.types'
@@ -27,6 +27,7 @@ type StaffListFilterValues = {
   phone?: string
   employeeCode?: string
   jobTitle?: string
+  userRole?: string
   status?: UserStatus
 }
 
@@ -38,6 +39,7 @@ function buildStaffListFilters(values: StaffListFilterValues = {}) {
   const phone = values.phone?.trim()
   const employeeCode = values.employeeCode?.trim()
   const jobTitle = values.jobTitle?.trim()
+  const userRole = values.userRole?.trim()
 
   if (search) filters.search = search
   if (fullName) filters.fullName = fullName
@@ -45,6 +47,7 @@ function buildStaffListFilters(values: StaffListFilterValues = {}) {
   if (phone) filters.phone = phone
   if (employeeCode) filters.employeeCode = employeeCode
   if (jobTitle) filters.jobTitle = jobTitle
+  if (userRole) filters.userRole = userRole
   if (values.status) filters.status = values.status
 
   return filters
@@ -208,6 +211,12 @@ function StaffManagementView({
   currentPage,
   pageCount,
   onPageChange,
+  roleFilter,
+  statusFilter,
+  searchQuery,
+  onRoleFilterChange,
+  onStatusFilterChange,
+  onSearchQueryChange,
   isActionLocked = false,
 }: {
   staffList: StaffMember[]
@@ -223,46 +232,19 @@ function StaffManagementView({
   currentPage: number
   pageCount: number
   onPageChange: (page: number) => void
+  roleFilter: string
+  statusFilter: string
+  searchQuery: string
+  onRoleFilterChange: (value: string) => void
+  onStatusFilterChange: (value: string) => void
+  onSearchQueryChange: (value: string) => void
   isActionLocked?: boolean
 }) {
-  const [roleFilter, setRoleFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const filteredStaff = staffList.filter(staff => {
-    // 1. Search Query
-    const normalizedSearch = searchQuery.toLowerCase().trim()
-    const matchesSearch = !normalizedSearch || 
-      staff.fullName.toLowerCase().includes(normalizedSearch) || 
-      staff.email.toLowerCase().includes(normalizedSearch)
-
-    // 2. Role Filter
-    const matchesRole = roleFilter === 'all' || 
-      (staff.userRole && staff.userRole.toLowerCase().includes(roleFilter))
-
-    // 3. Status Filter
-    let matchesStatus = true
-    if (statusFilter === 'activated') {
-      matchesStatus = staff.status === 'ACTIVE'
-    } else if (statusFilter === 'disabled') {
-      matchesStatus = staff.status === 'DISABLED'
-    }
-
-    return matchesSearch && matchesRole && matchesStatus
-  })
-
-  const hasLocalStaffFilters = roleFilter !== 'all' || statusFilter !== 'all' || searchQuery.trim().length > 0
-  const totalElements = hasLocalStaffFilters
-    ? filteredStaff.length
-    : getListTotalElements(staffList, filteredStaff.length)
+  const totalElements = getListTotalElements(staffList, staffList.length)
   const totalPages = pageCount
-  const paginatedStaff = filteredStaff
+  const paginatedStaff = staffList
   const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
   const displayEnd = displayStart === 0 ? 0 : Math.min(totalElements, displayStart + paginatedStaff.length - 1)
-
-  useEffect(() => {
-    onPageChange(1)
-  }, [roleFilter, statusFilter, searchQuery, onPageChange])
 
   useEffect(() => {
     if (!isLoading && !error && staffList.length === 0 && currentPage > 1) {
@@ -327,7 +309,7 @@ function StaffManagementView({
       <div className="staff-management-toolbar">
         <label>
           <span>Role:</span>
-          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+          <select value={roleFilter} onChange={(e) => onRoleFilterChange(e.target.value)}>
             <option value="all">All Roles</option>
             <option value="hr">HR</option>
             <option value="interviewer">Interviewer</option>
@@ -335,7 +317,7 @@ function StaffManagementView({
         </label>
         <label>
           <span>Status:</span>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)}>
             <option value="all">All Status</option>
             <option value="activated">Active</option>
             <option value="disabled">Inactive</option>
@@ -344,7 +326,7 @@ function StaffManagementView({
         <AdminSearchInput
           className="staff-search"
           value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
           placeholder="Search full name or email address..."
           ariaLabel="Staff search"
         />
@@ -353,6 +335,7 @@ function StaffManagementView({
           className="tenant-create-btn"
           onClick={onCreate}
           disabled={hasReachedStaffQuota || isActionLocked}
+          title={hasReachedStaffQuota ? 'Account quota reached. Please upgrade your subscription plan to add more staff.' : undefined}
         >
           Create Staff Account
         </button>
@@ -369,7 +352,7 @@ function StaffManagementView({
           <strong>No staff accounts found</strong>
           <p>Click "Create Staff Account" to add your first team member.</p>
         </section>
-      ) : filteredStaff.length === 0 ? (
+      ) : staffList.length === 0 ? (
         <div className="tenant-list-table-state" style={{ marginTop: '24px' }}>No staff members match the filters.</div>
       ) : (
         <section className="staff-list-table-card">
@@ -499,7 +482,7 @@ function CreateStaffAccountView({
   staffList?: StaffMember[]
   onHome: () => void
   onCancel: () => void
-  onConfirm: (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => void
+  onConfirm: (payload: { fullName: string; email: string; role: string[]; status?: UserStatus }) => void
   isSubmitting?: boolean
   isActionLocked?: boolean
 }) {
@@ -508,6 +491,8 @@ function CreateStaffAccountView({
   const [email, setEmail] = useState(staffMember?.email || '')
   const [fullNameError, setFullNameError] = useState('')
   const [emailError, setEmailError] = useState('')
+  const [roleError, setRoleError] = useState('')
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   
   // Parse roles
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
@@ -520,10 +505,9 @@ function CreateStaffAccountView({
   const handleRoleToggle = (role: string) => {
     setSelectedRoles(prev => {
       if (prev.includes(role)) {
-        // Must have at least one role selected
-        if (prev.length === 1) return prev
         return prev.filter(r => r !== role)
       } else {
+        if (roleError) setRoleError('')
         return [...prev, role]
       }
     })
@@ -562,21 +546,25 @@ function CreateStaffAccountView({
     if (isActionLocked) return
     const nextFullNameError = fullName.trim() ? '' : "Please enter the staff member's full name."
     const nextEmailError = validateEmail(email)
+    const nextRoleError = selectedRoles.length > 0 ? '' : 'Please assign at least one role.'
 
     setFullNameError(nextFullNameError)
     setEmailError(nextEmailError)
+    setRoleError(nextRoleError)
 
-    if (nextFullNameError || nextEmailError) {
+    if (nextFullNameError || nextEmailError || nextRoleError) {
       return
     }
 
-    // Map roles to uppercase: "HR" or "Interviewer" (matching backend validation regexp ^(HR|Interviewer)$)
-    const rolePayload = selectedRoles.map(r => r === 'hr' ? 'HR' : 'Interviewer')
+    const rolePayload = selectedRoles.map((role) => {
+      if (role === 'hr') return 'HR'
+      return 'Interviewer'
+    })
     onConfirm({
-      fullName,
+      fullName: fullName.trim(),
       email: email.trim(),
       role: rolePayload,
-      status,
+      ...(isEdit ? { status } : {}),
     })
   }
 
@@ -697,18 +685,30 @@ function CreateStaffAccountView({
                 </div>
                 <i className="staff-role-card-dot" aria-hidden="true"></i>
               </div>
+              {roleError && <small className="staff-field-error">{roleError}</small>}
             </fieldset>
           </div>
 
           <footer className="create-staff-actions">
             <small><i className="fa-regular fa-circle-question"></i> Required fields are validated before submission.</small>
-            <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+            <button type="button" onClick={() => setShowCancelConfirm(true)} disabled={isSubmitting}>Cancel</button>
             <button type="submit" className="tenant-create-btn" disabled={isSubmitting || isActionLocked}>
               {isSubmitting ? 'Saving...' : isEdit ? 'Update Account' : 'Confirm'}
             </button>
           </footer>
         </form>
       </section>
+      {showCancelConfirm && (
+        <ConfirmActionModal
+          isSubmitting={false}
+          title="Confirm Action"
+          message="Are you sure you want to cancel? The staff account will not be created."
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          onCancel={() => setShowCancelConfirm(false)}
+          onConfirm={onCancel}
+        />
+      )}
     </div>
   )
 }
@@ -716,6 +716,7 @@ function CreateStaffAccountView({
 function EditStaffAccountView({
   staffMember,
   onHome,
+  onStaffManagement,
   onCancel,
   onConfirm,
   isSubmitting = false,
@@ -723,6 +724,7 @@ function EditStaffAccountView({
 }: {
   staffMember: StaffMember
   onHome: () => void
+  onStaffManagement: () => void
   onCancel: () => void
   onConfirm: (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => void
   isSubmitting?: boolean
@@ -730,6 +732,7 @@ function EditStaffAccountView({
 }) {
   const [fullName, setFullName] = useState(staffMember.fullName)
   const [fullNameError, setFullNameError] = useState('')
+  const [roleError, setRoleError] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
     const roles = staffMember.userRole
@@ -767,9 +770,10 @@ function EditStaffAccountView({
   const toggleRole = (role: string) => {
     setSelectedRoles((current) => {
       if (current.includes(role)) {
-        return current.length === 1 ? current : current.filter((item) => item !== role)
+        return current.filter((item) => item !== role)
       }
 
+      if (roleError) setRoleError('')
       return [...current, role]
     })
   }
@@ -779,6 +783,10 @@ function EditStaffAccountView({
     if (isActionLocked) return
     if (!fullName.trim()) {
       setFullNameError('Full name cannot be empty.')
+      return
+    }
+    if (selectedRoles.length === 0) {
+      setRoleError('Please assign at least one role to this account.')
       return
     }
 
@@ -801,7 +809,7 @@ function EditStaffAccountView({
         className="create-staff-breadcrumb"
         items={[
           { label: 'Home', onClick: onHome },
-          { label: 'Staff Management', onClick: onCancel },
+          { label: 'Staff Management', onClick: onStaffManagement },
           { label: 'Edit Staff Account' },
         ]}
       />
@@ -894,6 +902,7 @@ function EditStaffAccountView({
                 </div>
               </label>
             </div>
+            {roleError && <small className="edit-staff-field-error">{roleError}</small>}
           </section>
         </div>
 
@@ -961,6 +970,21 @@ function StaffDetailView({
     } catch {
       return dateStr
     }
+  }
+
+  const formatRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
+    if (diffMinutes < 60) return `${diffMinutes || 1} minute${diffMinutes === 1 ? '' : 's'} ago`
+
+    const diffHours = Math.round(diffMinutes / 60)
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+
+    const diffDays = Math.round(diffHours / 24)
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
   }
 
   const roleList = staffMember.userRole
@@ -1248,6 +1272,61 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       : item
   ))
 
+  const loadStaffDetail = useCallback((detailStaffId: string, fallbackStaff?: StaffMember, options: { syncSelectedStaffId?: boolean } = {}) => {
+    if (!detailStaffId) return () => {}
+
+    let isActive = true
+    if (options.syncSelectedStaffId && detailStaffId !== selectedStaffId) {
+      setSelectedStaffId(detailStaffId)
+    }
+    setStaffDetailError('')
+    setIsLoadingStaffDetail(true)
+
+    adminApi.getUserById(detailStaffId)
+      .then((staffDetail) => {
+        if (!isActive) return
+
+        const normalizedStaffDetail = normalizeStaffMember(staffDetail)
+        setSelectedStaff((currentStaff) => {
+          const fallback = fallbackStaff || currentStaff
+          const nextStaff: StaffMember = {
+            id: detailStaffId,
+            email: normalizedStaffDetail?.email || fallback?.email || '',
+            fullName: normalizedStaffDetail?.fullName || fallback?.fullName || 'Staff Member',
+            status: normalizedStaffDetail?.status || fallback?.status || 'DISABLED',
+            userRole: normalizedStaffDetail?.userRole || fallback?.userRole || '',
+            employeeCode: normalizedStaffDetail?.employeeCode || fallback?.employeeCode,
+            phone: normalizedStaffDetail?.phone || fallback?.phone,
+            createdAt: normalizedStaffDetail?.createdAt || fallback?.createdAt,
+            activatedAt: normalizedStaffDetail?.activatedAt || fallback?.activatedAt,
+            lastLoginAt: normalizedStaffDetail?.lastLoginAt || fallback?.lastLoginAt,
+            lastLoginLocation: normalizedStaffDetail?.lastLoginLocation || fallback?.lastLoginLocation,
+            lastLoginIp: normalizedStaffDetail?.lastLoginIp || fallback?.lastLoginIp,
+          }
+
+          saveSelectedStaff(nextStaff)
+          return nextStaff
+        })
+      })
+      .catch((error) => {
+        if (isActive) {
+          setStaffDetailError('Error loading staff details. Please try again.')
+          if (shouldToastHttpError(error)) {
+            triggerToast?.(getAdminErrorMessage(error, 'Error loading staff details. Please try again.'), 'error')
+          }
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingStaffDetail(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [selectedStaffId, triggerToast])
+
   useEffect(() => {
     if (isPasswordChangeRequired) {
       setActiveView('settings')
@@ -1298,6 +1377,10 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [refreshKey, setRefreshKey] = useState(0)
   const [staffPage, setStaffPage] = useState(1)
   const [staffPageCount, setStaffPageCount] = useState(1)
+  const [staffRoleFilter, setStaffRoleFilter] = useState('all')
+  const [staffStatusFilter, setStaffStatusFilter] = useState('all')
+  const [staffSearchQuery, setStaffSearchQuery] = useState('')
+  const [debouncedStaffSearchQuery, setDebouncedStaffSearchQuery] = useState('')
   const [isActionLocked, setIsActionLocked] = useState(() => isStoredCurrentUserInactive())
 
   const shouldLoadTenantWorkspace =
@@ -1307,6 +1390,32 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     activeView === 'staffEdit' ||
     activeView === 'staffDetail' ||
     activeView === 'staffActivityLog'
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedStaffSearchQuery(staffSearchQuery.trim())
+    }, 300)
+
+    return () => window.clearTimeout(timer)
+  }, [staffSearchQuery])
+
+  useEffect(() => {
+    setStaffPage(1)
+  }, [staffRoleFilter, staffStatusFilter, debouncedStaffSearchQuery])
+
+  const staffListFilters = useMemo(() => buildStaffListFilters({
+    search: debouncedStaffSearchQuery,
+    userRole: staffRoleFilter === 'all'
+      ? undefined
+      : staffRoleFilter === 'hr'
+        ? 'HR'
+        : 'Interviewer',
+    status: staffStatusFilter === 'all'
+      ? undefined
+      : staffStatusFilter === 'activated'
+        ? 'ACTIVE'
+        : 'DISABLED',
+  }), [debouncedStaffSearchQuery, staffRoleFilter, staffStatusFilter])
 
   // API load staff
   useEffect(() => {
@@ -1320,7 +1429,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
     adminApi.getStaffList({
       sortField: 'fullName',
-      filters: buildStaffListFilters(),
+      filters: staffListFilters,
       sortBy: 'ASC',
       page: staffPage,
       size: ADMIN_LIST_PAGE_SIZE,
@@ -1348,7 +1457,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [shouldLoadTenantWorkspace, refreshKey, staffPage, tenantId])
+  }, [shouldLoadTenantWorkspace, refreshKey, staffPage, tenantId, staffListFilters])
 
   useEffect(() => {
     if (!tenantId || !shouldLoadTenantWorkspace) {
@@ -1401,56 +1510,12 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       return
     }
 
-    let isActive = true
-    if (detailStaffId !== selectedStaffId) {
-      setSelectedStaffId(detailStaffId)
+    if (selectedStaff?.id === detailStaffId) {
+      return
     }
-    setStaffDetailError('')
-    setIsLoadingStaffDetail(true)
 
-    adminApi.getUserById(detailStaffId)
-      .then((staffDetail) => {
-        if (!isActive) return
-
-        const normalizedStaffDetail = normalizeStaffMember(staffDetail)
-        setSelectedStaff((currentStaff) => {
-          const nextStaff: StaffMember = {
-            id: detailStaffId,
-            email: normalizedStaffDetail?.email || currentStaff?.email || '',
-            fullName: normalizedStaffDetail?.fullName || currentStaff?.fullName || 'Staff Member',
-            status: normalizedStaffDetail?.status || currentStaff?.status || 'DISABLED',
-            userRole: normalizedStaffDetail?.userRole || currentStaff?.userRole || '',
-            employeeCode: normalizedStaffDetail?.employeeCode || currentStaff?.employeeCode,
-            phone: normalizedStaffDetail?.phone || currentStaff?.phone,
-            createdAt: normalizedStaffDetail?.createdAt || currentStaff?.createdAt,
-            activatedAt: normalizedStaffDetail?.activatedAt || currentStaff?.activatedAt,
-            lastLoginAt: normalizedStaffDetail?.lastLoginAt || currentStaff?.lastLoginAt,
-            lastLoginLocation: normalizedStaffDetail?.lastLoginLocation || currentStaff?.lastLoginLocation,
-            lastLoginIp: normalizedStaffDetail?.lastLoginIp || currentStaff?.lastLoginIp,
-          }
-
-          saveSelectedStaff(nextStaff)
-          return nextStaff
-        })
-      })
-      .catch((error) => {
-        if (isActive) {
-          setStaffDetailError('Error loading staff details. Please try again.')
-          if (shouldToastHttpError(error)) {
-            triggerToast?.(getAdminErrorMessage(error, 'Error loading staff details. Please try again.'), 'error')
-          }
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoadingStaffDetail(false)
-        }
-      })
-
-    return () => {
-      isActive = false
-    }
-  }, [activeView, location.pathname, selectedStaffId, selectedStaff?.id, triggerToast])
+    return loadStaffDetail(detailStaffId, undefined, { syncSelectedStaffId: true })
+  }, [activeView, location.pathname, loadStaffDetail, selectedStaffId, selectedStaff?.id, triggerToast])
 
   const hasTenantQuota = Boolean(tenantDetail)
   const isStaffQuotaUnlimited = Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0)
@@ -1488,7 +1553,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   }
 
   // Handlers
-  const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => {
+  const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status?: UserStatus }) => {
     if (!guardTenantActive()) return
 
     setIsSaving(true)
@@ -1497,15 +1562,15 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         fullName: payload.fullName,
         email: payload.email,
         role: payload.role,
-        status: payload.status,
+        ...(payload.status ? { status: payload.status } : {}),
         ...(tenantId ? { tenantId } : {}),
       })
-      triggerToast?.('Staff account created successfully. Invitation email sent.', 'success')
+      triggerToast?.('Staff account created successfully.', 'success')
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {
       if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
-        handleActionError(error, 'Failed to create staff account.')
+        handleActionError(error, 'Error system. Please try again.')
       }
     } finally {
       setIsSaving(false)
@@ -1550,10 +1615,10 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       )))
 
       setRefreshKey(prev => prev + 1)
-      changeView('staffManagement')
+      changeView('staffDetail', selectedStaff.id)
     } catch (error) {
       if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
-        handleActionError(error, 'Failed to update staff account.')
+        handleActionError(error, 'Error system. Please try again.')
       }
     } finally {
       setIsSaving(false)
@@ -1582,7 +1647,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
     } catch (error) {
       if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
-        handleActionError(error, 'Failed to delete staff account.')
+        handleActionError(error, 'Error system. Please try again.')
       }
     } finally {
       setIsDeleting(false)
@@ -1595,7 +1660,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       return
     }
 
-    const nextStatus = staff.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
+    const nextStatus: UserStatus = staff.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
     const roles = staff.userRole ? staff.userRole.split(', ').map(r => r.trim() === 'HR' ? 'HR' : 'Interviewer') : ['HR']
     
     setIsSaving(true)
@@ -1609,8 +1674,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       })
       triggerToast?.(
         nextStatus === 'ACTIVE'
-          ? 'Account activated successfully.'
-          : 'Account deactivated successfully.',
+          ? `Account activated successfully. ${staff.fullName} can now log in.`
+          : `Account deactivated successfully. ${staff.fullName} no longer has access.`,
         'success',
       )
       setStatusConfirmStaff(null)
@@ -1628,7 +1693,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
     } catch (error) {
       if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
-        handleActionError(error, 'Failed to update account status.')
+        handleActionError(error, 'Error system. Please try again.')
       }
     } finally {
       setIsSaving(false)
@@ -1657,7 +1722,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           <EditStaffAccountView
             staffMember={selectedStaff}
             onHome={() => changeView('dashboard')}
-            onCancel={() => changeView('staffManagement')}
+            onStaffManagement={() => changeView('staffManagement')}
+            onCancel={() => changeView('staffDetail', selectedStaff.id)}
             onConfirm={handleUpdateStaffSubmit}
             isSubmitting={isSaving}
             isActionLocked={isActionLocked}
@@ -1738,12 +1804,19 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           onSelectStaff={(staff) => {
             saveSelectedStaff(staff)
             setSelectedStaff(staff)
+            loadStaffDetail(staff.id, staff)
             changeView('staffDetail', staff.id)
           }}
           onHome={() => changeView('dashboard')}
           currentPage={staffPage}
           pageCount={staffPageCount}
           onPageChange={setStaffPage}
+          roleFilter={staffRoleFilter}
+          statusFilter={staffStatusFilter}
+          searchQuery={staffSearchQuery}
+          onRoleFilterChange={setStaffRoleFilter}
+          onStatusFilterChange={setStaffStatusFilter}
+          onSearchQueryChange={setStaffSearchQuery}
           isActionLocked={isActionLocked}
         />
       ) : (
@@ -1869,7 +1942,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           message={
             statusConfirmStaff.status === 'ACTIVE'
               ? `Are you sure you want to deactivate ${statusConfirmStaff.fullName}'s account? They will lose access immediately and any active session will be terminated.`
-              : `A new activation email will be sent to ${statusConfirmStaff.email}. The previous activation link will be immediately invalidated. Do you want to proceed?`
+              : `Are you sure you want to activate ${statusConfirmStaff.fullName}'s account? They will be able to log in immediately.`
           }
           cancelLabel="Cancel"
           confirmLabel="Confirm"
