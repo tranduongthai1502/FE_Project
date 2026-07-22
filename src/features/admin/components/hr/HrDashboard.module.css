@@ -437,6 +437,7 @@
   min-height: 30px;
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 0 10px;
   border: 1px solid #f0b8a8;
@@ -453,6 +454,7 @@
 .jobsToolbar select {
   border: 0;
   outline: 0;
+  padding-right: 5px;
   background: transparent;
   color: #101c33;
   font-size: 10px;
@@ -464,38 +466,45 @@
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 8px;
+  gap: 7px;
   color: #667085;
   text-align: center;
 }
 
 .jobsEmptyIcon {
   position: relative;
-  width: 108px;
-  height: 108px;
+  width: 131px;
+  height: 132px;
   display: grid;
   place-items: center;
-  color: #f1d8d1;
-  font-size: 72px;
+  margin-bottom: 50px;
+}
+
+.jobsEmptyIcon > svg {
+  display: block;
 }
 
 .jobsEmptyIcon span {
   position: absolute;
-  right: 8px;
-  bottom: 12px;
+  right: -40px;
+  bottom: -45px;
   width: 34px;
   height: 34px;
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #d93408;
-  color: #ffffff;
-  font-size: 13px;
+  background: #f13a13;
+  box-shadow: 0 8px 18px rgba(217, 52, 8, 0.22);
 }
 
-.jobsEmptyState strong {
+.jobsEmptyIcon span svg {
+  display: block;
+}
+
+.jobsEmptyTitle {
   color: #101c33;
   font-size: 12px;
+  font-weight: 400;
 }
 
 .jobsEmptyState p {
@@ -676,7 +685,7 @@
 
 .jobDetailCard,
 .jobSidePanel section,
-.jobForm section {
+.jobFormPanel {
   border: 1px solid #f0b8a8;
   border-radius: 8px;
   background: #ffffff;
@@ -689,7 +698,7 @@
 
 .jobDetailCard h2,
 .jobForm h2 {
-  margin-bottom: 18px;
+  margin: 0 0 18px;
   color: #101c33;
   font-size: 15px;
 }
@@ -741,17 +750,80 @@
 
 .jobForm {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 0.8fr) minmax(300px, 0.52fr);
   gap: 18px;
+  align-items: start;
 }
 
-.jobForm section {
+.jobFormMain,
+.jobFormAside {
   display: grid;
-  gap: 14px;
-  padding: 20px;
+  gap: 16px;
+}
+
+.jobFormAside {
+  min-height: 100%;
+}
+
+.jobFormPanel {
+  display: grid;
+  gap: 0px;
+  padding: 16px 18px 18px;
+}
+
+.jobFormPanel h2 {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0d7d0;
 }
 
 .jobForm label {
+  display: grid;
+  gap: 3px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.jobForm label b {
+  display: inline;
+  color: #d93408;
+}
+
+.jobFieldError {
+  min-height: 16px;
+  display: block;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
+  text-align: right;
+  text-transform: none;
+  visibility: visible;
+}
+
+.jobFieldError[aria-hidden='true'] {
+  visibility: hidden;
+}
+
+.jobInputError {
+  border-color: #ff2d2d !important;
+}
+
+.jobFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0px 18px;
+}
+
+.fullField,
+.salaryRangeRow {
+  grid-column: 1 / -1;
+}
+
+.locationRow {
   display: grid;
   gap: 7px;
   color: #667085;
@@ -759,6 +831,31 @@
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.locationRow b {
+  color: #d93408;
+}
+
+.locationControls {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.deadlineField {
+  grid-column: 2;
+  align-content: start;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .jobForm input,
@@ -769,25 +866,155 @@
   border: 1px solid #f0b8a8;
   border-radius: 5px;
   padding: 0 12px;
-  color: #101c33;
+  color: #0b1c30;
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 400;
   text-transform: none;
 }
 
+.jobForm select {
+  appearance: none;
+  padding-right: 30px;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%230B1C30' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.iconInput {
+  position: relative;
+}
+
+.iconInput svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  z-index: 1;
+  width: 14px;
+  height: 18px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.iconInput input {
+  padding-left: 30px;
+}
+
+.iconInput input[type='date']::-webkit-calendar-picker-indicator {
+  display: none;
+  opacity: 0;
+}
+
+.iconInput input[type='date'] {
+  appearance: none;
+}
+
+.moneyInput {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #f0b8a8;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.moneyInput span {
+  padding-left: 12px;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.moneyInput input {
+  min-height: 36px;
+  border: 0;
+  padding-left: 6px;
+}
+
+.salaryRangeRow {
+  display: grid;
+  gap: 7px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.salaryRangeControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.salaryRangeControls small {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.richTextField {
+  gap: 8px;
+  height: 100%;
+}
+
+.richTextBox {
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid #f0b8a8;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.richTextToolbar {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 16px;
+  border-bottom: 1px solid #f0d7d0;
+  color: #101c33;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.richTextToolbar b,
+.richTextToolbar i,
+.richTextToolbar span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 10px;
+}
+
 .jobForm textarea {
-  min-height: 142px;
+  height: 100%;
+  min-height: 120px;
+  border: 0;
+  border-radius: 0;
   padding: 12px;
   resize: vertical;
+  font-weight: 600;
+}
+
+.jobFormMain .richTextBox textarea {
+  min-height: 116px;
+}
+
+.jobFormAside .richTextBox textarea {
+  min-height: 128px;
 }
 
 .jobForm footer {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
   gap: 14px;
-  padding-top: 16px;
+  margin-top: auto;
+  padding: 18px 12px 0;
   border-top: 1px solid #f0d7d0;
 }
 
@@ -809,6 +1036,18 @@
   color: #ffffff;
 }
 
+.aiJobButton {
+  min-width: 142px;
+  min-height: 42px;
+  border: 1px solid #d93408;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 @media (max-width: 980px) {
   .jobsMetrics,
   .jobsToolbar {
@@ -817,6 +1056,18 @@
 
   .jobsSearch {
     max-width: none;
+  }
+
+  .jobDetailGrid,
+  .jobForm,
+  .jobFieldGrid,
+  .locationRow {
+    grid-template-columns: 1fr;
+  }
+
+  .jobForm footer {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .jobsTableRow {
