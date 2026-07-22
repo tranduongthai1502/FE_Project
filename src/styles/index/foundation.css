@@ -38,6 +38,12 @@
   font-family: var(--font-family);
 }
 
+.fa-solid,
+.fas {
+  font-weight: 900;
+  margin-right: 10px;
+}
+
 body {
   font-family: var(--font-family);
   background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
@@ -58,4 +64,3 @@ body {
   justify-content: center;
   align-items: stretch;
 }
-
