@@ -8,6 +8,7 @@ import type {
   PlanListRequest,
   SubscriptionPlan,
   Tenant,
+  TenantDashboardStats,
   UpdatePlanPayload,
   TenantListRequest,
   UpdateTenantPayload,
@@ -16,6 +17,7 @@ import {
   getResponsePayload,
   attachPaginationMeta,
   getJobPostingList,
+  getUserDetailPayload,
   getSubscriptionPlanList,
   getTenantList,
   normalizeJobPosting,
@@ -27,22 +29,47 @@ import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, bui
 
 export const ADMIN_LIST_PAGE_SIZE = 5
 
-function toZeroBasedPage(page: number) {
-  return Math.max(0, page - 1)
-}
-
 function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
   const page = params?.page ?? defaults.page
 
   return {
     ...defaults,
     ...params,
-    page: toZeroBasedPage(page),
+    page: Math.max(1, page),
     filters: params?.filters ?? defaults.filters,
   }
 }
 
+function readNumberValue(payload: any, keys: string[]) {
+  for (const key of keys) {
+    const value = payload?.[key]
+    const numberValue = Number(value)
+
+    if (value !== undefined && value !== null && Number.isFinite(numberValue)) {
+      return numberValue
+    }
+  }
+
+  return undefined
+}
+
+function normalizeTenantDashboardStats(payload: any): TenantDashboardStats {
+  const data = getResponsePayload(payload)
+
+  return {
+    totalTenants: readNumberValue(data, ['totalTenants', 'totalTenant', 'total', 'tenantCount', 'total_tenants']),
+    activeTenants: readNumberValue(data, ['activeTenants', 'activeTenant', 'active', 'activeTenantCount', 'active_tenants']),
+    inactiveTenants: readNumberValue(data, ['inactiveTenants', 'inactiveTenant', 'inactive', 'inactiveTenantCount', 'inactive_tenants']),
+    totalRevenue: readNumberValue(data, ['totalRevenue', 'revenue', 'monthlyRevenue', 'monthlyRecurringRevenue', 'total_revenue']),
+  }
+}
+
 export const adminApi = {
+  async getTenantDashboardStats() {
+    const response = await axiosClient.get('/api/dashboard/stats/tenant')
+    return normalizeTenantDashboardStats(response)
+  },
+
   async getTenants(params?: AdminListParams) {
     const request = buildListRequest({
       "sortField": 'companyName',
@@ -180,7 +207,7 @@ export const adminApi = {
 
   async getUserById(id: string) {
     const response = await axiosClient.get(`/api/user/${encodeURIComponent(id)}`)
-    const user = normalizeTenantAdminUser(getResponsePayload(response))
+    const user = normalizeTenantAdminUser(getUserDetailPayload(response))
 
     if (!user) {
       throw new Error('User detail not found')

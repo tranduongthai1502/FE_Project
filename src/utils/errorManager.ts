@@ -13,6 +13,7 @@ export const errorMessages: Record<string, string> = {
   access_denied: 'You do not have permission to perform this action.',
   user_account_is_not_active: backendAuthErrorMessages.user_account_is_not_active,
   inactive_user: backendAuthErrorMessages.inactive_user,
+  tenant_is_inactive: backendAuthErrorMessages.tenant_is_inactive,
   account_deactivated: backendAuthErrorMessages.account_deactivated,
   user_deactivated: backendAuthErrorMessages.user_deactivated,
   account_deleted: backendAuthErrorMessages.account_deleted,

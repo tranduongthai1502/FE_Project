@@ -16,7 +16,7 @@ export type RoleHomeView = 'dashboard' | 'jobs' | 'settings'
 
 export type TenantAdminView = RoleHomeView | 'staffManagement' | 'staffCreate' | 'staffEdit' | 'staffDetail' | 'staffActivityLog'
 
-export type UserStatus = 'PENDING' | 'ACTIVE' | 'DISABLED'
+export type UserStatus = 'ACTIVE' | 'DISABLED'
 
 export type StaffMember = {
   id: string
@@ -142,6 +142,13 @@ export type Tenant = {
   adminUserId?: string
   adminFullName?: string
   adminEmail?: string
+}
+
+export type TenantDashboardStats = {
+  totalTenants?: number
+  activeTenants?: number
+  inactiveTenants?: number
+  totalRevenue?: number
 }
 
 export type TenantAdminUser = {
