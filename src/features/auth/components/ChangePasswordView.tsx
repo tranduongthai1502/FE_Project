@@ -240,6 +240,7 @@ export function CandidateChangePasswordView({
               <label htmlFor="candidate-current-password">Current Password <span>*</span></label>
               <div className={`candidate-password-input ${currentPasswordError ? 'has-error' : ''}`}>
                 <input
+                  maxLength={50}
                   id="candidate-current-password"
                   type={showCurrentPassword ? 'text' : 'password'}
                   placeholder="Enter current password"
@@ -266,6 +267,7 @@ export function CandidateChangePasswordView({
               <label htmlFor="candidate-new-password">New Password <span>*</span></label>
               <div className={`candidate-password-input ${newPasswordError ? 'has-error' : ''}`}>
                 <input
+                  maxLength={50}
                   id="candidate-new-password"
                   type={showNewPassword ? 'text' : 'password'}
                   placeholder="Enter at least 8 characters"
@@ -329,6 +331,7 @@ export function CandidateChangePasswordView({
               <label htmlFor="candidate-confirm-password">Confirm New Password <span>*</span></label>
               <div className={`candidate-password-input ${confirmPasswordError ? 'has-error' : ''}`}>
                 <input
+                  maxLength={50}
                   id="candidate-confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="Re-type your new password"

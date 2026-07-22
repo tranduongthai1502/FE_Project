@@ -700,6 +700,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
+                maxLength={50}
                 id="email"
                 name="email"
                 type="email"
@@ -725,6 +726,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
+                maxLength={50}
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -754,6 +756,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
           <div className="login-options-row">
             <label className="check-row" htmlFor="keep-logged-in">
               <input
+                maxLength={50}
                 id="keep-logged-in"
                 name="keep-logged-in"
                 type="checkbox"
