@@ -1,22 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getRoleHomeNav, interviewerNav } from '../../data/adminNavigation'
 import type { RoleHomeView } from '../../types/admin.types'
 import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
+import { getInitialRoleHomeView, updateRoleHomeViewUrl } from '../../utils/adminRouteHelpers'
 import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/staffWorkspace'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 import styles from './InterviewerDashboard.module.css'
 
 export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
-  const [activeView, setActiveView] = useState<RoleHomeView>('dashboard')
-  const navItems = getRoleHomeNav(interviewerNav, activeView, setActiveView)
+  const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('interviewer'))
+  const selectView = (view: RoleHomeView) => {
+    setActiveView(view)
+    updateRoleHomeViewUrl('interviewer', view)
+  }
+  const navItems = getRoleHomeNav(interviewerNav, activeView, selectView)
   const canSwitchWorkspace = hasMultipleStaffWorkspaces()
   const isActionLocked = isStoredCurrentUserInactive()
 
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveView(getInitialRoleHomeView('interviewer'))
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
   return (
-    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => setActiveView('settings')} showWorkspaceSwitcher={canSwitchWorkspace} onWorkspaceSwitch={() => switchStaffWorkspace('hr')}>
+    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => selectView('settings')} showWorkspaceSwitcher={canSwitchWorkspace} onWorkspaceSwitch={() => switchStaffWorkspace('hr')}>
       {activeView === 'settings' ? (
-        <AccountSettingsView onBack={() => setActiveView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsView onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
       <div className={`role-content ${styles.content}`}>
         <h1>Interviewer Dashboard</h1>
