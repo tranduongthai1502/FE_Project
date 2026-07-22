@@ -151,6 +151,18 @@ export type TenantDashboardStats = {
   totalRevenue?: number
 }
 
+export type PlanDashboardStats = {
+  activePlans?: number
+  totalPlans?: number
+  topTierName?: string
+  topTierMaxStaffAccount?: number
+  topTierStaffAccountUnlimited?: boolean
+  monthlyActivePlanRevenue?: number
+  monthlyRevenueTrendPercent?: number
+  renewalRate?: number
+  renewalRateTrendPercent?: number
+}
+
 export type TenantAdminUser = {
   id: string
   fullName: string

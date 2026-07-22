@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
-import type { AdminListParams, CreatePlanPayload, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
+import type { AdminListParams, CreatePlanPayload, PlanDashboardStats, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { getListPageCount, getListTotalElements } from '../../utils/adminMappers'
+
+const MAX_NAME_LENGTH = 50
 
 const planFeatureDefaults = [
   {
@@ -331,11 +333,11 @@ function CreatePlanView({
               className={fieldErrors.planName ? 'has-error' : ''}
               value={planName}
               onChange={(event) => {
-                setPlanName(event.target.value)
+                setPlanName(event.target.value.slice(0, MAX_NAME_LENGTH))
                 if (fieldErrors.planName) setFieldErrors((current) => ({ ...current, planName: '' }))
               }}
               placeholder="Plan Name"
-              maxLength={255}
+              maxLength={MAX_NAME_LENGTH}
               required
             />
             {fieldErrors.planName && <small className="create-plan-field-error">{fieldErrors.planName}</small>}
@@ -443,7 +445,6 @@ function CreatePlanView({
             </label>
           </div>
         </div>
-        {planError && <p className="create-plan-error">{planError}</p>}
       </section>
 
       <section className="create-plan-card">
@@ -468,6 +469,7 @@ function CreatePlanView({
             </article>
           ))}
         </div>
+        {planError && <p className="create-plan-error feature-permission-error">{planError}</p>}
       </section>
 
       <footer className="create-plan-actions">
@@ -695,9 +697,10 @@ function EditPlanDetailView({
                   className={fieldErrors.planName ? 'has-error' : ''}
                   value={planName}
                   onChange={(event) => {
-                    setPlanName(event.target.value)
+                    setPlanName(event.target.value.slice(0, MAX_NAME_LENGTH))
                     if (fieldErrors.planName) setFieldErrors((current) => ({ ...current, planName: '' }))
                   }}
+                  maxLength={MAX_NAME_LENGTH}
                   required
                 />
                 {fieldErrors.planName && <small className="create-plan-field-error">{fieldErrors.planName}</small>}
@@ -831,6 +834,7 @@ function EditPlanDetailView({
               </article>
             ))}
           </div>
+          {planError && <p className="create-plan-error feature-permission-error">{planError}</p>}
         </section>
       </div>
 
@@ -896,6 +900,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [selectedPlanDetail, setSelectedPlanDetail] = useState<SubscriptionPlan | null>(null)
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [tenants, setTenants] = useState<Tenant[]>([])
+  const [planStats, setPlanStats] = useState<PlanDashboardStats>({})
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [planListError, setPlanListError] = useState('')
   const [isLoadingPlanDetail, setIsLoadingPlanDetail] = useState(false)
@@ -907,6 +912,28 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [subscriberPage, setSubscriberPage] = useState(1)
   const [subscriberPageCount, setSubscriberPageCount] = useState(1)
   const [subscriberTotalCount, setSubscriberTotalCount] = useState(0)
+
+  useEffect(() => {
+    if (activeView !== 'list') return
+
+    let isActive = true
+
+    adminApi.getPlanDashboardStats()
+      .then((stats) => {
+        if (isActive) {
+          setPlanStats(stats)
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setPlanStats({})
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, refreshPlansKey])
 
   useEffect(() => {
     if (activeView !== 'list') return
@@ -1031,6 +1058,20 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const topTier = plans.reduce<SubscriptionPlan | null>((current, plan) => (
     !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
   ), null)
+  const planStatsActivePlans = planStats.activePlans ?? activePlansCount
+  const planStatsTotalPlans = planStats.totalPlans ?? getListTotalElements(plans, plans.length)
+  const planStatsTopTierName = planStats.topTierName || topTier?.name || '-'
+  const planStatsTopTierStaffLabel = planStats.topTierStaffAccountUnlimited ?? topTier?.staffAccountUnlimited
+    ? 'Unlimited'
+    : `${planStats.topTierMaxStaffAccount ?? topTier?.maxStaffAccount ?? 0} staff`
+  const planStatsMonthlyRevenueLabel = `$${(planStats.monthlyActivePlanRevenue ?? 0).toFixed(2)}`
+  const planStatsMonthlyTrendLabel = planStats.monthlyRevenueTrendPercent !== undefined
+    ? `${planStats.monthlyRevenueTrendPercent >= 0 ? '+' : ''}${planStats.monthlyRevenueTrendPercent}% from last month.`
+    : '-'
+  const planStatsRenewalRateLabel = planStats.renewalRate !== undefined ? `${planStats.renewalRate}%` : '-'
+  const planStatsRenewalTrendLabel = planStats.renewalRateTrendPercent !== undefined
+    ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${planStats.renewalRateTrendPercent}% vs target`
+    : '-'
   const sortedPlans = plans
   const safePlanPage = planPage
   const pagedPlans = sortedPlans
@@ -1290,23 +1331,23 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       <div className="role-metrics subscription-plan-metrics">
         <article className="role-metric subscription-plan-card">
           <small>Active Plans</small>
-          <strong>{activePlansCount}</strong>
-          <em><i className="fa-solid fa-arrow-trend-up"></i> {plans.length} total plans</em>
+          <strong>{planStatsActivePlans}</strong>
+          <em><i className="fa-solid fa-arrow-trend-up"></i> {planStatsTotalPlans} total plans</em>
         </article>
         <article className="role-metric subscription-plan-card">
           <small>Top Tier</small>
-          <strong>{topTier?.name || '-'}</strong>
-          <p><i className="fa-solid fa-users"></i> {topTier?.staffAccountUnlimited ? 'Unlimited' : `${topTier?.maxStaffAccount || 0} staff`} accounts</p>
+          <strong>{planStatsTopTierName}</strong>
+          <p><i className="fa-solid fa-users"></i> {planStatsTopTierStaffLabel} accounts</p>
         </article>
         <article className="role-metric subscription-plan-card">
           <small>Monthly Active Plan Revenue</small>
-          <strong>$3500.00</strong>
-          <p><i className="fa-solid fa-arrow-trend-up"></i> +12.5% from last month.</p>
+          <strong>{planStatsMonthlyRevenueLabel}</strong>
+          <p><i className="fa-solid fa-arrow-trend-up"></i> {planStatsMonthlyTrendLabel}</p>
         </article>
         <article className="role-metric subscription-plan-card recommendation">
           <small>Renewal Rate</small>
-          <strong>94.8%</strong>
-          <p><i className="fa-solid fa-arrow-trend-up"></i> +1.1% vs target</p>
+          <strong>{planStatsRenewalRateLabel}</strong>
+          <p><i className="fa-solid fa-arrow-trend-up"></i> {planStatsRenewalTrendLabel}</p>
         </article>
       </div>
 
