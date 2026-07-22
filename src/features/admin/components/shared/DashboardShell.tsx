@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ConfirmActionModal } from './ConfirmActionModal'
 
 type StoredUser = {
   full_name?: string | null
@@ -81,6 +82,7 @@ export function DashboardShell({
   const userInitials = getUserInitials(displayName)
   const [isSidebarVisible, setIsSidebarVisible] = useState(getInitialSidebarVisibility)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const userDropdownRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -101,6 +103,11 @@ export function DashboardShell({
 
   const handleLogout = () => {
     setIsUserDropdownOpen(false)
+    setIsLogoutConfirmOpen(true)
+  }
+
+  const confirmLogout = () => {
+    setIsLogoutConfirmOpen(false)
     onLogout()
   }
 
@@ -181,6 +188,14 @@ export function DashboardShell({
         </header>
         {children}
       </section>
+      {isLogoutConfirmOpen && (
+        <ConfirmActionModal
+          isSubmitting={false}
+          message="Are you sure you want to log out?"
+          onCancel={() => setIsLogoutConfirmOpen(false)}
+          onConfirm={confirmLogout}
+        />
+      )}
     </main>
   )
 }

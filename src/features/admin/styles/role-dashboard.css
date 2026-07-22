@@ -2683,6 +2683,12 @@
     grid-column: auto;
     max-width: none;
   }
+
+  .create-tenant-card .tenant-form-grid.admin {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    min-height: 0;
+    padding-bottom: 28px;
+  }
 }
 
 .tenant-breadcrumb {
@@ -5109,12 +5115,13 @@
 }
 
 .edit-resource-list article {
+  position: relative;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 64px auto auto;
   align-items: center;
   gap: 12px;
-  min-height: 62px;
-  padding: 12px;
+  min-height: 86px;
+  padding: 12px 12px 28px;
   border: 1px solid #e8edf5;
   border-radius: 6px;
   background: #f8fafd;
@@ -5170,8 +5177,10 @@
 }
 
 .edit-resource-error {
-  grid-column: 3 / -1;
-  margin-top: -6px;
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  max-width: calc(100% - 170px);
   text-align: left;
 }
 
@@ -7892,6 +7901,12 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     padding: 18px 14px;
+  }
+
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(1),
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(2) {
+    grid-column: 1 / -1;
+    min-width: 0;
   }
 
   .create-tenant-card .tenant-create-form input,

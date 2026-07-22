@@ -59,11 +59,12 @@ export function getListPageCount(items: unknown[], currentPage: number, pageSize
     return Math.max(1, Math.ceil(meta.totalElements / pageSize))
   }
 
-  if (meta?.last === false) {
-    return currentPage + 1
-  }
-
   return Math.max(1, currentPage)
+}
+
+export function getListTotalElements(items: unknown[], fallbackTotal: number) {
+  const meta = (items as { __pagination?: PaginationMeta }).__pagination
+  return meta?.totalElements ?? fallbackTotal
 }
 
 export function getSubscriptionPlanList(payload: any): any[] {

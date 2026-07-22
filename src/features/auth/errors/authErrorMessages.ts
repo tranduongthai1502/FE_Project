@@ -46,6 +46,7 @@ export const backendAuthErrorMessages: Record<string, string> = {
   user_deactivated: authErrorMessages.accountDeactivated,
   user_account_is_not_active: authErrorMessages.accountDeactivated,
   inactive_user: authErrorMessages.accountDeactivated,
+  tenant_is_inactive: authErrorMessages.accountDeactivated,
   tenant_deactivated: authErrorMessages.workspaceSuspended,
   tenant_suspended: authErrorMessages.workspaceSuspended,
   workspace_suspended: authErrorMessages.workspaceSuspended,

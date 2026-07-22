@@ -1298,8 +1298,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         const list = getStaffListItems(payload)
           .map((staff) => normalizeStaffMember(staff))
           .filter((staff): staff is StaffMember => Boolean(staff))
+        const listWithPagination = Object.assign([...list], { __pagination: getPaginationMeta(response) })
         setStaffList(list)
-        setStaffPageCount(getListPageCount(Object.assign([...list], { __pagination: getPaginationMeta(response) }), staffPage, ADMIN_LIST_PAGE_SIZE))
+        setStaffPageCount(getListPageCount(listWithPagination, staffPage, ADMIN_LIST_PAGE_SIZE))
       })
       .catch((error) => {
         if (!isActive) return

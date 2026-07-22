@@ -144,6 +144,13 @@ export type Tenant = {
   adminEmail?: string
 }
 
+export type TenantDashboardStats = {
+  totalTenants?: number
+  activeTenants?: number
+  inactiveTenants?: number
+  totalRevenue?: number
+}
+
 export type TenantAdminUser = {
   id: string
   fullName: string

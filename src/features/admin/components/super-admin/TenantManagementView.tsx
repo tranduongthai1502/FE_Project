@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
-import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser } from '../../types/admin.types'
+import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser, TenantDashboardStats } from '../../types/admin.types'
 import { formatPlanDate } from '../../utils/adminFormatters'
 import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
@@ -51,6 +51,16 @@ function getTenantStatusMeta(statusValue: string) {
 
 function formatTenantDate(value?: string) {
   return value ? formatPlanDate(value) || value : '-'
+}
+
+function addDaysToDate(value: string | undefined, days: number) {
+  if (!value) return undefined
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return undefined
+
+  date.setDate(date.getDate() + days)
+  return date.toISOString()
 }
 
 function getDaysRemainingLabel(expirationDate?: string) {
@@ -114,12 +124,13 @@ const emptyTenantForm: CreateTenantForm = {
 
 function buildTenantListParams(
   statusFilter: TenantStatusFilter,
-  _planFilter: string,
+  planFilter: string,
   searchQuery: string,
   page: number,
 ): AdminListParams {
   const filters: Record<string, unknown> = {}
   const keyword = searchQuery.trim()
+  const selectedPlan = planFilter.trim()
 
   if (statusFilter === 'active') {
     filters.status = 'ACTIVE'
@@ -131,6 +142,10 @@ function buildTenantListParams(
 
   if (keyword) {
     filters.search = keyword
+  }
+
+  if (selectedPlan) {
+    filters.planId = selectedPlan
   }
 
   return {
@@ -164,6 +179,7 @@ export function TenantManagementView({
   const [isUpdatingTenantStatus, setIsUpdatingTenantStatus] = useState(false)
   const [isUpdatingTenantPlan, setIsUpdatingTenantPlan] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
+  const [isLoadingTenantStats, setIsLoadingTenantStats] = useState(false)
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [tenantError, setTenantError] = useState('')
@@ -171,6 +187,7 @@ export function TenantManagementView({
   const [tenantListError, setTenantListError] = useState('')
   const [tenantDetailError, setTenantDetailError] = useState('')
   const [tenants, setTenants] = useState<Tenant[]>([])
+  const [tenantStats, setTenantStats] = useState<TenantDashboardStats | null>(null)
   const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>('all')
   const [tenantPlanFilter, setTenantPlanFilter] = useState('')
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
@@ -213,48 +230,51 @@ export function TenantManagementView({
 
   useEffect(() => {
     let isActive = true
-    setIsLoadingPlans(true)
+    setIsLoadingTenantStats(true)
 
-    adminApi.getSubscriptionPlans({ page: 1, size: PLAN_FILTER_LIST_SIZE })
-      .then((plans) => {
+    adminApi.getTenantDashboardStats()
+      .then((stats) => {
         if (isActive) {
-          setSubscriptionPlans(plans)
+          setTenantStats(stats)
         }
       })
       .catch(() => {
         if (isActive) {
-          setSubscriptionPlans([])
+          setTenantStats(null)
         }
       })
       .finally(() => {
         if (isActive) {
-          setIsLoadingPlans(false)
+          setIsLoadingTenantStats(false)
         }
       })
 
     return () => {
       isActive = false
     }
-  }, [])
+  }, [refreshTenantsKey])
 
   useEffect(() => {
-    if (!isCreateModalOpen || subscriptionPlans.length > 0) return
+    const shouldLoadPlans = isCreateModalOpen || activeView === 'detail'
+    if (!shouldLoadPlans || subscriptionPlans.length > 0) return
 
     let isActive = true
     setIsLoadingPlans(true)
-    setTenantError('')
+    if (isCreateModalOpen) setTenantError('')
 
     adminApi.getSubscriptionPlans({ page: 1, size: PLAN_FILTER_LIST_SIZE })
       .then((plans) => {
         if (!isActive) return
         setSubscriptionPlans(plans)
-        if (plans.length === 0) {
+        if (isCreateModalOpen && plans.length === 0) {
           setTenantError('No subscription plans found.')
         }
       })
       .catch((error) => {
         if (!isActive) return
-        setTenantError(getAdminErrorMessage(error, 'Failed to load subscription plans.'))
+        if (isCreateModalOpen) {
+          setTenantError(getAdminErrorMessage(error, 'Failed to load subscription plans.'))
+        }
       })
       .finally(() => {
         if (isActive) {
@@ -265,7 +285,7 @@ export function TenantManagementView({
     return () => {
       isActive = false
     }
-  }, [isCreateModalOpen, subscriptionPlans.length])
+  }, [activeView, isCreateModalOpen, subscriptionPlans.length])
 
   useEffect(() => {
     if (activeView !== 'detail' || !selectedTenantId) {
@@ -448,37 +468,46 @@ export function TenantManagementView({
   const planByName = useMemo(() => (
     new Map(subscriptionPlans.map((plan) => [plan.name.toLowerCase(), plan]))
   ), [subscriptionPlans])
+  const tenantListPlans = useMemo(() => (
+    tenants
+      .map((tenant) => tenant.subscriptionPlanDetail)
+      .filter((plan): plan is SubscriptionPlan => Boolean(plan))
+  ), [tenants])
   const highestMonthlyPrice = useMemo(() => (
-    Math.max(0, ...subscriptionPlans.map((plan) => plan.monthlyPrice || 0))
-  ), [subscriptionPlans])
+    Math.max(0, ...tenantListPlans.map((plan) => plan.monthlyPrice || 0))
+  ), [tenantListPlans])
   const highestPlanIds = useMemo(() => (
     new Set(
-      subscriptionPlans
+      tenantListPlans
         .filter((plan) => plan.monthlyPrice > 0 && plan.monthlyPrice === highestMonthlyPrice)
         .map((plan) => plan.id),
     )
-  ), [highestMonthlyPrice, subscriptionPlans])
+  ), [highestMonthlyPrice, tenantListPlans])
   const highestPlanNames = useMemo(() => (
     new Set(
-      subscriptionPlans
+      tenantListPlans
         .filter((plan) => plan.monthlyPrice > 0 && plan.monthlyPrice === highestMonthlyPrice)
         .map((plan) => plan.name.toLowerCase()),
     )
-  ), [highestMonthlyPrice, subscriptionPlans])
+  ), [highestMonthlyPrice, tenantListPlans])
   const totalRevenue = useMemo(() => (
     tenants.reduce((total, tenant) => {
-      const plan = tenant.subscriptionPlanId
-        ? planById.get(tenant.subscriptionPlanId)
-        : planByName.get(tenant.subscriptionPlan.toLowerCase())
+      const plan = tenant.subscriptionPlanDetail
 
       return total + (plan?.monthlyPrice || 0)
     }, 0)
-  ), [planById, planByName, tenants])
+  ), [tenants])
+  const tenantStatsTotalRevenue = tenantStats?.totalRevenue ?? totalRevenue
+  const tenantStatsActiveCount = tenantStats?.activeTenants ?? activeTenantCount
+  const tenantStatsTotalCount = tenantStats?.totalTenants ?? tenants.length
+  const tenantStatsInactiveCount = tenantStats?.inactiveTenants ?? inactiveTenantCount
   const metricsAreLoading = isLoadingTenants || isLoadingPlans
+  const tenantStatsAreLoading = isLoadingTenantStats && !tenantStats
   const getTenantPlan = (tenant: Tenant) => (
-    tenant.subscriptionPlanId
+    tenant.subscriptionPlanDetail ||
+    (tenant.subscriptionPlanId
       ? planById.get(tenant.subscriptionPlanId)
-      : planByName.get(tenant.subscriptionPlan.toLowerCase())
+      : planByName.get(tenant.subscriptionPlan.toLowerCase()))
   )
   const selectedTenant = useMemo(() => (
     tenantDetail?.id === selectedTenantId
@@ -524,27 +553,24 @@ export function TenantManagementView({
       options.push({ value: cleanValue, label: cleanLabel })
     }
 
-    subscriptionPlans.forEach((plan) => {
-      addPlanOption(plan.id, plan.name)
-    })
-
     tenants.forEach((tenant) => {
-      const tenantPlanName = tenant.subscriptionPlanDetail?.name || tenant.subscriptionPlan
-      const tenantPlanValue = tenant.subscriptionPlanId || tenantPlanName
+      const tenantPlan = tenant.subscriptionPlanDetail
+      const tenantPlanName = tenantPlan?.name || tenant.subscriptionPlan
+      const tenantPlanValue = tenant.subscriptionPlanId || tenantPlan?.id || tenantPlanName
       addPlanOption(tenantPlanValue, tenantPlanName)
     })
 
     return options
       .sort((left, right) => left.label.localeCompare(right.label))
-  }, [subscriptionPlans, tenants])
-  const selectedPlanFilter = subscriptionPlans.find((plan) => plan.id === tenantPlanFilter)
-  const filteredTenants = tenants.filter((tenant) => (
+  }, [tenants])
+  const selectedPlanFilter = tenantListPlans.find((plan) => plan.id === tenantPlanFilter)
+  const displayedTenants = tenants.filter((tenant) => (
     tenantMatchesPlanFilter(tenant, tenantPlanFilter, selectedPlanFilter)
   ))
   const currentTenantPage = tenantPage
-  const paginatedTenants = filteredTenants
-  const tenantDisplayStart = filteredTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
-  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : tenantDisplayStart + filteredTenants.length - 1
+  const paginatedTenants = displayedTenants
+  const tenantDisplayStart = displayedTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
+  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : tenantDisplayStart + displayedTenants.length - 1
 
   useEffect(() => {
     setTenantPage(1)
@@ -733,13 +759,15 @@ export function TenantManagementView({
     const tenantDomain = selectedTenant?.domain ? `${selectedTenant.domain}.jobfusion.ai` : selectedTenant?.id || '-'
     const tenantIndustry = selectedTenant?.industry || 'Media & Advertising'
     const tenantRegion = selectedTenant?.region || 'VietNam'
-    const tenantExpirationDate = selectedTenant ? formatTenantDate(selectedTenant.expirationDate) : '-'
-    const tenantStartDate = selectedTenant ? formatTenantDate(selectedTenant.startDate || selectedTenant.createdAt) : '-'
+    const subscriptionPlanCreatedAt = activeSubscriptionPlan?.createdAt || selectedTenant?.subscriptionPlanDetail?.createdAt
+    const subscriptionExpirationDate = addDaysToDate(subscriptionPlanCreatedAt, 30)
+    const tenantExpirationDate = formatTenantDate(subscriptionExpirationDate)
+    const tenantStartDate = formatTenantDate(subscriptionPlanCreatedAt)
     const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
     const monthlyBillingLabel = activeSubscriptionPlan
       ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month`
       : '-'
-    const daysRemainingLabel = getDaysRemainingLabel(selectedTenant?.expirationDate)
+    const daysRemainingLabel = getDaysRemainingLabel(subscriptionExpirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
     const tenantAdminEmail = tenantAdminUser?.email || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-')
     const tenantAdminStatus = selectedTenant?.status || tenantAdminUser?.status || '-'
@@ -955,10 +983,10 @@ export function TenantManagementView({
       </section>
 
       <div className="role-metrics tenant-management-metrics">
-        <MetricCard icon="fa-arrow-trend-up" label="Total Revenue" value={metricsAreLoading ? '...' : `$${totalRevenue.toLocaleString()}`} />
-        <MetricCard icon="fa-building" label="Active Tenants" value={isLoadingTenants ? '...' : String(activeTenantCount)} />
-        <MetricCard icon="fa-circle-notch" label="Total Tenants" value={isLoadingTenants ? '...' : String(tenants.length)} />
-        <MetricCard icon="fa-triangle-exclamation" label="Inactive Tenants" value={isLoadingTenants ? '...' : String(inactiveTenantCount)} />
+        <MetricCard icon="fa-arrow-trend-up" label="Total Revenue" value={(metricsAreLoading || tenantStatsAreLoading) ? '...' : `$${tenantStatsTotalRevenue.toLocaleString()}`} />
+        <MetricCard icon="fa-building" label="Active Tenants" value={tenantStatsAreLoading ? '...' : String(tenantStatsActiveCount)} />
+        <MetricCard icon="fa-circle-notch" label="Total Tenants" value={tenantStatsAreLoading ? '...' : String(tenantStatsTotalCount)} />
+        <MetricCard icon="fa-triangle-exclamation" label="Inactive Tenants" value={tenantStatsAreLoading ? '...' : String(tenantStatsInactiveCount)} />
       </div>
 
       <section className="tenant-list-table-card">
@@ -978,7 +1006,7 @@ export function TenantManagementView({
           <div className="tenant-list-table-state">Loading tenants...</div>
         ) : tenantListError ? (
           <div className="tenant-list-table-state error">{tenantListError}</div>
-        ) : filteredTenants.length === 0 ? (
+        ) : displayedTenants.length === 0 ? (
           <div className="tenant-list-table-state">No tenants found.</div>
         ) : (
           paginatedTenants.map((tenant) => {
@@ -1019,7 +1047,7 @@ export function TenantManagementView({
         )}
 
         <footer>
-          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {filteredTenants.length} Tenant{filteredTenants.length === 1 ? '' : 's'}</span>
+          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {displayedTenants.length} Tenant{displayedTenants.length === 1 ? '' : 's'}</span>
           <div>
             <button type="button" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
             {Array.from({ length: tenantPageCount }, (_, index) => index + 1).map((page) => (
