@@ -269,9 +269,11 @@ function isAccountDeactivatedError(message = '', code = '') {
   return (
     normalizedCode === 'user_account_is_not_active' ||
     normalizedCode === 'inactive_user' ||
+    normalizedCode === 'tenant_is_inactive' ||
     normalizedCode === 'account_deactivated' ||
     normalizedCode === 'user_deactivated' ||
     normalizedMessage.includes('user_account_is_not_active') ||
+    normalizedMessage.includes('tenant_is_inactive') ||
     normalizedMessage.includes('account has been deactivated') ||
     normalizedMessage.includes('user account is not active')
   )

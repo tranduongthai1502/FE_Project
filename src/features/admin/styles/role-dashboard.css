@@ -624,7 +624,13 @@
 .super-admin-metrics .role-metric > span {
   width: 28px;
   height: 28px;
+  margin: 0;
   border-radius: 5px;
+}
+
+.super-admin-metrics .role-metric > span i,
+.super-admin-metrics .role-metric > span svg {
+  margin: 0;
 }
 
 .super-admin-metrics .role-metric:nth-child(1) > span {
@@ -791,10 +797,16 @@
   right: 22px;
   width: 36px;
   height: 36px;
+  margin: 0;
   transform: translateY(-50%);
   border-radius: 50%;
   background: #fff1ee;
   color: #f24e1e;
+}
+
+.tenant-dashboard-metrics .role-metric > span i,
+.tenant-dashboard-metrics .role-metric > span svg {
+  margin: 0;
 }
 
 .tenant-dashboard-metrics .role-metric:nth-child(2) > span {
@@ -881,6 +893,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
   gap: 18px;
+}
+
+.tenant-dashboard-top {
+  align-items: start;
+}
+
+.tenant-dashboard-bottom {
   align-items: stretch;
 }
 
@@ -894,11 +913,11 @@
 }
 
 .tenant-dashboard-bottom .interview-list {
-  min-height: 180px;
+  min-height: 260px;
 }
 
 .tenant-dashboard-top-side .quota-panel {
-  min-height: 180px;
+  min-height: 240px;
 }
 
 .tenant-dashboard-top-side .plan-panel {
@@ -906,7 +925,7 @@
 }
 
 .tenant-dashboard-bottom .insights-panel {
-  min-height: 320px;
+  min-height: 260px;
   padding: 26px;
 }
 
@@ -2019,6 +2038,17 @@
   font-size: 18px;
 }
 
+.create-staff-title > span i,
+.create-staff-title > span svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .create-staff-title h1 {
   color: #101c33;
   font-size: 18px;
@@ -2093,6 +2123,11 @@
   font-weight: 900;
 }
 
+.required-mark {
+  color: #d93408;
+  font: inherit;
+}
+
 .staff-fieldset label:not(.staff-role-option) > div {
   height: 38px;
   display: flex;
@@ -2105,8 +2140,15 @@
 }
 
 .staff-fieldset label:not(.staff-role-option) > div i {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
   color: #98a2b3;
   font-size: 11px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .staff-fieldset input[type='text'],
@@ -2183,42 +2225,6 @@
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-
-.staff-automation-note {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 22px;
-  padding: 16px 18px;
-  border-radius: 8px;
-  background: #eef4ff;
-}
-
-.staff-automation-note > span {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #ffffff;
-  color: #ff5a3d;
-}
-
-.staff-automation-note strong {
-  color: #101c33;
-  font-size: 11px;
-}
-
-.staff-automation-note p {
-  margin-top: 5px;
-  color: #475467;
-  font-size: 10px;
-  line-height: 1.55;
-}
-
-.staff-automation-note b {
-  color: #d93408;
 }
 
 .create-staff-actions {
@@ -2372,6 +2378,17 @@
   color: #d93408;
 }
 
+.edit-staff-meta-list span i,
+.edit-staff-meta-list span svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .edit-staff-meta-list p {
   color: #475467;
   font-size: 10px;
@@ -2409,7 +2426,14 @@
 }
 
 .edit-staff-account-card h2 i {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
   color: #d93408;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .edit-staff-field {
@@ -2488,6 +2512,19 @@
   font-weight: 800;
 }
 
+.edit-staff-readonly-input i,
+.edit-staff-readonly-input svg,
+.edit-staff-readonly-input em i,
+.edit-staff-readonly-input em svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .edit-staff-role-head {
   display: flex;
   align-items: center;
@@ -2545,6 +2582,17 @@
   border-radius: 5px;
   background: #d93408;
   color: #ffffff;
+}
+
+.edit-staff-role-option > span i,
+.edit-staff-role-option > span svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .edit-staff-role-option strong {
@@ -2683,6 +2731,12 @@
     grid-column: auto;
     max-width: none;
   }
+
+  .create-tenant-card .tenant-form-grid.admin {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    min-height: 0;
+    padding-bottom: 28px;
+  }
 }
 
 .tenant-breadcrumb {
@@ -2763,12 +2817,15 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  max-width: 220px;
   min-width: 132px;
   padding: 0;
   overflow: hidden;
 }
 
 .tenant-plan-filter-tab select {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 34px;
   padding: 0 32px 0 14px;
@@ -2777,11 +2834,24 @@
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
-  color: inherit;
+  color: transparent;
   cursor: pointer;
   font: inherit;
   font-size: 14px;
   font-weight: 900;
+}
+
+.tenant-plan-filter-label {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  padding: 8px 32px 0 14px;
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .tenant-plan-filter-tab select option {
@@ -2851,29 +2921,96 @@
 }
 
 .tenant-management-metrics {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 24px;
 }
 
-.tenant-management-metrics .role-metric {
+.tenant-management-metric-card {
   min-height: 76px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: stretch;
+  gap: 18px;
+  padding: 18px 24px 18px 28px;
+  border: 1px solid #e3e8f2;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
-.tenant-management-metrics .role-metric:nth-child(1) > span {
+.tenant-management-metric-card div {
+  min-width: 0;
+}
+
+.tenant-management-metric-card small {
+  display: block;
+  margin-bottom: 7px;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.tenant-management-metric-card strong {
+  display: block;
+  color: #101c33;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tenant-management-metric-card > span {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  align-self: center;
+  margin: 0;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tenant-management-metric-card > span i,
+.tenant-management-metric-card > span svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tenant-management-metric-card > span .svg-inline--fa {
+  margin: 0;
+  transform: none;
+}
+
+.tenant-management-metric-card .metric-icon-success {
   background: #e8fff2;
   color: #12b76a;
 }
 
-.tenant-management-metrics .role-metric:nth-child(2) > span {
+.tenant-management-metric-card .metric-icon-primary {
   background: #e9f1ff;
   color: #2f66f5;
 }
 
-.tenant-management-metrics .role-metric:nth-child(3) > span {
+.tenant-management-metric-card .metric-icon-warning {
   background: #fff3e8;
   color: #f97316;
 }
 
-.tenant-management-metrics .role-metric:nth-child(4) > span {
+.tenant-management-metric-card .metric-icon-danger {
   background: #fff0f0;
   color: #f04438;
 }
@@ -5109,12 +5246,13 @@
 }
 
 .edit-resource-list article {
+  position: relative;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 64px auto auto;
   align-items: center;
   gap: 12px;
-  min-height: 62px;
-  padding: 12px;
+  min-height: 86px;
+  padding: 12px 12px 28px;
   border: 1px solid #e8edf5;
   border-radius: 6px;
   background: #f8fafd;
@@ -5170,8 +5308,10 @@
 }
 
 .edit-resource-error {
-  grid-column: 3 / -1;
-  margin-top: -6px;
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  max-width: calc(100% - 170px);
   text-align: left;
 }
 
@@ -6844,14 +6984,17 @@
   font-size: 14px;
 }
 
-.staff-list-table-row strong.staff-clickable-name {
+.staff-list-table-row-clickable {
   cursor: pointer;
-  color: #101c33;
-  font-weight: 700;
 }
-.staff-list-table-row strong.staff-clickable-name:hover {
-  text-decoration: underline;
-  color: #d93408;
+
+.staff-list-table-row-clickable:hover {
+  background: #fff8f6;
+}
+
+.staff-list-table-row-clickable:focus-visible {
+  outline: 2px solid #ff9b83;
+  outline-offset: -2px;
 }
 
 .staff-list-table-row em {
@@ -6867,12 +7010,8 @@
   color: #12b76a;
 }
 
-.staff-list-table-row em.pending {
-  color: #f79009;
-}
-
 .staff-list-table-row em.disabled {
-  color: #f04438;
+  color: #98a2b3;
 }
 
 .staff-badge {
@@ -6977,11 +7116,6 @@
 .staff-detail-title-row em.active {
   background: #ecfdf3;
   color: #12b76a;
-}
-
-.staff-detail-title-row em.pending {
-  background: #fffaeb;
-  color: #f79009;
 }
 
 .staff-detail-title-row em.disabled {
@@ -7249,11 +7383,6 @@
   margin-bottom: 20px;
 }
 
-.staff-status-box.status-pending {
-  background: #fffaeb;
-  color: #f79009;
-}
-
 .staff-status-box.status-disabled {
   border: 1px solid #e7ebf2;
   background: #ffffff;
@@ -7478,6 +7607,17 @@
   font-size: 11px;
 }
 
+.activity-icon i,
+.activity-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .activity-line {
   width: 2px;
   flex: 1;
@@ -7543,6 +7683,7 @@
 }
 
 .staff-role-card-option > span {
+  place-self: center;
   width: 40px;
   height: 40px;
   border-radius: 6px;
@@ -7552,6 +7693,16 @@
   align-items: center;
   justify-content: center;
   font-size: 20px;
+}
+
+.staff-role-card-option > span i {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .staff-role-card-option > div {
@@ -7578,6 +7729,7 @@
 }
 
 .staff-role-card-dot {
+  place-self: center;
   width: 12px;
   height: 12px;
   border: 2px solid #d0d5dd;
@@ -7892,6 +8044,12 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     padding: 18px 14px;
+  }
+
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(1),
+  .create-tenant-card .tenant-form-grid.admin label:nth-child(2) {
+    grid-column: 1 / -1;
+    min-width: 0;
   }
 
   .create-tenant-card .tenant-create-form input,

@@ -11,13 +11,17 @@ export function isInactiveUserActionError(error: unknown) {
     code === 'user_is_not_active' ||
     code === 'user_account_is_not_active' ||
     code === 'inactive_user' ||
+    code === 'tenant_is_inactive' ||
     backendMessage === 'user_is_not_active' ||
     backendMessage === 'user_account_is_not_active' ||
     backendMessage === 'inactive_user' ||
+    backendMessage === 'tenant_is_inactive' ||
     message.includes('user is not active') ||
     message.includes('user account is not active') ||
+    message.includes('tenant_is_inactive') ||
     backendMessage.includes('user is not active') ||
-    backendMessage.includes('user account is not active')
+    backendMessage.includes('user account is not active') ||
+    backendMessage.includes('tenant_is_inactive')
   )
 }
 

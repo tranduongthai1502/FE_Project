@@ -5,6 +5,7 @@ import { AdminBreadcrumb } from './AdminBreadcrumb'
 export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
 
 const requiredFieldMessage = 'Please fill in all required fields.'
+const MAX_NAME_LENGTH = 50
 
 function FieldError({ message }: { message?: string }) {
   return (
@@ -94,6 +95,7 @@ export function CreateTenantPage({
                 value={form.companyName}
                 onChange={(event) => onChange('companyName', event.target.value)}
                 placeholder="e.g. Acme Corp"
+                maxLength={MAX_NAME_LENGTH}
                 required
               />
               <FieldError message={fieldErrors.companyName} />

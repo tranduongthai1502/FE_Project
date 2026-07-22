@@ -582,16 +582,16 @@
   vertical-align: middle;
 }
 
-.jobsTableRow em.open,
-.jobsTableRow em.active {
+.jobsTableRow em:global(.open),
+.jobsTableRow em:global(.active) {
   color: #12b76a;
 }
 
-.jobsTableRow em.draft {
-  color: #f97316;
+.jobsTableRow em:global(.draft) {
+  color: #f76707;
 }
 
-.jobsTableRow em.closed {
+.jobsTableRow em:global(.closed) {
   color: #667085;
 }
 
@@ -920,9 +920,9 @@
 }
 
 .moneyInput:focus-within {
-  border-color: transparent;
-  outline: 2px solid #006fe6;
-  outline-offset: 0;
+  border-color: #006fe6;
+  outline: 0;
+  box-shadow: inset 0 0 0 1px #006fe6;
 }
 
 .moneyInputError {
@@ -1081,6 +1081,268 @@
   font-weight: 900;
 }
 
+.aiJobTitle {
+  margin-bottom: 28px;
+}
+
+.aiJobTitle h1 {
+  margin: 0;
+  color: #101c33;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.aiJobTitle p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.aiJobLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.53fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.aiJobForm {
+  display: block;
+}
+
+.aiJobInputPanel,
+.aiDraftPanel {
+  border: 1px solid #f0b8a8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.aiJobInputPanel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0px 22px;
+  padding: 24px;
+}
+
+.aiJobInputPanel label,
+.aiLocationField,
+.aiSalaryField {
+  display: grid;
+  gap: 6px;
+  align-items: start;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aiDepartmentField,
+.aiJobInputPanel label:not(.fullField),
+.aiJobInputPanel .fullField:not(.aiTextAreaField) {
+  grid-template-rows: 18px 38px 16px;
+}
+
+.aiLocationField,
+.aiSalaryField {
+  grid-template-rows: 18px 60px;
+}
+
+.aiJobInputPanel label > span,
+.aiLocationField > span,
+.aiSalaryField > span {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.aiJobInputPanel b,
+.aiLocationField b {
+  color: #d93408;
+}
+
+.aiJobInputPanel textarea {
+  min-height: 88px;
+  border: 1px solid #f0b8a8;
+  border-radius: 5px;
+  padding: 12px;
+  background: #ffffff;
+  resize: vertical;
+}
+
+.aiJobInputPanel > label > input,
+.aiJobInputPanel > label > select,
+.aiLocationControls select,
+.aiLocationControls .iconInput input,
+.aiJobInputPanel .moneyInput {
+  min-height: 38px;
+}
+
+.aiJobInputPanel input:focus,
+.aiJobInputPanel select:focus,
+.aiJobInputPanel textarea:focus {
+  border-color: #006fe6;
+  outline: 0;
+  box-shadow: inset 0 0 0 1px #006fe6;
+}
+
+.aiLocationControls .iconInput {
+  width: 95%;
+}
+
+.aiTextAreaField {
+  grid-template-rows: 18px auto 16px;
+}
+
+.aiJobInputPanel > button {
+  grid-column: 1 / -1;
+  min-height: 38px;
+  border: 0;
+  border-radius: 5px;
+  background: #d93408;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.aiLocationControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.aiLocationControls > div,
+.aiSalaryControls > .salaryInputSlot {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 38px 16px;
+  gap: 6px;
+}
+
+.aiSalaryControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.aiJobInputPanel .jobFieldError {
+  min-height: 16px;
+  justify-self: end;
+  width: max-content;
+  max-width: none;
+  color: #d82d21;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.aiDraftPanel {
+  overflow: hidden;
+  min-height: 640px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.aiDraftPanel header {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid #f0d7d0;
+  background: #eef3fb;
+  color: #101c33;
+  font-size: 13px;
+}
+
+.aiDraftPanel header button {
+  border: 0;
+  background: transparent;
+  color: #667085;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.aiDraftBody {
+  min-height: 480px;
+  background: #ffffff;
+}
+
+.aiDraftPanel footer {
+  display: grid;
+  gap: 14px;
+  padding: 0 20px 14px;
+  border-top: 1px solid #f0d7d0;
+}
+
+.aiTokenUsage {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  padding-top: 6px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aiTokenUsage strong {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.aiTokenUsage div {
+  grid-column: 1 / -1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7edf7;
+}
+
+.aiTokenUsage div span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #ff4b26;
+}
+
+.aiDraftActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.aiDraftActions button,
+.aiApproveButton {
+  min-height: 44px;
+  border: 1px solid #d93408;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.aiDraftActions button:first-child {
+  border-color: #101c33;
+  color: #101c33;
+}
+
+.aiApproveButton {
+  width: 100%;
+  border-color: #d93408;
+  background: #d93408;
+  color: #ffffff;
+}
+
 @media (max-width: 980px) {
   .jobsMetrics,
   .jobsToolbar {
@@ -1093,8 +1355,16 @@
 
   .jobDetailGrid,
   .jobForm,
+  .aiJobLayout,
   .jobFieldGrid,
   .locationRow {
+    grid-template-columns: 1fr;
+  }
+
+  .aiJobInputPanel,
+  .aiLocationControls,
+  .aiSalaryControls,
+  .aiDraftActions {
     grid-template-columns: 1fr;
   }
 
