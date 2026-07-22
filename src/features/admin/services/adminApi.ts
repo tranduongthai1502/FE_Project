@@ -3,6 +3,8 @@ import type {
   AdminListParams,
   CreatePlanPayload,
   CreateTenantPayload,
+  JobPosting,
+  JobPostingPayload,
   PlanListRequest,
   SubscriptionPlan,
   Tenant,
@@ -13,8 +15,10 @@ import type {
 import {
   getResponsePayload,
   attachPaginationMeta,
+  getJobPostingList,
   getSubscriptionPlanList,
   getTenantList,
+  normalizeJobPosting,
   normalizeTenantAdminUser,
   normalizeSubscriptionPlan,
   normalizeTenant,
@@ -38,23 +42,12 @@ function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): 
   }
 }
 
-function buildOneBasedListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
-  const page = params?.page ?? defaults.page
-
-  return {
-    ...defaults,
-    ...params,
-    page: Math.max(1, page),
-    filters: params?.filters ?? defaults.filters,
-  }
-}
-
 export const adminApi = {
   async getTenants(params?: AdminListParams) {
-    const request = buildOneBasedListRequest({
-      "sortField": 'createdAt',
+    const request = buildListRequest({
+      "sortField": 'companyName',
       "filters": {},
-      "sortBy": 'DESC',
+      "sortBy": 'ASC',
       "page": 1,
       "size": ADMIN_LIST_PAGE_SIZE,
     }, params) satisfies TenantListRequest
@@ -127,17 +120,62 @@ export const adminApi = {
     return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
   },
 
-  async getStaffList(page = 1, size = ADMIN_LIST_PAGE_SIZE, tenantId?: string) {
-    const request = {
+  async getStaffList(pageOrParams: number | AdminListParams = 1, size = ADMIN_LIST_PAGE_SIZE) {
+    const params = typeof pageOrParams === 'number'
+      ? { page: pageOrParams, size }
+      : pageOrParams
+    const request = buildListRequest({
       sortField: 'fullName',
-      filters: tenantId ? { tenantId } : {},
+      filters: {},
       sortBy: 'ASC',
-      page: toZeroBasedPage(page),
-      size,
-    }
+      page: 1,
+      size: ADMIN_LIST_PAGE_SIZE,
+    }, params)
 
     console.log('[adminApi.getStaffList] request payload', request)
     return axiosClient.post('/api/user/staff/list', request)
+  },
+
+  async getJobPostings(params?: AdminListParams) {
+    const request = buildListRequest({
+      sortField: 'createdAt',
+      filters: {},
+      sortBy: 'DESC',
+      page: 1,
+      size: ADMIN_LIST_PAGE_SIZE,
+    }, params)
+
+    console.log('[adminApi.getJobPostings] request payload', request)
+    const response = await axiosClient.post('/api/job/list', request)
+
+    return attachPaginationMeta(getJobPostingList(response)
+      .map((job) => normalizeJobPosting(job))
+      .filter((job): job is JobPosting => Boolean(job)), response)
+  },
+
+  async getJobPostingById(id: string) {
+    const response = await axiosClient.get(`/api/job/${encodeURIComponent(id)}`)
+    const job = normalizeJobPosting(getResponsePayload(response))
+
+    if (!job) {
+      throw new Error('Job posting not found')
+    }
+
+    return job
+  },
+
+  async createJobPosting(payload: JobPostingPayload) {
+    const response = await axiosClient.post('/api/job', payload)
+    return normalizeJobPosting(getResponsePayload(response))
+  },
+
+  async updateJobPosting(id: string, payload: JobPostingPayload) {
+    const response = await axiosClient.put(`/api/job/${encodeURIComponent(id)}`, payload)
+    return normalizeJobPosting(getResponsePayload(response))
+  },
+
+  async deleteJobPosting(id: string) {
+    return axiosClient.delete(`/api/job/${encodeURIComponent(id)}`)
   },
 
   async getUserById(id: string) {

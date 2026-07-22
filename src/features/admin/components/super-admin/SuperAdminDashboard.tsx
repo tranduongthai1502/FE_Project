@@ -5,6 +5,7 @@ import type { SubscriptionPlan, SuperAdminView, Tenant } from '../../types/admin
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getInitialSuperAdminView, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
+import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { DashboardShell } from '../shared/DashboardShell'
 import { MetricCard } from '../shared/MetricCard'
 import { PromptManagementView } from './PromptManagementView'
@@ -171,11 +172,12 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       ) : activeView === 'subscriptionPlans' ? (
         <SubscriptionPlansView key={viewResetKeys.subscriptionPlans} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'promptManagement' ? (
-        <PromptManagementView key={viewResetKeys.promptManagement} />
+        <PromptManagementView key={viewResetKeys.promptManagement} onHome={() => selectView('dashboard')} />
       ) : activeView === 'settings' ? (
         <AccountSettingsView key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
         <div className="role-content super-admin-content">
+        <AdminBreadcrumb items={[{ label: 'Home' }, { label: 'Dashboard' }]} />
         {dashboardErrorMessage && (
           <p className="super-admin-alert">
             <i className="fa-solid fa-circle-exclamation"></i>

@@ -1864,7 +1864,7 @@
 }
 
 .staff-management-toolbar label,
-.staff-search {
+.admin-search-input {
   display: flex;
   align-items: center;
   border: 1px solid #f0b8a8;
@@ -1886,7 +1886,7 @@
 }
 
 .staff-management-toolbar select,
-.staff-search input {
+.admin-search-input input {
   min-width: 0;
   flex: 1;
   border: 0;
@@ -1898,6 +1898,10 @@
   font-weight: bold;
 }
 
+.admin-search-input input::placeholder {
+  color: #858d9d;
+}
+
 .staff-search {
   justify-self: end;
   width: 60%;
@@ -1907,11 +1911,11 @@
   border-radius: 999px;
 }
 
-.staff-search input {
+.admin-search-input input {
   width: 100%;
 }
 
-.staff-search i {
+.admin-search-input i {
   color: #667085;
   font-size: 11px;
 }
@@ -2695,6 +2699,10 @@
   color: #d93408;
 }
 
+.tenant-breadcrumb .breadcrumb-item {
+  display: contents;
+}
+
 .tenant-breadcrumb i {
   font-size: 12px;
 }
@@ -2795,21 +2803,14 @@
 
 .tenant-filter-search {
   height: 36px;
-  display: flex;
-  align-items: center;
   gap: 10px;
   padding: 0 14px;
-  border: 1px solid #f0b8a8;
   border-radius: 999px;
   background: #f5f7ff;
   color: #667085;
 }
 
 .tenant-filter-search input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
   color: #0d1b2a;
   font-size: 12px;
   font-weight: 700;
@@ -5150,6 +5151,11 @@
 .edit-resource-list input:disabled {
   background: #dde5f3;
   color: #8a98ad;
+}
+
+.edit-resource-limit-placeholder {
+  width: 64px;
+  height: 34px;
 }
 
 .edit-resource-list .mini-toggle {

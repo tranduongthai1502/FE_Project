@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { isPromptCreateUrl, updatePromptCreateUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
+import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 
-function CreatePromptView({ onBack }: { onBack: () => void }) {
+function CreatePromptView({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
   const [internalName, setInternalName] = useState('xinquiU9')
   const [description, setDescription] = useState('')
   const [model, setModel] = useState('Gemini 1.5 Pro')
@@ -23,14 +24,14 @@ SEO-optimized, and free of bias.`)
         onBack()
       }}
     >
-      <div className="tenant-breadcrumb create-plan-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <span>Home</span>
-        <span className="breadcrumb-separator">/</span>
-        <button type="button" onClick={onBack}>Prompt Management</button>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Create New Prompt</strong>
-      </div>
+      <AdminBreadcrumb
+        className="create-plan-breadcrumb"
+        items={[
+          { label: 'Home', onClick: onHome },
+          { label: 'Prompt Management', onClick: onBack },
+          { label: 'Create New Prompt' },
+        ]}
+      />
 
       <div className="create-prompt-layout">
         <aside className="create-prompt-sidebar">
@@ -102,7 +103,7 @@ SEO-optimized, and free of bias.`)
   )
 }
 
-export function PromptManagementView() {
+export function PromptManagementView({ onHome }: { onHome?: () => void }) {
   const [activeView, setActiveView] = useState<'list' | 'create'>(() => (
     isPromptCreateUrl() ? 'create' : 'list'
   ))
@@ -134,17 +135,12 @@ export function PromptManagementView() {
   }
 
   if (activeView === 'create') {
-    return <CreatePromptView onBack={closePromptCreate} />
+    return <CreatePromptView onBack={closePromptCreate} onHome={onHome} />
   }
 
   return (
     <div className="role-content prompt-management-content">
-      <div className="tenant-breadcrumb">
-        <i className="fa-solid fa-house"></i>
-        <span>Home</span>
-        <span className="breadcrumb-separator">/</span>
-        <strong>Prompt Management</strong>
-      </div>
+      <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Prompt Management' }]} />
 
       <div className="subscription-title-row prompt-title-row">
         <div>
