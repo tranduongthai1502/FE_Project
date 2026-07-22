@@ -4,6 +4,8 @@ import type {
   CreatePlanPayload,
   CreateTenantPayload,
   JobPosting,
+  JobListRequest,
+  JobListFilters,
   JobPostingPayload,
   PlanListRequest,
   SubscriptionPlan,
@@ -37,6 +39,20 @@ function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): 
     ...params,
     page: Math.max(1, page),
     filters: params?.filters ?? defaults.filters,
+  }
+}
+
+function buildJobListRequest(params?: AdminListParams<JobListFilters>): JobListRequest {
+  const page = params?.page ?? 1
+  const filters = params?.filters
+  const hasFilters = Boolean(filters && Object.values(filters).some((value) => String(value ?? '').trim() !== ''))
+
+  return {
+    sortField: params?.sortField ?? 'createdAt',
+    filters: hasFilters ? filters ?? null : null,
+    sortBy: params?.sortBy ?? 'DESC',
+    page: Math.max(1, page),
+    size: params?.size ?? ADMIN_LIST_PAGE_SIZE,
   }
 }
 
@@ -163,17 +179,11 @@ export const adminApi = {
     return axiosClient.post('/api/user/staff/list', request)
   },
 
-  async getJobPostings(params?: AdminListParams) {
-    const request = buildListRequest({
-      sortField: 'createdAt',
-      filters: {},
-      sortBy: 'DESC',
-      page: 1,
-      size: ADMIN_LIST_PAGE_SIZE,
-    }, params)
+  async getJobPostings(params?: AdminListParams<JobListFilters>) {
+    const request = buildJobListRequest(params)
 
     console.log('[adminApi.getJobPostings] request payload', request)
-    const response = await axiosClient.post('/api/job/list', request)
+    const response = await axiosClient.post('/api/job-posting/list', request)
 
     return attachPaginationMeta(getJobPostingList(response)
       .map((job) => normalizeJobPosting(job))
@@ -181,7 +191,7 @@ export const adminApi = {
   },
 
   async getJobPostingById(id: string) {
-    const response = await axiosClient.get(`/api/job/${encodeURIComponent(id)}`)
+    const response = await axiosClient.get(`/api/job-posting/${encodeURIComponent(id)}`)
     const job = normalizeJobPosting(getResponsePayload(response))
 
     if (!job) {
@@ -192,17 +202,17 @@ export const adminApi = {
   },
 
   async createJobPosting(payload: JobPostingPayload) {
-    const response = await axiosClient.post('/api/job', payload)
+    const response = await axiosClient.post('/api/job-posting', payload)
     return normalizeJobPosting(getResponsePayload(response))
   },
 
   async updateJobPosting(id: string, payload: JobPostingPayload) {
-    const response = await axiosClient.put(`/api/job/${encodeURIComponent(id)}`, payload)
+    const response = await axiosClient.put(`/api/job-posting/${encodeURIComponent(id)}`, payload)
     return normalizeJobPosting(getResponsePayload(response))
   },
 
   async deleteJobPosting(id: string) {
-    return axiosClient.delete(`/api/job/${encodeURIComponent(id)}`)
+    return axiosClient.delete(`/api/job-posting/${encodeURIComponent(id)}`)
   },
 
   async getUserById(id: string) {
