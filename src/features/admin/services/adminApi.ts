@@ -17,6 +17,7 @@ import {
   getResponsePayload,
   attachPaginationMeta,
   getJobPostingList,
+  getUserDetailPayload,
   getSubscriptionPlanList,
   getTenantList,
   normalizeJobPosting,
@@ -206,7 +207,7 @@ export const adminApi = {
 
   async getUserById(id: string) {
     const response = await axiosClient.get(`/api/user/${encodeURIComponent(id)}`)
-    const user = normalizeTenantAdminUser(getResponsePayload(response))
+    const user = normalizeTenantAdminUser(getUserDetailPayload(response))
 
     if (!user) {
       throw new Error('User detail not found')

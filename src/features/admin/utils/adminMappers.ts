@@ -5,6 +5,22 @@ export function getResponsePayload(payload: any): any {
   return body?.data && typeof body.data === 'object' ? body.data : body
 }
 
+export function getUserDetailPayload(payload: any): any {
+  const body = getResponsePayload(payload)
+
+  return (
+    body?.user ||
+    body?.staff ||
+    body?.account ||
+    body?.profile ||
+    body?.result ||
+    body?.content ||
+    body?.record ||
+    body?.item ||
+    body
+  )
+}
+
 export type PaginationMeta = {
   totalPages?: number
   totalElements?: number
@@ -342,16 +358,24 @@ export function normalizeTenant(tenant: any): Tenant | null {
 }
 
 export function normalizeTenantAdminUser(user: any): TenantAdminUser | null {
-  const id = user?.id || user?.userId || user?.uuid
+  const id = user?.id || user?.userId || user?.user_id || user?.uuid || user?.accountId || user?.account_id
   if (!id) return null
 
   return {
     id: String(id),
-    fullName: String(user?.fullName || user?.full_name || user?.name || user?.username || 'Tenant Admin'),
-    email: String(user?.email || user?.username || ''),
-    status: user?.status || user?.accountStatus ? String(user?.status || user?.accountStatus) : undefined,
-    userRole: user?.userRole || user?.user_role || user?.role || user?.roles
-      ? String(Array.isArray(user?.roles) ? user.roles.join(', ') : (user?.userRole || user?.user_role || user?.role || user?.roles))
+    fullName: String(user?.fullName || user?.full_name || user?.name || user?.username || user?.email || 'Tenant Admin'),
+    email: String(user?.email || user?.emailAddress || user?.email_address || user?.corporateEmail || user?.corporate_email || user?.username || ''),
+    status: user?.status || user?.accountStatus || user?.account_status || user?.userStatus || user?.user_status
+      ? String(user?.status || user?.accountStatus || user?.account_status || user?.userStatus || user?.user_status)
+      : undefined,
+    userRole: user?.userRole || user?.user_role || user?.role || user?.roles || user?.authorities || user?.permissions
+      ? String(Array.isArray(user?.roles)
+        ? user.roles.join(', ')
+        : Array.isArray(user?.authorities)
+          ? user.authorities.join(', ')
+          : Array.isArray(user?.permissions)
+            ? user.permissions.join(', ')
+            : (user?.userRole || user?.user_role || user?.role || user?.roles || user?.authorities || user?.permissions))
       : undefined,
     employeeCode: user?.employeeCode || user?.employee_code || user?.code
       ? String(user?.employeeCode || user?.employee_code || user?.code)
