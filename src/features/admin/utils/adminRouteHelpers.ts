@@ -1,4 +1,21 @@
-import type { SuperAdminView, TenantAdminView } from '../types/admin.types'
+import type { RoleHomeView, SuperAdminView, TenantAdminView } from '../types/admin.types'
+
+export const roleHomeViewSlugs: Record<RoleHomeView, string> = {
+  dashboard: 'dashboard',
+  jobs: 'jobs',
+  settings: 'settings',
+}
+
+export function getInitialRoleHomeView(basePath: 'hr' | 'interviewer'): RoleHomeView {
+  const slug = window.location.pathname.replace(new RegExp(`^/${basePath}/?`), '') || 'dashboard'
+  const match = Object.entries(roleHomeViewSlugs).find(([, value]) => slug === value || slug.startsWith(`${value}/`))
+
+  return (match?.[0] as RoleHomeView | undefined) || 'dashboard'
+}
+
+export function updateRoleHomeViewUrl(basePath: 'hr' | 'interviewer', view: RoleHomeView) {
+  window.history.pushState(null, '', `/${basePath}/${roleHomeViewSlugs[view]}`)
+}
 
 export const tenantAdminViewSlugs: Record<TenantAdminView, string> = {
   dashboard: 'dashboard',
