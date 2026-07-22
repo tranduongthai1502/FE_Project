@@ -91,6 +91,7 @@ export function CreateTenantPage({
             <label>
               <span>Company Name <b>*</b></span>
               <input
+                maxLength={50}
                 aria-invalid={Boolean(fieldErrors.companyName)}
                 value={form.companyName}
                 onChange={(event) => onChange('companyName', event.target.value)}
@@ -124,6 +125,7 @@ export function CreateTenantPage({
               <span>Domain / Identifier <b>*</b></span>
               <div className={fieldErrors.domain ? 'has-error' : ''}>
                 <input
+                  maxLength={50}
                   aria-invalid={Boolean(fieldErrors.domain)}
                   value={form.domain}
                   onChange={(event) => onChange('domain', event.target.value)}
@@ -175,6 +177,7 @@ export function CreateTenantPage({
             <label>
               <span>Admin Full Name <b>*</b></span>
               <input
+                maxLength={50}
                 aria-invalid={Boolean(fieldErrors.adminFullName)}
                 value={form.adminFullName}
                 onChange={(event) => onChange('adminFullName', event.target.value)}
@@ -187,6 +190,7 @@ export function CreateTenantPage({
             <label>
               <span>Admin Email <b>*</b></span>
               <input
+                maxLength={50}
                 aria-invalid={Boolean(fieldErrors.adminEmail)}
                 value={form.adminEmail}
                 onChange={(event) => onChange('adminEmail', event.target.value)}

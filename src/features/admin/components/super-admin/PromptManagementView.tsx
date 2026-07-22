@@ -39,11 +39,11 @@ SEO-optimized, and free of bias.`)
             <h2>General Settings</h2>
             <label>
               <span>Internal Name</span>
-              <input value={internalName} onChange={(event) => setInternalName(event.target.value)} placeholder="e.g., xinquiU9" required />
+              <input value={internalName} maxLength={50} onChange={(event) => setInternalName(event.target.value)} placeholder="e.g., xinquiU9" required />
             </label>
             <label>
               <span>Description</span>
-              <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the purpose of this prompt..." />
+              <textarea value={description} maxLength={50} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the purpose of this prompt..." />
             </label>
           </section>
 
@@ -59,7 +59,7 @@ SEO-optimized, and free of bias.`)
             </label>
             <label>
               <span>Max Output Tokens</span>
-              <input value={maxTokens} onChange={(event) => setMaxTokens(event.target.value)} inputMode="numeric" />
+              <input value={maxTokens} maxLength={50} onChange={(event) => setMaxTokens(event.target.value)} inputMode="numeric" />
             </label>
           </section>
           <p className="create-prompt-deploy">Not yet deployed</p>
@@ -74,10 +74,10 @@ SEO-optimized, and free of bias.`)
             <ol aria-hidden="true">
               {Array.from({ length: lineCount }, (_, index) => <li key={index}>{index + 1}</li>)}
             </ol>
-            <textarea value={instructions} onChange={(event) => setInstructions(event.target.value)} spellCheck={false} />
+            <textarea value={instructions} maxLength={50} onChange={(event) => setInstructions(event.target.value)} spellCheck={false} />
           </div>
           <footer>
-            <input placeholder="Typing..." />
+            <input placeholder="Typing..." maxLength={50}/>
           </footer>
         </section>
 

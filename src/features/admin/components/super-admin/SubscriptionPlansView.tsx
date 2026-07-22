@@ -330,6 +330,7 @@ function CreatePlanView({
           <label>
             <span>Plan Name <span className="required-mark">*</span></span>
             <input
+              maxLength={50}
               className={fieldErrors.planName ? 'has-error' : ''}
               value={planName}
               onChange={(event) => {
@@ -348,6 +349,7 @@ function CreatePlanView({
             <div className={`price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
               <span>$</span>
               <input
+                maxLength={50}
                 type="number"
                 min="0"
                 step="0.01"
@@ -366,6 +368,7 @@ function CreatePlanView({
           <label className="description-field">
             <span>Short Description <span className="required-mark">*</span></span>
             <textarea
+              maxLength={50}
               className={fieldErrors.description ? 'has-error' : ''}
               value={description}
               onChange={(event) => {
@@ -384,6 +387,7 @@ function CreatePlanView({
               <span>Max Staff Accounts <span className="required-mark">*</span></span>
               <div className={`limit-input ${isStaffUnlimited ? 'unlimited-selected' : ''} ${fieldErrors.maxStaffAccount ? 'has-error' : ''}`}>
                 <input
+                  maxLength={50}
                   type="number"
                   min="0"
                   step="1"
@@ -416,6 +420,7 @@ function CreatePlanView({
               <span>Max Active Job Postings <span className="required-mark">*</span></span>
               <div className={`limit-input ${isJobsUnlimited ? 'unlimited-selected' : ''} ${fieldErrors.maxActiveJobPosting ? 'has-error' : ''}`}>
                 <input
+                  maxLength={50}
                   type="number"
                   min="0"
                   step="1"
@@ -694,6 +699,7 @@ function EditPlanDetailView({
               <label>
                 <span>Plan Name</span>
                 <input
+                  maxLength={50}
                   className={fieldErrors.planName ? 'has-error' : ''}
                   value={planName}
                   onChange={(event) => {
@@ -708,6 +714,7 @@ function EditPlanDetailView({
               <label>
                 <span>Short Description</span>
                 <input
+                  maxLength={50}
                   className={fieldErrors.description ? 'has-error' : ''}
                   value={description}
                   onChange={(event) => {
@@ -724,6 +731,7 @@ function EditPlanDetailView({
                   <div className={`price-input edit-monthly-price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
                     <span>$</span>
                     <input
+                      maxLength={50}
                       type="number"
                       min="0"
                       step="0.01"
@@ -759,6 +767,7 @@ function EditPlanDetailView({
                   <span className="edit-resource-limit-placeholder" aria-hidden="true" />
                 ) : (
                   <input
+                    maxLength={50}
                     className={fieldErrors.maxStaffAccount ? 'has-error' : ''}
                     type="number"
                     min="0"
@@ -793,6 +802,7 @@ function EditPlanDetailView({
                   <span className="edit-resource-limit-placeholder" aria-hidden="true" />
                 ) : (
                   <input
+                    maxLength={50}
                     className={fieldErrors.maxActiveJobPosting ? 'has-error' : ''}
                     type="number"
                     min="0"

@@ -104,7 +104,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
         <header className="candidate-topbar">
           <div className="candidate-search">
             <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="search" placeholder="Search jobs, documents..." aria-label="Search jobs and documents" />
+            <input type="search" placeholder="Search jobs, documents..." aria-label="Search jobs and documents" maxLength={50}/>
           </div>
 
           <nav className="candidate-tabs" aria-label="Candidate top navigation">

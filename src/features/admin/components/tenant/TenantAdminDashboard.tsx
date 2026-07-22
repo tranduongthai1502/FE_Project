@@ -19,6 +19,7 @@ import { getStoredRequirePasswordChange } from '@/features/auth/utils/authStorag
 const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
 const passwordChangeRequiredMessage = 'Please change your password before using Tenant Admin features.'
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
+const STAFF_ACCOUNT_LIST_PAGE_SIZE = 100
 
 type StaffListFilterValues = {
   search?: string
@@ -203,6 +204,7 @@ function StaffManagementView({
   error,
   maxStaffQuota = 10,
   isStaffQuotaUnlimited = false,
+  staffAccountCount,
   onCreate,
   onEdit,
   onDelete,
@@ -224,6 +226,7 @@ function StaffManagementView({
   error: string
   maxStaffQuota?: number
   isStaffQuotaUnlimited?: boolean
+  staffAccountCount: number
   onCreate: () => void
   onEdit: (staff: StaffMember) => void
   onDelete: (staff: StaffMember) => void
@@ -282,8 +285,8 @@ function StaffManagementView({
     return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
   }
 
-  const quotaPercent = Math.min(100, Math.round((staffList.length / Math.max(maxStaffQuota, 1)) * 100))
-  const hasReachedStaffQuota = !isStaffQuotaUnlimited && staffList.length >= maxStaffQuota
+  const quotaPercent = Math.min(100, Math.round((staffAccountCount / Math.max(maxStaffQuota, 1)) * 100))
+  const hasReachedStaffQuota = !isStaffQuotaUnlimited && staffAccountCount >= maxStaffQuota
 
   return (
     <div className="role-content staff-management-content">
@@ -297,12 +300,12 @@ function StaffManagementView({
         <section className="staff-quota-card">
           <div>
             <span>Staff Accounts</span>
-            <strong>{staffList.length} / {isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}</strong>
+            <strong>{staffAccountCount} / {isStaffQuotaUnlimited ? 'Unlimited' : maxStaffQuota}</strong>
           </div>
           {!isStaffQuotaUnlimited && (
             <i><span style={{ width: `${quotaPercent}%`, background: '#ff5f2b' }} /></i>
           )}
-          <small>{isStaffQuotaUnlimited ? 'Unlimited seats available' : `${Math.max(0, maxStaffQuota - staffList.length)} seats remaining`}</small>
+          <small>{isStaffQuotaUnlimited ? 'Unlimited seats available' : `${Math.max(0, maxStaffQuota - staffAccountCount)} seats remaining`}</small>
         </section>
       </div>
 
@@ -345,7 +348,7 @@ function StaffManagementView({
         <div className="tenant-list-table-state" style={{ marginTop: '24px' }}>Loading staff accounts...</div>
       ) : error ? (
         <div className="tenant-list-table-state error" style={{ marginTop: '24px' }}>{error}</div>
-      ) : staffList.length === 0 ? (
+      ) : staffAccountCount === 0 ? (
         <section className="staff-empty-state">
           <i className="fa-solid fa-user-plus"></i>
           <span><i className="fa-solid fa-briefcase"></i></span>
@@ -600,6 +603,7 @@ function CreateStaffAccountView({
                 <div>
                   <i className="fa-regular fa-user"></i>
                   <input 
+                    maxLength={50}
                     className={fullNameError ? 'has-error' : ''}
                     type="text" 
                     placeholder="e.g. Sarah Jenkins" 
@@ -618,6 +622,7 @@ function CreateStaffAccountView({
                 <div>
                   <i className="fa-regular fa-envelope"></i>
                   <input 
+                    maxLength={50}
                     className={emailError ? 'has-error' : ''}
                     type="email" 
                     placeholder="sarah.j@jobfusion.com" 
@@ -656,6 +661,7 @@ function CreateStaffAccountView({
                 onClick={() => !isSubmitting && !isActionLocked && handleRoleToggle('hr')}
               >
                 <input 
+                  maxLength={50}
                   type="checkbox" 
                   checked={selectedRoles.includes('hr')}
                   onChange={() => {}} // handled by div onClick
@@ -673,6 +679,7 @@ function CreateStaffAccountView({
                 onClick={() => !isSubmitting && !isActionLocked && handleRoleToggle('interviewer')}
               >
                 <input 
+                  maxLength={50}
                   type="checkbox" 
                   checked={selectedRoles.includes('interviewer')}
                   onChange={() => {}} // handled by div onClick
@@ -848,7 +855,7 @@ function EditStaffAccountView({
               <span>Email Address (Primary)</span>
               <div className="edit-staff-readonly-input">
                 <i className="fa-regular fa-envelope"></i>
-                <input type="email" value={staffMember.email} readOnly />
+                <input type="email" value={staffMember.email} readOnly maxLength={50}/>
                 <em><i className="fa-solid fa-lock"></i> Read-only</em>
               </div>
             </label>
@@ -856,6 +863,7 @@ function EditStaffAccountView({
             <label className="edit-staff-field">
               <span>Full Name</span>
               <input
+                maxLength={50}
                 className={fullNameError ? 'has-error' : ''}
                 type="text"
                 value={fullName}
@@ -876,6 +884,7 @@ function EditStaffAccountView({
             <div className="edit-staff-role-grid">
               <label className={`edit-staff-role-option ${selectedRoles.includes('hr') ? 'selected' : ''}`}>
                 <input
+                  maxLength={50}
                   type="checkbox"
                   checked={selectedRoles.includes('hr')}
                   onChange={() => toggleRole('hr')}
@@ -890,6 +899,7 @@ function EditStaffAccountView({
 
               <label className={`edit-staff-role-option ${selectedRoles.includes('interviewer') ? 'selected' : ''}`}>
                 <input
+                  maxLength={50}
                   type="checkbox"
                   checked={selectedRoles.includes('interviewer')}
                   onChange={() => toggleRole('interviewer')}
@@ -1362,6 +1372,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
   // CRUD Staff States
   const [staffList, setStaffList] = useState<StaffMember[]>([])
+  const [staffAccountList, setStaffAccountList] = useState<StaffMember[]>([])
   const [isLoadingStaff, setIsLoadingStaff] = useState(false)
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [isLoadingStaffDetail, setIsLoadingStaffDetail] = useState(false)
@@ -1460,6 +1471,39 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   }, [shouldLoadTenantWorkspace, refreshKey, staffPage, tenantId, staffListFilters])
 
   useEffect(() => {
+    if (!shouldLoadTenantWorkspace) {
+      return
+    }
+
+    let isActive = true
+
+    adminApi.getStaffList({
+      sortField: 'fullName',
+      filters: {},
+      sortBy: 'ASC',
+      page: 1,
+      size: STAFF_ACCOUNT_LIST_PAGE_SIZE,
+    })
+      .then((response: any) => {
+        if (!isActive) return
+        const payload = response?.data || response
+        const list = getStaffListItems(payload)
+          .map((staff) => normalizeStaffMember(staff))
+          .filter((staff): staff is StaffMember => Boolean(staff))
+        setStaffAccountList(list)
+      })
+      .catch(() => {
+        if (isActive) {
+          setStaffAccountList([])
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [shouldLoadTenantWorkspace, refreshKey, tenantId])
+
+  useEffect(() => {
     if (!tenantId || !shouldLoadTenantWorkspace) {
       return
     }
@@ -1519,12 +1563,13 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
   const hasTenantQuota = Boolean(tenantDetail)
   const isStaffQuotaUnlimited = Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0)
+  const staffAccountCount = staffAccountList.length
   const maxStaffQuota = isStaffQuotaUnlimited
-    ? Math.max(staffList.length, 1)
+    ? Math.max(staffAccountCount, 1)
     : tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
-  const staffQuotaSummary = isStaffQuotaUnlimited ? 'Unlimited Seats' : `${staffList.length} / ${maxStaffQuota} Seats`
-  const staffQuotaRingLabel = isStaffQuotaUnlimited ? String(staffList.length) : `${staffList.length}/${maxStaffQuota}`
-  const remainingStaffSeats = Math.max(0, maxStaffQuota - staffList.length)
+  const staffQuotaSummary = isStaffQuotaUnlimited ? 'Unlimited Seats' : `${staffAccountCount} / ${maxStaffQuota} Seats`
+  const staffQuotaRingLabel = isStaffQuotaUnlimited ? String(staffAccountCount) : `${staffAccountCount}/${maxStaffQuota}`
+  const remainingStaffSeats = Math.max(0, maxStaffQuota - staffAccountCount)
   const staffQuotaDescription = isStaffQuotaUnlimited
     ? 'Your plan includes unlimited staff seats.'
     : `You have ${remainingStaffSeats} seat${remainingStaffSeats === 1 ? '' : 's'} available in your current plan. Optimize your team allocation now.`
@@ -1613,6 +1658,16 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           }
           : staff
       )))
+      setStaffAccountList((currentStaffList) => currentStaffList.map((staff) => (
+        staff.id === selectedStaff.id
+          ? {
+            ...staff,
+            fullName: payload.fullName,
+            userRole: payload.role.join(', '),
+            status: payload.status,
+          }
+          : staff
+      )))
 
       setRefreshKey(prev => prev + 1)
       changeView('staffDetail', selectedStaff.id)
@@ -1689,6 +1744,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setStaffList((currentStaffList) => currentStaffList.map((currentStaff) => (
         currentStaff.id === staff.id ? { ...currentStaff, status: nextStatus } : currentStaff
       )))
+      setStaffAccountList((currentStaffList) => currentStaffList.map((currentStaff) => (
+        currentStaff.id === staff.id ? { ...currentStaff, status: nextStatus } : currentStaff
+      )))
       
       setRefreshKey(prev => prev + 1)
     } catch (error) {
@@ -1710,7 +1768,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         />
       ) : activeView === 'staffCreate' ? (
         <CreateStaffAccountView
-          staffList={staffList}
+          staffList={staffAccountList}
           onHome={() => changeView('dashboard')}
           onCancel={() => changeView('staffManagement')}
           onConfirm={handleCreateStaffSubmit}
@@ -1785,6 +1843,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           error={staffError}
           maxStaffQuota={maxStaffQuota}
           isStaffQuotaUnlimited={isStaffQuotaUnlimited}
+          staffAccountCount={staffAccountCount}
           onCreate={() => {
             if (!guardTenantActive()) return
             clearSelectedStaff()
