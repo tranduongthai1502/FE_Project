@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { getRoleHomeNav, hrNav } from '../../data/adminNavigation'
-import type { JobPosting, JobPostingPayload, RoleHomeView } from '../../types/admin.types'
+import type { JobListFilters, JobPosting, JobPostingPayload, RoleHomeView } from '../../types/admin.types'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
 import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
-import { getListPageCount } from '../../utils/adminMappers'
+import { getListPageCount, getListTotalElements } from '../../utils/adminMappers'
 import { getInitialRoleHomeView, updateRoleHomeViewUrl } from '../../utils/adminRouteHelpers'
 import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/staffWorkspace'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
@@ -28,6 +28,7 @@ const hrCreateJobPostingPath = '/hr/jobs/createjobposting'
 const hrGenerateJobAiPath = '/hr/jobs/createjobposting/generatewithai'
 
 type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
+type ToastTrigger = (message: string, type?: 'success' | 'error') => void
 
 const emptyJobForm: JobPostingPayload = {
   title: '',
@@ -42,7 +43,7 @@ const emptyJobForm: JobPostingPayload = {
   benefits: '',
   salaryMin: 0,
   salaryMax: 0,
-  status: 'DRAFT',
+  status: 'OPEN',
 }
 
 function JobFieldError({ message }: { message?: string }) {
@@ -109,7 +110,7 @@ function updateHrJobsPath(path: string) {
   }
 }
 
-function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHome: () => void }) {
+function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: boolean; onHome: () => void; triggerToast?: ToastTrigger }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('')
@@ -118,6 +119,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
   const [jobListError, setJobListError] = useState('')
   const [jobPage, setJobPage] = useState(1)
   const [jobPageCount, setJobPageCount] = useState(1)
+  const [jobListReloadKey, setJobListReloadKey] = useState(0)
   const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai'>(() => getInitialHrJobView())
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
   const [jobForm, setJobForm] = useState<JobPostingPayload>(emptyJobForm)
@@ -128,8 +130,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
   const activeJobCount = jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobs.reduce((total, job) => total + job.applicantCount, 0)
   const pendingReviewCount = jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
-  const displayStart = jobs.length === 0 ? 0 : ((jobPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
-  const displayEnd = displayStart === 0 ? 0 : displayStart + jobs.length - 1
+  const jobTotalElements = getListTotalElements(jobs, jobs.length)
   const isJobFormDirty = (
     jobForm.title.trim() !== '' ||
     jobForm.department.trim() !== '' ||
@@ -146,8 +147,10 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
   )
 
   useEffect(() => {
+    if (jobView !== 'list') return
+
     let isActive = true
-    const filters: Record<string, unknown> = {}
+    const filters: JobListFilters = {}
     const search = searchQuery.trim()
 
     if (search) filters.search = search
@@ -181,11 +184,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
     return () => {
       isActive = false
     }
-  }, [employmentTypeFilter, jobPage, searchQuery, statusFilter])
-
-  useEffect(() => {
-    setJobPage(1)
-  }, [employmentTypeFilter, searchQuery, statusFilter])
+  }, [employmentTypeFilter, jobListReloadKey, jobPage, jobView, searchQuery, statusFilter])
 
   useEffect(() => {
     const refreshView = window.sessionStorage.getItem(jobFormRefreshViewKey)
@@ -373,6 +372,10 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
     setJobView('ai')
     updateHrJobsPath(hrGenerateJobAiPath)
   }
+  const openCreateJobForm = () => {
+    setJobView('create')
+    updateHrJobsPath(hrCreateJobPostingPath)
+  }
   const discardJobFormChanges = () => {
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setIsCancelConfirmOpen(false)
@@ -390,6 +393,30 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
     }
 
     discardJobFormChanges()
+  }
+  const updateJobSearchQuery = (value: string) => {
+    setSearchQuery(value)
+    setJobPage(1)
+  }
+  const updateJobStatusFilter = (value: string) => {
+    setStatusFilter(value)
+    setJobPage(1)
+  }
+  const updateJobEmploymentTypeFilter = (value: string) => {
+    setEmploymentTypeFilter(value)
+    setJobPage(1)
+  }
+  const returnToJobsListAfterSave = () => {
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setIsCancelConfirmOpen(false)
+    setJobFieldErrors({})
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobForm(emptyJobForm)
+    setSelectedJob(null)
+    setJobView('list')
+    updateHrJobsPath(hrJobsPath)
+    setJobPage(1)
+    setJobListReloadKey((key) => key + 1)
   }
   const openJobDetail = async (job: JobPosting) => {
     setSelectedJob(job)
@@ -428,7 +455,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
     updateHrJobsPath(hrJobsPath)
   }
   const saveJob = async (payload: JobPostingPayload = jobForm) => {
-    if (isActionLocked) return
+    if (isActionLocked || isSavingJob) return
     const nextErrors = getJobValidationErrors(payload)
 
     if (Object.keys(nextErrors).length > 0) {
@@ -439,17 +466,17 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
     setJobFieldErrors({})
     setIsSavingJob(true)
     try {
-      if (jobView === 'edit' && selectedJob) {
+      const isEditingJob = jobView === 'edit' && selectedJob
+
+      if (isEditingJob) {
         await adminApi.updateJobPosting(selectedJob.id, payload)
       } else {
         await adminApi.createJobPosting(payload)
       }
-      setJobView('list')
-      updateHrJobsPath(hrJobsPath)
-      setJobPage(1)
-      adminApi.getJobPostings({ sortField: 'createdAt', filters: {}, sortBy: 'DESC', page: 1, size: ADMIN_LIST_PAGE_SIZE })
-        .then((items) => setJobs(items))
-      window.sessionStorage.removeItem(jobFormRefreshViewKey)
+      returnToJobsListAfterSave()
+      triggerToast?.(isEditingJob ? 'Job posting updated successfully.' : 'Job posting created successfully.', 'success')
+    } catch {
+      triggerToast?.('Error system. Please try again.', 'error')
     } finally {
       setIsSavingJob(false)
     }
@@ -491,7 +518,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
         <AdminBreadcrumb items={[
           { label: 'Home', onClick: onHome },
           { label: 'Jobs', onClick: () => { setJobView('list'); updateHrJobsPath(hrJobsPath) } },
-          { label: 'Create New Job Posting', current: true },
+          { label: 'Create New Job Posting', onClick: openCreateJobForm },
           { label: 'Generate with AI' },
         ]} />
         <div className={styles.aiJobTitle}>
@@ -548,7 +575,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
                   </div>
                 </div>
               </div>
-              <label className={styles.fullField}>
+              <label className={`${styles.fullField} ${styles.aiTextAreaField}`}>
                 <span>Key Skills <b>*</b></span>
                 <textarea className={getInputClassName(Boolean(jobFieldErrors.requirements))} value={jobForm.requirements} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="Add skill..." />
                 <JobFieldError message={jobFieldErrors.requirements} />
@@ -753,13 +780,13 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
         <AdminSearchInput
           className={styles.jobsSearch}
           value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
+          onChange={(event) => updateJobSearchQuery(event.target.value)}
           placeholder="Search job title, or department..."
           ariaLabel="Job posting search"
         />
         <label>
           <span>Status:</span>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select value={statusFilter} onChange={(event) => updateJobStatusFilter(event.target.value)}>
             <option value="">All Status</option>
             <option value="DRAFT">Draft</option>
             <option value="OPEN">Open</option>
@@ -768,7 +795,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
         </label>
         <label>
           <span>Employment type:</span>
-          <select value={employmentTypeFilter} onChange={(event) => setEmploymentTypeFilter(event.target.value)}>
+          <select value={employmentTypeFilter} onChange={(event) => updateJobEmploymentTypeFilter(event.target.value)}>
             <option value="">All Status</option>
             <option value="FULL_TIME">Full-time</option>
             <option value="PART_TIME">Part-time</option>
@@ -809,7 +836,7 @@ function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHom
             </article>
           ))}
           <footer>
-            <span>Showing {displayStart} to {displayEnd} of entries</span>
+            <span>Showing {jobs.length} of {jobTotalElements} entries</span>
             <div>
               <button type="button" disabled={jobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
               {Array.from({ length: jobPageCount }, (_, index) => index + 1).map((page) => (
@@ -848,7 +875,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'jobs' ? (
-        <HrJobsView isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} />
+        <HrJobsView isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
       <div className={`role-content ${styles.content}`}>
         <div className={`role-title-row ${styles.title}`}>
