@@ -624,7 +624,13 @@
 .super-admin-metrics .role-metric > span {
   width: 28px;
   height: 28px;
+  margin: 0;
   border-radius: 5px;
+}
+
+.super-admin-metrics .role-metric > span i,
+.super-admin-metrics .role-metric > span svg {
+  margin: 0;
 }
 
 .super-admin-metrics .role-metric:nth-child(1) > span {
@@ -791,10 +797,16 @@
   right: 22px;
   width: 36px;
   height: 36px;
+  margin: 0;
   transform: translateY(-50%);
   border-radius: 50%;
   background: #fff1ee;
   color: #f24e1e;
+}
+
+.tenant-dashboard-metrics .role-metric > span i,
+.tenant-dashboard-metrics .role-metric > span svg {
+  margin: 0;
 }
 
 .tenant-dashboard-metrics .role-metric:nth-child(2) > span {
@@ -2026,6 +2038,17 @@
   font-size: 18px;
 }
 
+.create-staff-title > span i,
+.create-staff-title > span svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .create-staff-title h1 {
   color: #101c33;
   font-size: 18px;
@@ -2117,8 +2140,15 @@
 }
 
 .staff-fieldset label:not(.staff-role-option) > div i {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
   color: #98a2b3;
   font-size: 11px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .staff-fieldset input[type='text'],
@@ -2348,6 +2378,17 @@
   color: #d93408;
 }
 
+.edit-staff-meta-list span i,
+.edit-staff-meta-list span svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .edit-staff-meta-list p {
   color: #475467;
   font-size: 10px;
@@ -2385,7 +2426,14 @@
 }
 
 .edit-staff-account-card h2 i {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
   color: #d93408;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .edit-staff-field {
@@ -2464,6 +2512,19 @@
   font-weight: 800;
 }
 
+.edit-staff-readonly-input i,
+.edit-staff-readonly-input svg,
+.edit-staff-readonly-input em i,
+.edit-staff-readonly-input em svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .edit-staff-role-head {
   display: flex;
   align-items: center;
@@ -2521,6 +2582,17 @@
   border-radius: 5px;
   background: #d93408;
   color: #ffffff;
+}
+
+.edit-staff-role-option > span i,
+.edit-staff-role-option > span svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .edit-staff-role-option strong {
@@ -2745,12 +2817,15 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  max-width: 220px;
   min-width: 132px;
   padding: 0;
   overflow: hidden;
 }
 
 .tenant-plan-filter-tab select {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 34px;
   padding: 0 32px 0 14px;
@@ -2759,11 +2834,24 @@
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
-  color: inherit;
+  color: transparent;
   cursor: pointer;
   font: inherit;
   font-size: 14px;
   font-weight: 900;
+}
+
+.tenant-plan-filter-label {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  padding: 8px 32px 0 14px;
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .tenant-plan-filter-tab select option {
@@ -2833,29 +2921,96 @@
 }
 
 .tenant-management-metrics {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 24px;
 }
 
-.tenant-management-metrics .role-metric {
+.tenant-management-metric-card {
   min-height: 76px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: stretch;
+  gap: 18px;
+  padding: 18px 24px 18px 28px;
+  border: 1px solid #e3e8f2;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
-.tenant-management-metrics .role-metric:nth-child(1) > span {
+.tenant-management-metric-card div {
+  min-width: 0;
+}
+
+.tenant-management-metric-card small {
+  display: block;
+  margin-bottom: 7px;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.tenant-management-metric-card strong {
+  display: block;
+  color: #101c33;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tenant-management-metric-card > span {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  align-self: center;
+  margin: 0;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tenant-management-metric-card > span i,
+.tenant-management-metric-card > span svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tenant-management-metric-card > span .svg-inline--fa {
+  margin: 0;
+  transform: none;
+}
+
+.tenant-management-metric-card .metric-icon-success {
   background: #e8fff2;
   color: #12b76a;
 }
 
-.tenant-management-metrics .role-metric:nth-child(2) > span {
+.tenant-management-metric-card .metric-icon-primary {
   background: #e9f1ff;
   color: #2f66f5;
 }
 
-.tenant-management-metrics .role-metric:nth-child(3) > span {
+.tenant-management-metric-card .metric-icon-warning {
   background: #fff3e8;
   color: #f97316;
 }
 
-.tenant-management-metrics .role-metric:nth-child(4) > span {
+.tenant-management-metric-card .metric-icon-danger {
   background: #fff0f0;
   color: #f04438;
 }
@@ -7452,6 +7607,17 @@
   font-size: 11px;
 }
 
+.activity-icon i,
+.activity-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .activity-line {
   width: 2px;
   flex: 1;
@@ -7531,7 +7697,12 @@
 
 .staff-role-card-option > span i {
   display: block;
+  width: 1em;
+  height: 1em;
   line-height: 1;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .staff-role-card-option > div {

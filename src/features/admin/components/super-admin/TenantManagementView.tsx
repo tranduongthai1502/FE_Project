@@ -7,7 +7,6 @@ import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage, type CreateTenantFieldErrors } from '../shared/CreateTenantPage'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
-import { MetricCard } from '../shared/MetricCard'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getListPageCount } from '../../utils/adminMappers'
@@ -15,6 +14,7 @@ import { getListPageCount } from '../../utils/adminMappers'
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
 const requiredTenantFieldMessage = 'Please fill in all required fields.'
 const duplicateCompanyNameMessage = 'This company name is already register'
+const MAX_NAME_LENGTH = 50
 const PLAN_FILTER_LIST_SIZE = 100
 
 function getTenantStatusMeta(statusValue: string) {
@@ -255,7 +255,7 @@ export function TenantManagementView({
   }, [refreshTenantsKey])
 
   useEffect(() => {
-    const shouldLoadPlans = isCreateModalOpen || activeView === 'detail'
+    const shouldLoadPlans = activeView === 'list' || activeView === 'detail' || isCreateModalOpen
     if (!shouldLoadPlans || subscriptionPlans.length > 0) return
 
     let isActive = true
@@ -358,13 +358,14 @@ export function TenantManagementView({
   }, [])
 
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
+    const nextValue = field === 'companyName' ? value.slice(0, MAX_NAME_LENGTH) : value
     setTenantError('')
     setTenantFieldErrors((current) => {
       if (!current[field]) return current
       const { [field]: _removed, ...nextErrors } = current
       return nextErrors
     })
-    setTenantForm((current) => ({ ...current, [field]: value }))
+    setTenantForm((current) => ({ ...current, [field]: nextValue }))
   }
 
   const confirmCloseCreateModal = () => {
@@ -553,17 +554,15 @@ export function TenantManagementView({
       options.push({ value: cleanValue, label: cleanLabel })
     }
 
-    tenants.forEach((tenant) => {
-      const tenantPlan = tenant.subscriptionPlanDetail
-      const tenantPlanName = tenantPlan?.name || tenant.subscriptionPlan
-      const tenantPlanValue = tenant.subscriptionPlanId || tenantPlan?.id || tenantPlanName
-      addPlanOption(tenantPlanValue, tenantPlanName)
+    subscriptionPlans.forEach((plan) => {
+      addPlanOption(plan.id, plan.name)
     })
 
     return options
       .sort((left, right) => left.label.localeCompare(right.label))
-  }, [tenants])
-  const selectedPlanFilter = tenantListPlans.find((plan) => plan.id === tenantPlanFilter)
+  }, [subscriptionPlans])
+  const selectedPlanFilter = subscriptionPlans.find((plan) => plan.id === tenantPlanFilter)
+  const selectedPlanFilterLabel = selectedPlanFilter?.name || 'Filter by Plan'
   const displayedTenants = tenants.filter((tenant) => (
     tenantMatchesPlanFilter(tenant, tenantPlanFilter, selectedPlanFilter)
   ))
@@ -968,6 +967,7 @@ export function TenantManagementView({
                 <option value={plan.value} key={plan.value}>{plan.label}</option>
               ))}
             </select>
+            <span className="tenant-plan-filter-label">{selectedPlanFilterLabel}</span>
           </label>
         </div>
         <AdminSearchInput
@@ -982,11 +982,35 @@ export function TenantManagementView({
         </button>
       </section>
 
-      <div className="role-metrics tenant-management-metrics">
-        <MetricCard icon="fa-arrow-trend-up" label="Total Revenue" value={(metricsAreLoading || tenantStatsAreLoading) ? '...' : `$${tenantStatsTotalRevenue.toLocaleString()}`} />
-        <MetricCard icon="fa-building" label="Active Tenants" value={tenantStatsAreLoading ? '...' : String(tenantStatsActiveCount)} />
-        <MetricCard icon="fa-circle-notch" label="Total Tenants" value={tenantStatsAreLoading ? '...' : String(tenantStatsTotalCount)} />
-        <MetricCard icon="fa-triangle-exclamation" label="Inactive Tenants" value={tenantStatsAreLoading ? '...' : String(tenantStatsInactiveCount)} />
+      <div className="tenant-management-metrics">
+        <article className="tenant-management-metric-card">
+          <div>
+            <small>Monthly Active Plan Revenue</small>
+            <strong>{(metricsAreLoading || tenantStatsAreLoading) ? '...' : `$${tenantStatsTotalRevenue.toLocaleString()}`}</strong>
+          </div>
+          <span className="metric-icon-success"><i className="fa-solid fa-arrow-trend-up"></i></span>
+        </article>
+        <article className="tenant-management-metric-card">
+          <div>
+            <small>Active Tenants</small>
+            <strong>{tenantStatsAreLoading ? '...' : String(tenantStatsActiveCount)}</strong>
+          </div>
+          <span className="metric-icon-primary"><i className="fa-solid fa-table-cells-large"></i></span>
+        </article>
+        <article className="tenant-management-metric-card">
+          <div>
+            <small>Average Usage</small>
+            <strong>{tenantStatsAreLoading || tenantStatsTotalCount === 0 ? '...' : `${Math.round((tenantStatsActiveCount / Math.max(tenantStatsTotalCount, 1)) * 1000) / 10}%`}</strong>
+          </div>
+          <span className="metric-icon-warning"><i className="fa-solid fa-circle-notch"></i></span>
+        </article>
+        <article className="tenant-management-metric-card">
+          <div>
+            <small>Churn Rate</small>
+            <strong>{tenantStatsAreLoading || tenantStatsTotalCount === 0 ? '...' : `${Math.round((tenantStatsInactiveCount / Math.max(tenantStatsTotalCount, 1)) * 1000) / 10}%`}</strong>
+          </div>
+          <span className="metric-icon-danger"><i className="fa-solid fa-triangle-exclamation"></i></span>
+        </article>
       </div>
 
       <section className="tenant-list-table-card">
