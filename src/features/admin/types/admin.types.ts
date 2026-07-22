@@ -178,14 +178,28 @@ export type TenantAdminUser = {
   lastLoginIp?: string
 }
 
-export type PlanListRequest = {
+export type ListRequest<Filters extends object | null = Record<string, unknown>> = {
   sortField: string
-  filters: Record<string, unknown>
+  filters: Filters
   sortBy: 'ASC' | 'DESC'
   page: number
   size: number
 }
 
+export type PlanListRequest = ListRequest
+
 export type TenantListRequest = PlanListRequest
 
-export type AdminListParams = Partial<PlanListRequest>
+export type JobListFilters = {
+  search?: string
+  title?: string
+  department?: string
+  level?: string
+  employmentType?: string
+  locationType?: string
+  status?: string
+}
+
+export type JobListRequest = ListRequest<JobListFilters | null>
+
+export type AdminListParams<Filters extends object | null = Record<string, unknown>> = Partial<ListRequest<Filters>>
