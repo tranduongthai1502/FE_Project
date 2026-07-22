@@ -10,6 +10,7 @@ import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/st
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
+import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { DashboardShell } from '../shared/DashboardShell'
 import styles from './HrDashboard.module.css'
 
@@ -17,12 +18,29 @@ const requiredJobFieldMessage = 'Please fill in all required fields.'
 const departmentRequiredMessage = 'Please select department type.'
 const employmentTypeRequiredMessage = 'Please select employment type.'
 const duplicateJobTitleMessage = 'A job posting with this title already exists.'
-const salaryPairMessage = 'Please enter both minimum and maximum salary, or leave both empty.'
+const salaryPairMessage = 'Please enter both minimum and maximum salary or leave both empty.'
 const salaryOrderMessage = 'Maximum salary must be greater than or equal to minimum salary.'
 const salaryPositiveMessage = 'Salary must be a positive number.'
 const deadlineFutureMessage = 'Application deadline must be today or a future date.'
+const jobFormRefreshViewKey = 'jobfusion.hr.jobFormRefreshView'
 
 type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
+
+const emptyJobForm: JobPostingPayload = {
+  title: '',
+  department: '',
+  level: '',
+  employmentType: '',
+  locationType: 'OFFICE',
+  location: '',
+  applicationDeadline: '',
+  description: '',
+  requirements: '',
+  benefits: '',
+  salaryMin: 0,
+  salaryMax: 0,
+  status: 'DRAFT',
+}
 
 function JobFieldError({ message }: { message?: string }) {
   return (
@@ -77,22 +95,7 @@ function JobsEmptyState() {
   )
 }
 
-function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
-  const emptyJobForm: JobPostingPayload = {
-    title: '',
-    department: '',
-    level: '',
-    employmentType: '',
-    locationType: 'OFFICE',
-    location: '',
-    applicationDeadline: '',
-    description: '',
-    requirements: '',
-    benefits: '',
-    salaryMin: 0,
-    salaryMax: 0,
-    status: 'DRAFT',
-  }
+function HrJobsView({ isActionLocked, onHome }: { isActionLocked: boolean; onHome: () => void }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('')
@@ -104,13 +107,29 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
   const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit'>('list')
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
   const [jobForm, setJobForm] = useState<JobPostingPayload>(emptyJobForm)
+  const [salaryInputValues, setSalaryInputValues] = useState({ salaryMin: '', salaryMax: '' })
   const [jobFieldErrors, setJobFieldErrors] = useState<JobFieldErrors>({})
   const [isSavingJob, setIsSavingJob] = useState(false)
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
   const activeJobCount = jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobs.reduce((total, job) => total + job.applicantCount, 0)
   const pendingReviewCount = jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
   const displayStart = jobs.length === 0 ? 0 : ((jobPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
   const displayEnd = displayStart === 0 ? 0 : displayStart + jobs.length - 1
+  const isJobFormDirty = (
+    jobForm.title.trim() !== '' ||
+    jobForm.department.trim() !== '' ||
+    jobForm.level.trim() !== '' ||
+    jobForm.employmentType.trim() !== '' ||
+    jobForm.locationType !== emptyJobForm.locationType ||
+    jobForm.location.trim() !== '' ||
+    jobForm.applicationDeadline.trim() !== '' ||
+    jobForm.description.trim() !== '' ||
+    jobForm.requirements.trim() !== '' ||
+    jobForm.benefits.trim() !== '' ||
+    salaryInputValues.salaryMin.trim() !== '' ||
+    salaryInputValues.salaryMax.trim() !== ''
+  )
 
   useEffect(() => {
     let isActive = true
@@ -154,6 +173,32 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
     setJobPage(1)
   }, [employmentTypeFilter, searchQuery, statusFilter])
 
+  useEffect(() => {
+    const refreshView = window.sessionStorage.getItem(jobFormRefreshViewKey)
+    if (refreshView !== 'create') return
+
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setJobForm(emptyJobForm)
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobFieldErrors({})
+    setSelectedJob(null)
+    setJobView('create')
+  }, [])
+
+  useEffect(() => {
+    const shouldWarnOnRefresh = jobView === 'create' && isJobFormDirty
+    if (!shouldWarnOnRefresh) return undefined
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      window.sessionStorage.setItem(jobFormRefreshViewKey, 'create')
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isJobFormDirty, jobView])
+
   const formatJobDate = (value?: string) => {
     if (!value) return '-'
     const date = new Date(value)
@@ -182,11 +227,27 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
     })
     setJobForm((current) => ({ ...current, [field]: value }))
   }
+  const updateSalaryField = (field: 'salaryMin' | 'salaryMax', value: string) => {
+    setJobFieldErrors((current) => {
+      if (!current.salaryMin && !current.salaryMax) return current
+      const { salaryMin: _removedMin, salaryMax: _removedMax, ...nextErrors } = current
+      return nextErrors
+    })
+    setSalaryInputValues((current) => ({ ...current, [field]: value }))
+    const numericValue = Number(value)
+    setJobForm((current) => ({ ...current, [field]: value === '' || !Number.isFinite(numericValue) ? 0 : numericValue }))
+  }
   const getJobValidationErrors = (payload: JobPostingPayload) => {
     const nextErrors: JobFieldErrors = {}
     const title = payload.title.trim()
-    const minSalaryEntered = payload.salaryMin > 0
-    const maxSalaryEntered = payload.salaryMax > 0
+    const requiresSalaryPair = ['FULL_TIME', 'PART_TIME'].includes(payload.employmentType)
+    const minSalaryValue = salaryInputValues.salaryMin.trim()
+    const maxSalaryValue = salaryInputValues.salaryMax.trim()
+    const minSalaryEntered = minSalaryValue !== ''
+    const maxSalaryEntered = maxSalaryValue !== ''
+    const salaryNumberPattern = /^\d+(\.\d+)?$/
+    const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
+    const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
 
     if (!title) nextErrors.title = requiredJobFieldMessage
     if (!payload.department.trim()) nextErrors.department = departmentRequiredMessage
@@ -204,14 +265,12 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
       nextErrors.title = duplicateJobTitleMessage
     }
 
-    if (payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
-    if (payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
-    if ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered)) {
-      nextErrors.salaryMin = salaryPairMessage
+    if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
+    if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
+    if (!minSalaryInvalid && !maxSalaryInvalid && requiresSalaryPair && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
       nextErrors.salaryMax = salaryPairMessage
     }
-    if (minSalaryEntered && maxSalaryEntered && payload.salaryMin > payload.salaryMax) {
-      nextErrors.salaryMin = salaryOrderMessage
+    if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && payload.salaryMin > payload.salaryMax) {
       nextErrors.salaryMax = salaryOrderMessage
     }
 
@@ -229,10 +288,30 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
   }
   const getInputClassName = (hasError?: boolean) => (hasError ? styles.jobInputError : undefined)
   const openCreateJob = () => {
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setJobForm(emptyJobForm)
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobFieldErrors({})
+    setIsCancelConfirmOpen(false)
     setSelectedJob(null)
     setJobView('create')
+  }
+  const discardJobFormChanges = () => {
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setIsCancelConfirmOpen(false)
+    setJobFieldErrors({})
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobForm(emptyJobForm)
+    setSelectedJob(null)
+    setJobView('list')
+  }
+  const handleCancelJobForm = () => {
+    if (isJobFormDirty) {
+      setIsCancelConfirmOpen(true)
+      return
+    }
+
+    discardJobFormChanges()
   }
   const openJobDetail = async (job: JobPosting) => {
     setSelectedJob(job)
@@ -246,6 +325,11 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
   const openEditJob = (job: JobPosting) => {
     setSelectedJob(job)
     setJobFieldErrors({})
+    setIsCancelConfirmOpen(false)
+    setSalaryInputValues({
+      salaryMin: job.salaryMin ? String(job.salaryMin) : '',
+      salaryMax: job.salaryMax ? String(job.salaryMax) : '',
+    })
     setJobForm({
       title: job.title,
       department: job.department,
@@ -284,6 +368,7 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
       setJobPage(1)
       adminApi.getJobPostings({ sortField: 'createdAt', filters: {}, sortBy: 'DESC', page: 1, size: ADMIN_LIST_PAGE_SIZE })
         .then((items) => setJobs(items))
+      window.sessionStorage.removeItem(jobFormRefreshViewKey)
     } finally {
       setIsSavingJob(false)
     }
@@ -292,7 +377,7 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
   if (jobView === 'detail' && selectedJob) {
     return (
       <div className={`role-content ${styles.jobsContent}`}>
-        <AdminBreadcrumb items={[{ label: 'Home' }, { label: 'Jobs', onClick: () => setJobView('list') }, { label: 'Job Detail' }]} />
+        <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs', onClick: () => setJobView('list') }, { label: 'Job Detail' }]} />
         <div className={styles.jobsHeader}>
           <h1>{selectedJob.title} <em className={styles.jobStatusBadge}>{formatJobStatus(selectedJob.status)}</em></h1>
           <div>
@@ -322,7 +407,7 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
   if (jobView === 'create' || jobView === 'edit') {
     return (
       <div className={`role-content ${styles.jobsContent}`}>
-        <AdminBreadcrumb items={[{ label: 'Home' }, { label: 'Jobs', onClick: () => setJobView('list') }, { label: jobView === 'edit' ? 'Edit Job Posting' : 'Create Job Posting' }]} />
+        <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs', onClick: () => setJobView('list') }, { label: jobView === 'edit' ? 'Edit Job Posting' : 'Create Job Posting' }]} />
         <div className={styles.jobsHeader}>
           <div><h1>{jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting'}</h1></div>
           <button type="button" className={styles.aiJobButton} disabled={isActionLocked}>Generate with AI</button>
@@ -374,15 +459,22 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
                     <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                       <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4C0 3.45 0.195833 2.97917 0.5875 2.5875C0.979167 2.19583 1.45 2 2 2H3V0H5V2H13V0H15V2H16C16.55 2 17.0208 2.19583 17.4125 2.5875C17.8042 2.97917 18 3.45 18 4V18C18 18.55 17.8042 19.0208 17.4125 19.4125C17.0208 19.8042 16.55 20 16 20H2ZM2 18H16V8H2V18ZM2 6H16V4H2V6ZM2 6V4V6Z" fill="#565E74" />
                     </svg>
-                    <input type="date" value={jobForm.applicationDeadline.slice(0, 10)} onChange={(e) => setJobForm({ ...jobForm, applicationDeadline: e.target.value ? new Date(e.target.value).toISOString() : '' })} />
+                    <input className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="date" value={jobForm.applicationDeadline.slice(0, 10)} onChange={(e) => updateJobFormField('applicationDeadline', e.target.value ? new Date(e.target.value).toISOString() : '')} />
                   </div>
+                  <JobFieldError message={jobFieldErrors.applicationDeadline} />
                 </label>
                 <div className={styles.salaryRangeRow}>
                   <span>Salary Range</span>
                   <div className={styles.salaryRangeControls}>
-                    <div className={styles.moneyInput}><span>$</span><input aria-label="Minimum salary" type="number" min="0" step="0.1" value={jobForm.salaryMin} onChange={(e) => setJobForm({ ...jobForm, salaryMin: Number(e.target.value) })} /></div>
-                    <small>To</small>
-                    <div className={styles.moneyInput}><span>$</span><input aria-label="Maximum salary" type="number" min="0" step="0.1" value={jobForm.salaryMax} onChange={(e) => setJobForm({ ...jobForm, salaryMax: Number(e.target.value) })} /></div>
+                    <div className={styles.salaryInputSlot}>
+                      <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMin ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Minimum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMin} onChange={(e) => updateSalaryField('salaryMin', e.target.value)} /></div>
+                      <JobFieldError message={jobFieldErrors.salaryMin} />
+                    </div>
+                    <small className={styles.salaryRangeDivider}>To</small>
+                    <div className={styles.salaryInputSlot}>
+                      <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMax ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Maximum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMax} onChange={(e) => updateSalaryField('salaryMax', e.target.value)} /></div>
+                      <JobFieldError message={jobFieldErrors.salaryMax} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -418,19 +510,30 @@ function HrJobsView({ isActionLocked }: { isActionLocked: boolean }) {
               </label>
             </section>
             <footer>
-              <button type="button" onClick={() => setJobView('list')} disabled={isSavingJob}>Cancel</button>
+              <button type="button" onClick={handleCancelJobForm} disabled={isSavingJob}>Cancel</button>
               <button type="button" disabled={isActionLocked || isSavingJob} onClick={() => saveJob({ ...jobForm, status: 'DRAFT' })}>Save as Draft</button>
               <button type="submit" disabled={isActionLocked || isSavingJob}>{isSavingJob ? 'Saving...' : 'Save'}</button>
             </footer>
           </aside>
         </form>
+        {isCancelConfirmOpen && (
+          <ConfirmActionModal
+            isSubmitting={isSavingJob}
+            title="Confirm Action"
+            message="Are you sure you want to cancel? Your changes will not be saved."
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={() => setIsCancelConfirmOpen(false)}
+            onConfirm={discardJobFormChanges}
+          />
+        )}
       </div>
     )
   }
 
   return (
     <div className={`role-content ${styles.jobsContent}`}>
-      <AdminBreadcrumb items={[{ label: 'Home' }, { label: 'Jobs' }]} />
+      <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs' }]} />
 
       <div className={styles.jobsHeader}>
         <h1>Job Postings</h1>
@@ -566,7 +669,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'jobs' ? (
-        <HrJobsView isActionLocked={isActionLocked} />
+        <HrJobsView isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} />
       ) : (
       <div className={`role-content ${styles.content}`}>
         <div className={`role-title-row ${styles.title}`}>

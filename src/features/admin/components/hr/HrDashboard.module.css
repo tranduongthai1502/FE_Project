@@ -919,6 +919,16 @@
   background: #ffffff;
 }
 
+.moneyInput:focus-within {
+  border-color: transparent;
+  outline: 2px solid #006fe6;
+  outline-offset: 0;
+}
+
+.moneyInputError {
+  border-color: #ff2d2d;
+}
+
 .moneyInput span {
   padding-left: 12px;
   color: #101c33;
@@ -927,8 +937,10 @@
 }
 
 .moneyInput input {
+  flex: 1;
   min-height: 36px;
   border: 0;
+  outline: 0;
   padding-left: 6px;
 }
 
@@ -946,13 +958,34 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 12px;
-  align-items: center;
+  align-items: start;
 }
 
-.salaryRangeControls small {
+.salaryInputSlot {
+  position: relative;
+  display: grid;
+  gap: 3px;
+}
+
+.salaryInputSlot .jobFieldError {
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 0;
+  width: max-content;
+  max-width: none;
+  color: #d82d21;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.salaryRangeDivider {
+  padding-top: 12px;
   color: #667085;
   font-size: 10px;
   font-weight: 900;
+  text-align: center;
   text-transform: uppercase;
 }
 
