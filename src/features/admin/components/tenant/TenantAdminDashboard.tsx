@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getTenantAdminNav } from '../../data/adminNavigation'
-import type { TenantAdminView, StaffMember, UserStatus, Tenant, SubscriptionPlan } from '../../types/admin.types'
+import type { ActivityLog, TenantAdminView, StaffMember, UserStatus, Tenant, SubscriptionPlan } from '../../types/admin.types'
 import { getInitialTenantAdminView, getTenantAdminStaffIdFromUrl, updateTenantAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
@@ -333,6 +333,39 @@ function formatDashboardDate(value?: string) {
   }).format(new Date(parsed))
 }
 
+function formatActivityDateTime(value?: string) {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+
+  const isSameDay = (left: Date, right: Date) => (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  )
+  const dateLabel = isSameDay(date, today)
+    ? 'TODAY'
+    : isSameDay(date, yesterday)
+      ? 'YESTERDAY'
+      : date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()
+  const timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+
+  return `${dateLabel} • ${timeLabel}`
+}
+
+function getActivityIcon(eventType: string, index: number) {
+  const normalized = eventType.trim().toLowerCase()
+  if (normalized.includes('auth') || normalized.includes('login') || normalized.includes('password')) return 'fa-key'
+  if (normalized.includes('assign') || normalized.includes('user') || normalized.includes('staff')) return 'fa-user-plus'
+  if (normalized.includes('setting') || normalized.includes('config')) return 'fa-gear'
+  return ['fa-pen', 'fa-user-plus', 'fa-key', 'fa-gear'][index % 4]
+}
+
 function StaffManagementView({
   staffList,
   isLoading,
@@ -541,8 +574,10 @@ function StaffManagementView({
                 </em>
                 <span>{formatDate(staff.createdAt)}</span>
                 <div className="staff-actions">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
+                    className="icon-tooltip"
+                    data-tooltip="Edit"
                     aria-label={`Edit ${staff.fullName}`}
                     onClick={(event) => {
                       event.stopPropagation()
@@ -556,8 +591,10 @@ function StaffManagementView({
                       <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
+                    className="icon-tooltip"
+                    data-tooltip="Delete"
                     aria-label={`Delete ${staff.fullName}`}
                     onClick={(event) => {
                       event.stopPropagation()
@@ -575,8 +612,10 @@ function StaffManagementView({
           <footer>
             <span>Showing {displayStart}-{displayEnd} of {totalElements} staff account{totalElements === 1 ? '' : 's'}</span>
             <div>
-              <button 
-                type="button" 
+              <button
+                type="button"
+                className="icon-tooltip"
+                data-tooltip="Previous page"
                 disabled={currentPage === 1}
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               >
@@ -592,8 +631,10 @@ function StaffManagementView({
                   {p}
                 </button>
               ))}
-              <button 
-                type="button" 
+              <button
+                type="button"
+                className="icon-tooltip"
+                data-tooltip="Next page"
                 disabled={currentPage === totalPages}
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               >
@@ -1046,7 +1087,7 @@ function EditStaffAccountView({
                 </div>
               </label>
             </div>
-            {roleError && <small className="edit-staff-field-error">{roleError}</small>}
+            {roleError && <small className="edit-staff-field-error edit-staff-role-error">{roleError}</small>}
           </section>
         </div>
 
@@ -1075,6 +1116,9 @@ function EditStaffAccountView({
 
 function StaffDetailView({
   staffMember,
+  recentActivities,
+  isLoadingActivities,
+  activityError,
   onHome,
   onBack,
   onEdit,
@@ -1084,6 +1128,9 @@ function StaffDetailView({
   isActionLocked = false,
 }: {
   staffMember: StaffMember
+  recentActivities: ActivityLog[]
+  isLoadingActivities: boolean
+  activityError: string
   onHome: () => void
   onBack: () => void
   onEdit: () => void
@@ -1116,21 +1163,6 @@ function StaffDetailView({
     }
   }
 
-  const formatRelativeTime = (dateStr?: string) => {
-    if (!dateStr) return '-'
-    const date = new Date(dateStr)
-    if (Number.isNaN(date.getTime())) return dateStr
-
-    const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
-    if (diffMinutes < 60) return `${diffMinutes || 1} minute${diffMinutes === 1 ? '' : 's'} ago`
-
-    const diffHours = Math.round(diffMinutes / 60)
-    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
-
-    const diffDays = Math.round(diffHours / 24)
-    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
-  }
-
   const roleList = staffMember.userRole
     ? staffMember.userRole.split(',').map(r => r.trim()).filter(Boolean)
     : []
@@ -1140,9 +1172,6 @@ function StaffDetailView({
   const isDisabled = staffMember.status === 'DISABLED'
   const statusLabel = isActive ? 'Active' : 'Inactive'
   const statusSinceDate = staffMember.activatedAt || staffMember.createdAt
-  const loginLocation = staffMember.lastLoginLocation && staffMember.lastLoginIp
-    ? `${staffMember.lastLoginLocation} (IP: ${staffMember.lastLoginIp})`
-    : staffMember.lastLoginLocation || (staffMember.lastLoginIp ? `IP: ${staffMember.lastLoginIp}` : '-')
 
   return (
     <div className="role-content staff-detail-content">
@@ -1240,18 +1269,6 @@ function StaffDetailView({
               </strong>
               {isActive && <span>SINCE {formatDate(statusSinceDate).toUpperCase()}</span>}
             </div>
-            {isActive ? (
-              <div className="staff-login-meta">
-                <div className="staff-login-row">
-                  <span>Last Login</span>
-                  <strong>{formatRelativeTime(staffMember.lastLoginAt)}</strong>
-                </div>
-                <div className="staff-login-row">
-                  <span>Login Location</span>
-                  <strong>{loginLocation}</strong>
-                </div>
-              </div>
-            ) : null}
           </section>
 
           <section className="staff-detail-card">
@@ -1260,49 +1277,26 @@ function StaffDetailView({
               <button type="button" className="staff-view-logs-btn" onClick={onViewLogs}>View All Logs</button>
             </header>
             <div className="activity-list-container" style={{ marginTop: '16px' }}>
-              <div className="activity-item">
-                <div className="activity-icon-wrapper">
-                  <div className="activity-icon"><i className="fa-solid fa-pen"></i></div>
-                  <div className="activity-line"></div>
-                </div>
-                <div className="activity-details">
-                  <p>Modified Job Post: <strong>"Sr. Engineer"</strong></p>
-                  <small>TODAY • 11:45 AM</small>
-                </div>
-              </div>
-
-              <div className="activity-item">
-                <div className="activity-icon-wrapper">
-                  <div className="activity-icon"><i className="fa-solid fa-user-plus"></i></div>
-                  <div className="activity-line"></div>
-                </div>
-                <div className="activity-details">
-                  <p>Assigned to <strong>"Team Alpha"</strong></p>
-                  <small>YESTERDAY • 04:20 PM</small>
-                </div>
-              </div>
-
-              <div className="activity-item">
-                <div className="activity-icon-wrapper">
-                  <div className="activity-icon"><i className="fa-solid fa-key"></i></div>
-                  <div className="activity-line"></div>
-                </div>
-                <div className="activity-details">
-                  <p>Authenticated via SSO</p>
-                  <small>NOV 12 • 09:00 AM</small>
-                </div>
-              </div>
-
-              <div className="activity-item">
-                <div className="activity-icon-wrapper">
-                  <div className="activity-icon"><i className="fa-solid fa-gear"></i></div>
-                  <div className="activity-line"></div>
-                </div>
-                <div className="activity-details">
-                  <p>Updated Notification Settings</p>
-                  <small>NOV 10 • 02:15 PM</small>
-                </div>
-              </div>
+              {isLoadingActivities ? (
+                <div className="tenant-list-table-state">Loading activity...</div>
+              ) : activityError ? (
+                <div className="tenant-list-table-state error">{activityError}</div>
+              ) : recentActivities.length === 0 ? (
+                <div className="tenant-list-table-state">No activity recorded yet.</div>
+              ) : (
+                recentActivities.map((activity, index) => (
+                  <div className="activity-item" key={activity.id}>
+                    <div className="activity-icon-wrapper">
+                      <div className="activity-icon"><i className={`fa-solid ${getActivityIcon(activity.eventType, index)}`}></i></div>
+                      <div className="activity-line"></div>
+                    </div>
+                    <div className="activity-details">
+                      <p>{activity.title}</p>
+                      <small>{formatActivityDateTime(activity.createdAt)}</small>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>
@@ -1514,6 +1508,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [staffError, setStaffError] = useState('')
   const [staffDetailError, setStaffDetailError] = useState('')
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(() => getStoredSelectedStaff())
+  const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([])
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false)
+  const [activityError, setActivityError] = useState('')
   
   // Modals & Save states
   const [deleteConfirmStaff, setDeleteConfirmStaff] = useState<StaffMember | null>(null)
@@ -1624,6 +1621,47 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
     return loadStaffDetail(detailStaffId, undefined, { syncSelectedStaffId: true })
   }, [activeView, location.pathname, loadStaffDetail, selectedStaffId, selectedStaff?.id, triggerToast])
+
+  useEffect(() => {
+    if (activeView !== 'staffDetail' && activeView !== 'staffActivityLog') {
+      return
+    }
+
+    let isActive = true
+    setIsLoadingActivities(true)
+    setActivityError('')
+
+    adminApi.getActivityLogs({
+      sortField: 'createdAt',
+      filters: {
+        eventType: 'ACTION',
+        ...(tenantId ? { tenantId } : {}),
+      },
+      sortBy: 'DESC',
+      page: 1,
+      size: 4,
+    })
+      .then((items) => {
+        if (isActive) {
+          setRecentActivities(items)
+        }
+      })
+      .catch((error) => {
+        if (isActive) {
+          setRecentActivities([])
+          setActivityError(getAdminErrorMessage(error, 'Failed to load activity logs.'))
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingActivities(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, refreshKey, tenantId])
 
   const hasTenantQuota = Boolean(tenantDetail)
   const isStaffQuotaUnlimited = staffAccountLimit.unlimited ?? (Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0))
@@ -1869,6 +1907,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       ) : activeView === 'staffDetail' && selectedStaff && selectedStaffMatchesDetailRoute ? (
         <StaffDetailView
           staffMember={selectedStaff}
+          recentActivities={recentActivities}
+          isLoadingActivities={isLoadingActivities}
+          activityError={activityError}
           onHome={() => changeView('dashboard')}
           onBack={() => changeView('staffManagement')}
           onEdit={() => {
