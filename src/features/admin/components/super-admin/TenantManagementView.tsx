@@ -7,13 +7,15 @@ import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage, type CreateTenantFieldErrors } from '../shared/CreateTenantPage'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
+import { AdminScrollableSelect } from '../shared/AdminScrollableSelect'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
-import { getListPageCount } from '../../utils/adminMappers'
+import { getCompactPageItems, getListPageCount, getListTotalElements } from '../../utils/adminMappers'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
 const requiredTenantFieldMessage = 'Please fill in all required fields.'
-const duplicateCompanyNameMessage = 'This company name is already register'
+const duplicateCompanyNameMessage = 'This company name is already register.'
+const invalidTenantEmailMessage = 'Please enter a valid email address.'
 const MAX_NAME_LENGTH = 50
 const PLAN_FILTER_LIST_SIZE = 100
 
@@ -85,6 +87,10 @@ function tenantHasCompanyName(tenants: Tenant[], companyName: string) {
   if (!normalizedCompanyName) return false
 
   return tenants.some((tenant) => normalizeFilterValue(tenant.name) === normalizedCompanyName)
+}
+
+function isValidTenantAdminEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
 function tenantMatchesPlanFilter(tenant: Tenant, selectedPlanId: string, selectedPlan?: SubscriptionPlan) {
@@ -422,7 +428,11 @@ export function TenantManagementView({
     if (!tenantForm.industry.trim()) nextFieldErrors.industry = requiredTenantFieldMessage
     if (!tenantForm.region.trim()) nextFieldErrors.region = requiredTenantFieldMessage
     if (!tenantForm.adminFullName.trim()) nextFieldErrors.adminFullName = requiredTenantFieldMessage
-    if (!tenantForm.adminEmail.trim()) nextFieldErrors.adminEmail = requiredTenantFieldMessage
+    if (!tenantForm.adminEmail.trim()) {
+      nextFieldErrors.adminEmail = requiredTenantFieldMessage
+    } else if (!isValidTenantAdminEmail(tenantForm.adminEmail)) {
+      nextFieldErrors.adminEmail = invalidTenantEmailMessage
+    }
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setTenantFieldErrors(nextFieldErrors)
@@ -562,14 +572,15 @@ export function TenantManagementView({
       .sort((left, right) => left.label.localeCompare(right.label))
   }, [subscriptionPlans])
   const selectedPlanFilter = subscriptionPlans.find((plan) => plan.id === tenantPlanFilter)
-  const selectedPlanFilterLabel = selectedPlanFilter?.name || 'Filter by Plan'
   const displayedTenants = tenants.filter((tenant) => (
     tenantMatchesPlanFilter(tenant, tenantPlanFilter, selectedPlanFilter)
   ))
   const currentTenantPage = tenantPage
   const paginatedTenants = displayedTenants
+  const tenantTotalElements = getListTotalElements(tenants, displayedTenants.length)
   const tenantDisplayStart = displayedTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
-  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : tenantDisplayStart + displayedTenants.length - 1
+  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : Math.min(tenantTotalElements, tenantDisplayStart + paginatedTenants.length - 1)
+  const tenantPageItems = getCompactPageItems(currentTenantPage, tenantPageCount)
 
   useEffect(() => {
     setTenantPage(1)
@@ -872,19 +883,15 @@ export function TenantManagementView({
                     <h2>Subscription Plan</h2>
                     <strong>{activeSubscriptionPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
                   </div>
-                  <label className="tenant-plan-picker">
-                    <i className="fa-solid fa-chevron-down tenant-plan-chevron"></i>
-                    <select
-                      aria-label="Select subscription plan"
-                      value={pendingTenantPlanId}
-                      onChange={(event) => setPendingTenantPlanId(event.target.value)}
-                      disabled={isUpdatingTenantPlan || subscriptionPlans.length === 0}
-                    >
-                      {subscriptionPlans.map((plan) => (
-                        <option key={plan.id} value={plan.id}>{plan.name}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <AdminScrollableSelect
+                    className="tenant-plan-picker"
+                    ariaLabel="Select subscription plan"
+                    value={pendingTenantPlanId}
+                    disabled={isUpdatingTenantPlan || subscriptionPlans.length === 0}
+                    placeholder="Select plan"
+                    options={subscriptionPlans.map((plan) => ({ value: plan.id, label: plan.name }))}
+                    onChange={setPendingTenantPlanId}
+                  />
                   <button type="button" onClick={requestChangeTenantPlan} disabled={!hasSelectedDifferentPlan || isUpdatingTenantPlan}>
                     Change Plan
                   </button>
@@ -956,19 +963,17 @@ export function TenantManagementView({
           <button type="button" className={tenantStatusFilter === 'all' ? 'active' : ''} onClick={() => selectTenantFilter('all')}>All Tenants</button>
           <button type="button" className={tenantStatusFilter === 'active' ? 'active' : ''} onClick={() => selectTenantFilter('active')}>Active</button>
           <button type="button" className={tenantStatusFilter === 'inactive' ? 'active' : ''} onClick={() => selectTenantFilter('inactive')}>Inactive</button>
-          <label className={`tenant-plan-filter-tab ${tenantPlanFilter ? 'active' : ''}`}>
-            <select
-              value={tenantPlanFilter}
-              onChange={(event) => selectPlanFilter(event.target.value)}
-              aria-label="Filter by plan"
-            >
-              <option value="">Filter by Plan</option>
-              {planFilterOptions.map((plan) => (
-                <option value={plan.value} key={plan.value}>{plan.label}</option>
-              ))}
-            </select>
-            <span className="tenant-plan-filter-label">{selectedPlanFilterLabel}</span>
-          </label>
+          <AdminScrollableSelect
+            className={`tenant-plan-filter-tab ${tenantPlanFilter ? 'active' : ''}`}
+            value={tenantPlanFilter}
+            ariaLabel="Filter by plan"
+            placeholder="Filter by Plan"
+            options={[
+              { value: '', label: 'Filter by Plan' },
+              ...planFilterOptions.map((plan) => ({ value: plan.value, label: plan.label })),
+            ]}
+            onChange={selectPlanFilter}
+          />
         </div>
         <AdminSearchInput
           className="tenant-filter-search"
@@ -1036,7 +1041,7 @@ export function TenantManagementView({
           paginatedTenants.map((tenant) => {
             const status = getTenantStatusMeta(tenant.status)
             const tenantPlan = getTenantPlan(tenant)
-            const hasUnlimitedQuota = tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0
+            const hasUnlimitedQuota = tenant.userQuotaUnlimited || (tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0)
             const quotaPercent = tenant.userQuotaLimit > 0
               ? Math.min(100, Math.round((tenant.userQuotaUsed / tenant.userQuotaLimit) * 100))
               : 0
@@ -1047,7 +1052,9 @@ export function TenantManagementView({
 
             return (
               <div className="tenant-list-table-row" key={tenant.id}>
-                <strong>{tenant.name}</strong>
+                <span className="table-name-tooltip" data-tooltip={tenant.name} title={tenant.name} tabIndex={0}>
+                  <strong>{tenant.name}</strong>
+                </span>
                 <span className={`tenant-plan-name ${isHighestPricedPlan(tenant, tenantPlan) ? 'premium-plan' : ''}`}>
                   {tenantPlan?.name || tenant.subscriptionPlan || '-'}
                 </span>
@@ -1071,11 +1078,15 @@ export function TenantManagementView({
         )}
 
         <footer>
-          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {displayedTenants.length} Tenant{displayedTenants.length === 1 ? '' : 's'}</span>
+          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {tenantTotalElements} Tenant{tenantTotalElements === 1 ? '' : 's'}</span>
           <div>
             <button type="button" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-            {Array.from({ length: tenantPageCount }, (_, index) => index + 1).map((page) => (
-              <button type="button" className={page === currentTenantPage ? 'active' : ''} key={page} onClick={() => setTenantPage(page)}>{page}</button>
+            {tenantPageItems.map((item, index) => (
+              item === 'ellipsis' ? (
+                <span className="pagination-ellipsis" key={`tenant-ellipsis-${index}`}>...</span>
+              ) : (
+                <button type="button" className={item === currentTenantPage ? 'active' : ''} key={item} onClick={() => setTenantPage(item)}>{item}</button>
+              )
             ))}
             <button type="button" disabled={currentTenantPage === tenantPageCount} onClick={() => setTenantPage((page) => Math.min(tenantPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
           </div>

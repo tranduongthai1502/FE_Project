@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { isPromptCreateUrl, updatePromptCreateUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
+import { AdminScrollableSelect } from '../shared/AdminScrollableSelect'
 
 function CreatePromptView({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
   const [internalName, setInternalName] = useState('xinquiU9')
@@ -51,11 +52,16 @@ SEO-optimized, and free of bias.`)
             <h2>AI ModelConfig</h2>
             <label>
               <span>Primary Model</span>
-              <select value={model} onChange={(event) => setModel(event.target.value)}>
-                <option>Gemini 1.5 Pro</option>
-                <option>GPT-4.1</option>
-                <option>Claude 3.5 Sonnet</option>
-              </select>
+              <AdminScrollableSelect
+                ariaLabel="Select primary model"
+                value={model}
+                options={[
+                  { value: 'Gemini 1.5 Pro', label: 'Gemini 1.5 Pro' },
+                  { value: 'GPT-4.1', label: 'GPT-4.1' },
+                  { value: 'Claude 3.5 Sonnet', label: 'Claude 3.5 Sonnet' },
+                ]}
+                onChange={setModel}
+              />
             </label>
             <label>
               <span>Max Output Tokens</span>
@@ -182,7 +188,9 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
         </div>
         {prompts.map(([name, feature, module, date, status]) => (
           <div className="prompt-table-row" key={name}>
-            <strong>{name}</strong>
+            <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
+              <strong>{name}</strong>
+            </span>
             <span>{feature}</span>
             <span>{module}</span>
             <span>{date}</span>

@@ -308,7 +308,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     const filters: JobListFilters = {}
     const search = searchQuery.trim()
 
-    if (search) filters.search = search
+    if (search) filters.title = search
     if (employmentTypeFilter) filters.employmentType = employmentTypeFilter
     if (statusFilter) filters.status = statusFilter
 
@@ -324,8 +324,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     })
       .then((items) => {
         if (!isActive) return
-        setJobs(items)
-        setJobPageCount(getListPageCount(items, jobPage, ADMIN_LIST_PAGE_SIZE))
+        const visibleItems = search
+          ? items.filter((job) => job.title.trim().toLowerCase().startsWith(search.toLowerCase()))
+          : items
+
+        setJobs(visibleItems)
+        setJobPageCount(search ? Math.max(1, jobPage) : getListPageCount(items, jobPage, ADMIN_LIST_PAGE_SIZE))
       })
       .catch((error) => {
         if (!isActive) return
@@ -1033,7 +1037,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           className={styles.jobsSearch}
           value={searchQuery}
           onChange={(event) => updateJobSearchQuery(event.target.value)}
-          placeholder="Search job title, or department..."
+          placeholder="Search job title..."
           ariaLabel="Job posting search"
         />
         <label>

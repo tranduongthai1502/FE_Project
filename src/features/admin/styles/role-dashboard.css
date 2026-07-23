@@ -749,6 +749,113 @@
   padding: 18px 20px 12px;
 }
 
+.admin-scroll-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-scroll-select-trigger {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid #efb7aa;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #102033;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+}
+
+.admin-scroll-select-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-scroll-select-trigger i {
+  flex: 0 0 auto;
+  color: #101c33;
+  font-size: 10px;
+}
+
+.admin-scroll-select.open .admin-scroll-select-trigger {
+  border-color: #d93408;
+  box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
+}
+
+.admin-scroll-select.has-error .admin-scroll-select-trigger {
+  border-color: #f04438;
+}
+
+.admin-scroll-select.disabled .admin-scroll-select-trigger {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.admin-scroll-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 120;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #d7dce5;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
+}
+
+.admin-scroll-select-menu button {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #101c33;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+}
+
+.admin-scroll-select-menu button:hover,
+.admin-scroll-select-menu button.selected {
+  background: #eef3ff;
+}
+
+.admin-scroll-select-menu button:disabled {
+  color: #98a2b3;
+  cursor: default;
+}
+
+.admin-scroll-select-menu button i {
+  width: 12px;
+  color: #d93408;
+  font-size: 10px;
+}
+
+.admin-scroll-select-menu button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .role-metric > span {
   width: 28px;
   height: 28px;
@@ -943,7 +1050,7 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  margin: 10px;
+  margin: 0;
 }
 
 .super-dashboard-row {
@@ -956,7 +1063,7 @@
 
 .super-dashboard-row > .role-panel {
   flex: 1 1 0;
-  height: 100%;
+  height: auto;
 }
 
 .super-dashboard-row > .role-panel:first-child {
@@ -1557,6 +1664,12 @@
 .activity-panel h2 {
   margin: 0;
   padding: 20px 22px 8px;
+}
+
+.plan-bars {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
 }
 
 .bar-row {
@@ -2889,6 +3002,28 @@
   transform: translateY(-2px) rotate(45deg);
 }
 
+.admin-scroll-select.tenant-plan-filter-tab {
+  overflow: visible;
+}
+
+.admin-scroll-select.tenant-plan-filter-tab::after {
+  display: none;
+}
+
+.admin-scroll-select.tenant-plan-filter-tab .admin-scroll-select-trigger {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.admin-scroll-select.tenant-plan-filter-tab .admin-scroll-select-trigger i {
+  color: currentColor;
+}
+
 .tenant-filter-search {
   height: 36px;
   gap: 10px;
@@ -3456,6 +3591,39 @@
   cursor: not-allowed;
 }
 
+.admin-scroll-select.tenant-plan-picker {
+  overflow: visible;
+}
+
+.admin-scroll-select.tenant-plan-picker .admin-scroll-select-trigger {
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.admin-scroll-select.tenant-plan-picker .admin-scroll-select-trigger span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.admin-scroll-select.tenant-plan-picker .admin-scroll-select-trigger i {
+  color: #667085;
+  font-size: 12px;
+}
+
+.admin-scroll-select.tenant-plan-picker .admin-scroll-select-menu {
+  left: auto;
+  right: 0;
+  width: 220px;
+}
+
 .tenant-plan-chevron {
   pointer-events: none;
   color: #667085 !important;
@@ -3517,8 +3685,8 @@
 }
 
 .tenant-list-table-card {
-  width: 90%;
-  margin: 26px auto 0;
+  width: 100%;
+  margin: 26px 0 0;
   overflow: hidden;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
@@ -3578,6 +3746,59 @@
   white-space: nowrap;
 }
 
+.table-name-tooltip {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  overflow: visible;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.table-name-tooltip > strong {
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-name-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  max-width: min(360px, 70vw);
+  padding: 5px 8px;
+  border: 1px solid #d7deea;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.12);
+  color: #101c33;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.table-name-tooltip:hover::after,
+.table-name-tooltip:focus-visible::after,
+.table-name-tooltip:focus-within::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .tenant-plan-name {
   color: #101c33;
   font-size: 12px;
@@ -3633,8 +3854,8 @@
 }
 
 .tenant-quota.unlimited strong {
-  color: #667085;
-  font-weight: 700;
+  color: #101c33;
+  font-weight: 600;
 }
 
 .tenant-list-table-row em {
@@ -3736,6 +3957,17 @@
 .tenant-list-table-card footer button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .tenant-modal-backdrop {
@@ -3920,6 +4152,14 @@
   width: 100%;
   padding: 0 12px;
   outline: 0;
+  color: #102033;
+  font-size: 11px;
+}
+
+.tenant-create-form .admin-scroll-select-trigger {
+  height: 34px;
+  border-color: #efb7aa;
+  background: #f7f8fd;
   color: #102033;
   font-size: 11px;
 }
@@ -4110,8 +4350,8 @@
 }
 
 .subscription-table-card {
-  width: 90%;
-  margin: 26px auto 0;
+  width: 100%;
+  margin: 26px 0 0;
   overflow: hidden;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
@@ -4159,6 +4399,21 @@
   font-weight: 800;
 }
 
+.subscription-table-toolbar .subscription-sort-select {
+  width: 210px;
+  min-width: 210px;
+}
+
+.subscription-table-toolbar .subscription-sort-select .admin-scroll-select-trigger {
+  height: 36px;
+  border-color: #efb4a5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .subscription-table-row {
   display: grid;
   grid-template-columns:
@@ -4193,7 +4448,7 @@
 
 .subscription-table-body {
   max-height: 280px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .subscription-table-data-row {
@@ -4470,10 +4725,18 @@
 }
 
 .plan-config-grid strong {
+  display: block;
   color: #101c33;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.35;
+}
+
+.plan-config-description strong {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .plan-config-grid strong.price {
@@ -5559,6 +5822,13 @@
   white-space: nowrap;
 }
 
+.subscription-table-row .table-name-tooltip,
+.prompt-table-row .table-name-tooltip {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 .prompt-table-row em {
   display: inline-flex;
   align-items: center;
@@ -5714,6 +5984,15 @@
 .create-prompt-card select {
   height: 34px;
   padding: 0 10px;
+}
+
+.create-prompt-card .admin-scroll-select-trigger {
+  height: 34px;
+  border-color: #efc3b8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #101c33;
+  font-size: 12px;
 }
 
 .create-prompt-card textarea {
