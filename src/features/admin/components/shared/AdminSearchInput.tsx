@@ -21,6 +21,7 @@ export function AdminSearchInput({
     <div className={classes}>
       <i className="fa-solid fa-magnifying-glass"></i>
       <input
+        maxLength={50}
         type="search"
         value={value}
         onChange={onChange}

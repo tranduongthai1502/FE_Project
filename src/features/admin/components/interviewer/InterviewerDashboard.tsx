@@ -62,7 +62,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
           <section className={`role-panel ${styles.scoringPanel}`}>
             <h2>Notes & Scoring</h2>
             <label>General Assessment</label>
-            <textarea placeholder="Enter quick feedback about the candidate..." />
+            <textarea placeholder="Enter quick feedback about the candidate..." maxLength={50}/>
             <div className={styles.scoreGrid}>
               <span>Technical Skills <strong>8</strong> / 10</span>
               <span>Soft Skills <strong>7</strong> / 10</span>

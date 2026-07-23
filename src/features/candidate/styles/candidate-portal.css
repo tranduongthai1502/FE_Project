@@ -1,6 +1,8 @@
 .candidate-page {
   --candidate-sidebar-width: 240px;
   --candidate-sidebar-collapsed-width: 72px;
+  --candidate-sidebar-trigger-size: 36px;
+  --candidate-nav-button-size: 48px;
   width: 100%;
   min-height: 100vh;
   display: grid;
@@ -47,8 +49,10 @@
 .candidate-sidebar-trigger {
   position: static;
   flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
+  width: var(--candidate-sidebar-trigger-size);
+  height: var(--candidate-sidebar-trigger-size);
+  min-width: var(--candidate-sidebar-trigger-size);
+  min-height: var(--candidate-sidebar-trigger-size);
   display: grid;
   place-items: center;
   border: 0;
@@ -97,7 +101,7 @@
 .candidate-sidebar:not(.is-open) .candidate-brand {
   justify-content: center;
   min-height: 52px;
-  margin-bottom: 18px;
+  margin-bottom: 28px;
 }
 
 .candidate-brand .candidate-sidebar-trigger {
@@ -157,7 +161,8 @@
 }
 
 .candidate-nav-item {
-  height: 44px;
+  height: var(--candidate-nav-button-size);
+  min-height: var(--candidate-nav-button-size);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -179,12 +184,14 @@
 }
 
 .candidate-sidebar:not(.is-open) .candidate-nav {
-  gap: 18px;
+  gap: 8px;
 }
 
 .candidate-sidebar:not(.is-open) .candidate-nav-item {
-  width: 48px;
-  height: 48px;
+  width: var(--candidate-nav-button-size);
+  height: var(--candidate-nav-button-size);
+  min-width: var(--candidate-nav-button-size);
+  min-height: var(--candidate-nav-button-size);
   justify-content: center;
   gap: 0;
   padding: 0;

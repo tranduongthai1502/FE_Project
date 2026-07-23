@@ -284,6 +284,7 @@ export function ActivationPage({ navigate, onSignInSuccess, triggerToast }: Acti
                 Enter your email to receive a new activation link:
               </label>
               <input
+                maxLength={50}
                 id="resend-email"
                 type="email"
                 placeholder="email@example.com"

@@ -110,6 +110,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${fullNameError ? 'has-error' : ''}`}>
               <UserIcon />
               <input
+                maxLength={50}
                 id="fullName"
                 name="fullName"
                 type="text"
@@ -137,6 +138,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
+                maxLength={50}
                 id="signupEmail"
                 name="email"
                 type="email"
@@ -164,6 +166,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${phoneError ? 'has-error' : ''}`}>
               <PhoneIcon />
               <input
+                maxLength={50}
                 id="phone"
                 name="phone"
                 type="tel"
@@ -193,6 +196,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
+                maxLength={50}
                 id="signupPassword"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -231,6 +235,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${confirmPasswordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
+                maxLength={50}
                 id="confirmPassword"
                 name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}

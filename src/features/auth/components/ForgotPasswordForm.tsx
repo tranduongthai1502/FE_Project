@@ -44,6 +44,7 @@ export function ForgotPasswordForm({
         <label htmlFor="email" className="form-label">Email Address</label>
         <div className="input-wrapper">
           <input
+            maxLength={50}
             type="email"
             id="email"
             className={`form-input ${emailError ? 'has-error' : ''}`}

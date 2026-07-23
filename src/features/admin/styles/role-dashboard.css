@@ -1,6 +1,8 @@
 .role-page {
   --role-sidebar-width: 200px;
   --role-sidebar-collapsed-width: 72px;
+  --role-sidebar-trigger-size: 36px;
+  --role-nav-button-size: 48px;
   width: 100%;
   min-height: 100vh;
   display: grid;
@@ -108,8 +110,10 @@
 
 .role-sidebar-trigger {
   flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
+  width: var(--role-sidebar-trigger-size);
+  height: var(--role-sidebar-trigger-size);
+  min-width: var(--role-sidebar-trigger-size);
+  min-height: var(--role-sidebar-trigger-size);
   display: grid;
   place-items: center;
   border: 0;
@@ -183,7 +187,8 @@
 }
 
 .role-nav button {
-  min-height: 40px;
+  height: var(--role-nav-button-size);
+  min-height: var(--role-nav-button-size);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -204,14 +209,15 @@
 }
 
 .role-page.is-sidebar-hidden .role-nav {
-  gap: 18px;
-  margin-top: 18px;
+  gap: 10px;
+  margin-top: 32px;
 }
 
 .role-page.is-sidebar-hidden .role-nav button {
-  width: 48px;
-  height: 48px;
-  min-height: 48px;
+  width: var(--role-nav-button-size);
+  height: var(--role-nav-button-size);
+  min-width: var(--role-nav-button-size);
+  min-height: var(--role-nav-button-size);
   justify-content: center;
   gap: 0;
   padding: 0;
@@ -507,9 +513,10 @@
 }
 
 .super-admin-shell.is-sidebar-hidden .role-nav button {
-  width: 48px;
-  height: 48px;
-  min-height: 48px;
+  width: var(--role-nav-button-size);
+  height: var(--role-nav-button-size);
+  min-width: var(--role-nav-button-size);
+  min-height: var(--role-nav-button-size);
   justify-content: center;
   gap: 0;
   padding: 0;
