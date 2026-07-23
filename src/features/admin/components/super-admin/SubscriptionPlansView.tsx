@@ -153,6 +153,21 @@ function buildPlanListParams(sort: PlanSortOption, page: number): AdminListParam
   return { sortField: 'createdAt', sortBy: 'DESC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
 }
 
+function comparePlanCreatedAt(left: SubscriptionPlan, right: SubscriptionPlan) {
+  const leftTime = Date.parse(left.createdAt || '')
+  const rightTime = Date.parse(right.createdAt || '')
+  return (Number.isNaN(leftTime) ? 0 : leftTime) - (Number.isNaN(rightTime) ? 0 : rightTime)
+}
+
+function sortSubscriptionPlans(plans: SubscriptionPlan[], sort: PlanSortOption) {
+  return [...plans].sort((left, right) => {
+    if (sort === 'price-asc') return left.monthlyPrice - right.monthlyPrice
+    if (sort === 'price-desc') return right.monthlyPrice - left.monthlyPrice
+    if (sort === 'oldest') return comparePlanCreatedAt(left, right)
+    return comparePlanCreatedAt(right, left)
+  })
+}
+
 function getUsagePercent(used: number, limit: number) {
   if (limit <= 0) return 100
   return Math.min(100, Math.round((used / limit) * 100))
@@ -180,10 +195,12 @@ function getHighestPricedActivePlan(plans: SubscriptionPlan[]) {
 }
 
 function getDerivedJobUsage(index: number, plan: SubscriptionPlan) {
-  const limit = plan.activeJobPostingUnlimited ? 50 : Math.max(1, plan.maxActiveJobPosting)
+  const isUnlimited = plan.activeJobPostingUnlimited
+  const limit = isUnlimited ? 0 : Math.max(1, plan.maxActiveJobPosting)
+  const progressLimit = isUnlimited ? 50 : limit
   const usageRatios = [0.24, 0.96, 0.16, 0.64, 0.42, 0.78]
-  const used = Math.max(1, Math.round(limit * usageRatios[index % usageRatios.length]))
-  return { used, limit, percent: getUsagePercent(used, limit) }
+  const used = Math.max(1, Math.round(progressLimit * usageRatios[index % usageRatios.length]))
+  return { used, limit, isUnlimited, percent: isUnlimited ? 100 : getUsagePercent(used, limit) }
 }
 
 function CreatePlanView({
@@ -1127,7 +1144,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const planStatsRenewalTrendLabel = planStats.renewalRateTrendPercent !== undefined
     ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${planStats.renewalRateTrendPercent.toFixed(2)}% vs target`
     : '-'
-  const sortedPlans = plans
+  const sortedPlans = sortSubscriptionPlans(plans, planSort)
   const safePlanPage = planPage
   const pagedPlans = sortedPlans
   const planTotalElements = getListTotalElements(plans, plans.length)
@@ -1283,8 +1300,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   </div>
 
                   {matchingTenants.map((tenant, index) => {
+                    const staffUnlimited = tenant.userQuotaUnlimited || selectedPlan.staffAccountUnlimited
                     const staffLimit = tenant.userQuotaLimit || selectedPlan.maxStaffAccount || 0
-                    const staffPercent = getUsagePercent(tenant.userQuotaUsed, staffLimit)
+                    const staffPercent = staffUnlimited ? 0 : getUsagePercent(tenant.userQuotaUsed, staffLimit)
                     const jobUsage = getDerivedJobUsage(index, selectedPlan)
                     const status = tenant.status.toLowerCase()
                     const statusLabel = status.includes('expir') ? 'Expiring' : status === 'active' ? 'Active' : 'Inactive'
@@ -1295,12 +1313,12 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                         <strong>{tenant.name}</strong>
                         <code>{tenant.domain || '-'}</code>
                         <div className="subscriber-usage-cell">
-                          <span><b>{tenant.userQuotaUsed}/{staffLimit || 'Unlimited'}</b><small>{staffPercent}%</small></span>
-                          <i><em style={{ width: `${staffPercent}%` }} /></i>
+                          <span><b>{tenant.userQuotaUsed}/{staffUnlimited ? 'Unlimited' : staffLimit}</b>{!staffUnlimited && <small>{staffPercent}%</small>}</span>
+                          {!staffUnlimited && <i><em style={{ width: `${staffPercent}%` }} /></i>}
                         </div>
                         <div className="subscriber-usage-cell">
-                          <span><b>{jobUsage.used}/{jobUsage.limit}</b><small>{jobUsage.percent}%</small></span>
-                          <i><em style={{ width: `${jobUsage.percent}%` }} /></i>
+                          <span><b>{jobUsage.used}/{jobUsage.isUnlimited ? 'Unlimited' : jobUsage.limit}</b>{!jobUsage.isUnlimited && <small>{jobUsage.percent}%</small>}</span>
+                          {!jobUsage.isUnlimited && <i><em style={{ width: `${jobUsage.percent}%` }} /></i>}
                         </div>
                         <span>{formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'}</span>
                         <em className={statusClassName}>{statusLabel}</em>
