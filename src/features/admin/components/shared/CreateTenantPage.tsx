@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import type { CreateTenantForm, SubscriptionPlan } from '../../types/admin.types'
 import { AdminBreadcrumb } from './AdminBreadcrumb'
+import { AdminScrollableSelect } from './AdminScrollableSelect'
 
 export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
 
@@ -104,20 +105,21 @@ export function CreateTenantPage({
 
             <label>
               <span>Subscription Plan <b>*</b></span>
-              <select
-                aria-invalid={Boolean(fieldErrors.planId)}
+              <AdminScrollableSelect
+                ariaLabel="Select subscription plan"
+                invalid={Boolean(fieldErrors.planId)}
                 value={form.planId}
-                onChange={(event) => onChange('planId', event.target.value)}
                 disabled={isLoadingPlans || isSubmitting}
-                required
-              >
-                <option value="">{isLoadingPlans ? 'Loading plans...' : 'Select a plan'}</option>
-                {plans.map((plan) => (
-                  <option value={plan.id} key={plan.id}>
-                    {plan.priceLabel ? `${plan.name} - ${plan.priceLabel}` : plan.name}
-                  </option>
-                ))}
-              </select>
+                placeholder={isLoadingPlans ? 'Loading plans...' : 'Select a plan'}
+                options={[
+                  { value: '', label: isLoadingPlans ? 'Loading plans...' : 'Select a plan', disabled: true },
+                  ...plans.map((plan) => ({
+                    value: plan.id,
+                    label: plan.priceLabel ? `${plan.name} - ${plan.priceLabel}` : plan.name,
+                  })),
+                ]}
+                onChange={(nextValue) => onChange('planId', nextValue)}
+              />
               <FieldError message={fieldErrors.planId} />
             </label>
 
@@ -139,33 +141,33 @@ export function CreateTenantPage({
 
             <label>
               <span>Industry <b>*</b></span>
-              <select
-                aria-invalid={Boolean(fieldErrors.industry)}
+              <AdminScrollableSelect
+                ariaLabel="Select industry"
+                invalid={Boolean(fieldErrors.industry)}
                 value={form.industry}
-                onChange={(event) => onChange('industry', event.target.value)}
-                required
-              >
-                <option value="">Select industry</option>
-                {industryOptions.map((industry) => (
-                  <option value={industry} key={industry}>{industry}</option>
-                ))}
-              </select>
+                placeholder="Select industry"
+                options={[
+                  { value: '', label: 'Select industry', disabled: true },
+                  ...industryOptions.map((industry) => ({ value: industry, label: industry })),
+                ]}
+                onChange={(nextValue) => onChange('industry', nextValue)}
+              />
               <FieldError message={fieldErrors.industry} />
             </label>
 
             <label>
               <span>Region <b>*</b></span>
-              <select
-                aria-invalid={Boolean(fieldErrors.region)}
+              <AdminScrollableSelect
+                ariaLabel="Select region"
+                invalid={Boolean(fieldErrors.region)}
                 value={form.region}
-                onChange={(event) => onChange('region', event.target.value)}
-                required
-              >
-                <option value="">Select region</option>
-                {regionOptions.map((region) => (
-                  <option value={region} key={region}>{region}</option>
-                ))}
-              </select>
+                placeholder="Select region"
+                options={[
+                  { value: '', label: 'Select region', disabled: true },
+                  ...regionOptions.map((region) => ({ value: region, label: region })),
+                ]}
+                onChange={(nextValue) => onChange('region', nextValue)}
+              />
               <FieldError message={fieldErrors.region} />
             </label>
           </div>
