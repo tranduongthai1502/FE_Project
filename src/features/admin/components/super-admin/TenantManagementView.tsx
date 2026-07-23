@@ -7,6 +7,7 @@ import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { CreateTenantPage, type CreateTenantFieldErrors } from '../shared/CreateTenantPage'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
+import { AdminScrollableSelect } from '../shared/AdminScrollableSelect'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '../../utils/adminMappers'
@@ -14,6 +15,7 @@ import { getCompactPageItems, getListPageCount, getListTotalElements } from '../
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
 const requiredTenantFieldMessage = 'Please fill in all required fields.'
 const duplicateCompanyNameMessage = 'This company name is already register.'
+const invalidTenantEmailMessage = 'Please enter a valid email address.'
 const MAX_NAME_LENGTH = 50
 const PLAN_FILTER_LIST_SIZE = 100
 
@@ -85,6 +87,10 @@ function tenantHasCompanyName(tenants: Tenant[], companyName: string) {
   if (!normalizedCompanyName) return false
 
   return tenants.some((tenant) => normalizeFilterValue(tenant.name) === normalizedCompanyName)
+}
+
+function isValidTenantAdminEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
 function tenantMatchesPlanFilter(tenant: Tenant, selectedPlanId: string, selectedPlan?: SubscriptionPlan) {
@@ -422,7 +428,11 @@ export function TenantManagementView({
     if (!tenantForm.industry.trim()) nextFieldErrors.industry = requiredTenantFieldMessage
     if (!tenantForm.region.trim()) nextFieldErrors.region = requiredTenantFieldMessage
     if (!tenantForm.adminFullName.trim()) nextFieldErrors.adminFullName = requiredTenantFieldMessage
-    if (!tenantForm.adminEmail.trim()) nextFieldErrors.adminEmail = requiredTenantFieldMessage
+    if (!tenantForm.adminEmail.trim()) {
+      nextFieldErrors.adminEmail = requiredTenantFieldMessage
+    } else if (!isValidTenantAdminEmail(tenantForm.adminEmail)) {
+      nextFieldErrors.adminEmail = invalidTenantEmailMessage
+    }
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setTenantFieldErrors(nextFieldErrors)
@@ -562,7 +572,6 @@ export function TenantManagementView({
       .sort((left, right) => left.label.localeCompare(right.label))
   }, [subscriptionPlans])
   const selectedPlanFilter = subscriptionPlans.find((plan) => plan.id === tenantPlanFilter)
-  const selectedPlanFilterLabel = selectedPlanFilter?.name || 'Filter by Plan'
   const displayedTenants = tenants.filter((tenant) => (
     tenantMatchesPlanFilter(tenant, tenantPlanFilter, selectedPlanFilter)
   ))
@@ -874,19 +883,15 @@ export function TenantManagementView({
                     <h2>Subscription Plan</h2>
                     <strong>{activeSubscriptionPlan?.name || selectedTenant.subscriptionPlan || '-'}</strong>
                   </div>
-                  <label className="tenant-plan-picker">
-                    <i className="fa-solid fa-chevron-down tenant-plan-chevron"></i>
-                    <select
-                      aria-label="Select subscription plan"
-                      value={pendingTenantPlanId}
-                      onChange={(event) => setPendingTenantPlanId(event.target.value)}
-                      disabled={isUpdatingTenantPlan || subscriptionPlans.length === 0}
-                    >
-                      {subscriptionPlans.map((plan) => (
-                        <option key={plan.id} value={plan.id}>{plan.name}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <AdminScrollableSelect
+                    className="tenant-plan-picker"
+                    ariaLabel="Select subscription plan"
+                    value={pendingTenantPlanId}
+                    disabled={isUpdatingTenantPlan || subscriptionPlans.length === 0}
+                    placeholder="Select plan"
+                    options={subscriptionPlans.map((plan) => ({ value: plan.id, label: plan.name }))}
+                    onChange={setPendingTenantPlanId}
+                  />
                   <button type="button" onClick={requestChangeTenantPlan} disabled={!hasSelectedDifferentPlan || isUpdatingTenantPlan}>
                     Change Plan
                   </button>
@@ -958,19 +963,17 @@ export function TenantManagementView({
           <button type="button" className={tenantStatusFilter === 'all' ? 'active' : ''} onClick={() => selectTenantFilter('all')}>All Tenants</button>
           <button type="button" className={tenantStatusFilter === 'active' ? 'active' : ''} onClick={() => selectTenantFilter('active')}>Active</button>
           <button type="button" className={tenantStatusFilter === 'inactive' ? 'active' : ''} onClick={() => selectTenantFilter('inactive')}>Inactive</button>
-          <label className={`tenant-plan-filter-tab ${tenantPlanFilter ? 'active' : ''}`}>
-            <select
-              value={tenantPlanFilter}
-              onChange={(event) => selectPlanFilter(event.target.value)}
-              aria-label="Filter by plan"
-            >
-              <option value="">Filter by Plan</option>
-              {planFilterOptions.map((plan) => (
-                <option value={plan.value} key={plan.value}>{plan.label}</option>
-              ))}
-            </select>
-            <span className="tenant-plan-filter-label">{selectedPlanFilterLabel}</span>
-          </label>
+          <AdminScrollableSelect
+            className={`tenant-plan-filter-tab ${tenantPlanFilter ? 'active' : ''}`}
+            value={tenantPlanFilter}
+            ariaLabel="Filter by plan"
+            placeholder="Filter by Plan"
+            options={[
+              { value: '', label: 'Filter by Plan' },
+              ...planFilterOptions.map((plan) => ({ value: plan.value, label: plan.label })),
+            ]}
+            onChange={selectPlanFilter}
+          />
         </div>
         <AdminSearchInput
           className="tenant-filter-search"
