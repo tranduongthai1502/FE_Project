@@ -6,6 +6,7 @@ import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
+import { AdminScrollableSelect } from '../shared/AdminScrollableSelect'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '../../utils/adminMappers'
 
 const MAX_NAME_LENGTH = 50
@@ -1412,18 +1413,21 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
           <label>
             <i className="fa-solid fa-arrow-up-wide-short"></i>
             <span>Sort by</span>
-            <select
+            <AdminScrollableSelect
+              className="subscription-sort-select"
+              ariaLabel="Sort subscription plans"
               value={planSort}
-              onChange={(event) => {
-                setPlanSort(event.target.value as PlanSortOption)
+              options={[
+                { value: 'price-asc', label: 'Price: Low to High' },
+                { value: 'price-desc', label: 'Price: High to Low' },
+                { value: 'newest', label: 'Time: Newest First' },
+                { value: 'oldest', label: 'Time: Oldest First' },
+              ]}
+              onChange={(nextValue) => {
+                setPlanSort(nextValue as PlanSortOption)
                 setPlanPage(1)
               }}
-            >
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="newest">Time: Newest First</option>
-              <option value="oldest">Time: Oldest First</option>
-            </select>
+            />
           </label>
         </div>
 
