@@ -1,6 +1,7 @@
 import axiosClient from '../../../api/axiosClient'
 import type {
   AdminListParams,
+  ActivityLog,
   CreatePlanPayload,
   CreateTenantPayload,
   JobPosting,
@@ -125,6 +126,37 @@ function normalizePlanDashboardStats(payload: any): PlanDashboardStats {
   }
 }
 
+function getActivityLogList(payload: any): any[] {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.content)) return payload.content
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.records)) return payload.records
+  if (Array.isArray(payload?.list)) return payload.list
+  if (Array.isArray(payload?.data?.content)) return payload.data.content
+  if (Array.isArray(payload?.data?.items)) return payload.data.items
+  if (Array.isArray(payload?.data?.records)) return payload.data.records
+  if (Array.isArray(payload?.data?.list)) return payload.data.list
+  return []
+}
+
+function normalizeActivityLog(log: any, index: number): ActivityLog | null {
+  const title =
+    readStringValue(log, ['title', 'message', 'description', 'action', 'activity', 'eventName', 'event_name']) ||
+    readStringValue(log?.metadata, ['title', 'message', 'description', 'action']) ||
+    readStringValue(log?.details, ['title', 'message', 'description', 'action']) ||
+    'Activity logged'
+
+  return {
+    id: String(log?.id || log?.logId || log?.eventId || log?.uuid || `${title}-${index}`),
+    eventType: String(log?.eventType || log?.event_type || log?.type || 'ACTION'),
+    title,
+    createdAt: log?.createdAt || log?.created_at || log?.createdDate || log?.timestamp || log?.eventTime || log?.time
+      ? String(log?.createdAt || log?.created_at || log?.createdDate || log?.timestamp || log?.eventTime || log?.time)
+      : undefined,
+  }
+}
+
 export const adminApi = {
   async getTenantDashboardStats() {
     const response = await axiosClient.get('/api/dashboard/stats/tenant')
@@ -231,6 +263,23 @@ export const adminApi = {
 
   async getStaffAccountLimit() {
     return axiosClient.get('/api/user/staff/limit')
+  },
+
+  async getActivityLogs(params?: AdminListParams) {
+    const request = buildListRequest({
+      sortField: 'createdAt',
+      filters: {},
+      sortBy: 'DESC',
+      page: 1,
+      size: ADMIN_LIST_PAGE_SIZE,
+    }, params)
+
+    console.log('[adminApi.getActivityLogs] request payload', request)
+    const response = await axiosClient.post('/api/activity-log/list', request)
+
+    return attachPaginationMeta(getActivityLogList(response)
+      .map((log, index) => normalizeActivityLog(log, index))
+      .filter((log): log is ActivityLog => Boolean(log)), response)
   },
 
   async getJobPostings(params?: AdminListParams<JobListFilters>) {

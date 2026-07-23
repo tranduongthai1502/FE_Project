@@ -33,6 +33,13 @@ export type StaffMember = {
   lastLoginIp?: string
 }
 
+export type ActivityLog = {
+  id: string
+  eventType: string
+  title: string
+  createdAt?: string
+}
+
 export type JobPosting = {
   id: string
   title: string
