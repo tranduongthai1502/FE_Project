@@ -6,9 +6,10 @@ import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
 import { getSubscriptionPlanIdFromUrl, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl, updateSubscriptionPlanCreateUrl, updateSubscriptionPlanDetailUrl, updateSubscriptionPlanEditUrl, updateSuperAdminViewUrl } from '../../utils/adminRouteHelpers'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
-import { getListPageCount, getListTotalElements } from '../../utils/adminMappers'
+import { getCompactPageItems, getListPageCount, getListTotalElements } from '../../utils/adminMappers'
 
 const MAX_NAME_LENGTH = 50
+const TOP_TIER_PLAN_LIST_SIZE = 1000
 
 const planFeatureDefaults = [
   {
@@ -154,6 +155,27 @@ function buildPlanListParams(sort: PlanSortOption, page: number): AdminListParam
 function getUsagePercent(used: number, limit: number) {
   if (limit <= 0) return 100
   return Math.min(100, Math.round((used / limit) * 100))
+}
+
+function isActiveSubscriptionPlan(plan: SubscriptionPlan) {
+  const normalizedStatus = plan.status.trim().toLowerCase()
+  return normalizedStatus === 'active' || normalizedStatus === 'activated' || normalizedStatus === 'enabled'
+}
+
+function buildTopTierPlanParams(): AdminListParams {
+  return {
+    sortField: 'monthlyPrice',
+    filters: { status: 'ACTIVE' },
+    sortBy: 'DESC',
+    page: 1,
+    size: TOP_TIER_PLAN_LIST_SIZE,
+  }
+}
+
+function getHighestPricedActivePlan(plans: SubscriptionPlan[]) {
+  return plans.filter(isActiveSubscriptionPlan).reduce<SubscriptionPlan | null>((current, plan) => (
+    !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
+  ), null)
 }
 
 function getDerivedJobUsage(index: number, plan: SubscriptionPlan) {
@@ -909,6 +931,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [selectedPlanId, setSelectedPlanId] = useState(() => getSubscriptionPlanIdFromUrl())
   const [selectedPlanDetail, setSelectedPlanDetail] = useState<SubscriptionPlan | null>(null)
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+  const [topTierPlan, setTopTierPlan] = useState<SubscriptionPlan | null>(null)
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [planStats, setPlanStats] = useState<PlanDashboardStats>({})
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
@@ -937,6 +960,28 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
       .catch(() => {
         if (isActive) {
           setPlanStats({})
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, refreshPlansKey])
+
+  useEffect(() => {
+    if (activeView !== 'list') return
+
+    let isActive = true
+
+    adminApi.getSubscriptionPlans(buildTopTierPlanParams())
+      .then((items) => {
+        if (isActive) {
+          setTopTierPlan(getHighestPricedActivePlan(items))
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setTopTierPlan(null)
         }
       })
 
@@ -1064,29 +1109,30 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  const activePlansCount = plans.filter((plan) => plan.status.toLowerCase() === 'active').length
-  const topTier = plans.reduce<SubscriptionPlan | null>((current, plan) => (
-    !current || plan.monthlyPrice > current.monthlyPrice ? plan : current
-  ), null)
+  const activePlansCount = plans.filter(isActiveSubscriptionPlan).length
+  const topTierFallback = getHighestPricedActivePlan(plans)
+  const topTier = topTierPlan || topTierFallback
   const planStatsActivePlans = planStats.activePlans ?? activePlansCount
   const planStatsTotalPlans = planStats.totalPlans ?? getListTotalElements(plans, plans.length)
-  const planStatsTopTierName = planStats.topTierName || topTier?.name || '-'
-  const planStatsTopTierStaffLabel = planStats.topTierStaffAccountUnlimited ?? topTier?.staffAccountUnlimited
+  const planStatsTopTierName = topTier?.name || planStats.topTierName || '-'
+  const planStatsTopTierStaffLabel = (topTier?.staffAccountUnlimited ?? planStats.topTierStaffAccountUnlimited)
     ? 'Unlimited'
-    : `${planStats.topTierMaxStaffAccount ?? topTier?.maxStaffAccount ?? 0} staff`
+    : `${topTier?.maxStaffAccount ?? planStats.topTierMaxStaffAccount ?? 0} staff`
   const planStatsMonthlyRevenueLabel = `$${(planStats.monthlyActivePlanRevenue ?? 0).toFixed(2)}`
   const planStatsMonthlyTrendLabel = planStats.monthlyRevenueTrendPercent !== undefined
     ? `${planStats.monthlyRevenueTrendPercent >= 0 ? '+' : ''}${planStats.monthlyRevenueTrendPercent}% from last month.`
     : '-'
-  const planStatsRenewalRateLabel = planStats.renewalRate !== undefined ? `${planStats.renewalRate}%` : '-'
+  const planStatsRenewalRateLabel = planStats.renewalRate !== undefined ? `${planStats.renewalRate.toFixed(2)}%` : '-'
   const planStatsRenewalTrendLabel = planStats.renewalRateTrendPercent !== undefined
-    ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${planStats.renewalRateTrendPercent}% vs target`
+    ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${planStats.renewalRateTrendPercent.toFixed(2)}% vs target`
     : '-'
   const sortedPlans = plans
   const safePlanPage = planPage
   const pagedPlans = sortedPlans
+  const planTotalElements = getListTotalElements(plans, plans.length)
   const visiblePlanStart = sortedPlans.length === 0 ? 0 : (safePlanPage - 1) * ADMIN_LIST_PAGE_SIZE + 1
-  const visiblePlanEnd = visiblePlanStart === 0 ? 0 : visiblePlanStart + sortedPlans.length - 1
+  const visiblePlanEnd = visiblePlanStart === 0 ? 0 : Math.min(planTotalElements, visiblePlanStart + pagedPlans.length - 1)
+  const planPageItems = getCompactPageItems(safePlanPage, planPageCount)
   useEffect(() => {
     if (!isLoadingPlans && !planListError && plans.length === 0 && planPage > 1) {
       setPlanPage((page) => Math.max(1, page - 1))
@@ -1179,7 +1225,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
             <section className="plan-detail-card plan-configuration-card">
               <h2>Plan Configuration</h2>
               <div className="plan-config-grid">
-                <div>
+                <div className="plan-config-description">
                   <span>Short Description</span>
                   <strong>{selectedPlan.description || '-'}</strong>
                 </div>
@@ -1415,7 +1461,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                     }
                   }}
                 >
-                  <strong>{plan.name}</strong>
+                  <span className="table-name-tooltip" data-tooltip={plan.name} title={plan.name} tabIndex={0}>
+                    <strong>{plan.name}</strong>
+                  </span>
                   <span className="subscription-price-cell">{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / month`}</span>
                   <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                   <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
@@ -1443,18 +1491,22 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         )}
 
         <footer>
-          <span>Showing {visiblePlanStart}-{visiblePlanEnd} of {plans.length} plan{plans.length === 1 ? '' : 's'}</span>
+          <span>Showing {visiblePlanStart}-{visiblePlanEnd} of {planTotalElements} Plan{planTotalElements === 1 ? '' : 's'}</span>
           <div>
             <button type="button" disabled={safePlanPage === 1} onClick={() => setPlanPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-            {Array.from({ length: planPageCount }, (_, index) => (
-              <button
-                type="button"
-                className={safePlanPage === index + 1 ? 'active' : ''}
-                key={index + 1}
-                onClick={() => setPlanPage(index + 1)}
-              >
-                {index + 1}
-              </button>
+            {planPageItems.map((item, index) => (
+              item === 'ellipsis' ? (
+                <span className="pagination-ellipsis" key={`plan-ellipsis-${index}`}>...</span>
+              ) : (
+                <button
+                  type="button"
+                  className={safePlanPage === item ? 'active' : ''}
+                  key={item}
+                  onClick={() => setPlanPage(item)}
+                >
+                  {item}
+                </button>
+              )
             ))}
             <button type="button" disabled={safePlanPage === planPageCount} onClick={() => setPlanPage((page) => Math.min(planPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
           </div>

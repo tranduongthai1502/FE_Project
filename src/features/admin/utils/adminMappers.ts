@@ -83,6 +83,39 @@ export function getListTotalElements(items: unknown[], fallbackTotal: number) {
   return meta?.totalElements ?? fallbackTotal
 }
 
+export function getCompactPageItems(currentPage: number, pageCount: number): Array<number | 'ellipsis'> {
+  if (pageCount <= 7) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1)
+  }
+
+  const pages = new Set<number>([1, pageCount, currentPage - 1, currentPage, currentPage + 1])
+
+  if (currentPage <= 3) {
+    pages.add(2)
+    pages.add(3)
+  }
+
+  if (currentPage >= pageCount - 2) {
+    pages.add(pageCount - 2)
+    pages.add(pageCount - 1)
+  }
+
+  const sortedPages = Array.from(pages)
+    .filter((page) => page >= 1 && page <= pageCount)
+    .sort((left, right) => left - right)
+
+  return sortedPages.reduce<Array<number | 'ellipsis'>>((items, page, index) => {
+    const previousPage = sortedPages[index - 1]
+
+    if (previousPage !== undefined && page - previousPage > 1) {
+      items.push('ellipsis')
+    }
+
+    items.push(page)
+    return items
+  }, [])
+}
+
 export function getSubscriptionPlanList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data
@@ -287,9 +320,18 @@ export function normalizeTenant(tenant: any): Tenant | null {
       activeJobPostingUnlimited: tenant?.activeJobPostingUnlimited,
     }
   const nestedPlan = normalizeSubscriptionPlan(planSource, planId ? String(planId) : undefined)
+  const maxUsersValue = tenant?.maxUsers ?? tenant?.max_users
+  const hasMaxUsersField = tenant?.maxUsers !== undefined || tenant?.max_users !== undefined
+  const userQuotaUnlimited =
+    isTruthyFlag(tenant?.userQuotaUnlimited) ||
+    isTruthyFlag(tenant?.user_quota_unlimited) ||
+    isTruthyFlag(tenant?.staffAccountUnlimited) ||
+    isTruthyFlag(tenant?.staff_account_unlimited) ||
+    isUnlimitedValue(maxUsersValue) ||
+    (hasMaxUsersField && maxUsersValue == null)
   const quotaLimit = Number(
     tenant?.userQuotaLimit ??
-    tenant?.maxUsers ??
+    maxUsersValue ??
     tenant?.maxStaffAccount ??
     tenant?.maxStaffAccounts ??
     planObject?.maxStaffAccount ??
@@ -343,6 +385,7 @@ export function normalizeTenant(tenant: any): Tenant | null {
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
+    userQuotaUnlimited,
     activeJobPostingUsed: Number.isFinite(activeJobPostingUsed) ? activeJobPostingUsed : undefined,
     activeJobPostingLimit: Number.isFinite(activeJobPostingLimit) ? activeJobPostingLimit : undefined,
     efficiencyScore: Number.isFinite(efficiencyScore) ? efficiencyScore : undefined,
