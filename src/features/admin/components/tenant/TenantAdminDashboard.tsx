@@ -19,7 +19,22 @@ import { getStoredRequirePasswordChange } from '@/features/auth/utils/authStorag
 const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
 const passwordChangeRequiredMessage = 'Please change your password before using Tenant Admin features.'
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
-const STAFF_ACCOUNT_LIST_PAGE_SIZE = 100
+
+type StaffAccountLimit = {
+  used?: number
+  limit?: number
+  unlimited?: boolean
+}
+
+type TenantWorkspaceData = {
+  staffList: StaffMember[]
+  staffPageCount: number
+  staffAccountLimit: StaffAccountLimit
+  tenantDetail: Tenant | null
+  tenantPlan: SubscriptionPlan | null
+}
+
+const tenantWorkspaceRequestCache = new Map<string, Promise<TenantWorkspaceData>>()
 
 type StaffListFilterValues = {
   search?: string
@@ -164,6 +179,74 @@ function getStaffListItems(payload: any): any[] {
   return []
 }
 
+function readFiniteNumber(payload: any, keys: string[]) {
+  for (const key of keys) {
+    const value = payload?.[key]
+    const numberValue = Number(value)
+
+    if (value !== undefined && value !== null && Number.isFinite(numberValue)) {
+      return numberValue
+    }
+  }
+
+  return undefined
+}
+
+function readBooleanFlag(payload: any, keys: string[]) {
+  for (const key of keys) {
+    const value = payload?.[key]
+
+    if (typeof value === 'boolean') return value
+
+    const normalized = String(value ?? '').trim().toLowerCase()
+    if (['true', '1', 'yes', 'y'].includes(normalized)) return true
+    if (['false', '0', 'no', 'n'].includes(normalized)) return false
+  }
+
+  return undefined
+}
+
+function getStaffAccountLimitPayload(payload: any): any {
+  const body = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  return body?.data && typeof body.data === 'object' ? body.data : body
+}
+
+function normalizeStaffAccountLimit(payload: any): StaffAccountLimit {
+  const data = getStaffAccountLimitPayload(payload)
+  const used = readFiniteNumber(data, [
+    'used',
+    'current',
+    'count',
+    'total',
+    'staffAccountCount',
+    'staffAccounts',
+    'userQuotaUsed',
+    'user_quota_used',
+    'usedStaffAccount',
+    'usedStaffAccounts',
+  ])
+  const limit = readFiniteNumber(data, [
+    'limit',
+    'max',
+    'quota',
+    'staffLimit',
+    'staffAccountLimit',
+    'maxStaffAccount',
+    'maxStaffAccounts',
+    'userQuotaLimit',
+    'user_quota_limit',
+  ])
+  const unlimited = readBooleanFlag(data, [
+    'unlimited',
+    'staffAccountUnlimited',
+    'staff_account_unlimited',
+    'isUnlimited',
+    'is_unlimited',
+  ]) ?? (limit !== undefined && limit <= 0)
+
+  return { used, limit, unlimited }
+}
+
 function normalizeStaffMember(user: any): StaffMember | null {
   const normalized = normalizeTenantAdminUser(user)
   const status = normalizeUserStatus(normalized?.status)
@@ -184,6 +267,58 @@ function normalizeStaffMember(user: any): StaffMember | null {
     lastLoginLocation: normalized.lastLoginLocation,
     lastLoginIp: normalized.lastLoginIp,
   }
+}
+
+function getTenantWorkspaceRequestKey(tenantId: string, staffPage: number, staffListFilters: Record<string, unknown>, shouldLoadTenantDetail: boolean) {
+  return JSON.stringify({
+    tenantId,
+    staffPage,
+    staffListFilters,
+    shouldLoadTenantDetail,
+  })
+}
+
+function loadTenantWorkspaceData(tenantId: string, staffPage: number, staffListFilters: Record<string, unknown>) {
+  const shouldLoadTenantDetail = Boolean(tenantId)
+  const requestKey = getTenantWorkspaceRequestKey(tenantId, staffPage, staffListFilters, shouldLoadTenantDetail)
+  const cachedRequest = tenantWorkspaceRequestCache.get(requestKey)
+
+  if (cachedRequest) {
+    return cachedRequest
+  }
+
+  const request = Promise.all([
+    adminApi.getStaffList({
+      sortField: 'fullName',
+      filters: staffListFilters,
+      sortBy: 'ASC',
+      page: staffPage,
+      size: ADMIN_LIST_PAGE_SIZE,
+    }),
+    adminApi.getStaffAccountLimit(),
+    shouldLoadTenantDetail ? adminApi.getTenantById(tenantId) : Promise.resolve(null),
+  ])
+    .then(([staffResponse, staffLimitResponse, tenant]) => {
+      const payload = staffResponse?.data || staffResponse
+      const staffList = getStaffListItems(payload)
+        .map((staff) => normalizeStaffMember(staff))
+        .filter((staff): staff is StaffMember => Boolean(staff))
+      const listWithPagination = Object.assign([...staffList], { __pagination: getPaginationMeta(staffResponse) })
+
+      return {
+        staffList: listWithPagination,
+        staffPageCount: getListPageCount(listWithPagination, staffPage, ADMIN_LIST_PAGE_SIZE),
+        staffAccountLimit: normalizeStaffAccountLimit(staffLimitResponse),
+        tenantDetail: tenant,
+        tenantPlan: tenant?.subscriptionPlanDetail || null,
+      }
+    })
+    .finally(() => {
+      tenantWorkspaceRequestCache.delete(requestKey)
+    })
+
+  tenantWorkspaceRequestCache.set(requestKey, request)
+  return request
 }
 
 function formatDashboardDate(value?: string) {
@@ -697,7 +832,6 @@ function CreateStaffAccountView({
           </div>
 
           <footer className="create-staff-actions">
-            <small><i className="fa-regular fa-circle-question"></i> Required fields are validated before submission.</small>
             <button type="button" onClick={() => setShowCancelConfirm(true)} disabled={isSubmitting}>Cancel</button>
             <button type="submit" className="tenant-create-btn" disabled={isSubmitting || isActionLocked}>
               {isSubmitting ? 'Saving...' : isEdit ? 'Update Account' : 'Confirm'}
@@ -1373,6 +1507,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   // CRUD Staff States
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [staffAccountList, setStaffAccountList] = useState<StaffMember[]>([])
+  const [staffAccountLimit, setStaffAccountLimit] = useState<StaffAccountLimit>({})
   const [isLoadingStaff, setIsLoadingStaff] = useState(false)
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
   const [isLoadingStaffDetail, setIsLoadingStaffDetail] = useState(false)
@@ -1428,7 +1563,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         : 'DISABLED',
   }), [debouncedStaffSearchQuery, staffRoleFilter, staffStatusFilter])
 
-  // API load staff
+  // API load tenant workspace data
   useEffect(() => {
     if (!shouldLoadTenantWorkspace) {
       return
@@ -1436,32 +1571,29 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
     let isActive = true
     setIsLoadingStaff(true)
+    setIsLoadingTenantDetail(Boolean(tenantId))
     setStaffError('')
 
-    adminApi.getStaffList({
-      sortField: 'fullName',
-      filters: staffListFilters,
-      sortBy: 'ASC',
-      page: staffPage,
-      size: ADMIN_LIST_PAGE_SIZE,
-    })
-      .then((response: any) => {
+    loadTenantWorkspaceData(tenantId, staffPage, staffListFilters)
+      .then((data) => {
         if (!isActive) return
-        const payload = response?.data || response
-        const list = getStaffListItems(payload)
-          .map((staff) => normalizeStaffMember(staff))
-          .filter((staff): staff is StaffMember => Boolean(staff))
-        const listWithPagination = Object.assign([...list], { __pagination: getPaginationMeta(response) })
-        setStaffList(listWithPagination)
-        setStaffPageCount(getListPageCount(listWithPagination, staffPage, ADMIN_LIST_PAGE_SIZE))
+        setStaffList(data.staffList)
+        setStaffPageCount(data.staffPageCount)
+        setStaffAccountLimit(data.staffAccountLimit)
+        setTenantDetail(data.tenantDetail)
+        setTenantPlan(data.tenantPlan)
       })
       .catch((error) => {
         if (!isActive) return
         setStaffError(getAdminErrorMessage(error, 'Failed to load staff accounts.'))
+        setStaffAccountLimit({})
+        setTenantDetail(null)
+        setTenantPlan(null)
       })
       .finally(() => {
         if (isActive) {
           setIsLoadingStaff(false)
+          setIsLoadingTenantDetail(false)
         }
       })
 
@@ -1469,74 +1601,6 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       isActive = false
     }
   }, [shouldLoadTenantWorkspace, refreshKey, staffPage, tenantId, staffListFilters])
-
-  useEffect(() => {
-    if (!shouldLoadTenantWorkspace) {
-      return
-    }
-
-    let isActive = true
-
-    adminApi.getStaffList({
-      sortField: 'fullName',
-      filters: {},
-      sortBy: 'ASC',
-      page: 1,
-      size: STAFF_ACCOUNT_LIST_PAGE_SIZE,
-    })
-      .then((response: any) => {
-        if (!isActive) return
-        const payload = response?.data || response
-        const list = getStaffListItems(payload)
-          .map((staff) => normalizeStaffMember(staff))
-          .filter((staff): staff is StaffMember => Boolean(staff))
-        setStaffAccountList(list)
-      })
-      .catch(() => {
-        if (isActive) {
-          setStaffAccountList([])
-        }
-      })
-
-    return () => {
-      isActive = false
-    }
-  }, [shouldLoadTenantWorkspace, refreshKey, tenantId])
-
-  useEffect(() => {
-    if (!tenantId || !shouldLoadTenantWorkspace) {
-      return
-    }
-
-    let isActive = true
-    setIsLoadingTenantDetail(true)
-
-    const fetchTenantDetail = async () => {
-      try {
-        const tenant = await adminApi.getTenantById(tenantId)
-        if (!isActive) return
-
-        setTenantDetail(tenant)
-        setTenantPlan(tenant.subscriptionPlanDetail || null)
-      } catch (error) {
-        if (isActive) {
-          setTenantDetail(null)
-          setTenantPlan(null)
-          setStaffError(getAdminErrorMessage(error, 'Failed to load tenant details.'))
-        }
-      } finally {
-        if (isActive) {
-          setIsLoadingTenantDetail(false)
-        }
-      }
-    }
-
-    fetchTenantDetail()
-
-    return () => {
-      isActive = false
-    }
-  }, [shouldLoadTenantWorkspace, tenantId])
 
   useEffect(() => {
     const routeView = getInitialTenantAdminView()
@@ -1562,11 +1626,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   }, [activeView, location.pathname, loadStaffDetail, selectedStaffId, selectedStaff?.id, triggerToast])
 
   const hasTenantQuota = Boolean(tenantDetail)
-  const isStaffQuotaUnlimited = Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0)
-  const staffAccountCount = staffAccountList.length
+  const isStaffQuotaUnlimited = staffAccountLimit.unlimited ?? (Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0))
+  const staffAccountCount = staffAccountLimit.used ?? tenantDetail?.userQuotaUsed ?? staffAccountList.length
   const maxStaffQuota = isStaffQuotaUnlimited
     ? Math.max(staffAccountCount, 1)
-    : tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
+    : staffAccountLimit.limit || tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
   const staffQuotaSummary = isStaffQuotaUnlimited ? 'Unlimited Seats' : `${staffAccountCount} / ${maxStaffQuota} Seats`
   const staffQuotaRingLabel = isStaffQuotaUnlimited ? String(staffAccountCount) : `${staffAccountCount}/${maxStaffQuota}`
   const remainingStaffSeats = Math.max(0, maxStaffQuota - staffAccountCount)
