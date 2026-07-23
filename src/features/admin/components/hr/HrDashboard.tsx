@@ -1092,15 +1092,15 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <span>{formatJobDate(job.createdAt)}</span>
                 <div className={styles.jobsActions}>
                   {(jobIsDraft || jobIsClosed) && (
-                    <button type="button" aria-label={`Open ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('open', job) }}><i className="fa-solid fa-arrow-up-right-from-square"></i></button>
+                    <button type="button" className="icon-tooltip" data-tooltip="Open" aria-label={`Open ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('open', job) }}><i className="fa-solid fa-arrow-up-right-from-square"></i></button>
                   )}
                   {jobIsOpen && (
-                    <button type="button" aria-label={`Close ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('close', job) }}><i className="fa-regular fa-circle-xmark"></i></button>
+                    <button type="button" className="icon-tooltip" data-tooltip="Close" aria-label={`Close ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('close', job) }}><i className="fa-regular fa-circle-xmark"></i></button>
                   )}
                   {jobIsDraft && (
-                    <button type="button" aria-label={`Delete ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('deleteDraft', job) }}><i className="fa-regular fa-trash-can"></i></button>
+                    <button type="button" className="icon-tooltip" data-tooltip="Delete" aria-label={`Delete ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('deleteDraft', job) }}><i className="fa-regular fa-trash-can"></i></button>
                   )}
-                  <button type="button" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><i className="fa-regular fa-pen-to-square"></i></button>
+                  <button type="button" className="icon-tooltip" data-tooltip="Edit" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><i className="fa-regular fa-pen-to-square"></i></button>
                 </div>
               </article>
             )
@@ -1108,11 +1108,11 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           <footer>
             <span>Showing {jobs.length} of {jobTotalElements} entries</span>
             <div>
-              <button type="button" disabled={jobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+              <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={jobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
               {Array.from({ length: jobPageCount }, (_, index) => index + 1).map((page) => (
                 <button type="button" className={page === jobPage ? styles.activePage : ''} onClick={() => setJobPage(page)} key={page}>{page}</button>
               ))}
-              <button type="button" disabled={jobPage === jobPageCount} onClick={() => setJobPage((page) => Math.min(jobPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+              <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={jobPage === jobPageCount} onClick={() => setJobPage((page) => Math.min(jobPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
             </div>
           </footer>
         </section>

@@ -212,7 +212,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
                     <em className={tenant.status.toLowerCase() === 'active' ? 'active' : 'inactive'}>{tenant.status}</em>
                     <small>{formatTenantCreatedAt(tenant)}</small>
                     <div>
-                      <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}><i className="fa-regular fa-eye"></i></button>
+                      <button type="button" className="icon-tooltip" aria-label={`View ${tenant.name}`} data-tooltip="Detail" onClick={() => openTenantDetail(tenant.id)}><i className="fa-regular fa-eye"></i></button>
                     </div>
                   </article>
                   ))}

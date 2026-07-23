@@ -1136,7 +1136,10 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const planStatsTopTierStaffLabel = (topTier?.staffAccountUnlimited ?? planStats.topTierStaffAccountUnlimited)
     ? 'Unlimited'
     : `${topTier?.maxStaffAccount ?? planStats.topTierMaxStaffAccount ?? 0} staff`
-  const planStatsMonthlyRevenueLabel = `$${(planStats.monthlyActivePlanRevenue ?? 0).toFixed(2)}`
+  const planStatsMonthlyRevenueLabel = `$${(planStats.monthlyActivePlanRevenue ?? 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
   const planStatsMonthlyTrendLabel = planStats.monthlyRevenueTrendPercent !== undefined
     ? `${planStats.monthlyRevenueTrendPercent >= 0 ? '+' : ''}${planStats.monthlyRevenueTrendPercent}% from last month.`
     : '-'
@@ -1329,11 +1332,11 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   <footer>
                     <span>Showing {matchingTenants.length} of {subscriberTotalCount} subscribers</span>
                     <div>
-                      <button type="button" disabled={subscriberPage === 1} onClick={() => setSubscriberPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+                      <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={subscriberPage === 1} onClick={() => setSubscriberPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
                       {Array.from({ length: subscriberPageCount }, (_, index) => index + 1).map((page) => (
                         <button type="button" className={subscriberPage === page ? 'active' : ''} key={page} onClick={() => setSubscriberPage(page)}>{page}</button>
                       ))}
-                      <button type="button" disabled={subscriberPage === subscriberPageCount} onClick={() => setSubscriberPage((page) => Math.min(subscriberPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+                      <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={subscriberPage === subscriberPageCount} onClick={() => setSubscriberPage((page) => Math.min(subscriberPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
                     </div>
                   </footer>
                   </div>
@@ -1493,7 +1496,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   <span className="subscription-table-actions">
                     <button
                       type="button"
+                      className="icon-tooltip"
                       aria-label={`Edit ${plan.name}`}
+                      data-tooltip="Edit"
                       onClick={(event) => {
                         event.stopPropagation()
                         openPlanEdit(plan.id)
@@ -1515,7 +1520,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         <footer>
           <span>Showing {visiblePlanStart}-{visiblePlanEnd} of {planTotalElements} Plan{planTotalElements === 1 ? '' : 's'}</span>
           <div>
-            <button type="button" disabled={safePlanPage === 1} onClick={() => setPlanPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+              <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={safePlanPage === 1} onClick={() => setPlanPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
             {planPageItems.map((item, index) => (
               item === 'ellipsis' ? (
                 <span className="pagination-ellipsis" key={`plan-ellipsis-${index}`}>...</span>
@@ -1530,7 +1535,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 </button>
               )
             ))}
-            <button type="button" disabled={safePlanPage === planPageCount} onClick={() => setPlanPage((page) => Math.min(planPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+            <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={safePlanPage === planPageCount} onClick={() => setPlanPage((page) => Math.min(planPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
           </div>
         </footer>
       </section>

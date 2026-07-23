@@ -1049,9 +1049,22 @@ export function TenantManagementView({
             const monthlyPriceLabel = tenantPlan
               ? tenantPlan.priceLabel || `$${tenantPlan.monthlyPrice.toFixed(2)} / month`
               : '-'
+            const handleOpenTenantDetail = () => openTenantDetail(tenant.id)
 
             return (
-              <div className="tenant-list-table-row" key={tenant.id}>
+              <div
+                className="tenant-list-table-row tenant-list-table-row-clickable"
+                key={tenant.id}
+                role="button"
+                tabIndex={0}
+                onClick={handleOpenTenantDetail}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleOpenTenantDetail()
+                  }
+                }}
+              >
                 <span className="table-name-tooltip" data-tooltip={tenant.name} title={tenant.name} tabIndex={0}>
                   <strong>{tenant.name}</strong>
                 </span>
@@ -1065,7 +1078,16 @@ export function TenantManagementView({
                   <strong>{hasUnlimitedQuota ? 'Unlimited' : `${tenant.userQuotaUsed}/${tenant.userQuotaLimit}`}</strong>
                 </span>
                 <em className={status.className}>{status.label}</em>
-                <button type="button" aria-label={`View ${tenant.name}`} onClick={() => openTenantDetail(tenant.id)}>
+                <button
+                  type="button"
+                  className="icon-tooltip"
+                  aria-label={`View ${tenant.name}`}
+                  data-tooltip="Detail"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    handleOpenTenantDetail()
+                  }}
+                >
                   <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1080,7 +1102,7 @@ export function TenantManagementView({
         <footer>
           <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {tenantTotalElements} Tenant{tenantTotalElements === 1 ? '' : 's'}</span>
           <div>
-            <button type="button" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+            <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
             {tenantPageItems.map((item, index) => (
               item === 'ellipsis' ? (
                 <span className="pagination-ellipsis" key={`tenant-ellipsis-${index}`}>...</span>
@@ -1088,7 +1110,7 @@ export function TenantManagementView({
                 <button type="button" className={item === currentTenantPage ? 'active' : ''} key={item} onClick={() => setTenantPage(item)}>{item}</button>
               )
             ))}
-            <button type="button" disabled={currentTenantPage === tenantPageCount} onClick={() => setTenantPage((page) => Math.min(tenantPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+            <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={currentTenantPage === tenantPageCount} onClick={() => setTenantPage((page) => Math.min(tenantPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
           </div>
         </footer>
       </section>
