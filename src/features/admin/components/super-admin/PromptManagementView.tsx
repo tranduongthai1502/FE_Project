@@ -182,7 +182,9 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
         </div>
         {prompts.map(([name, feature, module, date, status]) => (
           <div className="prompt-table-row" key={name}>
-            <strong>{name}</strong>
+            <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
+              <strong>{name}</strong>
+            </span>
             <span>{feature}</span>
             <span>{module}</span>
             <span>{date}</span>

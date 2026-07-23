@@ -9,11 +9,11 @@ import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
 import styles from './TenantManagementView.module.css'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
-import { getListPageCount } from '../../utils/adminMappers'
+import { getCompactPageItems, getListPageCount, getListTotalElements } from '../../utils/adminMappers'
 
 type TenantStatusFilter = 'all' | 'active' | 'inactive'
 const requiredTenantFieldMessage = 'Please fill in all required fields.'
-const duplicateCompanyNameMessage = 'This company name is already register'
+const duplicateCompanyNameMessage = 'This company name is already register.'
 const MAX_NAME_LENGTH = 50
 const PLAN_FILTER_LIST_SIZE = 100
 
@@ -568,8 +568,10 @@ export function TenantManagementView({
   ))
   const currentTenantPage = tenantPage
   const paginatedTenants = displayedTenants
+  const tenantTotalElements = getListTotalElements(tenants, displayedTenants.length)
   const tenantDisplayStart = displayedTenants.length === 0 ? 0 : ((currentTenantPage - 1) * ADMIN_LIST_PAGE_SIZE) + 1
-  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : tenantDisplayStart + displayedTenants.length - 1
+  const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : Math.min(tenantTotalElements, tenantDisplayStart + paginatedTenants.length - 1)
+  const tenantPageItems = getCompactPageItems(currentTenantPage, tenantPageCount)
 
   useEffect(() => {
     setTenantPage(1)
@@ -1036,7 +1038,7 @@ export function TenantManagementView({
           paginatedTenants.map((tenant) => {
             const status = getTenantStatusMeta(tenant.status)
             const tenantPlan = getTenantPlan(tenant)
-            const hasUnlimitedQuota = tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0
+            const hasUnlimitedQuota = tenant.userQuotaUnlimited || (tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0)
             const quotaPercent = tenant.userQuotaLimit > 0
               ? Math.min(100, Math.round((tenant.userQuotaUsed / tenant.userQuotaLimit) * 100))
               : 0
@@ -1047,7 +1049,9 @@ export function TenantManagementView({
 
             return (
               <div className="tenant-list-table-row" key={tenant.id}>
-                <strong>{tenant.name}</strong>
+                <span className="table-name-tooltip" data-tooltip={tenant.name} title={tenant.name} tabIndex={0}>
+                  <strong>{tenant.name}</strong>
+                </span>
                 <span className={`tenant-plan-name ${isHighestPricedPlan(tenant, tenantPlan) ? 'premium-plan' : ''}`}>
                   {tenantPlan?.name || tenant.subscriptionPlan || '-'}
                 </span>
@@ -1071,11 +1075,15 @@ export function TenantManagementView({
         )}
 
         <footer>
-          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {displayedTenants.length} Tenant{displayedTenants.length === 1 ? '' : 's'}</span>
+          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {tenantTotalElements} Tenant{tenantTotalElements === 1 ? '' : 's'}</span>
           <div>
             <button type="button" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-            {Array.from({ length: tenantPageCount }, (_, index) => index + 1).map((page) => (
-              <button type="button" className={page === currentTenantPage ? 'active' : ''} key={page} onClick={() => setTenantPage(page)}>{page}</button>
+            {tenantPageItems.map((item, index) => (
+              item === 'ellipsis' ? (
+                <span className="pagination-ellipsis" key={`tenant-ellipsis-${index}`}>...</span>
+              ) : (
+                <button type="button" className={item === currentTenantPage ? 'active' : ''} key={item} onClick={() => setTenantPage(item)}>{item}</button>
+              )
             ))}
             <button type="button" disabled={currentTenantPage === tenantPageCount} onClick={() => setTenantPage((page) => Math.min(tenantPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
           </div>
