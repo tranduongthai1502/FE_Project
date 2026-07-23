@@ -2892,7 +2892,7 @@
 
 .tenant-filter-card {
   display: grid;
-  grid-template-columns: auto minmax(240px, 1fr) auto auto;
+  grid-template-columns: auto minmax(320px, 1fr) auto;
   align-items: center;
   gap: 18px;
   margin-bottom: 24px;
@@ -2904,7 +2904,7 @@
 
 .tenant-filter-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -2938,7 +2938,7 @@
   display: inline-flex;
   align-items: center;
   max-width: 220px;
-  min-width: 132px;
+  min-width: 170px;
   padding: 0;
   overflow: hidden;
 }
