@@ -229,6 +229,10 @@ export const adminApi = {
     return axiosClient.post('/api/user/staff/list', request)
   },
 
+  async getStaffAccountLimit() {
+    return axiosClient.get('/api/user/staff/limit')
+  },
+
   async getJobPostings(params?: AdminListParams<JobListFilters>) {
     const request = buildJobListRequest(params)
 

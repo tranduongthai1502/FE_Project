@@ -44,10 +44,14 @@ export function useAuthSession(
     : null
 
   useEffect(() => {
-    const handleAuthExpired = () => {
+    const handleAuthExpired = (event: Event) => {
+      const message = event instanceof CustomEvent && typeof event.detail?.message === 'string'
+        ? event.detail.message
+        : 'Your session has expired. Please log in again.'
+
       clearAuthStorage()
       navigate('/login', { replace: true })
-      triggerToast('Your session has expired. Please log in again.', 'error')
+      triggerToast(message, 'error')
     }
 
     window.addEventListener(AUTH_EXPIRED_EVENT_NAME, handleAuthExpired)

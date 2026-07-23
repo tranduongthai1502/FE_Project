@@ -29,8 +29,10 @@ function getAuthStorage() {
   return localStorage.getItem('refresh_token') ? localStorage : sessionStorage
 }
 
-function notifyAuthExpired() {
-  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT_NAME))
+function notifyAuthExpired(message?: string) {
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT_NAME, {
+    detail: { message },
+  }))
 }
 
 function getAuthResponsePayload(response: any) {
@@ -134,6 +136,7 @@ axiosClient.interceptors.response.use(
           status: response.status,
           code,
           backendMessage,
+          errorData: responseData,
           hasBackendMessage: Boolean(responseData.message || responseData.data?.message),
           isAppErrorMessage: true,
         }))
@@ -156,7 +159,13 @@ axiosClient.interceptors.response.use(
     const message = getAppErrorMessage(error, getErrorMessage(errorData, getHttpStatusMessage(status)))
     const originalRequest = error.config
 
-    if ((status === 401 || status === 403) && originalRequest && !originalRequest._retry && !hasBackendMessage && !isAuthEndpoint(originalRequest.url || '') && getStoredToken('refresh_token')) {
+    if (status === 403 && !isAuthEndpoint(originalRequest?.url || '')) {
+      clearAuthStorage()
+      notifyAuthExpired(message || getHttpStatusMessage(403))
+      return Promise.reject(Object.assign(new Error(message), { status, code, backendMessage, errorData, hasBackendMessage, isAppErrorMessage: true }))
+    }
+
+    if (status === 401 && originalRequest && !originalRequest._retry && !hasBackendMessage && !isAuthEndpoint(originalRequest.url || '') && getStoredToken('refresh_token')) {
       originalRequest._retry = true
 
       try {
@@ -174,7 +183,7 @@ axiosClient.interceptors.response.use(
       notifyAuthExpired()
     }
 
-    return Promise.reject(Object.assign(new Error(message), { status, code, backendMessage, hasBackendMessage, isAppErrorMessage: true }))
+    return Promise.reject(Object.assign(new Error(message), { status, code, backendMessage, errorData, hasBackendMessage, isAppErrorMessage: true }))
   }
 )
 

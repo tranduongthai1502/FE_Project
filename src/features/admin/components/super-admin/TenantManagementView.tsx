@@ -979,7 +979,7 @@ export function TenantManagementView({
           className="tenant-filter-search"
           value={tenantSearchQuery}
           onChange={(event) => setTenantSearchQuery(event.target.value)}
-          placeholder="Search tenants, plans, status..."
+          placeholder="Search tenant name"
           ariaLabel="Tenant search"
         />
         <button type="button" className="tenant-create-btn" onClick={openCreateTenant}>

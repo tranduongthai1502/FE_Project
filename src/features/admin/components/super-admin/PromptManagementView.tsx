@@ -165,7 +165,6 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
         </article>
         <article className="role-metric prompt-summary-card system-health-card">
           <span><i className="fa-solid fa-shield-halved"></i></span>
-          <i className="fa-solid fa-ellipsis"></i>
           <small>System Health</small>
           <div><strong>6</strong> Optimal <strong>2</strong> Review</div>
         </article>

@@ -52,6 +52,10 @@
   color: #d93408;
 }
 
+.kpiCard > span i {
+  margin: 0px;
+}
+
 .kpiCard small {
   display: block;
   color: #667085;
@@ -420,15 +424,16 @@
   gap: 18px;
 }
 
-.jobsSearch {
+.jobsSearch:global(.admin-search-input) {
   height: 32px;
   max-width: 360px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: 26px;
   background: #ffffff;
 }
 
-.jobsSearch input {
+.jobsSearch:global(.admin-search-input) input {
+  border-radius: 26px;
   font-size: 11px;
   font-weight: 700;
 }
@@ -677,6 +682,12 @@
   vertical-align: middle;
 }
 
+.jobStatusBadge:global(.open),
+.jobStatusBadge:global(.active) {
+  background: #dcfae6;
+  color: #079455;
+}
+
 .jobDetailGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
@@ -711,10 +722,14 @@
 }
 
 .jobDetailCard p {
+  max-width: 100%;
+  height: auto;
   color: #344054;
   font-size: 12px;
   line-height: 1.7;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .jobSidePanel {
@@ -882,6 +897,14 @@
   background-position: right 8px center;
 }
 
+.jobForm input:focus,
+.jobForm select:focus,
+.jobForm textarea:focus {
+  border-color: #d93408;
+  outline: 0;
+  box-shadow: none;
+}
+
 .iconInput {
   position: relative;
 }
@@ -920,9 +943,9 @@
 }
 
 .moneyInput:focus-within {
-  border-color: #006fe6;
+  border-color: #d93408;
   outline: 0;
-  box-shadow: inset 0 0 0 1px #006fe6;
+  box-shadow: none;
 }
 
 .moneyInputError {
@@ -938,10 +961,21 @@
 
 .moneyInput input {
   flex: 1;
-  min-height: 36px;
-  border: 0;
-  outline: 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  border: 0 !important;
+  outline: 0 !important;
+  appearance: none;
+  background: transparent;
+  box-shadow: none !important;
   padding-left: 6px;
+}
+
+.moneyInput input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 .salaryRangeRow {
@@ -1181,9 +1215,15 @@
 .aiJobInputPanel input:focus,
 .aiJobInputPanel select:focus,
 .aiJobInputPanel textarea:focus {
-  border-color: #006fe6;
+  border-color: #d93408;
   outline: 0;
-  box-shadow: inset 0 0 0 1px #006fe6;
+  box-shadow: none;
+}
+
+.aiJobInputPanel .moneyInput input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 .aiLocationControls .iconInput {
