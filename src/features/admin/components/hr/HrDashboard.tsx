@@ -28,6 +28,35 @@ const hrCreateJobPostingPath = '/hr/jobs/createjobposting'
 const hrGenerateJobAiPath = '/hr/jobs/createjobposting/generatewithai'
 
 type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
+type JobConfirmAction = 'close' | 'open' | 'deleteDraft' | null
+
+const jobApiFieldMap: Record<string, keyof JobPostingPayload> = {
+  title: 'title',
+  jobTitle: 'title',
+  job_title: 'title',
+  department: 'department',
+  employmentType: 'employmentType',
+  employment_type: 'employmentType',
+  type: 'employmentType',
+  locationType: 'locationType',
+  location_type: 'locationType',
+  location: 'location',
+  applicationDeadline: 'applicationDeadline',
+  application_deadline: 'applicationDeadline',
+  deadline: 'applicationDeadline',
+  description: 'description',
+  requirements: 'requirements',
+  benefits: 'benefits',
+  salaryMin: 'salaryMin',
+  salary_min: 'salaryMin',
+  minSalary: 'salaryMin',
+  min_salary: 'salaryMin',
+  salaryMax: 'salaryMax',
+  salary_max: 'salaryMax',
+  maxSalary: 'salaryMax',
+  max_salary: 'salaryMax',
+  status: 'status',
+}
 type ToastTrigger = (message: string, type?: 'success' | 'error') => void
 
 const emptyJobForm: JobPostingPayload = {
@@ -46,12 +75,135 @@ const emptyJobForm: JobPostingPayload = {
   status: 'OPEN',
 }
 
+function getNormalizedJobStatus(status?: string) {
+  return String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_')
+}
+
+function isOpenJobStatus(status?: string) {
+  const normalized = getNormalizedJobStatus(status)
+  return normalized === 'OPEN' || normalized === 'ACTIVE'
+}
+
+function isClosedJobStatus(status?: string) {
+  const normalized = getNormalizedJobStatus(status)
+  return normalized === 'CLOSED' || normalized === 'CLOSE'
+}
+
+function isDraftJobStatus(status?: string) {
+  return getNormalizedJobStatus(status) === 'DRAFT'
+}
+
+function buildJobPayloadFromPosting(job: JobPosting, status = job.status): JobPostingPayload {
+  return {
+    title: job.title,
+    department: job.department,
+    level: job.level || '',
+    employmentType: job.employmentType || 'FULL_TIME',
+    locationType: job.locationType || 'OFFICE',
+    location: job.location || '',
+    applicationDeadline: job.applicationDeadline || '',
+    description: job.description || '',
+    requirements: job.requirements || '',
+    benefits: job.benefits || '',
+    salaryMin: job.salaryMin || 0,
+    salaryMax: job.salaryMax || 0,
+    status,
+  }
+}
+
+function getJobActionConfirmMessage(action: Exclude<JobConfirmAction, null>, job: JobPosting) {
+  if (action === 'close') {
+    return 'Are you sure you want to close this job posting? No new applications will be accepted.'
+  }
+
+  if (action === 'deleteDraft') {
+    return 'Are you sure you want to permanently delete this job posting? This action cannot be undone.'
+  }
+
+  return isDraftJobStatus(job.status)
+    ? 'Are you sure you want to open this job posting? It will become visible to candidates immediately.'
+    : 'Are you sure you want to reopen this job posting? Candidates will be able to apply again.'
+}
+
 function JobFieldError({ message }: { message?: string }) {
   return (
     <small className={styles.jobFieldError} aria-hidden={!message}>
       {message || requiredJobFieldMessage}
     </small>
   )
+}
+
+function getApiErrorPayload(error: unknown): any {
+  if (!error || typeof error !== 'object') return null
+  const errorObject = error as {
+    errorData?: unknown
+    response?: {
+      data?: unknown
+    }
+  }
+
+  return errorObject.errorData || errorObject.response?.data || null
+}
+
+function normalizeApiFieldName(field: string) {
+  return field
+    .replace(/\[(\w+)\]/g, '.$1')
+    .split('.')
+    .filter(Boolean)
+    .pop() || field
+}
+
+function getApiFieldMessage(value: unknown) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean).join(' ')
+  if (value && typeof value === 'object') {
+    const objectValue = value as { message?: unknown; defaultMessage?: unknown; error?: unknown }
+    return String(objectValue.message || objectValue.defaultMessage || objectValue.error || '').trim()
+  }
+  return String(value || '').trim()
+}
+
+function assignJobApiFieldError(errors: JobFieldErrors, field: unknown, message: unknown) {
+  const fieldName = normalizeApiFieldName(String(field || ''))
+  const jobField = jobApiFieldMap[fieldName] || jobApiFieldMap[fieldName.trim()]
+  const errorMessage = getApiFieldMessage(message)
+
+  if (jobField && errorMessage) {
+    errors[jobField] = errorMessage
+  }
+}
+
+function collectJobApiFieldErrors(candidate: any, errors: JobFieldErrors) {
+  if (!candidate) return
+
+  if (Array.isArray(candidate)) {
+    candidate.forEach((item) => {
+      if (item && typeof item === 'object') {
+        assignJobApiFieldError(errors, item.field || item.name || item.property || item.path, item.message || item.defaultMessage || item.error)
+      }
+    })
+    return
+  }
+
+  if (typeof candidate === 'object') {
+    Object.entries(candidate).forEach(([field, message]) => {
+      assignJobApiFieldError(errors, field, message)
+    })
+  }
+}
+
+function getJobFieldErrorsFromApiError(error: unknown) {
+  const payload = getApiErrorPayload(error)
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  const errors: JobFieldErrors = {}
+
+  collectJobApiFieldErrors(data?.errors, errors)
+  collectJobApiFieldErrors(data?.fieldErrors, errors)
+  collectJobApiFieldErrors(data?.validationErrors, errors)
+  collectJobApiFieldErrors(data?.violations, errors)
+  collectJobApiFieldErrors(data?.data?.errors, errors)
+  collectJobApiFieldErrors(data?.data?.fieldErrors, errors)
+
+  return errors
 }
 
 function JobsEmptyLargeIcon() {
@@ -127,6 +279,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [jobFieldErrors, setJobFieldErrors] = useState<JobFieldErrors>({})
   const [isSavingJob, setIsSavingJob] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
+  const [jobConfirmAction, setJobConfirmAction] = useState<JobConfirmAction>(null)
+  const [jobConfirmTarget, setJobConfirmTarget] = useState<JobPosting | null>(null)
+  const [isJobActionSubmitting, setIsJobActionSubmitting] = useState(false)
   const activeJobCount = jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobs.reduce((total, job) => total + job.applicantCount, 0)
   const pendingReviewCount = jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
@@ -386,6 +541,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobFieldErrors({})
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobForm(emptyJobForm)
+    if (jobView === 'edit' && selectedJob) {
+      setJobView('detail')
+      updateHrJobsPath(hrJobsPath)
+      return
+    }
+
     setSelectedJob(null)
     setJobView('list')
     updateHrJobsPath(hrJobsPath)
@@ -458,6 +619,65 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobView('edit')
     updateHrJobsPath(hrJobsPath)
   }
+  const requestJobAction = (action: Exclude<JobConfirmAction, null>, job: JobPosting) => {
+    if (isActionLocked || isJobActionSubmitting) return
+    setJobConfirmAction(action)
+    setJobConfirmTarget(job)
+  }
+  const closeJobConfirm = () => {
+    if (isJobActionSubmitting) return
+    setJobConfirmAction(null)
+    setJobConfirmTarget(null)
+  }
+  const applyJobActionResult = (nextJob: JobPosting | null) => {
+    if (!nextJob) return
+
+    setJobs((currentJobs) => currentJobs.map((job) => (
+      job.id === nextJob.id ? nextJob : job
+    )))
+    setSelectedJob((currentJob) => (
+      currentJob?.id === nextJob.id ? nextJob : currentJob
+    ))
+  }
+  const confirmJobAction = async () => {
+    if (!jobConfirmAction || !jobConfirmTarget || isJobActionSubmitting) return
+
+    setIsJobActionSubmitting(true)
+    try {
+      if (jobConfirmAction === 'deleteDraft') {
+        await adminApi.deleteJobPosting(jobConfirmTarget.id)
+        setJobConfirmAction(null)
+        setJobConfirmTarget(null)
+        setSelectedJob(null)
+        setJobView('list')
+        updateHrJobsPath(hrJobsPath)
+        setJobPage(1)
+        setJobListReloadKey((key) => key + 1)
+        triggerToast?.('Job posting deleted.', 'success')
+        return
+      }
+
+      const nextStatus = jobConfirmAction === 'close' ? 'CLOSED' : 'OPEN'
+      await adminApi.updateJobPosting(jobConfirmTarget.id, buildJobPayloadFromPosting(jobConfirmTarget, nextStatus))
+      const nextJob = { ...jobConfirmTarget, status: nextStatus }
+      applyJobActionResult(nextJob)
+      setJobConfirmAction(null)
+      setJobConfirmTarget(null)
+      setJobListReloadKey((key) => key + 1)
+      triggerToast?.(
+        jobConfirmAction === 'close'
+          ? 'Job posting closed successfully.'
+          : isDraftJobStatus(jobConfirmTarget.status)
+            ? 'Job posting opened successfully.'
+            : 'Job posting reopened successfully.',
+        'success',
+      )
+    } catch (error) {
+      triggerToast?.(getAdminErrorMessage(error, 'Error system. Please try again.'), 'error')
+    } finally {
+      setIsJobActionSubmitting(false)
+    }
+  }
   const saveJob = async (payload: JobPostingPayload = jobForm) => {
     if (isActionLocked || isSavingJob) return
     const nextErrors = getJobValidationErrors(payload)
@@ -479,21 +699,40 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       }
       returnToJobsListAfterSave()
       triggerToast?.(isEditingJob ? 'Job posting updated successfully.' : 'Job posting created successfully.', 'success')
-    } catch {
-      triggerToast?.('Error system. Please try again.', 'error')
+    } catch (error) {
+      const apiFieldErrors = getJobFieldErrorsFromApiError(error)
+
+      if (Object.keys(apiFieldErrors).length > 0) {
+        setJobFieldErrors(apiFieldErrors)
+        triggerToast?.('Please check the highlighted fields.', 'error')
+      } else {
+        triggerToast?.(getAdminErrorMessage(error, 'Error system. Please try again.'), 'error')
+      }
     } finally {
       setIsSavingJob(false)
     }
   }
 
   if (jobView === 'detail' && selectedJob) {
+    const selectedJobIsDraft = isDraftJobStatus(selectedJob.status)
+    const selectedJobIsClosed = isClosedJobStatus(selectedJob.status)
+    const selectedJobIsOpen = isOpenJobStatus(selectedJob.status)
+
     return (
       <div className={`role-content ${styles.jobsContent}`}>
         <AdminBreadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs', onClick: () => { setJobView('list'); updateHrJobsPath(hrJobsPath) } }, { label: 'Job Detail' }]} />
         <div className={styles.jobsHeader}>
-          <h1>{selectedJob.title} <em className={styles.jobStatusBadge}>{formatJobStatus(selectedJob.status)}</em></h1>
+          <h1>{selectedJob.title} <em className={`${styles.jobStatusBadge} ${selectedJob.status.toLowerCase()}`}>{formatJobStatus(selectedJob.status)}</em></h1>
           <div>
-            <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked}>Open</button>
+            {(selectedJobIsDraft || selectedJobIsClosed) && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('open', selectedJob)}>Open</button>
+            )}
+            {selectedJobIsOpen && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('close', selectedJob)}>Close</button>
+            )}
+            {selectedJobIsDraft && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('deleteDraft', selectedJob)}>Delete</button>
+            )}
             <button type="button" disabled={isActionLocked} onClick={() => openEditJob(selectedJob)}>Edit</button>
           </div>
         </div>
@@ -512,6 +751,17 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <section><small>Status</small><strong>{formatJobStatus(selectedJob.status)}</strong><span>{formatEmploymentType(selectedJob.employmentType)}</span></section>
           </aside>
         </section>
+        {jobConfirmAction && jobConfirmTarget && (
+          <ConfirmActionModal
+            isSubmitting={isJobActionSubmitting}
+            title="Confirm Action"
+            message={getJobActionConfirmMessage(jobConfirmAction, jobConfirmTarget)}
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={closeJobConfirm}
+            onConfirm={confirmJobAction}
+          />
+        )}
       </div>
     )
   }
@@ -581,7 +831,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               </div>
               <label className={`${styles.fullField} ${styles.aiTextAreaField}`}>
                 <span>Key Skills <b>*</b></span>
-                <textarea className={getInputClassName(Boolean(jobFieldErrors.requirements))} value={jobForm.requirements} maxLength={50} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="Add skill..." />
+                <textarea className={getInputClassName(Boolean(jobFieldErrors.requirements))} value={jobForm.requirements} maxLength={2000} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="Add skill..." />
                 <JobFieldError message={jobFieldErrors.requirements} />
               </label>
               <button type="button" disabled={isActionLocked} onClick={generateAiJobContent}>Generate Content</button>
@@ -695,7 +945,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               <label className={styles.richTextField}><span>Job Description <b>*</b></span>
                 <div className={`${styles.richTextBox} ${jobFieldErrors.description ? styles.jobInputError : ''}`.trim()}>
                   <div className={styles.richTextToolbar}><b>B</b><i>I</i><span>≡</span><span>↔</span></div>
-                  <textarea value={jobForm.description} maxLength={50} onChange={(e) => updateJobFormField('description', e.target.value)} placeholder="Enter job summary and context..." />
+                  <textarea value={jobForm.description} maxLength={2000} onChange={(e) => updateJobFormField('description', e.target.value)} placeholder="Enter job summary and context..." />
                 </div>
                 <JobFieldError message={jobFieldErrors.description} />
               </label>
@@ -707,17 +957,18 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               <label className={styles.richTextField}><span>Requirements <b>*</b></span>
                 <div className={`${styles.richTextBox} ${jobFieldErrors.requirements ? styles.jobInputError : ''}`.trim()}>
                   <div className={styles.richTextToolbar}><b>B</b><i>I</i><span>≡</span><span>↔</span></div>
-                  <textarea value={jobForm.requirements} maxLength={50} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="List technical and soft skills required..." />
+                  <textarea value={jobForm.requirements} maxLength={2000} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="List technical and soft skills required..." />
                 </div>
                 <JobFieldError message={jobFieldErrors.requirements} />
               </label>
             </section>
             <section className={styles.jobFormPanel}>
               <label className={styles.richTextField}><span>Benefits</span>
-                <div className={styles.richTextBox}>
+                <div className={`${styles.richTextBox} ${jobFieldErrors.benefits ? styles.jobInputError : ''}`.trim()}>
                   <div className={styles.richTextToolbar}><b>B</b><i>I</i><span>≡</span><span>↔</span></div>
-                  <textarea value={jobForm.benefits} maxLength={50} onChange={(e) => setJobForm({ ...jobForm, benefits: e.target.value })} placeholder="Enter company benefits and perks..." />
+                  <textarea value={jobForm.benefits} maxLength={2000} onChange={(e) => updateJobFormField('benefits', e.target.value)} placeholder="Enter company benefits and perks..." />
                 </div>
+                <JobFieldError message={jobFieldErrors.benefits} />
               </label>
             </section>
             <footer>
@@ -826,20 +1077,34 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <span>Date Created</span>
             <span>Actions</span>
           </div>
-          {jobs.map((job) => (
-            <article className={styles.jobsTableRow} key={job.id} onClick={() => openJobDetail(job)}>
-              <strong>{job.title}</strong>
-              <span>{job.department}</span>
-              <span>{formatEmploymentType(job.employmentType)}</span>
-              <em className={job.status.toLowerCase()}>{formatJobStatus(job.status)}</em>
-              <span>{job.applicantCount}</span>
-              <span>{formatJobDate(job.createdAt)}</span>
-              <div className={styles.jobsActions}>
-                <button type="button" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><i className="fa-regular fa-pen-to-square"></i></button>
-                <button type="button" aria-label={`Lock ${job.title}`} disabled={isActionLocked}><i className="fa-solid fa-lock"></i></button>
-              </div>
-            </article>
-          ))}
+          {jobs.map((job) => {
+            const jobIsDraft = isDraftJobStatus(job.status)
+            const jobIsClosed = isClosedJobStatus(job.status)
+            const jobIsOpen = isOpenJobStatus(job.status)
+
+            return (
+              <article className={styles.jobsTableRow} key={job.id} onClick={() => openJobDetail(job)}>
+                <strong>{job.title}</strong>
+                <span>{job.department}</span>
+                <span>{formatEmploymentType(job.employmentType)}</span>
+                <em className={job.status.toLowerCase()}>{formatJobStatus(job.status)}</em>
+                <span>{job.applicantCount}</span>
+                <span>{formatJobDate(job.createdAt)}</span>
+                <div className={styles.jobsActions}>
+                  {(jobIsDraft || jobIsClosed) && (
+                    <button type="button" aria-label={`Open ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('open', job) }}><i className="fa-solid fa-arrow-up-right-from-square"></i></button>
+                  )}
+                  {jobIsOpen && (
+                    <button type="button" aria-label={`Close ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('close', job) }}><i className="fa-regular fa-circle-xmark"></i></button>
+                  )}
+                  {jobIsDraft && (
+                    <button type="button" aria-label={`Delete ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('deleteDraft', job) }}><i className="fa-regular fa-trash-can"></i></button>
+                  )}
+                  <button type="button" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><i className="fa-regular fa-pen-to-square"></i></button>
+                </div>
+              </article>
+            )
+          })}
           <footer>
             <span>Showing {jobs.length} of {jobTotalElements} entries</span>
             <div>
@@ -851,6 +1116,17 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             </div>
           </footer>
         </section>
+      )}
+      {jobConfirmAction && jobConfirmTarget && (
+        <ConfirmActionModal
+          isSubmitting={isJobActionSubmitting}
+          title="Confirm Action"
+          message={getJobActionConfirmMessage(jobConfirmAction, jobConfirmTarget)}
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          onCancel={closeJobConfirm}
+          onConfirm={confirmJobAction}
+        />
       )}
     </div>
   )
