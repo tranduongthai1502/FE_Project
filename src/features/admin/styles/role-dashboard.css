@@ -4341,7 +4341,7 @@
 .subscription-table-card {
   width: 100%;
   margin: 26px 0 0;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
   background: #ffffff;
@@ -4401,6 +4401,10 @@
   color: #101c33;
   font-size: 12px;
   font-weight: 800;
+}
+
+.subscription-table-toolbar .subscription-sort-select .admin-scroll-select-menu {
+  z-index: 180;
 }
 
 .subscription-table-row {
@@ -5758,8 +5762,8 @@
 }
 
 .prompt-table-card {
-  width: 90%;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   overflow: hidden;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
