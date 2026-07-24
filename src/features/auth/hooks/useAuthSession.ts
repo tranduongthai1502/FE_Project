@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
-import { authApi } from '../services/authApi'
+import { authApi } from '@/api/authApi'
 import { getPageForUserRole, unsupportedRoleMessage } from '../utils/authRole'
 import {
   AUTH_EXPIRED_EVENT_NAME,
@@ -13,17 +13,20 @@ import {
 const pathByAuthRole = {
   candidate: '/candidate',
   tenantAdmin: '/tenant-admin',
-  superAdmin: '/super-admin/dashboard',
+  superAdmin: '/super-admin',
   hr: '/hr',
   interviewer: '/interviewer',
 }
 
-const passwordChangePathByAuthRole = {
-  candidate: '/candidate/change-password',
+export const passwordChangePathByAuthRole = {
   tenantAdmin: '/tenant-admin/settings',
   superAdmin: '/super-admin/settings',
-  hr: '/hr',
-  interviewer: '/interviewer',
+  hr: '/hr/settings',
+  interviewer: '/interviewer/settings',
+}
+
+function getPasswordChangePath(role: keyof typeof pathByAuthRole) {
+  return role === 'candidate' ? pathByAuthRole.candidate : passwordChangePathByAuthRole[role]
 }
 
 export function useAuthSession(
@@ -34,12 +37,12 @@ export function useAuthSession(
   const requirePasswordChange = getStoredRequirePasswordChange()
   const defaultPath = currentRole
     ? requirePasswordChange
-      ? passwordChangePathByAuthRole[currentRole]
+      ? getPasswordChangePath(currentRole)
       : pathByAuthRole[currentRole]
     : '/landingpage'
   const loginRedirect = currentRole
     ? requirePasswordChange
-      ? passwordChangePathByAuthRole[currentRole]
+      ? getPasswordChangePath(currentRole)
       : pathByAuthRole[currentRole]
     : null
 
@@ -74,7 +77,7 @@ export function useAuthSession(
     saveAuthRole(targetPage, keepLoggedIn)
     navigate(
       options?.requirePasswordChange
-        ? passwordChangePathByAuthRole[targetPage]
+        ? getPasswordChangePath(targetPage)
         : pathByAuthRole[targetPage],
       { replace: true },
     )

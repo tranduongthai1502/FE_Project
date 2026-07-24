@@ -6,8 +6,6 @@ import { LandingPage } from '@/pages/LandingPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RoleDashboardPage } from '@/pages/RoleDashboardPage'
 import { SignupPage } from '@/pages/SignupPage'
-import { TenantActivationDemoPage } from '@/pages/TenantActivationDemoPage'
-import { ActivationPage } from '@/pages/ActivationPage'
 import type { AppRole } from '@/features/auth'
 
 export type AppPage = AppRole
@@ -15,7 +13,7 @@ export type AppPage = AppRole
 export const pathByPage: Record<AppPage, string> = {
   candidate: '/candidate',
   tenantAdmin: '/tenant-admin',
-  superAdmin: '/super-admin/dashboard',
+  superAdmin: '/super-admin',
   hr: '/hr',
   interviewer: '/interviewer',
 }
@@ -73,40 +71,6 @@ export function RouteConfig({
           ) : (
             <SignupPage onGoToSignin={() => navigate('/login')} triggerToast={triggerToast} />
           )
-        }
-      />
-      <Route
-        path="/tenant/activate-demo"
-        element={<TenantActivationDemoPage onGoToLogin={() => navigate('/login')} />}
-      />
-      <Route
-        path="/tenant/activate"
-        element={
-          <ActivationPage
-            navigate={navigate}
-            onSignInSuccess={onSignInSuccess}
-            triggerToast={triggerToast}
-          />
-        }
-      />
-      <Route
-        path="/tenant/active"
-        element={
-          <ActivationPage
-            navigate={navigate}
-            onSignInSuccess={onSignInSuccess}
-            triggerToast={triggerToast}
-          />
-        }
-      />
-      <Route
-        path="/activate"
-        element={
-          <ActivationPage
-            navigate={navigate}
-            onSignInSuccess={onSignInSuccess}
-            triggerToast={triggerToast}
-          />
         }
       />
       <Route

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
+import { ADMIN_LIST_PAGE_SIZE, adminApi } from '@/api/roleApi'
 import type { AdminListParams, CreatePlanPayload, PlanDashboardStats, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../types/admin.types'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { formatFeatureLabel, formatPlanDate } from '../../utils/adminFormatters'
@@ -1542,3 +1542,5 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     </div>
   )
 }
+
+

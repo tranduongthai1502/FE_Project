@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { superNav } from '../../data/adminNavigation'
-import { adminApi } from '../../services/adminApi'
+import { adminApi } from '@/api/roleApi'
 import type { SubscriptionPlan, SuperAdminView, Tenant } from '../../types/admin.types'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getInitialSuperAdminView, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
@@ -275,3 +275,5 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
     </DashboardShell>
   )
 }
+
+

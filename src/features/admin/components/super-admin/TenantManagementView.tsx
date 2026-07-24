@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
-import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
+import { ADMIN_LIST_PAGE_SIZE, adminApi } from '@/api/roleApi'
 import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser, TenantDashboardStats } from '../../types/admin.types'
 import { formatPlanDate } from '../../utils/adminFormatters'
 import { getTenantDetailIdFromUrl, isTenantCreateUrl, updateSuperAdminViewUrl, updateTenantCreateUrl, updateTenantDetailUrl } from '../../utils/adminRouteHelpers'
@@ -1126,3 +1126,5 @@ export function TenantManagementView({
     </div>
   )
 }
+
+

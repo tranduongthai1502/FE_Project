@@ -9,7 +9,7 @@ import {
   validatePhone,
 } from '../utils/validation'
 import { getPasswordStrength } from '../utils/passwordStrength'
-import { authApi } from '../services/authApi'
+import { authApi } from '@/api/authApi'
 import { getAppErrorMessage } from '../../../utils/errorManager'
 import { shouldToastHttpError } from '../../../utils/httpStatusManager'
 import { authErrorMessages } from '../errors'

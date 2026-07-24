@@ -1,5 +1,6 @@
-import axiosClient from '../../../api/axiosClient'
-import type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '../types/auth.types'
+import axiosClient from '../client/axiosClient'
+import type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '@/features/auth/types/auth.types'
+import { buildChangePasswordPayload, buildRegisterPayload } from './authPayload'
 
 export const authApi = {
   async login(payload: LoginPayload) {
@@ -12,13 +13,7 @@ export const authApi = {
   },
 
   async register(payload: RegisterPayload) {
-    const backendPayload = {
-      email: payload.email,
-      password: payload.password,
-      fullName: payload.fullName,
-      phone: payload.phone,
-    }
-    return axiosClient.post('/api/auth/signup', backendPayload)
+    return axiosClient.post('/api/auth/signup', buildRegisterPayload(payload))
   },
 
   async sendResetCode(email: string) {
@@ -33,22 +28,7 @@ export const authApi = {
     return axiosClient.post('/api/auth/reset-password', { email, otp, newPassword: password })
   },
 
-  async activate(token: string) {
-    return axiosClient.get(`/api/auth/activate?token=${encodeURIComponent(token)}`)
-  },
-
-  async resendActivation(email: string) {
-    return axiosClient.post('/api/auth/resend-activate', { email })
-  },
-
-  async confirmActivation(token: string) {
-    return axiosClient.post('/api/auth/activate', { token })
-  },
-
   async changePassword(payload: ChangePasswordPayload) {
-    return axiosClient.post('/api/auth/change-password', {
-      oldPassword: payload.currentPassword,
-      newPassword: payload.newPassword,
-    })
+    return axiosClient.post('/api/auth/change-password', buildChangePasswordPayload(payload))
   },
 }

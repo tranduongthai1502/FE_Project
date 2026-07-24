@@ -1,9 +1,15 @@
 import type { CSSProperties } from 'react'
 
-export function Toast({ isVisible, isFadingOut, message, type = 'success' }) {
+type ToastProps = {
+  isVisible: boolean
+  isFadingOut: boolean
+  text: string
+  isError?: boolean
+}
+
+export function Toast({ isVisible, isFadingOut, text, isError = false }: ToastProps) {
   if (!isVisible) return null
 
-  const isError = type === 'error'
   const toastClass = isError ? 'toast-error' : 'toast-success'
   const iconClass = isError ? 'fa-regular fa-circle-xmark' : 'fa-regular fa-square-check'
   const toastStyle: CSSProperties = {
@@ -22,7 +28,7 @@ export function Toast({ isVisible, isFadingOut, message, type = 'success' }) {
       <span className="toast-icon">
         <i className={iconClass}></i>
       </span>
-      <span className="toast-text">{message}</span>
+      <span className="toast-text">{text}</span>
     </div>
   )
 }

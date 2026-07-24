@@ -5,9 +5,9 @@ export { ForgotPasswordForm } from './components/ForgotPasswordForm'
 export { OtpForm } from './components/OtpForm'
 export { ResetPasswordForm } from './components/ResetPasswordForm'
 
-export { authApi } from './services/authApi'
+export { authApi } from '@/api/authApi'
 
-export { useAuthSession } from './hooks/useAuthSession'
+export { passwordChangePathByAuthRole, useAuthSession } from './hooks/useAuthSession'
 
 export { getPasswordStrength } from './utils/passwordStrength'
 export {

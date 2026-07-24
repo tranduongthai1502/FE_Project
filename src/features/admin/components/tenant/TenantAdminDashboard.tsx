@@ -8,7 +8,7 @@ import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
 import { DashboardShell } from '../shared/DashboardShell'
 import { MetricCard } from '../shared/MetricCard'
-import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
+import { ADMIN_LIST_PAGE_SIZE, tenantAdminApi } from '@/api/roleApi'
 import { ConfirmActionModal } from '../shared/ConfirmActionModal'
 import { getAdminErrorMessage, inactiveUserActionMessage, isInactiveUserActionError } from '../../utils/adminErrors'
 import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
@@ -288,15 +288,15 @@ function loadTenantWorkspaceData(tenantId: string, staffPage: number, staffListF
   }
 
   const request = Promise.all([
-    adminApi.getStaffList({
+    tenantAdminApi.getStaffList({
       sortField: 'fullName',
       filters: staffListFilters,
       sortBy: 'ASC',
       page: staffPage,
       size: ADMIN_LIST_PAGE_SIZE,
     }),
-    adminApi.getStaffAccountLimit(),
-    shouldLoadTenantDetail ? adminApi.getTenantById(tenantId) : Promise.resolve(null),
+    tenantAdminApi.getStaffAccountLimit(),
+    shouldLoadTenantDetail ? tenantAdminApi.getTenantById(tenantId) : Promise.resolve(null),
   ])
     .then(([staffResponse, staffLimitResponse, tenant]) => {
       const payload = staffResponse?.data || staffResponse
@@ -1420,7 +1420,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setStaffDetailError('')
     setIsLoadingStaffDetail(true)
 
-    adminApi.getUserById(detailStaffId)
+    tenantAdminApi.getUserById(detailStaffId)
       .then((staffDetail) => {
         if (!isActive) return
 
@@ -1631,7 +1631,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setIsLoadingActivities(true)
     setActivityError('')
 
-    adminApi.getActivityLogs({
+    tenantAdminApi.getActivityLogs({
       sortField: 'createdAt',
       filters: {
         eventType: 'ACTION',
@@ -1705,7 +1705,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
     setIsSaving(true)
     try {
-      await adminApi.createStaff({
+      await tenantAdminApi.createStaff({
         fullName: payload.fullName,
         email: payload.email,
         role: payload.role,
@@ -1730,7 +1730,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
     setIsSaving(true)
     try {
-      await adminApi.updateStaff(selectedStaff.id, {
+      await tenantAdminApi.updateStaff(selectedStaff.id, {
         fullName: payload.fullName,
         email: payload.email,
         role: payload.role,
@@ -1791,7 +1791,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
 
     setIsDeleting(true)
     try {
-      await adminApi.deleteStaff(deleteConfirmStaff.id)
+      await tenantAdminApi.deleteStaff(deleteConfirmStaff.id)
       triggerToast?.('Account permanently deleted.', 'success')
       setDeleteConfirmStaff(null)
       
@@ -1822,7 +1822,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     
     setIsSaving(true)
     try {
-      await adminApi.updateStaff(staff.id, {
+      await tenantAdminApi.updateStaff(staff.id, {
         fullName: staff.fullName,
         email: staff.email,
         role: roles,
@@ -2118,3 +2118,5 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     </DashboardShell>
   )
 }
+
+

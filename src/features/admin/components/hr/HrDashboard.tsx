@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getRoleHomeNav, hrNav } from '../../data/adminNavigation'
 import type { JobListFilters, JobPosting, JobPostingPayload, RoleHomeView } from '../../types/admin.types'
-import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../services/adminApi'
+import { ADMIN_LIST_PAGE_SIZE, jobApi } from '@/api/roleApi'
 import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getListPageCount, getListTotalElements } from '../../utils/adminMappers'
@@ -315,7 +315,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setIsLoadingJobs(true)
     setJobListError('')
 
-    adminApi.getJobPostings({
+    jobApi.getJobPostings({
       sortField: 'createdAt',
       filters,
       sortBy: 'DESC',
@@ -588,7 +588,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobView('detail')
     updateHrJobsPath(hrJobsPath)
     try {
-      setSelectedJob(await adminApi.getJobPostingById(job.id))
+      setSelectedJob(await jobApi.getJobPostingById(job.id))
     } catch {
       setSelectedJob(job)
     }
@@ -645,7 +645,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setIsJobActionSubmitting(true)
     try {
       if (jobConfirmAction === 'deleteDraft') {
-        await adminApi.deleteJobPosting(jobConfirmTarget.id)
+        await jobApi.deleteJobPosting(jobConfirmTarget.id)
         setJobConfirmAction(null)
         setJobConfirmTarget(null)
         setSelectedJob(null)
@@ -658,7 +658,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       }
 
       const nextStatus = jobConfirmAction === 'close' ? 'CLOSED' : 'OPEN'
-      await adminApi.updateJobPosting(jobConfirmTarget.id, buildJobPayloadFromPosting(jobConfirmTarget, nextStatus))
+      await jobApi.updateJobPosting(jobConfirmTarget.id, buildJobPayloadFromPosting(jobConfirmTarget, nextStatus))
       const nextJob = { ...jobConfirmTarget, status: nextStatus }
       applyJobActionResult(nextJob)
       setJobConfirmAction(null)
@@ -693,9 +693,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       const isEditingJob = jobView === 'edit' && selectedJob
 
       if (isEditingJob) {
-        await adminApi.updateJobPosting(selectedJob.id, payload)
+        await jobApi.updateJobPosting(selectedJob.id, payload)
       } else {
-        await adminApi.createJobPosting(payload)
+        await jobApi.createJobPosting(payload)
       }
       returnToJobsListAfterSave()
       triggerToast?.(isEditingJob ? 'Job posting updated successfully.' : 'Job posting created successfully.', 'success')
@@ -1258,3 +1258,5 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
     </DashboardShell>
   )
 }
+
+

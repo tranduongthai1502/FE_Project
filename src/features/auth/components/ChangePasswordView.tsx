@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { passwordRequirementLabels } from '../data/passwordRequirements'
-import { authApi } from '../services/authApi'
+import { authApi } from '@/api/authApi'
 import { getPasswordStrength } from '../utils/passwordStrength'
 import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
 import { authErrorMessages } from '../errors'
