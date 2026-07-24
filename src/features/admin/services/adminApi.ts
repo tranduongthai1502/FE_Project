@@ -79,6 +79,8 @@ function normalizeTenantDashboardStats(payload: any): TenantDashboardStats {
     activeTenants: readNumberValue(data, ['activeTenants', 'activeTenant', 'active', 'activeTenantCount', 'active_tenants']),
     inactiveTenants: readNumberValue(data, ['inactiveTenants', 'inactiveTenant', 'inactive', 'inactiveTenantCount', 'inactive_tenants']),
     totalRevenue: readNumberValue(data, ['totalRevenue', 'revenue', 'monthlyRevenue', 'monthlyRecurringRevenue', 'total_revenue']),
+    averageUsage: readNumberValue(data, ['averageUsage', 'averageUsagePercent', 'avgUsage', 'avgUsagePercent', 'average_usage']),
+    churnRate: readNumberValue(data, ['churnRate', 'churnRatePercent', 'churn', 'churnPercent', 'churn_percent', 'churn_rate']),
   }
 }
 

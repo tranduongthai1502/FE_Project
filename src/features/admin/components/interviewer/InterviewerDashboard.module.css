@@ -56,6 +56,14 @@
   background: #eef4ff;
 }
 
+.schedulePanel article > div {
+  min-width: 0;
+}
+
+.schedulePanel article :global(.table-name-tooltip) {
+  width: 100%;
+}
+
 .schedulePanel article + article {
   margin-top: 14px;
 }
@@ -84,16 +92,22 @@
 
 .schedulePanel article strong {
   display: block;
+  overflow: hidden;
   color: #101c33;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedulePanel article small {
   display: block;
+  overflow: hidden;
   margin-top: 4px;
   color: #344054;
   font-size: 11px;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedulePanel article p {
