@@ -117,14 +117,16 @@ function normalizePlanDashboardStats(payload: any): PlanDashboardStats {
 
   return {
     activePlans: readNumberValue(data, ['activePlans', 'activePlan', 'activePlanCount', 'totalActivePlans', 'active_plans']),
+    activePlansTrend: readNumberValue(data, ['activePlansTrend', 'activePlanTrend', 'activePlansTrendPercent', 'active_plans_trend']),
     totalPlans: readNumberValue(data, ['totalPlans', 'totalPlan', 'planCount', 'total', 'total_plans']),
-    topTierName: readStringValue(data, ['topTierName', 'topPlanName', 'highestPlanName', 'highestPricedPlanName']) || readStringValue(topTier, ['name', 'planName']),
+    topTierName: readStringValue(data, ['topTierPlanName', 'topTierName', 'topPlanName', 'highestPlanName', 'highestPricedPlanName']) || readStringValue(topTier, ['name', 'planName']),
+    topTierSubscribers: readNumberValue(data, ['topTierSubscribers', 'topTierSubscriberCount', 'topPlanSubscribers', 'top_plan_subscribers']) ?? readNumberValue(topTier, ['subscribers', 'subscriberCount']),
     topTierMaxStaffAccount: readNumberValue(data, ['topTierMaxStaffAccount', 'topPlanMaxStaffAccount']) ?? readNumberValue(topTier, ['maxStaffAccount', 'maxStaffAccounts', 'max_staff_account']),
     topTierStaffAccountUnlimited: readBooleanValue(data, ['topTierStaffAccountUnlimited', 'topPlanStaffAccountUnlimited']) ?? readBooleanValue(topTier, ['staffAccountUnlimited', 'staff_account_unlimited']),
     monthlyActivePlanRevenue: readNumberValue(data, ['monthlyActivePlanRevenue', 'monthlyPlanRevenue', 'monthlyRevenue', 'activePlanRevenue', 'totalRevenue', 'revenue']),
-    monthlyRevenueTrendPercent: readNumberValue(data, ['monthlyRevenueTrendPercent', 'monthlyRevenueGrowthPercent', 'revenueTrendPercent', 'revenueGrowthPercent']),
+    monthlyRevenueTrendPercent: readNumberValue(data, ['monthlyActivePlanRevenueTrend', 'monthlyRevenueTrendPercent', 'monthlyRevenueGrowthPercent', 'revenueTrendPercent', 'revenueGrowthPercent']),
     renewalRate: readNumberValue(data, ['renewalRate', 'renewalRatePercent', 'retentionRate', 'retentionRatePercent']),
-    renewalRateTrendPercent: readNumberValue(data, ['renewalRateTrendPercent', 'renewalTrendPercent', 'retentionRateTrendPercent']),
+    renewalRateTrendPercent: readNumberValue(data, ['renewalRateTrend', 'renewalRateTrendPercent', 'renewalTrendPercent', 'retentionRateTrendPercent']),
   }
 }
 
@@ -252,9 +254,9 @@ export const adminApi = {
       ? { page: pageOrParams, size }
       : pageOrParams
     const request = buildListRequest({
-      sortField: 'fullName',
+      sortField: 'createdAt',
       filters: {},
-      sortBy: 'ASC',
+      sortBy: 'DESC',
       page: 1,
       size: ADMIN_LIST_PAGE_SIZE,
     }, params)
