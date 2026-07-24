@@ -157,6 +157,8 @@ export type TenantDashboardStats = {
   activeTenants?: number
   inactiveTenants?: number
   totalRevenue?: number
+  averageUsage?: number
+  churnRate?: number
 }
 
 export type PlanDashboardStats = {

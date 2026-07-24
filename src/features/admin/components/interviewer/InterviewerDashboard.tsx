@@ -50,8 +50,12 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
               <article className={index === 0 ? styles.scheduleItemSelected : ''} key={name}>
                 <span className={styles.avatar}>{initials}</span>
                 <div>
-                  <strong>{name}</strong>
-                  <small>{title}</small>
+                  <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
+                    <strong>{name}</strong>
+                  </span>
+                  <span className="table-name-tooltip" data-tooltip={title} title={title} tabIndex={0}>
+                    <small>{title}</small>
+                  </span>
                   <p><em>{location}</em><em>{type}</em></p>
                 </div>
                 <time>{time}</time>

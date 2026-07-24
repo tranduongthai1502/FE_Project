@@ -392,11 +392,12 @@
   transform: rotate(180deg);
 }
 
-.role-user-dropdown {
+.role-user-dropdown,
+.super-admin-shell .role-user-dropdown {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 225px;
+  width: 173px;
   padding: 10px 0;
   border: 1px solid #e2e8f0;
   border-radius: 18px;
@@ -467,10 +468,6 @@
   border-bottom: 1px solid #f0cfc6;
   background: #ffffff;
   box-shadow: none;
-}
-
-.super-admin-shell .role-user-dropdown {
-  z-index: 100;
 }
 
 .super-admin-shell .role-brand strong {
@@ -3846,7 +3843,8 @@
   text-transform: none;
 }
 
-.table-name-tooltip > strong {
+.table-name-tooltip > strong,
+.table-name-tooltip > small {
   min-width: 0;
   max-width: 100%;
   display: block;

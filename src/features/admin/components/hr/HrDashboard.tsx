@@ -1084,8 +1084,10 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
             return (
               <article className={styles.jobsTableRow} key={job.id} onClick={() => openJobDetail(job)}>
-                <strong>{job.title}</strong>
-                <span>{job.department}</span>
+                <span className="table-name-tooltip" data-tooltip={job.title} title={job.title} tabIndex={0}>
+                  <strong>{job.title}</strong>
+                </span>
+                <span title={job.department}>{job.department}</span>
                 <span>{formatEmploymentType(job.employmentType)}</span>
                 <em className={job.status.toLowerCase()}>{formatJobStatus(job.status)}</em>
                 <span>{job.applicantCount}</span>
@@ -1238,7 +1240,14 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
             ].map(([initials, name, title, score]) => (
               <article key={name}>
                 <span>{initials}</span>
-                <div><strong>{name}</strong><small>{title}</small></div>
+                <div>
+                  <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
+                    <strong>{name}</strong>
+                  </span>
+                  <span className="table-name-tooltip" data-tooltip={title} title={title} tabIndex={0}>
+                    <small>{title}</small>
+                  </span>
+                </div>
                 <em>{score}</em>
               </article>
             ))}
