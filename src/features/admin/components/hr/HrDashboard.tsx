@@ -6,7 +6,6 @@ import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
 import { getAdminErrorMessage } from '../../utils/adminErrors'
 import { getListPageCount, getListTotalElements } from '../../utils/adminMappers'
 import { getInitialRoleHomeView, updateRoleHomeViewUrl } from '../../utils/adminRouteHelpers'
-import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/staffWorkspace'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { AdminBreadcrumb } from '../shared/AdminBreadcrumb'
 import { AdminSearchInput } from '../shared/AdminSearchInput'
@@ -206,6 +205,25 @@ function getJobFieldErrorsFromApiError(error: unknown) {
   return errors
 }
 
+function isJobTitleAlreadyExistsError(error: unknown) {
+  const payload = getApiErrorPayload(error)
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  const candidates = [
+    data?.code,
+    data?.error,
+    data?.message,
+    data?.backendMessage,
+    data?.data?.code,
+    data?.data?.error,
+    data?.data?.message,
+    (error as { backendMessage?: unknown } | null)?.backendMessage,
+    (error as { code?: unknown } | null)?.code,
+    (error as { message?: unknown } | null)?.message,
+  ]
+
+  return candidates.some((value) => String(value || '').trim().toLowerCase() === 'job_title_already_exists')
+}
+
 function JobsEmptyLargeIcon() {
   return (
     <svg width="131" height="132" viewBox="0 0 131 132" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -260,6 +278,33 @@ function updateHrJobsPath(path: string) {
   if (window.location.pathname !== path) {
     window.history.pushState(null, '', path)
   }
+}
+
+function RichTextToolbar({ className }: { className: string }) {
+  return (
+    <div className={className}>
+      <span>
+        <svg width="8" height="11" viewBox="0 0 9 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M0 11.6667V0H4.60417C5.50694 0 6.34028 0.277778 7.10417 0.833333C7.86806 1.38889 8.25 2.15972 8.25 3.14583C8.25 3.85417 8.09028 4.39931 7.77083 4.78125C7.45139 5.16319 7.15278 5.4375 6.875 5.60417C7.22222 5.75694 7.60764 6.04167 8.03125 6.45833C8.45486 6.875 8.66667 7.5 8.66667 8.33333C8.66667 9.56944 8.21528 10.434 7.3125 10.9271C6.40972 11.4201 5.5625 11.6667 4.77083 11.6667H0ZM2.52083 9.33333H4.6875C5.35417 9.33333 5.76042 9.16319 5.90625 8.82292C6.05208 8.48264 6.125 8.23611 6.125 8.08333C6.125 7.93056 6.05208 7.68403 5.90625 7.34375C5.76042 7.00347 5.33333 6.83333 4.625 6.83333H2.52083V9.33333ZM2.52083 4.58333H4.45833C4.91667 4.58333 5.25 4.46528 5.45833 4.22917C5.66667 3.99306 5.77083 3.72917 5.77083 3.4375C5.77083 3.10417 5.65278 2.83333 5.41667 2.625C5.18056 2.41667 4.875 2.3125 4.5 2.3125H2.52083V4.58333Z" fill="#0B1C30" />
+        </svg>
+      </span>
+      <span>
+        <svg width="10" height="11" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M0 11.6667V9.58333H3.33333L5.83333 2.08333H2.5V0H10.8333V2.08333H7.91667L5.41667 9.58333H8.33333V11.6667H0Z" fill="#0B1C30" />
+        </svg>
+      </span>
+      <span>
+        <svg width="13" height="12" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M5 12.5V10.8333H15V12.5H5ZM5 7.5V5.83333H15V7.5H5ZM5 2.5V0.833333H15V2.5H5ZM1.66667 13.3333C1.20833 13.3333 0.815972 13.1701 0.489583 12.8438C0.163194 12.5174 0 12.125 0 11.6667C0 11.2083 0.163194 10.816 0.489583 10.4896C0.815972 10.1632 1.20833 10 1.66667 10C2.125 10 2.51736 10.1632 2.84375 10.4896C3.17014 10.816 3.33333 11.2083 3.33333 11.6667C3.33333 12.125 3.17014 12.5174 2.84375 12.8438C2.51736 13.1701 2.125 13.3333 1.66667 13.3333ZM1.66667 8.33333C1.20833 8.33333 0.815972 8.17014 0.489583 7.84375C0.163194 7.51736 0 7.125 0 6.66667C0 6.20833 0.163194 5.81597 0.489583 5.48958C0.815972 5.16319 1.20833 5 1.66667 5C2.125 5 2.51736 5.16319 2.84375 5.48958C3.17014 5.81597 3.33333 6.20833 3.33333 6.66667C3.33333 7.125 3.17014 7.51736 2.84375 7.84375C2.51736 8.17014 2.125 8.33333 1.66667 8.33333ZM1.66667 3.33333C1.20833 3.33333 0.815972 3.17014 0.489583 2.84375C0.163194 2.51736 0 2.125 0 1.66667C0 1.20833 0.163194 0.815972 0.489583 0.489583C0.815972 0.163194 1.20833 0 1.66667 0C2.125 0 2.51736 0.163194 2.84375 0.489583C3.17014 0.815972 3.33333 1.20833 3.33333 1.66667C3.33333 2.125 3.17014 2.51736 2.84375 2.84375C2.51736 3.17014 2.125 3.33333 1.66667 3.33333Z" fill="#0B1C30" />
+        </svg>
+      </span>
+      <span>
+        <svg width="16" height="8" viewBox="0 0 17 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M7.5 8.33333H4.16667C3.01389 8.33333 2.03125 7.92708 1.21875 7.11458C0.40625 6.30208 0 5.31944 0 4.16667C0 3.01389 0.40625 2.03125 1.21875 1.21875C2.03125 0.40625 3.01389 0 4.16667 0H7.5V1.66667H4.16667C3.47222 1.66667 2.88194 1.90972 2.39583 2.39583C1.90972 2.88194 1.66667 3.47222 1.66667 4.16667C1.66667 4.86111 1.90972 5.45139 2.39583 5.9375C2.88194 6.42361 3.47222 6.66667 4.16667 6.66667H7.5V8.33333ZM5 5V3.33333H11.6667V5H5ZM9.16667 8.33333V6.66667H12.5C13.1944 6.66667 13.7847 6.42361 14.2708 5.9375C14.7569 5.45139 15 4.86111 15 4.16667C15 3.47222 14.7569 2.88194 14.2708 2.39583C13.7847 1.90972 13.1944 1.66667 12.5 1.66667H9.16667V0H12.5C13.6528 0 14.6354 0.40625 15.4479 1.21875C16.2604 2.03125 16.6667 3.01389 16.6667 4.16667C16.6667 5.31944 16.2604 6.30208 15.4479 7.11458C14.6354 7.92708 13.6528 8.33333 12.5 8.33333H9.16667Z" fill="#0B1C30" />
+        </svg>
+      </span>
+    </div>
+  )
 }
 
 function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: boolean; onHome: () => void; triggerToast?: ToastTrigger }) {
@@ -702,7 +747,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     } catch (error) {
       const apiFieldErrors = getJobFieldErrorsFromApiError(error)
 
-      if (Object.keys(apiFieldErrors).length > 0) {
+      if (isJobTitleAlreadyExistsError(error)) {
+        setJobFieldErrors({ title: duplicateJobTitleMessage })
+      } else if (Object.keys(apiFieldErrors).length > 0) {
         setJobFieldErrors(apiFieldErrors)
         triggerToast?.('Please check the highlighted fields.', 'error')
       } else {
@@ -944,7 +991,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <section className={styles.jobFormPanel}>
               <label className={styles.richTextField}><span>Job Description <b>*</b></span>
                 <div className={`${styles.richTextBox} ${jobFieldErrors.description ? styles.jobInputError : ''}`.trim()}>
-                  <div className={styles.richTextToolbar}><b>B</b><i>I</i><span>≡</span><span>↔</span></div>
+                  <RichTextToolbar className={styles.richTextToolbar} />
                   <textarea value={jobForm.description} maxLength={2000} onChange={(e) => updateJobFormField('description', e.target.value)} placeholder="Enter job summary and context..." />
                 </div>
                 <JobFieldError message={jobFieldErrors.description} />
@@ -956,7 +1003,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <section className={styles.jobFormPanel}>
               <label className={styles.richTextField}><span>Requirements <b>*</b></span>
                 <div className={`${styles.richTextBox} ${jobFieldErrors.requirements ? styles.jobInputError : ''}`.trim()}>
-                  <div className={styles.richTextToolbar}><b>B</b><i>I</i><span>≡</span><span>↔</span></div>
+                  <RichTextToolbar className={styles.richTextToolbar} />
                   <textarea value={jobForm.requirements} maxLength={2000} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="List technical and soft skills required..." />
                 </div>
                 <JobFieldError message={jobFieldErrors.requirements} />
@@ -965,7 +1012,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <section className={styles.jobFormPanel}>
               <label className={styles.richTextField}><span>Benefits</span>
                 <div className={`${styles.richTextBox} ${jobFieldErrors.benefits ? styles.jobInputError : ''}`.trim()}>
-                  <div className={styles.richTextToolbar}><b>B</b><i>I</i><span>≡</span><span>↔</span></div>
+                  <RichTextToolbar className={styles.richTextToolbar} />
                   <textarea value={jobForm.benefits} maxLength={2000} onChange={(e) => updateJobFormField('benefits', e.target.value)} placeholder="Enter company benefits and perks..." />
                 </div>
                 <JobFieldError message={jobFieldErrors.benefits} />
@@ -1022,7 +1069,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           </span>
         </section>
         <section>
-          <small>Pending Review</small>
+          <small>POSTINGS EXPIRING SOON</small>
           <strong>{isLoadingJobs ? '...' : pendingReviewCount}</strong>
           <span>
             <svg width="18" height="21" viewBox="0 0 18 21" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1055,7 +1102,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <option value="">All Status</option>
             <option value="FULL_TIME">Full-time</option>
             <option value="PART_TIME">Part-time</option>
-            <option value="CONTRACT">Contract</option>
+            <option value="INTERNSHIP">Internship</option>
           </select>
         </label>
       </div>
@@ -1136,12 +1183,18 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
 export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('hr'))
+  const [jobsViewResetKey, setJobsViewResetKey] = useState(0)
   const selectView = (view: RoleHomeView) => {
+    const shouldResetJobsView = view === 'jobs' && activeView === 'jobs'
+
     setActiveView(view)
     updateRoleHomeViewUrl('hr', view)
+    if (shouldResetJobsView) {
+      window.sessionStorage.removeItem(jobFormRefreshViewKey)
+      setJobsViewResetKey((value) => value + 1)
+    }
   }
   const navItems = getRoleHomeNav(hrNav, activeView, selectView)
-  const canSwitchWorkspace = hasMultipleStaffWorkspaces()
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
@@ -1154,11 +1207,11 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
   }, [])
 
   return (
-    <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')} showWorkspaceSwitcher={canSwitchWorkspace} onWorkspaceSwitch={() => switchStaffWorkspace('interviewer')}>
+    <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'jobs' ? (
-        <HrJobsView isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <HrJobsView key={jobsViewResetKey} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
       <div className={`role-content ${styles.content}`}>
         <div className={`role-title-row ${styles.title}`}>
@@ -1174,16 +1227,16 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
 
         <div className={styles.kpiGrid}>
           {[
-            ['fa-user-group', 'Total Candidates', '2,842', '+12%'],
-            ['fa-briefcase', 'Active Jobs', '48', 'Stable'],
-            ['fa-bolt', 'AI-Scored Top Talents', '156', 'AI Enhanced'],
-            ['fa-stopwatch', 'Avg. Time to Hire', '18 days', '-4 days'],
-          ].map(([icon, label, value, note]) => (
+            ['fa-user-group', 'Total Candidates', '2,842', '+12%', 'fa-arrow-trend-up'],
+            ['fa-briefcase', 'Active Jobs', '48', 'Stable', ''],
+            ['fa-bolt', 'AI-Scored Top Talents', '156', 'AI Enhanced', ''],
+            ['fa-stopwatch', 'Avg. Time to Hire', '18 days', '-4 days', 'fa-arrow-trend-down'],
+          ].map(([icon, label, value, note, noteIcon]) => (
             <section className={styles.kpiCard} key={label}>
               <span><i className={`fa-solid ${icon}`}></i></span>
               <small>{label}</small>
               <strong>{value}</strong>
-              <em>{note}</em>
+              <em>{note}{noteIcon && <i className={`fa-solid ${noteIcon}`}></i>}</em>
             </section>
           ))}
         </div>
@@ -1232,7 +1285,12 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
           </section>
 
           <section className={`role-panel ${styles.topPicks}`}>
-            <div className="role-panel-head"><h2>Top Picks</h2><i className="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div className="role-panel-head">
+              <h2>Top Picks</h2>
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M18 8L16.75 5.25L14 4L16.75 2.75L18 0L19.25 2.75L22 4L19.25 5.25L18 8ZM18 22L16.75 19.25L14 18L16.75 16.75L18 14L19.25 16.75L22 18L19.25 19.25L18 22ZM8 19L5.5 13.5L0 11L5.5 8.5L8 3L10.5 8.5L16 11L10.5 13.5L8 19ZM8 14.15L9 12L11.15 11L9 10L8 7.85L7 10L4.85 11L7 12L8 14.15Z" fill="#AD2B00" />
+              </svg>
+            </div>
             {[
               ['JD', 'Jordan Day', 'DevOps Engineer', '98%'],
               ['ML', 'Maria Lopez', 'Data Scientist', '95%'],
