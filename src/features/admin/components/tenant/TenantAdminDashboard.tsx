@@ -291,7 +291,7 @@ function loadTenantWorkspaceData(tenantId: string, staffPage: number, staffListF
     tenantAdminApi.getStaffList({
       sortField: 'fullName',
       filters: staffListFilters,
-      sortBy: 'ASC',
+      sortBy: 'DESC',
       page: staffPage,
       size: ADMIN_LIST_PAGE_SIZE,
     }),
@@ -1713,6 +1713,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         ...(tenantId ? { tenantId } : {}),
       })
       triggerToast?.('Staff account created successfully.', 'success')
+      setStaffPage(1)
+      setStaffRoleFilter('all')
+      setStaffStatusFilter('all')
+      setStaffSearchQuery('')
+      setDebouncedStaffSearchQuery('')
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {

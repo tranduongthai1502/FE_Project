@@ -173,6 +173,10 @@ function getUsagePercent(used: number, limit: number) {
   return Math.min(100, Math.round((used / limit) * 100))
 }
 
+function formatStatNumber(value: number) {
+  return Number(value.toFixed(2)).toLocaleString()
+}
+
 function isActiveSubscriptionPlan(plan: SubscriptionPlan) {
   const normalizedStatus = plan.status.trim().toLowerCase()
   return normalizedStatus === 'active' || normalizedStatus === 'activated' || normalizedStatus === 'enabled'
@@ -1132,8 +1136,13 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const topTier = topTierPlan || topTierFallback
   const planStatsActivePlans = planStats.activePlans ?? activePlansCount
   const planStatsTotalPlans = planStats.totalPlans ?? getListTotalElements(plans, plans.length)
-  const planStatsTopTierName = topTier?.name || planStats.topTierName || '-'
-  const planStatsTopTierStaffLabel = (topTier?.staffAccountUnlimited ?? planStats.topTierStaffAccountUnlimited)
+  const planStatsActivePlansTrendLabel = planStats.activePlansTrend !== undefined
+    ? `${formatStatNumber(planStats.activePlansTrend)} active plans trend`
+    : `${planStatsTotalPlans} total plans`
+  const planStatsTopTierName = planStats.topTierName || topTier?.name || '-'
+  const planStatsTopTierStaffLabel = planStats.topTierSubscribers !== undefined
+    ? `${formatStatNumber(planStats.topTierSubscribers)} subscribers`
+    : (topTier?.staffAccountUnlimited ?? planStats.topTierStaffAccountUnlimited)
     ? 'Unlimited'
     : `${topTier?.maxStaffAccount ?? planStats.topTierMaxStaffAccount ?? 0} staff`
   const planStatsMonthlyRevenueLabel = `$${(planStats.monthlyActivePlanRevenue ?? 0).toLocaleString('en-US', {
@@ -1141,11 +1150,11 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     maximumFractionDigits: 2,
   })}`
   const planStatsMonthlyTrendLabel = planStats.monthlyRevenueTrendPercent !== undefined
-    ? `${planStats.monthlyRevenueTrendPercent >= 0 ? '+' : ''}${planStats.monthlyRevenueTrendPercent}% from last month.`
+    ? `${planStats.monthlyRevenueTrendPercent >= 0 ? '+' : ''}${formatStatNumber(planStats.monthlyRevenueTrendPercent)}% from last month`
     : '-'
-  const planStatsRenewalRateLabel = planStats.renewalRate !== undefined ? `${planStats.renewalRate.toFixed(2)}%` : '-'
+  const planStatsRenewalRateLabel = planStats.renewalRate !== undefined ? `${formatStatNumber(planStats.renewalRate)}%` : '-'
   const planStatsRenewalTrendLabel = planStats.renewalRateTrendPercent !== undefined
-    ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${planStats.renewalRateTrendPercent.toFixed(2)}% vs target`
+    ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${formatStatNumber(planStats.renewalRateTrendPercent)}% vs target`
     : '-'
   const sortedPlans = sortSubscriptionPlans(plans, planSort)
   const safePlanPage = planPage
@@ -1410,7 +1419,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         <article className="role-metric subscription-plan-card">
           <small>Active Plans</small>
           <strong>{planStatsActivePlans}</strong>
-          <em><i className="fa-solid fa-arrow-trend-up"></i> {planStatsTotalPlans} total plans</em>
+          <em><i className="fa-solid fa-arrow-trend-up"></i> {planStatsActivePlansTrendLabel}</em>
         </article>
         <article className="role-metric subscription-plan-card">
           <small>Top Tier</small>

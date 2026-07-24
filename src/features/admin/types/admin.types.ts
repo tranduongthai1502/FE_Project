@@ -73,6 +73,7 @@ export type JobPostingPayload = {
   salaryMin: number
   salaryMax: number
   status: string
+  allowDuplicateTitle?: boolean
 }
 
 export type StaffPayload = {
@@ -163,8 +164,10 @@ export type TenantDashboardStats = {
 
 export type PlanDashboardStats = {
   activePlans?: number
+  activePlansTrend?: number
   totalPlans?: number
   topTierName?: string
+  topTierSubscribers?: number
   topTierMaxStaffAccount?: number
   topTierStaffAccountUnlimited?: boolean
   monthlyActivePlanRevenue?: number
