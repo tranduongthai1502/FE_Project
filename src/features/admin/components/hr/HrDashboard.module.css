@@ -261,6 +261,14 @@
   margin-top: 10px;
 }
 
+.topPicks article > div {
+  min-width: 0;
+}
+
+.topPicks :global(.table-name-tooltip) {
+  width: 100%;
+}
+
 .topPicks article > span {
   width: 28px;
   height: 28px;
@@ -275,15 +283,21 @@
 
 .topPicks strong {
   display: block;
+  overflow: hidden;
   color: #101c33;
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topPicks small {
   display: block;
+  overflow: hidden;
   margin-top: 2px;
   color: #667085;
   font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topPicks em {
@@ -554,6 +568,10 @@
   cursor: pointer;
 }
 
+.jobsTableRow > * {
+  min-width: 0;
+}
+
 .jobsTableHead {
   min-height: 48px;
   background: #eef3ff;
@@ -565,8 +583,24 @@
 }
 
 .jobsTableRow strong {
+  overflow: hidden;
   color: #d93408;
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobsTableRow > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobsTableRow > :global(.table-name-tooltip) {
+  width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .jobsTableRow em {

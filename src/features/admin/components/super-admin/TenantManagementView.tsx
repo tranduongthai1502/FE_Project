@@ -113,6 +113,12 @@ function getUsagePercent(used: number, limit: number) {
   return Math.min(100, Math.max(0, Math.round((used / limit) * 100)))
 }
 
+function formatDashboardPercent(value?: number) {
+  if (value === undefined || value === null || !Number.isFinite(value)) return '...'
+
+  return `${Number(value.toFixed(2)).toLocaleString()}%`
+}
+
 function getRemainingLabel(remaining: number, noun: string, unlimited = false) {
   if (unlimited) return `Unlimited ${noun} available`
   return `${Math.max(0, remaining)} ${noun} ${Math.max(0, remaining) === 1 ? 'available' : 'available'}`
@@ -155,9 +161,9 @@ function buildTenantListParams(
   }
 
   return {
-    sortField: 'companyName',
+    sortField: 'createdAt',
     filters,
-    sortBy: 'ASC',
+    sortBy: 'DESC',
     page,
     size: ADMIN_LIST_PAGE_SIZE,
   }
@@ -457,6 +463,10 @@ export function TenantManagementView({
       setTenantFieldErrors({})
       setIsCreateModalOpen(false)
       setIsCreateConfirmOpen(false)
+      setTenantStatusFilter('all')
+      setTenantPlanFilter('')
+      setTenantSearchQuery('')
+      setTenantPage(1)
       updateSuperAdminViewUrl('tenantManagement')
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
@@ -472,7 +482,6 @@ export function TenantManagementView({
   const activeTenantCount = useMemo(() => (
     tenants.filter((tenant) => getTenantStatusMeta(tenant.status).isActive).length
   ), [tenants])
-  const inactiveTenantCount = tenants.length - activeTenantCount
   const planById = useMemo(() => (
     new Map(subscriptionPlans.map((plan) => [plan.id, plan]))
   ), [subscriptionPlans])
@@ -510,8 +519,8 @@ export function TenantManagementView({
   ), [tenants])
   const tenantStatsTotalRevenue = tenantStats?.totalRevenue ?? totalRevenue
   const tenantStatsActiveCount = tenantStats?.activeTenants ?? activeTenantCount
-  const tenantStatsTotalCount = tenantStats?.totalTenants ?? tenants.length
-  const tenantStatsInactiveCount = tenantStats?.inactiveTenants ?? inactiveTenantCount
+  const tenantStatsAverageUsage = tenantStats?.averageUsage
+  const tenantStatsChurnRate = tenantStats?.churnRate
   const metricsAreLoading = isLoadingTenants || isLoadingPlans
   const tenantStatsAreLoading = isLoadingTenantStats && !tenantStats
   const getTenantPlan = (tenant: Tenant) => (
@@ -1005,14 +1014,14 @@ export function TenantManagementView({
         <article className="tenant-management-metric-card">
           <div>
             <small>Average Usage</small>
-            <strong>{tenantStatsAreLoading || tenantStatsTotalCount === 0 ? '...' : `${Math.round((tenantStatsActiveCount / Math.max(tenantStatsTotalCount, 1)) * 1000) / 10}%`}</strong>
+            <strong>{tenantStatsAreLoading ? '...' : formatDashboardPercent(tenantStatsAverageUsage)}</strong>
           </div>
           <span className="metric-icon-warning"><i className="fa-solid fa-circle-notch"></i></span>
         </article>
         <article className="tenant-management-metric-card">
           <div>
             <small>Churn Rate</small>
-            <strong>{tenantStatsAreLoading || tenantStatsTotalCount === 0 ? '...' : `${Math.round((tenantStatsInactiveCount / Math.max(tenantStatsTotalCount, 1)) * 1000) / 10}%`}</strong>
+            <strong>{tenantStatsAreLoading ? '...' : formatDashboardPercent(tenantStatsChurnRate)}</strong>
           </div>
           <span className="metric-icon-danger"><i className="fa-solid fa-triangle-exclamation"></i></span>
         </article>
