@@ -3,7 +3,6 @@ import { getRoleHomeNav, interviewerNav } from '../../data/adminNavigation'
 import type { RoleHomeView } from '../../types/admin.types'
 import { isStoredCurrentUserInactive } from '../../utils/adminAccess'
 import { getInitialRoleHomeView, updateRoleHomeViewUrl } from '../../utils/adminRouteHelpers'
-import { hasMultipleStaffWorkspaces, switchStaffWorkspace } from '../../utils/staffWorkspace'
 import { AccountSettingsView } from '../shared/AccountSettingsView'
 import { DashboardShell } from '../shared/DashboardShell'
 import styles from './InterviewerDashboard.module.css'
@@ -15,7 +14,6 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
     updateRoleHomeViewUrl('interviewer', view)
   }
   const navItems = getRoleHomeNav(interviewerNav, activeView, selectView)
-  const canSwitchWorkspace = hasMultipleStaffWorkspaces()
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
@@ -28,7 +26,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   }, [])
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => selectView('settings')} showWorkspaceSwitcher={canSwitchWorkspace} onWorkspaceSwitch={() => switchStaffWorkspace('hr')}>
+    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
         <AccountSettingsView onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (

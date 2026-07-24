@@ -21,28 +21,28 @@
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  gap: 20px;
   margin-bottom: 28px;
 }
 
 .kpiCard {
   position: relative;
-  min-height: 76px;
-  padding: 16px 18px 12px 62px;
+  min-height: 112px;
+  padding: 54px 20px 16px;
   border: 1px solid #f0b8a8;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #ffffff;
 }
 
 .kpiCard:nth-child(3) {
   border-color: transparent;
-  box-shadow: 0 8px 18px rgba(16, 28, 51, 0.12);
+  box-shadow: 0 6px 14px rgba(16, 28, 51, 0.12);
 }
 
 .kpiCard > span {
   position: absolute;
   top: 16px;
-  left: 18px;
+  left: 20px;
   width: 30px;
   height: 30px;
   display: grid;
@@ -59,26 +59,43 @@
 .kpiCard small {
   display: block;
   color: #667085;
-  font-size: 11px;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 .kpiCard strong {
   display: block;
-  margin-top: 4px;
+  margin-top: 5px;
   color: #101c33;
   font-size: 22px;
+  line-height: 1.1;
 }
 
 .kpiCard em {
   position: absolute;
-  top: 16px;
-  right: 18px;
+  top: 17px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #d93408;
-  font-size: 9px;
+  font-size: 10px;
   font-style: normal;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.kpiCard:first-child em {
+  color: #12b76a;
+}
+
+.kpiCard:nth-child(2) em {
+  color: #344054;
+}
+
+.kpiCard em i {
+  font-size: 8px;
 }
 
 .dashboardGrid {
@@ -224,14 +241,18 @@
 
 .pipelinePanel footer {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: 1.1fr 0.8fr 1fr 0.9fr;
+  gap: 14px;
   margin-top: 10px;
   color: #667085;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.pipelinePanel footer span {
+  min-width: 0;
 }
 
 .topPicks {
@@ -242,8 +263,8 @@
   margin-bottom: 12px;
 }
 
-.topPicks :global(.role-panel-head) i {
-  color: #d93408;
+.topPicks :global(.role-panel-head) svg {
+  display: block;
 }
 
 .topPicks article {
@@ -339,6 +360,7 @@
   }
 
   .quickPanel div,
+  .pipelineTrack,
   .pipelinePanel footer {
     grid-template-columns: 1fr;
   }
@@ -1084,12 +1106,14 @@
   text-transform: none;
 }
 
-.richTextToolbar b,
-.richTextToolbar i,
 .richTextToolbar span {
   display: inline-grid;
   place-items: center;
   min-width: 10px;
+}
+
+.richTextToolbar svg {
+  display: block;
 }
 
 .jobForm textarea {
@@ -1100,6 +1124,11 @@
   padding: 12px;
   resize: vertical;
   font-weight: 600;
+}
+
+.jobForm textarea::placeholder {
+  color: #667085;
+  font-weight: 400;
 }
 
 .jobFormMain .richTextBox textarea {
@@ -1122,7 +1151,7 @@
 .jobForm footer button {
   min-width: 118px;
   min-height: 38px;
-  border: 1px solid #d93408;
+  border: 2px solid #d93408;
   border-radius: 5px;
   background: #ffffff;
   color: #d93408;
@@ -1137,10 +1166,10 @@
   color: #ffffff;
 }
 
-.aiJobButton {
+.jobsHeader .aiJobButton {
   min-width: 142px;
   min-height: 42px;
-  border: 1px solid #d93408;
+  border: 2px solid #d93408;
   border-radius: 5px;
   background: #ffffff;
   color: #d93408;
