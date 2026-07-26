@@ -1,0 +1,1318 @@
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { buildNavigation } from '@/components/common/navigation'
+import { hrNav } from './hrNavigation'
+import type { RoleHomeView } from '@/app/routes/route.types'
+import type { JobListFilters, JobPosting, JobPostingPayload } from '@/services/api/api.types'
+import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
+import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
+import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
+import { getListPageCount, getListTotalElements } from '@/utils/pagination'
+import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
+import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
+import { Breadcrumb } from '@/components/common/Breadcrumb'
+import { SearchInput } from '@/components/common/SearchInput'
+import { ConfirmActionModal } from '@/components/common/ConfirmActionModal'
+import { DashboardShell } from '@/components/common/DashboardShell'
+import styles from './HrDashboard.module.css'
+import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/services/api/axiosErrorHandler'
+
+const requiredJobFieldMessage = validationErrorMessages.requiredField
+const departmentRequiredMessage = validationErrorMessages.departmentRequired
+const employmentTypeRequiredMessage = validationErrorMessages.employmentTypeRequired
+const duplicateJobTitleMessage = validationErrorMessages.duplicateJobTitle
+const salaryPairMessage = validationErrorMessages.salaryPairRequired
+const salaryOrderMessage = validationErrorMessages.salaryOrderInvalid
+const salaryPositiveMessage = 'Salary must be a positive number.'
+const deadlineFutureMessage = 'Application deadline must be today or a future date.'
+const jobFormRefreshViewKey = 'jobfusion.hr.jobFormRefreshView'
+const hrJobsPath = '/hr/jobs'
+const hrCreateJobPostingPath = '/hr/jobs/createjobposting'
+const hrGenerateJobAiPath = '/hr/jobs/createjobposting/generatewithai'
+
+type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
+type JobConfirmAction = 'close' | 'open' | 'deleteDraft' | null
+
+const jobApiFieldMap: Record<string, keyof JobPostingPayload> = {
+  title: 'title',
+  jobTitle: 'title',
+  job_title: 'title',
+  department: 'department',
+  employmentType: 'employmentType',
+  employment_type: 'employmentType',
+  type: 'employmentType',
+  locationType: 'locationType',
+  location_type: 'locationType',
+  location: 'location',
+  applicationDeadline: 'applicationDeadline',
+  application_deadline: 'applicationDeadline',
+  deadline: 'applicationDeadline',
+  description: 'description',
+  requirements: 'requirements',
+  benefits: 'benefits',
+  salaryMin: 'salaryMin',
+  salary_min: 'salaryMin',
+  minSalary: 'salaryMin',
+  min_salary: 'salaryMin',
+  salaryMax: 'salaryMax',
+  salary_max: 'salaryMax',
+  maxSalary: 'salaryMax',
+  max_salary: 'salaryMax',
+  status: 'status',
+}
+type ToastTrigger = (message: string, type?: 'success' | 'error') => void
+
+const emptyJobForm: JobPostingPayload = {
+  title: '',
+  department: '',
+  level: '',
+  employmentType: '',
+  locationType: 'OFFICE',
+  location: '',
+  applicationDeadline: '',
+  description: '',
+  requirements: '',
+  benefits: '',
+  salaryMin: 0,
+  salaryMax: 0,
+  status: 'OPEN',
+}
+
+function getNormalizedJobStatus(status?: string) {
+  return String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_')
+}
+
+function isOpenJobStatus(status?: string) {
+  const normalized = getNormalizedJobStatus(status)
+  return normalized === 'OPEN' || normalized === 'ACTIVE'
+}
+
+function isClosedJobStatus(status?: string) {
+  const normalized = getNormalizedJobStatus(status)
+  return normalized === 'CLOSED' || normalized === 'CLOSE'
+}
+
+function isDraftJobStatus(status?: string) {
+  return getNormalizedJobStatus(status) === 'DRAFT'
+}
+
+function buildJobPayloadFromPosting(job: JobPosting, status = job.status): JobPostingPayload {
+  return {
+    title: job.title,
+    department: job.department,
+    level: job.level || '',
+    employmentType: job.employmentType || 'FULL_TIME',
+    locationType: job.locationType || 'OFFICE',
+    location: job.location || '',
+    applicationDeadline: job.applicationDeadline || '',
+    description: job.description || '',
+    requirements: job.requirements || '',
+    benefits: job.benefits || '',
+    salaryMin: job.salaryMin || 0,
+    salaryMax: job.salaryMax || 0,
+    status,
+  }
+}
+
+function getJobActionConfirmMessage(action: Exclude<JobConfirmAction, null>, job: JobPosting) {
+  if (action === 'close') {
+    return 'Are you sure you want to close this job posting? No new applications will be accepted.'
+  }
+
+  if (action === 'deleteDraft') {
+    return 'Are you sure you want to permanently delete this job posting? This action cannot be undone.'
+  }
+
+  return isDraftJobStatus(job.status)
+    ? 'Are you sure you want to open this job posting? It will become visible to candidates immediately.'
+    : 'Are you sure you want to reopen this job posting? Candidates will be able to apply again.'
+}
+
+function JobFieldError({ message }: { message?: string }) {
+  return (
+    <small className={styles.jobFieldError} aria-hidden={!message}>
+      {message || requiredJobFieldMessage}
+    </small>
+  )
+}
+
+function getApiErrorPayload(error: unknown): any {
+  if (!error || typeof error !== 'object') return null
+  const errorObject = error as {
+    errorData?: unknown
+    response?: {
+      data?: unknown
+    }
+  }
+
+  return errorObject.errorData || errorObject.response?.data || null
+}
+
+function normalizeApiFieldName(field: string) {
+  return field
+    .replace(/\[(\w+)\]/g, '.$1')
+    .split('.')
+    .filter(Boolean)
+    .pop() || field
+}
+
+function getApiFieldMessage(value: unknown) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean).join(' ')
+  if (value && typeof value === 'object') {
+    const objectValue = value as { message?: unknown; defaultMessage?: unknown; error?: unknown }
+    return String(objectValue.message || objectValue.defaultMessage || objectValue.error || '').trim()
+  }
+  return String(value || '').trim()
+}
+
+function assignJobApiFieldError(errors: JobFieldErrors, field: unknown, message: unknown) {
+  const fieldName = normalizeApiFieldName(String(field || ''))
+  const jobField = jobApiFieldMap[fieldName] || jobApiFieldMap[fieldName.trim()]
+  const errorMessage = getApiFieldMessage(message)
+
+  if (jobField && errorMessage) {
+    errors[jobField] = errorMessage
+  }
+}
+
+function collectJobApiFieldErrors(candidate: any, errors: JobFieldErrors) {
+  if (!candidate) return
+
+  if (Array.isArray(candidate)) {
+    candidate.forEach((item) => {
+      if (item && typeof item === 'object') {
+        assignJobApiFieldError(errors, item.field || item.name || item.property || item.path, item.message || item.defaultMessage || item.error)
+      }
+    })
+    return
+  }
+
+  if (typeof candidate === 'object') {
+    Object.entries(candidate).forEach(([field, message]) => {
+      assignJobApiFieldError(errors, field, message)
+    })
+  }
+}
+
+function getJobFieldErrorsFromApiError(error: unknown) {
+  const payload = getApiErrorPayload(error)
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  const errors: JobFieldErrors = {}
+
+  collectJobApiFieldErrors(data?.errors, errors)
+  collectJobApiFieldErrors(data?.fieldErrors, errors)
+  collectJobApiFieldErrors(data?.validationErrors, errors)
+  collectJobApiFieldErrors(data?.violations, errors)
+  collectJobApiFieldErrors(data?.data?.errors, errors)
+  collectJobApiFieldErrors(data?.data?.fieldErrors, errors)
+
+  return errors
+}
+
+function isJobTitleAlreadyExistsError(error: unknown) {
+  const payload = getApiErrorPayload(error)
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  const candidates = [
+    data?.code,
+    data?.error,
+    data?.message,
+    data?.backendMessage,
+    data?.data?.code,
+    data?.data?.error,
+    data?.data?.message,
+    (error as { backendMessage?: unknown } | null)?.backendMessage,
+    (error as { code?: unknown } | null)?.code,
+    (error as { message?: unknown } | null)?.message,
+  ]
+
+  return candidates.some((value) => String(value || '').trim().toLowerCase() === 'job_title_already_exists')
+}
+
+function JobsEmptyLargeIcon() {
+  return (
+    <svg width="131" height="132" viewBox="0 0 131 132" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g clipPath="url(#jobs-empty-large-clip)">
+        <path d="M57.3125 111.375C49.0347 111.378 40.8499 109.616 33.2959 106.205C33.0936 106.099 32.8689 106.043 32.6409 106.043C32.4128 106.043 32.1882 106.099 31.9859 106.205C31.7988 106.332 31.646 106.505 31.5412 106.706C31.4364 106.908 31.3829 107.132 31.3855 107.36V118.36C31.3855 119.089 31.673 119.789 32.1848 120.304C32.6966 120.82 33.3908 121.11 34.1146 121.11H40.9375C41.2995 121.11 41.6465 121.255 41.9025 121.513C42.1584 121.771 42.3021 122.12 42.3021 122.485V129.25C42.3021 129.979 42.5897 130.679 43.1015 131.194C43.6133 131.71 44.3075 132 45.0313 132H72.323C73.0468 132 73.741 131.71 74.2528 131.194C74.7646 130.679 75.0521 129.979 75.0521 129.25V122.375C75.0521 122.01 75.1959 121.66 75.4518 121.403C75.7077 121.145 76.0548 121 76.4167 121H83.2396C83.9635 121 84.6576 120.71 85.1694 120.194C85.6813 119.679 85.9688 118.979 85.9688 118.25V106.15C85.9709 105.916 85.9113 105.686 85.7962 105.483C85.6812 105.28 85.5147 105.112 85.3138 104.995C85.1166 104.873 84.8899 104.809 84.6588 104.809C84.4277 104.809 84.201 104.873 84.0038 104.995C75.7356 109.227 66.5861 111.414 57.3125 111.375Z" fill="#E4BEB4" fillOpacity="0.4" />
+        <path d="M121.775 104.17L99.2325 81.455C99.0177 81.213 98.8989 80.8997 98.8989 80.575C98.8989 80.2503 99.0177 79.937 99.2325 79.695C106.348 69.2215 109.326 56.4481 107.584 43.8775C105.841 31.3069 99.502 19.8451 89.8099 11.7378C80.1178 3.63054 67.7707 -0.537917 55.1876 0.0491832C42.6045 0.636284 30.6925 5.93663 21.7854 14.9117C12.8783 23.8868 7.61812 35.8898 7.03546 48.5689C6.45281 61.248 10.5897 73.6894 18.6356 83.4555C26.6814 93.2216 38.0564 99.6085 50.5318 101.365C63.0072 103.121 75.6838 100.12 86.0779 92.95C86.3181 92.7336 86.629 92.6139 86.9513 92.6139C87.2735 92.6139 87.5844 92.7336 87.8246 92.95L110.368 115.665C111.903 117.21 113.984 118.078 116.153 118.078C118.323 118.078 120.404 117.21 121.939 115.665C123.414 114.111 124.224 112.034 124.193 109.884C124.163 107.733 123.294 105.681 121.775 104.17ZM46.505 41.635C46.563 41.4249 46.6738 41.2335 46.8269 41.0793C46.9799 40.9251 47.1699 40.8134 47.3784 40.755C47.5543 40.6588 47.7513 40.6083 47.9515 40.6083C48.1517 40.6083 48.3487 40.6588 48.5246 40.755C53.2028 43.7099 58.6141 45.2732 64.1354 45.265C65.9669 45.2358 67.7928 45.0519 69.5938 44.715C69.67 44.6763 69.7541 44.6562 69.8394 44.6562C69.9247 44.6562 70.0088 44.6763 70.085 44.715C70.135 44.8574 70.135 45.0127 70.085 45.155C70.085 48.4371 68.7911 51.5847 66.4879 53.9055C64.1847 56.2262 61.061 57.53 57.8038 57.53C54.5466 57.53 51.4228 56.2262 49.1196 53.9055C46.8164 51.5847 45.5225 48.4371 45.5225 45.155C45.6712 43.9383 46.0024 42.7514 46.505 41.635ZM17.7396 50.93C17.7366 44.3161 19.3642 37.8051 22.476 31.9817C25.5878 26.1583 30.0864 21.2049 35.5678 17.5666C41.0492 13.9283 47.3417 11.7189 53.8801 11.1369C60.4184 10.5549 66.9978 11.6185 73.0273 14.2322C79.0568 16.846 84.3476 20.9279 88.4244 26.1114C92.5012 31.295 95.2363 37.4177 96.384 43.9297C97.5318 50.4417 97.0563 57.139 95.0002 63.42C92.9441 69.7011 89.3718 75.3691 84.6042 79.915C84.4803 80.0477 84.3257 80.1473 84.1542 80.2049C83.9828 80.2625 83.7998 80.2763 83.6217 80.245C83.4458 80.2208 83.277 80.1592 83.1265 80.0644C82.9759 79.9696 82.8471 79.8437 82.7483 79.695C79.5564 74.6489 74.9362 70.6832 69.4846 68.31C69.2539 68.1974 69.0593 68.0216 68.9232 67.8028C68.787 67.5839 68.7148 67.3308 68.7148 67.0725C68.7148 66.8142 68.787 66.5611 68.9232 66.3423C69.0593 66.1234 69.2539 65.9476 69.4846 65.835C73.9884 63.3443 77.5417 59.4144 79.5846 54.6645C81.6275 49.9146 82.0438 44.6147 80.7679 39.6002C79.492 34.5856 76.5965 30.1413 72.5376 26.9677C68.4787 23.7941 63.4871 22.0716 58.3496 22.0716C53.2121 22.0716 48.2205 23.7941 44.1616 26.9677C40.1027 30.1413 37.2072 34.5856 35.9313 39.6002C34.6554 44.6147 35.0717 49.9146 37.1146 54.6645C39.1575 59.4144 42.7108 63.3443 47.2146 65.835C47.4427 65.9528 47.6316 66.1354 47.7577 66.3603C47.8838 66.5852 47.9417 66.8423 47.9242 67.1C47.9101 67.3652 47.8201 67.6205 47.6651 67.8352C47.5102 68.0499 47.2968 68.2148 47.0508 68.31C41.1757 70.5076 36.3152 74.8175 33.405 80.41C33.3194 80.5961 33.1903 80.7583 33.0286 80.8829C32.867 81.0075 32.6777 81.0906 32.4771 81.125C32.2902 81.2173 32.0848 81.2653 31.8767 81.2653C31.6686 81.2653 31.4632 81.2173 31.2763 81.125C27.0065 77.3616 23.5885 72.7183 21.2531 67.5091C18.9178 62.2998 17.7196 56.6461 17.7396 50.93Z" fill="#E4BEB4" fillOpacity="0.4" />
+      </g>
+      <defs>
+        <clipPath id="jobs-empty-large-clip">
+          <rect width="131" height="132" fill="white" />
+        </clipPath>
+      </defs>
+    </svg>
+  )
+}
+
+function JobsEmptySmallIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g clipPath="url(#jobs-empty-small-clip)">
+        <path d="M11.007 21H9.605C6.02 21 4.228 21 3.114 19.865C2 18.73 2 16.903 2 13.25C2 9.597 2 7.77 3.114 6.635C4.228 5.5 6.02 5.5 9.605 5.5H13.408C16.993 5.5 18.786 5.5 19.9 6.635C20.757 7.508 20.954 8.791 21 11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M18 5.5L17.9 5.19C17.405 3.65 17.158 2.88 16.569 2.44C15.979 2 15.197 2 13.63 2H13.367C11.802 2 11.019 2 10.43 2.44C9.84 2.88 9.593 3.65 9.098 5.19L9 5.5M19.111 13.255C19.296 13.085 19.388 13 19.5 13C19.612 13 19.704 13.085 19.889 13.255L20.602 13.912C20.688 13.991 20.731 14.031 20.784 14.05C20.838 14.07 20.896 14.068 21.014 14.063L21.976 14.025C22.224 14.015 22.348 14.011 22.433 14.082C22.518 14.153 22.535 14.276 22.568 14.522L22.7 15.508C22.716 15.622 22.723 15.678 22.751 15.728C22.779 15.776 22.824 15.811 22.914 15.882L23.69 16.492C23.882 16.644 23.978 16.719 23.997 16.827C24.016 16.935 23.951 17.039 23.823 17.247L23.297 18.094C23.237 18.191 23.207 18.24 23.197 18.294C23.187 18.348 23.199 18.405 23.223 18.517L23.432 19.495C23.482 19.735 23.508 19.855 23.453 19.951C23.398 20.047 23.281 20.085 23.048 20.161L22.122 20.462C22.012 20.498 21.956 20.516 21.913 20.552C21.87 20.589 21.843 20.641 21.79 20.744L21.338 21.615C21.223 21.838 21.165 21.949 21.06 21.987C20.955 22.025 20.84 21.977 20.608 21.881L19.72 21.513C19.611 21.468 19.557 21.445 19.5 21.445C19.443 21.445 19.389 21.468 19.28 21.513L18.392 21.881C18.16 21.977 18.045 22.025 17.94 21.987C17.835 21.949 17.777 21.837 17.662 21.615L17.21 20.744C17.156 20.641 17.13 20.589 17.087 20.553C17.044 20.517 16.988 20.498 16.878 20.463L15.952 20.161C15.719 20.085 15.602 20.047 15.547 19.951C15.492 19.855 15.517 19.736 15.568 19.495L15.778 18.517C15.801 18.405 15.813 18.349 15.803 18.295C15.7825 18.2227 15.7486 18.1548 15.703 18.095L15.178 17.247C15.048 17.039 14.984 16.935 15.003 16.827C15.022 16.719 15.118 16.644 15.31 16.493L16.086 15.883C16.176 15.811 16.221 15.776 16.249 15.727C16.277 15.678 16.284 15.622 16.299 15.507L16.432 14.522C16.465 14.277 16.482 14.153 16.567 14.082C16.652 14.011 16.776 14.015 17.024 14.025L17.987 14.063C18.104 14.068 18.162 14.07 18.216 14.05C18.269 14.03 18.312 13.991 18.398 13.912L19.111 13.255Z" stroke="white" strokeWidth="1.5" />
+      </g>
+      <defs>
+        <clipPath id="jobs-empty-small-clip">
+          <rect width="24" height="24" fill="white" />
+        </clipPath>
+      </defs>
+    </svg>
+  )
+}
+
+function JobsEmptyState() {
+  return (
+    <section className={styles.jobsEmptyState}>
+      <div className={styles.jobsEmptyIcon}>
+        <JobsEmptyLargeIcon />
+        <span><JobsEmptySmallIcon /></span>
+      </div>
+      <p className={styles.jobsEmptyTitle}>No job postings found</p>
+      <p>Click 'Create New Job Posting' to get started.</p>
+    </section>
+  )
+}
+
+function getHrJobViewFromPath(pathname: string): 'list' | 'detail' | 'create' | 'edit' | 'ai' {
+  if (pathname === hrGenerateJobAiPath) return 'ai'
+  return pathname === hrCreateJobPostingPath ? 'create' : 'list'
+}
+
+function RichTextToolbar({ className }: { className: string }) {
+  return (
+    <div className={className}>
+      <span>
+        <svg width="8" height="11" viewBox="0 0 9 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M0 11.6667V0H4.60417C5.50694 0 6.34028 0.277778 7.10417 0.833333C7.86806 1.38889 8.25 2.15972 8.25 3.14583C8.25 3.85417 8.09028 4.39931 7.77083 4.78125C7.45139 5.16319 7.15278 5.4375 6.875 5.60417C7.22222 5.75694 7.60764 6.04167 8.03125 6.45833C8.45486 6.875 8.66667 7.5 8.66667 8.33333C8.66667 9.56944 8.21528 10.434 7.3125 10.9271C6.40972 11.4201 5.5625 11.6667 4.77083 11.6667H0ZM2.52083 9.33333H4.6875C5.35417 9.33333 5.76042 9.16319 5.90625 8.82292C6.05208 8.48264 6.125 8.23611 6.125 8.08333C6.125 7.93056 6.05208 7.68403 5.90625 7.34375C5.76042 7.00347 5.33333 6.83333 4.625 6.83333H2.52083V9.33333ZM2.52083 4.58333H4.45833C4.91667 4.58333 5.25 4.46528 5.45833 4.22917C5.66667 3.99306 5.77083 3.72917 5.77083 3.4375C5.77083 3.10417 5.65278 2.83333 5.41667 2.625C5.18056 2.41667 4.875 2.3125 4.5 2.3125H2.52083V4.58333Z" fill="#0B1C30" />
+        </svg>
+      </span>
+      <span>
+        <svg width="10" height="11" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M0 11.6667V9.58333H3.33333L5.83333 2.08333H2.5V0H10.8333V2.08333H7.91667L5.41667 9.58333H8.33333V11.6667H0Z" fill="#0B1C30" />
+        </svg>
+      </span>
+      <span>
+        <svg width="13" height="12" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M5 12.5V10.8333H15V12.5H5ZM5 7.5V5.83333H15V7.5H5ZM5 2.5V0.833333H15V2.5H5ZM1.66667 13.3333C1.20833 13.3333 0.815972 13.1701 0.489583 12.8438C0.163194 12.5174 0 12.125 0 11.6667C0 11.2083 0.163194 10.816 0.489583 10.4896C0.815972 10.1632 1.20833 10 1.66667 10C2.125 10 2.51736 10.1632 2.84375 10.4896C3.17014 10.816 3.33333 11.2083 3.33333 11.6667C3.33333 12.125 3.17014 12.5174 2.84375 12.8438C2.51736 13.1701 2.125 13.3333 1.66667 13.3333ZM1.66667 8.33333C1.20833 8.33333 0.815972 8.17014 0.489583 7.84375C0.163194 7.51736 0 7.125 0 6.66667C0 6.20833 0.163194 5.81597 0.489583 5.48958C0.815972 5.16319 1.20833 5 1.66667 5C2.125 5 2.51736 5.16319 2.84375 5.48958C3.17014 5.81597 3.33333 6.20833 3.33333 6.66667C3.33333 7.125 3.17014 7.51736 2.84375 7.84375C2.51736 8.17014 2.125 8.33333 1.66667 8.33333ZM1.66667 3.33333C1.20833 3.33333 0.815972 3.17014 0.489583 2.84375C0.163194 2.51736 0 2.125 0 1.66667C0 1.20833 0.163194 0.815972 0.489583 0.489583C0.815972 0.163194 1.20833 0 1.66667 0C2.125 0 2.51736 0.163194 2.84375 0.489583C3.17014 0.815972 3.33333 1.20833 3.33333 1.66667C3.33333 2.125 3.17014 2.51736 2.84375 2.84375C2.51736 3.17014 2.125 3.33333 1.66667 3.33333Z" fill="#0B1C30" />
+        </svg>
+      </span>
+      <span>
+        <svg width="16" height="8" viewBox="0 0 17 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M7.5 8.33333H4.16667C3.01389 8.33333 2.03125 7.92708 1.21875 7.11458C0.40625 6.30208 0 5.31944 0 4.16667C0 3.01389 0.40625 2.03125 1.21875 1.21875C2.03125 0.40625 3.01389 0 4.16667 0H7.5V1.66667H4.16667C3.47222 1.66667 2.88194 1.90972 2.39583 2.39583C1.90972 2.88194 1.66667 3.47222 1.66667 4.16667C1.66667 4.86111 1.90972 5.45139 2.39583 5.9375C2.88194 6.42361 3.47222 6.66667 4.16667 6.66667H7.5V8.33333ZM5 5V3.33333H11.6667V5H5ZM9.16667 8.33333V6.66667H12.5C13.1944 6.66667 13.7847 6.42361 14.2708 5.9375C14.7569 5.45139 15 4.86111 15 4.16667C15 3.47222 14.7569 2.88194 14.2708 2.39583C13.7847 1.90972 13.1944 1.66667 12.5 1.66667H9.16667V0H12.5C13.6528 0 14.6354 0.40625 15.4479 1.21875C16.2604 2.03125 16.6667 3.01389 16.6667 4.16667C16.6667 5.31944 16.2604 6.30208 15.4479 7.11458C14.6354 7.92708 13.6528 8.33333 12.5 8.33333H9.16667Z" fill="#0B1C30" />
+        </svg>
+      </span>
+    </div>
+  )
+}
+
+function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: boolean; onHome: () => void; triggerToast?: ToastTrigger }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState('')
+  const [jobs, setJobs] = useState<JobPosting[]>([])
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false)
+  const [jobListError, setJobListError] = useState('')
+  const [jobPage, setJobPage] = useState(1)
+  const [jobPageCount, setJobPageCount] = useState(1)
+  const [jobListReloadKey, setJobListReloadKey] = useState(0)
+  const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai'>(() => getHrJobViewFromPath(location.pathname))
+  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
+  const [jobForm, setJobForm] = useState<JobPostingPayload>(emptyJobForm)
+  const [salaryInputValues, setSalaryInputValues] = useState({ salaryMin: '', salaryMax: '' })
+  const [jobFieldErrors, setJobFieldErrors] = useState<JobFieldErrors>({})
+  const [isSavingJob, setIsSavingJob] = useState(false)
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
+  const [jobConfirmAction, setJobConfirmAction] = useState<JobConfirmAction>(null)
+  const [jobConfirmTarget, setJobConfirmTarget] = useState<JobPosting | null>(null)
+  const [isJobActionSubmitting, setIsJobActionSubmitting] = useState(false)
+  const activeJobCount = jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
+  const totalApplicantCount = jobs.reduce((total, job) => total + job.applicantCount, 0)
+  const pendingReviewCount = jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
+  const jobTotalElements = getListTotalElements(jobs, jobs.length)
+  const isJobFormDirty = (
+    jobForm.title.trim() !== '' ||
+    jobForm.department.trim() !== '' ||
+    jobForm.level.trim() !== '' ||
+    jobForm.employmentType.trim() !== '' ||
+    jobForm.locationType !== emptyJobForm.locationType ||
+    jobForm.location.trim() !== '' ||
+    jobForm.applicationDeadline.trim() !== '' ||
+    jobForm.description.trim() !== '' ||
+    jobForm.requirements.trim() !== '' ||
+    jobForm.benefits.trim() !== '' ||
+    salaryInputValues.salaryMin.trim() !== '' ||
+    salaryInputValues.salaryMax.trim() !== ''
+  )
+
+  useEffect(() => {
+    if (jobView !== 'list') return
+
+    let isActive = true
+    const filters: JobListFilters = {}
+    const search = searchQuery.trim()
+
+    if (search) filters.title = search
+    if (employmentTypeFilter) filters.employmentType = employmentTypeFilter
+    if (statusFilter) filters.status = statusFilter
+
+    setIsLoadingJobs(true)
+    setJobListError('')
+
+    hrApi.getJobPostings({
+      sortField: 'createdAt',
+      filters,
+      sortBy: 'DESC',
+      page: jobPage,
+      size: HR_LIST_PAGE_SIZE,
+    })
+      .then((items) => {
+        if (!isActive) return
+        const visibleItems = search
+          ? items.filter((job) => job.title.trim().toLowerCase().startsWith(search.toLowerCase()))
+          : items
+
+        setJobs(visibleItems)
+        setJobPageCount(search ? Math.max(1, jobPage) : getListPageCount(items, jobPage, HR_LIST_PAGE_SIZE))
+      })
+      .catch((error) => {
+        if (!isActive) return
+        setJobs([])
+        setJobListError(getAdminErrorMessage(error, 'Failed to load job postings.'))
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingJobs(false)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [employmentTypeFilter, jobListReloadKey, jobPage, jobView, searchQuery, statusFilter])
+
+  useEffect(() => {
+    const refreshView = window.sessionStorage.getItem(jobFormRefreshViewKey)
+    if (refreshView !== 'create') return
+
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setJobForm(emptyJobForm)
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobFieldErrors({})
+    setSelectedJob(null)
+    setJobView('create')
+    if (location.pathname !== hrCreateJobPostingPath) {
+      navigate(hrCreateJobPostingPath)
+    }
+  }, [location.pathname, navigate])
+
+  useEffect(() => {
+    setJobView(getHrJobViewFromPath(location.pathname))
+  }, [location.pathname])
+
+  const updateHrJobsPath = (path: string) => {
+    if (location.pathname !== path) {
+      navigate(path)
+    }
+  }
+
+  useEffect(() => {
+    const shouldWarnOnRefresh = jobView === 'create' && isJobFormDirty
+    if (!shouldWarnOnRefresh) return undefined
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      window.sessionStorage.setItem(jobFormRefreshViewKey, 'create')
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isJobFormDirty, jobView])
+
+  const formatJobDate = (value?: string) => {
+    if (!value) return '-'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  const formatJobStatus = (value: string) => {
+    const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ')
+    return normalized ? normalized.replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'Draft'
+  }
+
+  const formatEmploymentType = (value: string) => (
+    value.trim().replace(/[_-]+/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
+  )
+  const updateJobFormField = <Field extends keyof JobPostingPayload>(field: Field, value: JobPostingPayload[Field]) => {
+    setJobFieldErrors((current) => {
+      if (!current[field]) return current
+      const { [field]: _removed, ...nextErrors } = current
+      return nextErrors
+    })
+    setJobForm((current) => ({ ...current, [field]: value }))
+  }
+  const updateSalaryField = (field: 'salaryMin' | 'salaryMax', value: string) => {
+    setJobFieldErrors((current) => {
+      if (!current.salaryMin && !current.salaryMax) return current
+      const { salaryMin: _removedMin, salaryMax: _removedMax, ...nextErrors } = current
+      return nextErrors
+    })
+    setSalaryInputValues((current) => ({ ...current, [field]: value }))
+    const numericValue = Number(value)
+    setJobForm((current) => ({ ...current, [field]: value === '' || !Number.isFinite(numericValue) ? 0 : numericValue }))
+  }
+  const getJobValidationErrors = (payload: JobPostingPayload) => {
+    const nextErrors: JobFieldErrors = {}
+    const title = payload.title.trim()
+    const requiresSalaryPair = ['FULL_TIME', 'PART_TIME'].includes(payload.employmentType)
+    const minSalaryValue = salaryInputValues.salaryMin.trim()
+    const maxSalaryValue = salaryInputValues.salaryMax.trim()
+    const minSalaryEntered = minSalaryValue !== ''
+    const maxSalaryEntered = maxSalaryValue !== ''
+    const salaryNumberPattern = /^\d+(\.\d+)?$/
+    const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
+    const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
+
+    if (!title) nextErrors.title = requiredJobFieldMessage
+    if (!payload.department.trim()) nextErrors.department = departmentRequiredMessage
+    if (!payload.employmentType.trim()) nextErrors.employmentType = employmentTypeRequiredMessage
+    if (!payload.locationType.trim()) nextErrors.locationType = requiredJobFieldMessage
+    if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
+    if (!payload.description.trim()) nextErrors.description = requiredJobFieldMessage
+    if (!payload.requirements.trim()) nextErrors.requirements = requiredJobFieldMessage
+
+    if (title && jobs.some((job) => (
+      job.id !== selectedJob?.id &&
+      job.title.trim().toLowerCase() === title.toLowerCase() &&
+      ['open', 'draft'].includes(job.status.trim().toLowerCase())
+    ))) {
+      nextErrors.title = duplicateJobTitleMessage
+    }
+
+    if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
+    if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
+    if (!minSalaryInvalid && !maxSalaryInvalid && requiresSalaryPair && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
+      nextErrors.salaryMax = salaryPairMessage
+    }
+    if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && payload.salaryMin > payload.salaryMax) {
+      nextErrors.salaryMax = salaryOrderMessage
+    }
+
+    if (payload.applicationDeadline) {
+      const deadline = new Date(payload.applicationDeadline)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      if (Number.isNaN(deadline.getTime()) || deadline < today) {
+        nextErrors.applicationDeadline = deadlineFutureMessage
+      }
+    }
+
+    return nextErrors
+  }
+  const getAiJobValidationErrors = (payload: JobPostingPayload) => {
+    const nextErrors: JobFieldErrors = {}
+    const minSalaryValue = salaryInputValues.salaryMin.trim()
+    const maxSalaryValue = salaryInputValues.salaryMax.trim()
+    const minSalaryEntered = minSalaryValue !== ''
+    const maxSalaryEntered = maxSalaryValue !== ''
+    const salaryNumberPattern = /^\d+(\.\d+)?$/
+    const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
+    const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
+
+    if (!payload.title.trim()) nextErrors.title = requiredJobFieldMessage
+    if (!payload.department.trim()) nextErrors.department = departmentRequiredMessage
+    if (!payload.locationType.trim()) nextErrors.locationType = requiredJobFieldMessage
+    if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
+    if (!payload.requirements.trim()) nextErrors.requirements = requiredJobFieldMessage
+
+    if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
+    if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
+    if (!minSalaryInvalid && !maxSalaryInvalid && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
+      nextErrors.salaryMax = salaryPairMessage
+    }
+    if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && payload.salaryMin > payload.salaryMax) {
+      nextErrors.salaryMax = salaryOrderMessage
+    }
+
+    if (payload.applicationDeadline) {
+      const deadline = new Date(payload.applicationDeadline)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      if (Number.isNaN(deadline.getTime()) || deadline < today) {
+        nextErrors.applicationDeadline = deadlineFutureMessage
+      }
+    }
+
+    return nextErrors
+  }
+  const generateAiJobContent = () => {
+    if (isActionLocked) return
+    const nextErrors = getAiJobValidationErrors(jobForm)
+
+    if (Object.keys(nextErrors).length > 0) {
+      setJobFieldErrors(nextErrors)
+      return
+    }
+
+    setJobFieldErrors({})
+  }
+  const getInputClassName = (hasError?: boolean) => (hasError ? styles.jobInputError : undefined)
+  const openCreateJob = () => {
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setJobForm(emptyJobForm)
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobFieldErrors({})
+    setIsCancelConfirmOpen(false)
+    setSelectedJob(null)
+    setJobView('create')
+    updateHrJobsPath(hrCreateJobPostingPath)
+  }
+  const openGenerateWithAi = () => {
+    setJobView('ai')
+    updateHrJobsPath(hrGenerateJobAiPath)
+  }
+  const openCreateJobForm = () => {
+    setJobView('create')
+    updateHrJobsPath(hrCreateJobPostingPath)
+  }
+  const discardJobFormChanges = () => {
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setIsCancelConfirmOpen(false)
+    setJobFieldErrors({})
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobForm(emptyJobForm)
+    if (jobView === 'edit' && selectedJob) {
+      setJobView('detail')
+      updateHrJobsPath(hrJobsPath)
+      return
+    }
+
+    setSelectedJob(null)
+    setJobView('list')
+    updateHrJobsPath(hrJobsPath)
+  }
+  const handleCancelJobForm = () => {
+    if (isJobFormDirty) {
+      setIsCancelConfirmOpen(true)
+      return
+    }
+
+    discardJobFormChanges()
+  }
+  const updateJobSearchQuery = (value: string) => {
+    setSearchQuery(value)
+    setJobPage(1)
+  }
+  const updateJobStatusFilter = (value: string) => {
+    setStatusFilter(value)
+    setJobPage(1)
+  }
+  const updateJobEmploymentTypeFilter = (value: string) => {
+    setEmploymentTypeFilter(value)
+    setJobPage(1)
+  }
+  const returnToJobsListAfterSave = () => {
+    window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    setIsCancelConfirmOpen(false)
+    setJobFieldErrors({})
+    setSalaryInputValues({ salaryMin: '', salaryMax: '' })
+    setJobForm(emptyJobForm)
+    setSelectedJob(null)
+    setJobView('list')
+    updateHrJobsPath(hrJobsPath)
+    setJobPage(1)
+    setJobListReloadKey((key) => key + 1)
+  }
+  const openJobDetail = async (job: JobPosting) => {
+    setSelectedJob(job)
+    setJobView('detail')
+    updateHrJobsPath(hrJobsPath)
+    try {
+      setSelectedJob(await hrApi.getJobPostingById(job.id))
+    } catch {
+      setSelectedJob(job)
+    }
+  }
+  const openEditJob = (job: JobPosting) => {
+    setSelectedJob(job)
+    setJobFieldErrors({})
+    setIsCancelConfirmOpen(false)
+    setSalaryInputValues({
+      salaryMin: job.salaryMin ? String(job.salaryMin) : '',
+      salaryMax: job.salaryMax ? String(job.salaryMax) : '',
+    })
+    setJobForm({
+      title: job.title,
+      department: job.department,
+      level: job.level || '',
+      employmentType: job.employmentType || 'FULL_TIME',
+      locationType: job.locationType || 'OFFICE',
+      location: job.location || '',
+      applicationDeadline: job.applicationDeadline || '',
+      description: job.description || '',
+      requirements: job.requirements || '',
+      benefits: job.benefits || '',
+      salaryMin: job.salaryMin || 0,
+      salaryMax: job.salaryMax || 0,
+      status: job.status || 'DRAFT',
+    })
+    setJobView('edit')
+    updateHrJobsPath(hrJobsPath)
+  }
+  const requestJobAction = (action: Exclude<JobConfirmAction, null>, job: JobPosting) => {
+    if (isActionLocked || isJobActionSubmitting) return
+    setJobConfirmAction(action)
+    setJobConfirmTarget(job)
+  }
+  const closeJobConfirm = () => {
+    if (isJobActionSubmitting) return
+    setJobConfirmAction(null)
+    setJobConfirmTarget(null)
+  }
+  const applyJobActionResult = (nextJob: JobPosting | null) => {
+    if (!nextJob) return
+
+    setJobs((currentJobs) => currentJobs.map((job) => (
+      job.id === nextJob.id ? nextJob : job
+    )))
+    setSelectedJob((currentJob) => (
+      currentJob?.id === nextJob.id ? nextJob : currentJob
+    ))
+  }
+  const confirmJobAction = async () => {
+    if (!jobConfirmAction || !jobConfirmTarget || isJobActionSubmitting) return
+
+    setIsJobActionSubmitting(true)
+    try {
+      if (jobConfirmAction === 'deleteDraft') {
+        await hrApi.deleteJobPosting(jobConfirmTarget.id)
+        setJobConfirmAction(null)
+        setJobConfirmTarget(null)
+        setSelectedJob(null)
+        setJobView('list')
+        updateHrJobsPath(hrJobsPath)
+        setJobPage(1)
+        setJobListReloadKey((key) => key + 1)
+        triggerToast?.('Job posting deleted.', 'success')
+        return
+      }
+
+      const nextStatus = jobConfirmAction === 'close' ? 'CLOSED' : 'OPEN'
+      await hrApi.updateJobPosting(jobConfirmTarget.id, buildJobPayloadFromPosting(jobConfirmTarget, nextStatus))
+      const nextJob = { ...jobConfirmTarget, status: nextStatus }
+      applyJobActionResult(nextJob)
+      setJobConfirmAction(null)
+      setJobConfirmTarget(null)
+      setJobListReloadKey((key) => key + 1)
+      triggerToast?.(
+        jobConfirmAction === 'close'
+          ? 'Job posting closed successfully.'
+          : isDraftJobStatus(jobConfirmTarget.status)
+            ? 'Job posting opened successfully.'
+            : 'Job posting reopened successfully.',
+        'success',
+      )
+    } catch (error) {
+      triggerToast?.(getAdminErrorMessage(error, 'Error system. Please try again.'), 'error')
+    } finally {
+      setIsJobActionSubmitting(false)
+    }
+  }
+  const saveJob = async (payload: JobPostingPayload = jobForm) => {
+    if (isActionLocked || isSavingJob) return
+    const nextErrors = getJobValidationErrors(payload)
+
+    if (Object.keys(nextErrors).length > 0) {
+      setJobFieldErrors(nextErrors)
+      return
+    }
+
+    setJobFieldErrors({})
+    setIsSavingJob(true)
+    try {
+      const isEditingJob = jobView === 'edit' && selectedJob
+
+      if (isEditingJob) {
+        await hrApi.updateJobPosting(selectedJob.id, payload)
+      } else {
+        await hrApi.createJobPosting(payload)
+      }
+      returnToJobsListAfterSave()
+      triggerToast?.(isEditingJob ? 'Job posting updated successfully.' : 'Job posting created successfully.', 'success')
+    } catch (error) {
+      const apiFieldErrors = getJobFieldErrorsFromApiError(error)
+
+      if (isJobTitleAlreadyExistsError(error)) {
+        setJobFieldErrors({ title: duplicateJobTitleMessage })
+      } else if (Object.keys(apiFieldErrors).length > 0) {
+        setJobFieldErrors(apiFieldErrors)
+        triggerToast?.('Please check the highlighted fields.', 'error')
+      } else {
+        triggerToast?.(getAdminErrorMessage(error, 'Error system. Please try again.'), 'error')
+      }
+    } finally {
+      setIsSavingJob(false)
+    }
+  }
+
+  if (jobView === 'detail' && selectedJob) {
+    const selectedJobIsDraft = isDraftJobStatus(selectedJob.status)
+    const selectedJobIsClosed = isClosedJobStatus(selectedJob.status)
+    const selectedJobIsOpen = isOpenJobStatus(selectedJob.status)
+
+    return (
+      <div className={`role-content ${styles.jobsContent}`}>
+        <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs', onClick: () => { setJobView('list'); updateHrJobsPath(hrJobsPath) } }, { label: 'Job Detail' }]} />
+        <div className={styles.jobsHeader}>
+          <h1>{selectedJob.title} <em className={`${styles.jobStatusBadge} ${selectedJob.status.toLowerCase()}`}>{formatJobStatus(selectedJob.status)}</em></h1>
+          <div>
+            {(selectedJobIsDraft || selectedJobIsClosed) && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('open', selectedJob)}>Open</button>
+            )}
+            {selectedJobIsOpen && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('close', selectedJob)}>Close</button>
+            )}
+            {selectedJobIsDraft && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('deleteDraft', selectedJob)}>Delete</button>
+            )}
+            <button type="button" disabled={isActionLocked} onClick={() => openEditJob(selectedJob)}>Edit</button>
+          </div>
+        </div>
+        <section className={styles.jobDetailGrid}>
+          <article className={styles.jobDetailCard}>
+            <h2><i className="fa-solid fa-lightbulb"></i> Technical Overview</h2>
+            <strong>The Opportunity</strong>
+            <p>{selectedJob.description || 'No description provided.'}</p>
+            <strong>Key Requirements</strong>
+            <p>{selectedJob.requirements || 'No requirements provided.'}</p>
+            <strong>Company Benefits</strong>
+            <p>{selectedJob.benefits || 'No benefits provided.'}</p>
+          </article>
+          <aside className={styles.jobSidePanel}>
+            <section><small>Applicants</small><strong>{selectedJob.applicantCount}</strong><span>Total received</span></section>
+            <section><small>Status</small><strong>{formatJobStatus(selectedJob.status)}</strong><span>{formatEmploymentType(selectedJob.employmentType)}</span></section>
+          </aside>
+        </section>
+        {jobConfirmAction && jobConfirmTarget && (
+          <ConfirmActionModal
+            isSubmitting={isJobActionSubmitting}
+            title="Confirm Action"
+            message={getJobActionConfirmMessage(jobConfirmAction, jobConfirmTarget)}
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={closeJobConfirm}
+            onConfirm={confirmJobAction}
+          />
+        )}
+      </div>
+    )
+  }
+
+  if (jobView === 'ai') {
+    return (
+      <div className={`role-content ${styles.jobsContent}`}>
+        <Breadcrumb items={[
+          { label: 'Home', onClick: onHome },
+          { label: 'Jobs', onClick: () => { setJobView('list'); updateHrJobsPath(hrJobsPath) } },
+          { label: 'Create New Job Posting', onClick: openCreateJobForm },
+          { label: 'Generate with AI' },
+        ]} />
+        <div className={styles.aiJobTitle}>
+          <h1>Create New Job Description</h1>
+          <p>Provide the core details and let our AI engine craft the perfect job description for you.</p>
+        </div>
+
+        <section className={styles.aiJobLayout}>
+          <form className={`${styles.jobForm} ${styles.aiJobForm}`} noValidate>
+            <section className={styles.aiJobInputPanel}>
+              <label className={styles.fullField}>
+                <span>Job Title <b>*</b></span>
+                <input className={getInputClassName(Boolean(jobFieldErrors.title))} value={jobForm.title} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('title', e.target.value)} placeholder="e.g. Senior Product Designer" />
+                <JobFieldError message={jobFieldErrors.title} />
+              </label>
+              <label className={styles.aiDepartmentField}>
+                <span>Department <b>*</b></span>
+                <select className={getInputClassName(Boolean(jobFieldErrors.department))} value={jobForm.department} onChange={(e) => updateJobFormField('department', e.target.value)}><option value="">Select department type</option><option value="Engineering">Engineering</option><option value="Design">Design</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option><option value="Data">Data</option></select>
+                <JobFieldError message={jobFieldErrors.department} />
+              </label>
+              <div className={styles.aiLocationField}>
+                <span>Location <b>*</b></span>
+                <div className={styles.aiLocationControls}>
+                  <div>
+                    <select className={getInputClassName(Boolean(jobFieldErrors.locationType))} value={jobForm.locationType} onChange={(e) => updateJobFormField('locationType', e.target.value)}><option value="OFFICE">Office</option><option value="REMOTE">Remote</option><option value="HYBRID">Hybrid</option></select>
+                    <JobFieldError message={jobFieldErrors.locationType} />
+                  </div>
+                  <div>
+                    <div className={styles.iconInput}>
+                      <svg width="16" height="28" viewBox="0 0 16 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M8 10C8.55 10 9.02083 9.80417 9.4125 9.4125C9.80417 9.02083 10 8.55 10 8C10 7.45 9.80417 6.97917 9.4125 6.5875C9.02083 6.19583 8.55 6 8 6C7.45 6 6.97917 6.19583 6.5875 6.5875C6.19583 6.97917 6 7.45 6 8C6 8.55 6.19583 9.02083 6.5875 9.4125C6.97917 9.80417 7.45 10 8 10ZM8 17.35C10.0333 15.4833 11.5417 13.7875 12.525 12.2625C13.5083 10.7375 14 9.38333 14 8.2C14 6.38333 13.4208 4.89583 12.2625 3.7375C11.1042 2.57917 9.68333 2 8 2C6.31667 2 4.89583 2.57917 3.7375 3.7375C2.57917 4.89583 2 6.38333 2 8.2C2 9.38333 2.49167 10.7375 3.475 12.2625C4.45833 13.7875 5.96667 15.4833 8 17.35ZM8 20C5.31667 17.7167 3.3125 15.5958 1.9875 13.6375C0.6625 11.6792 0 9.86667 0 8.2C0 5.7 0.804167 3.70833 2.4125 2.225C4.02083 0.741667 5.88333 0 8 0C10.1167 0 11.9792 0.741667 13.5875 2.225C15.1958 3.70833 16 5.7 16 8.2C16 9.86667 15.3375 11.6792 14.0125 13.6375C12.6875 15.5958 10.6833 17.7167 8 20Z" fill="#565E74" />
+                      </svg>
+                      <input className={getInputClassName(Boolean(jobFieldErrors.location))} value={jobForm.location} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('location', e.target.value)} placeholder="e.g. San Francisco, CA" />
+                    </div>
+                    <JobFieldError message={jobFieldErrors.location} />
+                  </div>
+                </div>
+              </div>
+              <label>
+                <span>Application Deadline</span>
+                <input className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="text" value={jobForm.applicationDeadline ? jobForm.applicationDeadline.slice(0, 10) : ''} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('applicationDeadline', e.target.value)} placeholder="mm/dd/yyyy" />
+                <JobFieldError message={jobFieldErrors.applicationDeadline} />
+              </label>
+              <div className={styles.aiSalaryField}>
+                <span>Salary Range</span>
+                <div className={styles.aiSalaryControls}>
+                  <div className={styles.salaryInputSlot}>
+                    <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMin ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Minimum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMin} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMin', e.target.value)} placeholder="0" /></div>
+                    <JobFieldError message={jobFieldErrors.salaryMin} />
+                  </div>
+                  <div className={styles.salaryInputSlot}>
+                    <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMax ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Maximum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMax} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMax', e.target.value)} placeholder="0" /></div>
+                    <JobFieldError message={jobFieldErrors.salaryMax} />
+                  </div>
+                </div>
+              </div>
+              <label className={`${styles.fullField} ${styles.aiTextAreaField}`}>
+                <span>Key Skills <b>*</b></span>
+                <textarea className={getInputClassName(Boolean(jobFieldErrors.requirements))} value={jobForm.requirements} maxLength={FIELD_LENGTH_LIMITS.jobDescription} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="Add skill..." />
+                <JobFieldError message={jobFieldErrors.requirements} />
+              </label>
+              <button type="button" disabled={isActionLocked} onClick={generateAiJobContent}>Generate Content</button>
+            </section>
+          </form>
+
+          <aside className={styles.aiDraftPanel}>
+            <header>
+              <span>AI Content Draft</span>
+              <button type="button" aria-label="Copy AI content draft">
+                <i className="fa-regular fa-copy"></i>
+              </button>
+            </header>
+            <div className={styles.aiDraftBody}></div>
+            <footer>
+              <div className={styles.aiTokenUsage}>
+                <span>Token Usage</span>
+                <strong>2 Generations Left</strong>
+                <div><span></span></div>
+              </div>
+              <div className={styles.aiDraftActions}>
+                <button type="button">Regenerate</button>
+                <button type="button">Discard Draft</button>
+              </div>
+              <button type="button" className={styles.aiApproveButton}>Approve &amp; Save Job</button>
+            </footer>
+          </aside>
+        </section>
+      </div>
+    )
+  }
+
+  if (jobView === 'create' || jobView === 'edit') {
+    return (
+      <div className={`role-content ${styles.jobsContent}`}>
+        <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs', onClick: () => { setJobView('list'); updateHrJobsPath(hrJobsPath) } }, { label: jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting' }]} />
+        <div className={styles.jobsHeader}>
+          <div><h1>{jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting'}</h1></div>
+          <button type="button" className={styles.aiJobButton} disabled={isActionLocked} onClick={openGenerateWithAi}>Generate with AI</button>
+        </div>
+        <form className={styles.jobForm} onSubmit={(event) => { event.preventDefault(); saveJob() }} noValidate>
+          <div className={styles.jobFormMain}>
+            <section className={styles.jobFormPanel}>
+              <h2>General Information</h2>
+              <div className={styles.jobFieldGrid}>
+                <label className={styles.fullField}>
+                  <span>Job Title <b>*</b></span>
+                  <input
+                    maxLength={FIELD_LENGTH_LIMITS.defaultText}
+                    className={getInputClassName(Boolean(jobFieldErrors.title))}
+                    value={jobForm.title}
+                    onChange={(e) => updateJobFormField('title', e.target.value)}
+                    placeholder="e.g. Senior Frontend Engineer"
+                    required
+                  />
+                  <JobFieldError message={jobFieldErrors.title} />
+                </label>
+                <label>
+                  <span>Department <b>*</b></span>
+                  <select className={getInputClassName(Boolean(jobFieldErrors.department))} value={jobForm.department} onChange={(e) => updateJobFormField('department', e.target.value)} required><option value="">Select department type</option><option value="Engineering">Engineering</option><option value="Design">Design</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option><option value="Data">Data</option></select>
+                  <JobFieldError message={jobFieldErrors.department} />
+                </label>
+                <label>
+                  <span>Employment Type <b>*</b></span>
+                  <select className={getInputClassName(Boolean(jobFieldErrors.employmentType))} value={jobForm.employmentType} onChange={(e) => updateJobFormField('employmentType', e.target.value)} required><option value="">Select employment type</option><option value="FULL_TIME">Full-time</option><option value="PART_TIME">Part-time</option><option value="INTERNSHIP">Internship</option></select>
+                  <JobFieldError message={jobFieldErrors.employmentType} />
+                </label>
+                <div className={styles.locationRow}>
+                  <span>Location <b>*</b></span>
+                  <div className={styles.locationControls}>
+                    <select value={jobForm.locationType} onChange={(e) => updateJobFormField('locationType', e.target.value)}><option value="OFFICE">Office</option><option value="REMOTE">Remote</option><option value="HYBRID">Hybrid</option></select>
+                    <div>
+                      <div className={styles.iconInput}>
+                        <svg width="16" height="28" viewBox="0 0 16 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <path d="M8 10C8.55 10 9.02083 9.80417 9.4125 9.4125C9.80417 9.02083 10 8.55 10 8C10 7.45 9.80417 6.97917 9.4125 6.5875C9.02083 6.19583 8.55 6 8 6C7.45 6 6.97917 6.19583 6.5875 6.5875C6.19583 6.97917 6 7.45 6 8C6 8.55 6.19583 9.02083 6.5875 9.4125C6.97917 9.80417 7.45 10 8 10ZM8 17.35C10.0333 15.4833 11.5417 13.7875 12.525 12.2625C13.5083 10.7375 14 9.38333 14 8.2C14 6.38333 13.4208 4.89583 12.2625 3.7375C11.1042 2.57917 9.68333 2 8 2C6.31667 2 4.89583 2.57917 3.7375 3.7375C2.57917 4.89583 2 6.38333 2 8.2C2 9.38333 2.49167 10.7375 3.475 12.2625C4.45833 13.7875 5.96667 15.4833 8 17.35ZM8 20C5.31667 17.7167 3.3125 15.5958 1.9875 13.6375C0.6625 11.6792 0 9.86667 0 8.2C0 5.7 0.804167 3.70833 2.4125 2.225C4.02083 0.741667 5.88333 0 8 0C10.1167 0 11.9792 0.741667 13.5875 2.225C15.1958 3.70833 16 5.7 16 8.2C16 9.86667 15.3375 11.6792 14.0125 13.6375C12.6875 15.5958 10.6833 17.7167 8 20Z" fill="#565E74" />
+                        </svg>
+                        <input className={getInputClassName(Boolean(jobFieldErrors.location))} value={jobForm.location} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('location', e.target.value)} placeholder="e.g. San Francisco, CA" />
+                      </div>
+                      <JobFieldError message={jobFieldErrors.location} />
+                    </div>
+                  </div>
+                </div>
+                <label className={styles.deadlineField}>
+                  <span>Application Deadline</span>
+                  <div className={styles.iconInput}>
+                    <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4C0 3.45 0.195833 2.97917 0.5875 2.5875C0.979167 2.19583 1.45 2 2 2H3V0H5V2H13V0H15V2H16C16.55 2 17.0208 2.19583 17.4125 2.5875C17.8042 2.97917 18 3.45 18 4V18C18 18.55 17.8042 19.0208 17.4125 19.4125C17.0208 19.8042 16.55 20 16 20H2ZM2 18H16V8H2V18ZM2 6H16V4H2V6ZM2 6V4V6Z" fill="#565E74" />
+                    </svg>
+                    <input className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="date" value={jobForm.applicationDeadline.slice(0, 10)} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('applicationDeadline', e.target.value ? new Date(e.target.value).toISOString() : '')} />
+                  </div>
+                  <JobFieldError message={jobFieldErrors.applicationDeadline} />
+                </label>
+                <div className={styles.salaryRangeRow}>
+                  <span>Salary Range</span>
+                  <div className={styles.salaryRangeControls}>
+                    <div className={styles.salaryInputSlot}>
+                      <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMin ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Minimum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMin} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMin', e.target.value)} /></div>
+                      <JobFieldError message={jobFieldErrors.salaryMin} />
+                    </div>
+                    <small className={styles.salaryRangeDivider}>To</small>
+                    <div className={styles.salaryInputSlot}>
+                      <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMax ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Maximum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMax} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMax', e.target.value)} /></div>
+                      <JobFieldError message={jobFieldErrors.salaryMax} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.jobFormPanel}>
+              <label className={styles.richTextField}><span>Job Description <b>*</b></span>
+                <div className={`${styles.richTextBox} ${jobFieldErrors.description ? styles.jobInputError : ''}`.trim()}>
+                  <RichTextToolbar className={styles.richTextToolbar} />
+                  <textarea value={jobForm.description} maxLength={FIELD_LENGTH_LIMITS.jobDescription} onChange={(e) => updateJobFormField('description', e.target.value)} placeholder="Enter job summary and context..." />
+                </div>
+                <JobFieldError message={jobFieldErrors.description} />
+              </label>
+            </section>
+          </div>
+
+          <aside className={styles.jobFormAside}>
+            <section className={styles.jobFormPanel}>
+              <label className={styles.richTextField}><span>Requirements <b>*</b></span>
+                <div className={`${styles.richTextBox} ${jobFieldErrors.requirements ? styles.jobInputError : ''}`.trim()}>
+                  <RichTextToolbar className={styles.richTextToolbar} />
+                  <textarea value={jobForm.requirements} maxLength={FIELD_LENGTH_LIMITS.jobDescription} onChange={(e) => updateJobFormField('requirements', e.target.value)} placeholder="List technical and soft skills required..." />
+                </div>
+                <JobFieldError message={jobFieldErrors.requirements} />
+              </label>
+            </section>
+            <section className={styles.jobFormPanel}>
+              <label className={styles.richTextField}><span>Benefits</span>
+                <div className={`${styles.richTextBox} ${jobFieldErrors.benefits ? styles.jobInputError : ''}`.trim()}>
+                  <RichTextToolbar className={styles.richTextToolbar} />
+                  <textarea value={jobForm.benefits} maxLength={FIELD_LENGTH_LIMITS.jobDescription} onChange={(e) => updateJobFormField('benefits', e.target.value)} placeholder="Enter company benefits and perks..." />
+                </div>
+                <JobFieldError message={jobFieldErrors.benefits} />
+              </label>
+            </section>
+            <footer>
+              <button type="button" onClick={handleCancelJobForm} disabled={isSavingJob}>Cancel</button>
+              <button type="button" disabled={isActionLocked || isSavingJob} onClick={() => saveJob({ ...jobForm, status: 'DRAFT' })}>Save as Draft</button>
+              <button type="submit" disabled={isActionLocked || isSavingJob}>{isSavingJob ? 'Saving...' : 'Save'}</button>
+            </footer>
+          </aside>
+        </form>
+        {isCancelConfirmOpen && (
+          <ConfirmActionModal
+            isSubmitting={isSavingJob}
+            title="Confirm Action"
+            message="Are you sure you want to cancel? Your changes will not be saved."
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={() => setIsCancelConfirmOpen(false)}
+            onConfirm={discardJobFormChanges}
+          />
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`role-content ${styles.jobsContent}`}>
+      <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs' }]} />
+
+      <div className={styles.jobsHeader}>
+        <h1>Job Postings</h1>
+        <button type="button" disabled={isActionLocked} onClick={openCreateJob}>Create New Job Posting</button>
+      </div>
+
+      <div className={styles.jobsMetrics}>
+        <section>
+          <small>Total Active Postings</small>
+          <strong>{isLoadingJobs ? '...' : activeJobCount}</strong>
+          <span>
+            <svg width="20" height="19" viewBox="0 0 20 19" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2 19C1.45 19 0.979167 18.8042 0.5875 18.4125C0.195833 18.0208 0 17.55 0 17V6C0 5.45 0.195833 4.97917 0.5875 4.5875C0.979167 4.19583 1.45 4 2 4H6V2C6 1.45 6.19583 0.979167 6.5875 0.5875C6.97917 0.195833 7.45 0 8 0H12C12.55 0 13.0208 0.195833 13.4125 0.5875C13.8042 0.979167 14 1.45 14 2V4H18C18.55 4 19.0208 4.19583 19.4125 4.5875C19.8042 4.97917 20 5.45 20 6V17C20 17.55 19.8042 18.0208 19.4125 18.4125C19.0208 18.8042 18.55 19 18 19H2ZM8 4H12V2H8V4Z" fill="#AD2B00" />
+            </svg>
+          </span>
+        </section>
+        <section>
+          <small>Total Applicants</small>
+          <strong>{isLoadingJobs ? '...' : totalApplicantCount.toLocaleString()}</strong>
+          <span>
+            <svg width="24" height="12" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M0 12V10.425C0 9.70833 0.366667 9.125 1.1 8.675C1.83333 8.225 2.8 8 4 8C4.21667 8 4.425 8.00417 4.625 8.0125C4.825 8.02083 5.01667 8.04167 5.2 8.075C4.96667 8.425 4.79167 8.79167 4.675 9.175C4.55833 9.55833 4.5 9.95833 4.5 10.375V12H0ZM6 12V10.375C6 9.84167 6.14583 9.35417 6.4375 8.9125C6.72917 8.47083 7.14167 8.08333 7.675 7.75C8.20833 7.41667 8.84583 7.16667 9.5875 7C10.3292 6.83333 11.1333 6.75 12 6.75C12.8833 6.75 13.6958 6.83333 14.4375 7C15.1792 7.16667 15.8167 7.41667 16.35 7.75C16.8833 8.08333 17.2917 8.47083 17.575 8.9125C17.8583 9.35417 18 9.84167 18 10.375V12H6ZM19.5 12V10.375C19.5 9.94167 19.4458 9.53333 19.3375 9.15C19.2292 8.76667 19.0667 8.40833 18.85 8.075C19.0333 8.04167 19.2208 8.02083 19.4125 8.0125C19.6042 8.00417 19.8 8 20 8C21.2 8 22.1667 8.22083 22.9 8.6625C23.6333 9.10417 24 9.69167 24 10.425V12H19.5ZM4 7C3.45 7 2.97917 6.80417 2.5875 6.4125C2.19583 6.02083 2 5.55 2 5C2 4.43333 2.19583 3.95833 2.5875 3.575C2.97917 3.19167 3.45 3 4 3C4.56667 3 5.04167 3.19167 5.425 3.575C5.80833 3.95833 6 4.43333 6 5C6 5.55 5.80833 6.02083 5.425 6.4125C5.04167 6.80417 4.56667 7 4 7ZM20 7C19.45 7 18.9792 6.80417 18.5875 6.4125C18.1958 6.02083 18 5.55 18 5C18 4.43333 18.1958 3.95833 18.5875 3.575C18.9792 3.19167 19.45 3 20 3C20.5667 3 21.0417 3.19167 21.425 3.575C21.8083 3.95833 22 4.43333 22 5C22 5.55 21.8083 6.02083 21.425 6.4125C21.0417 6.80417 20.5667 7 20 7ZM12 6C11.1667 6 10.4583 5.70833 9.875 5.125C9.29167 4.54167 9 3.83333 9 3C9 2.15 9.29167 1.4375 9.875 0.8625C10.4583 0.2875 11.1667 0 12 0C12.85 0 13.5625 0.2875 14.1375 0.8625C14.7125 1.4375 15 2.15 15 3C15 3.83333 14.7125 4.54167 14.1375 5.125C13.5625 5.70833 12.85 6 12 6Z" fill="#A73921" />
+            </svg>
+          </span>
+        </section>
+        <section>
+          <small>POSTINGS EXPIRING SOON</small>
+          <strong>{isLoadingJobs ? '...' : pendingReviewCount}</strong>
+          <span>
+            <svg width="18" height="21" viewBox="0 0 18 21" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M5.95 2V0H11.95V2H5.95ZM6.95 13.75L5.85 11.55C5.76667 11.3667 5.64167 11.2292 5.475 11.1375C5.30833 11.0458 5.13333 11 4.95 11H0C0.25 8.75 1.225 6.85417 2.925 5.3125C4.625 3.77083 6.63333 3 8.95 3C9.98333 3 10.975 3.16667 11.925 3.5C12.875 3.83333 13.7667 4.31667 14.6 4.95L16 3.55L17.4 4.95L16 6.35C16.5333 7.05 16.9583 7.7875 17.275 8.5625C17.5917 9.3375 17.8 10.15 17.9 11H13.575L11.85 7.55C11.6667 7.16667 11.3667 6.975 10.95 6.975C10.5333 6.975 10.2333 7.16667 10.05 7.55L6.95 13.75ZM8.95 21C6.63333 21 4.625 20.2292 2.925 18.6875C1.225 17.1458 0.25 15.25 0 13H4.325L6.05 16.45C6.23333 16.8333 6.53333 17.025 6.95 17.025C7.36667 17.025 7.66667 16.8333 7.85 16.45L10.95 10.25L12.05 12.45C12.1333 12.6333 12.2583 12.7708 12.425 12.8625C12.5917 12.9542 12.7667 13 12.95 13H17.9C17.65 15.25 16.675 17.1458 14.975 18.6875C13.275 20.2292 11.2667 21 8.95 21Z" fill="#545C72" />
+            </svg>
+          </span>
+        </section>
+      </div>
+
+      <div className={styles.jobsToolbar}>
+        <SearchInput
+          className={styles.jobsSearch}
+          value={searchQuery}
+          onChange={(event) => updateJobSearchQuery(event.target.value)}
+          placeholder="Search job title..."
+          ariaLabel="Job posting search"
+        />
+        <label>
+          <span>Status:</span>
+          <select value={statusFilter} onChange={(event) => updateJobStatusFilter(event.target.value)}>
+            <option value="">All Status</option>
+            <option value="DRAFT">Draft</option>
+            <option value="OPEN">Open</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+        </label>
+        <label>
+          <span>Employment type:</span>
+          <select value={employmentTypeFilter} onChange={(event) => updateJobEmploymentTypeFilter(event.target.value)}>
+            <option value="">All Status</option>
+            <option value="FULL_TIME">Full-time</option>
+            <option value="PART_TIME">Part-time</option>
+            <option value="INTERNSHIP">Internship</option>
+          </select>
+        </label>
+      </div>
+
+      {isLoadingJobs ? (
+        <div className={styles.jobsTableState}>Loading job postings...</div>
+      ) : jobListError ? (
+        <JobsEmptyState />
+      ) : jobs.length === 0 ? (
+        <JobsEmptyState />
+      ) : (
+        <section className={styles.jobsTableCard}>
+          <div className={`${styles.jobsTableRow} ${styles.jobsTableHead}`}>
+            <span>Job Title</span>
+            <span>Department</span>
+            <span>Employment Type</span>
+            <span>Status</span>
+            <span>No. of Applicants</span>
+            <span>Date Created</span>
+            <span>Actions</span>
+          </div>
+          {jobs.map((job) => {
+            const jobIsDraft = isDraftJobStatus(job.status)
+            const jobIsClosed = isClosedJobStatus(job.status)
+            const jobIsOpen = isOpenJobStatus(job.status)
+
+            return (
+              <article className={styles.jobsTableRow} key={job.id} onClick={() => openJobDetail(job)}>
+                <span className="table-name-tooltip" data-tooltip={job.title} title={job.title} tabIndex={0}>
+                  <strong>{job.title}</strong>
+                </span>
+                <span title={job.department}>{job.department}</span>
+                <span>{formatEmploymentType(job.employmentType)}</span>
+                <em className={job.status.toLowerCase()}>{formatJobStatus(job.status)}</em>
+                <span>{job.applicantCount}</span>
+                <span>{formatJobDate(job.createdAt)}</span>
+                <div className={styles.jobsActions}>
+                  {(jobIsDraft || jobIsClosed) && (
+                    <button type="button" className="icon-tooltip" data-tooltip="Open" aria-label={`Open ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('open', job) }}><i className="fa-solid fa-arrow-up-right-from-square"></i></button>
+                  )}
+                  {jobIsOpen && (
+                    <button type="button" className="icon-tooltip" data-tooltip="Close" aria-label={`Close ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('close', job) }}><i className="fa-regular fa-circle-xmark"></i></button>
+                  )}
+                  {jobIsDraft && (
+                    <button type="button" className="icon-tooltip" data-tooltip="Delete" aria-label={`Delete ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('deleteDraft', job) }}><i className="fa-regular fa-trash-can"></i></button>
+                  )}
+                  <button type="button" className="icon-tooltip" data-tooltip="Edit" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><i className="fa-regular fa-pen-to-square"></i></button>
+                </div>
+              </article>
+            )
+          })}
+          <footer>
+            <span>Showing {jobs.length} of {jobTotalElements} entries</span>
+            <div>
+              <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={jobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+              {Array.from({ length: jobPageCount }, (_, index) => index + 1).map((page) => (
+                <button type="button" className={page === jobPage ? styles.activePage : ''} onClick={() => setJobPage(page)} key={page}>{page}</button>
+              ))}
+              <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={jobPage === jobPageCount} onClick={() => setJobPage((page) => Math.min(jobPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </footer>
+        </section>
+      )}
+      {jobConfirmAction && jobConfirmTarget && (
+        <ConfirmActionModal
+          isSubmitting={isJobActionSubmitting}
+          title="Confirm Action"
+          message={getJobActionConfirmMessage(jobConfirmAction, jobConfirmTarget)}
+          cancelLabel="Cancel"
+          confirmLabel="Confirm"
+          onCancel={closeJobConfirm}
+          onConfirm={confirmJobAction}
+        />
+      )}
+    </div>
+  )
+}
+
+export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('hr', location.pathname))
+  const [jobsViewResetKey, setJobsViewResetKey] = useState(0)
+  const selectView = (view: RoleHomeView) => {
+    const shouldResetJobsView = view === 'jobs' && activeView === 'jobs'
+
+    setActiveView(view)
+    navigate(getRoleHomeViewPath('hr', view))
+    if (shouldResetJobsView) {
+      window.sessionStorage.removeItem(jobFormRefreshViewKey)
+      setJobsViewResetKey((value) => value + 1)
+    }
+  }
+  const navItems = buildNavigation(hrNav, activeView, selectView)
+  const isActionLocked = isStoredCurrentUserInactive()
+
+  useEffect(() => {
+    setActiveView(getInitialRoleHomeView('hr', location.pathname))
+  }, [location.pathname])
+
+  return (
+    <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
+      {activeView === 'settings' ? (
+        <AccountSettingsPanel onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+      ) : activeView === 'jobs' ? (
+        <HrJobsView key={jobsViewResetKey} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
+      ) : (
+      <div className={`role-content ${styles.content}`}>
+        <div className={`role-title-row ${styles.title}`}>
+          <div>
+            <h1>Welcome back, Alex</h1>
+            <p>Here&apos;s what&apos;s happening with your recruitment funnel today.</p>
+          </div>
+          <div>
+            <button type="button" disabled={isActionLocked}>Download Reports</button>
+            <button type="button" disabled={isActionLocked}>View Schedule</button>
+          </div>
+        </div>
+
+        <div className={styles.kpiGrid}>
+          {[
+            ['fa-user-group', 'Total Candidates', '2,842', '+12%', 'fa-arrow-trend-up'],
+            ['fa-briefcase', 'Active Jobs', '48', 'Stable', ''],
+            ['fa-bolt', 'AI-Scored Top Talents', '156', 'AI Enhanced', ''],
+            ['fa-stopwatch', 'Avg. Time to Hire', '18 days', '-4 days', 'fa-arrow-trend-down'],
+          ].map(([icon, label, value, note, noteIcon]) => (
+            <section className={styles.kpiCard} key={label}>
+              <span><i className={`fa-solid ${icon}`}></i></span>
+              <small>{label}</small>
+              <strong>{value}</strong>
+              <em>{note}{noteIcon && <i className={`fa-solid ${noteIcon}`}></i>}</em>
+            </section>
+          ))}
+        </div>
+
+        <div className={styles.dashboardGrid}>
+          <section className={`role-panel ${styles.activityPanel}`}>
+            <div className="role-panel-head">
+              <h2>Recent Activity</h2>
+              <a href="#activity">View All</a>
+            </div>
+            <article>
+              <i className="fa-solid fa-headset"></i>
+              <div><strong>AI parsed 50 CVs for Senior React Developer role.</strong><small>2 minutes ago - Automated</small></div>
+              <span>Match 92%</span>
+            </article>
+            <article>
+              <i className="fa-solid fa-user-plus"></i>
+              <div><strong>New application from Sarah Chen for UX Lead.</strong><small>45 minutes ago - LinkedIn Import</small></div>
+              <b></b>
+            </article>
+            <article className={styles.urgent}>
+              <i className="fa-solid fa-exclamation"></i>
+              <div><strong>URGENT: Interview with Marcus V. is starting in 15 mins.</strong><small>In progress - AI Interviewer Ready</small></div>
+              <button type="button" disabled={isActionLocked}>Join</button>
+            </article>
+            <article>
+              <i className="fa-regular fa-circle-check"></i>
+              <div><strong>Job Posting &quot;Cloud Architect&quot; successfully published.</strong><small>2 hours ago - Manual</small></div>
+            </article>
+          </section>
+
+          <section className={`role-panel ${styles.quickPanel}`}>
+            <h2>Quick Actions</h2>
+            <div>
+              <button type="button" disabled={isActionLocked}><i className="fa-regular fa-file-lines"></i> Parse Resume</button>
+              <button type="button" disabled={isActionLocked}><i className="fa-regular fa-envelope"></i> Blast Email</button>
+              <button type="button" disabled={isActionLocked}><i className="fa-solid fa-video"></i> AI Screening</button>
+              <button type="button" disabled={isActionLocked}><i className="fa-solid fa-share-nodes"></i> Social Share</button>
+            </div>
+          </section>
+
+          <section className={`role-panel ${styles.pipelinePanel}`}>
+            <h2>Pipeline Health</h2>
+            <div className={styles.pipelineTrack}><span></span><span></span><span></span><span></span></div>
+            <footer><span>Sourced (450)</span><span>Screened (120)</span><span>Interview (24)</span><span>Offer (4)</span></footer>
+          </section>
+
+          <section className={`role-panel ${styles.topPicks}`}>
+            <div className="role-panel-head">
+              <h2>Top Picks</h2>
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M18 8L16.75 5.25L14 4L16.75 2.75L18 0L19.25 2.75L22 4L19.25 5.25L18 8ZM18 22L16.75 19.25L14 18L16.75 16.75L18 14L19.25 16.75L22 18L19.25 19.25L18 22ZM8 19L5.5 13.5L0 11L5.5 8.5L8 3L10.5 8.5L16 11L10.5 13.5L8 19ZM8 14.15L9 12L11.15 11L9 10L8 7.85L7 10L4.85 11L7 12L8 14.15Z" fill="#AD2B00" />
+              </svg>
+            </div>
+            {[
+              ['JD', 'Jordan Day', 'DevOps Engineer', '98%'],
+              ['ML', 'Maria Lopez', 'Data Scientist', '95%'],
+              ['BK', 'Ben King', 'Product Lead', '89%'],
+            ].map(([initials, name, title, score]) => (
+              <article key={name}>
+                <span>{initials}</span>
+                <div>
+                  <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
+                    <strong>{name}</strong>
+                  </span>
+                  <span className="table-name-tooltip" data-tooltip={title} title={title} tabIndex={0}>
+                    <small>{title}</small>
+                  </span>
+                </div>
+                <em>{score}</em>
+              </article>
+            ))}
+          </section>
+        </div>
+      </div>
+      )}
+    </DashboardShell>
+  )
+}

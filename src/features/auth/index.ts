@@ -1,15 +1,15 @@
-export { CandidateChangePasswordView } from './components/ChangePasswordView'
+export { ChangePasswordView, CandidateChangePasswordView } from '@/components/common/ChangePasswordView'
 export { LoginFeature } from './components/LoginFeature'
 export { SignupFeature } from './components/SignupFeature'
 export { ForgotPasswordForm } from './components/ForgotPasswordForm'
 export { OtpForm } from './components/OtpForm'
 export { ResetPasswordForm } from './components/ResetPasswordForm'
 
-export { authApi } from './services/authApi'
+export { authApi } from '@/services/api/authApi'
 
 export { useAuthSession } from './hooks/useAuthSession'
 
-export { getPasswordStrength } from './utils/passwordStrength'
+export { getPasswordStrength } from '@/utils/passwordStrength'
 export {
   authErrorMessages,
   backendAuthErrorMessages,
@@ -32,7 +32,7 @@ export {
   validateRequired,
 } from './utils/validation'
 
-export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from './types/auth.types'
+export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '@/services/api/api.types'
 export type { AppRole } from './utils/authRole'
 export { getPageForUserRole, unsupportedRoleMessage } from './utils/authRole'
 export {
@@ -41,4 +41,4 @@ export {
   clearAuthStorage,
   getStoredAuthRole,
   saveAuthRole,
-} from './utils/authStorage'
+} from '@/services/api/authStorage'

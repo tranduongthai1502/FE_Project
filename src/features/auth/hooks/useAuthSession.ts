@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
-import { authApi } from '../services/authApi'
+import { authApi } from '@/services/api/authApi'
 import { getPageForUserRole, unsupportedRoleMessage } from '../utils/authRole'
 import {
   AUTH_EXPIRED_EVENT_NAME,
@@ -8,7 +8,7 @@ import {
   getStoredRequirePasswordChange,
   getStoredAuthRole,
   saveAuthRole,
-} from '../utils/authStorage'
+} from '@/services/api/authStorage'
 
 const pathByAuthRole = {
   candidate: '/candidate',

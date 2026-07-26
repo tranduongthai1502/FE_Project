@@ -1,13 +1,9 @@
-import axiosClient from '../../../api/axiosClient'
+import axiosClient from '@/services/api/axiosClient'
+import { API_LIST_PAGE_SIZE } from '@/services/api/apiConstants'
 import type {
   AdminListParams,
-  ActivityLog,
   CreatePlanPayload,
   CreateTenantPayload,
-  JobPosting,
-  JobListRequest,
-  JobListFilters,
-  JobPostingPayload,
   PlanDashboardStats,
   PlanListRequest,
   SubscriptionPlan,
@@ -16,22 +12,20 @@ import type {
   UpdatePlanPayload,
   TenantListRequest,
   UpdateTenantPayload,
-} from '../types/admin.types'
+} from '@/services/api/api.types'
+import { attachPaginationMeta } from '@/utils/pagination'
 import {
   getResponsePayload,
-  attachPaginationMeta,
-  getJobPostingList,
   getUserDetailPayload,
   getSubscriptionPlanList,
   getTenantList,
-  normalizeJobPosting,
   normalizeTenantAdminUser,
   normalizeSubscriptionPlan,
   normalizeTenant,
-} from '../utils/adminMappers'
+} from '@/services/api/apiMappers'
 import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../utils/adminPayload'
 
-export const ADMIN_LIST_PAGE_SIZE = 5
+export const ADMIN_LIST_PAGE_SIZE = API_LIST_PAGE_SIZE
 
 function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): PlanListRequest {
   const page = params?.page ?? defaults.page
@@ -41,20 +35,6 @@ function buildListRequest(defaults: PlanListRequest, params?: AdminListParams): 
     ...params,
     page: Math.max(1, page),
     filters: params?.filters ?? defaults.filters,
-  }
-}
-
-function buildJobListRequest(params?: AdminListParams<JobListFilters>): JobListRequest {
-  const page = params?.page ?? 1
-  const filters = params?.filters
-  const hasFilters = Boolean(filters && Object.values(filters).some((value) => String(value ?? '').trim() !== ''))
-
-  return {
-    sortField: params?.sortField ?? 'createdAt',
-    filters: hasFilters ? filters ?? null : null,
-    sortBy: params?.sortBy ?? 'DESC',
-    page: Math.max(1, page),
-    size: params?.size ?? ADMIN_LIST_PAGE_SIZE,
   }
 }
 
@@ -127,37 +107,6 @@ function normalizePlanDashboardStats(payload: any): PlanDashboardStats {
     monthlyRevenueTrendPercent: readNumberValue(data, ['monthlyActivePlanRevenueTrend', 'monthlyRevenueTrendPercent', 'monthlyRevenueGrowthPercent', 'revenueTrendPercent', 'revenueGrowthPercent']),
     renewalRate: readNumberValue(data, ['renewalRate', 'renewalRatePercent', 'retentionRate', 'retentionRatePercent']),
     renewalRateTrendPercent: readNumberValue(data, ['renewalRateTrend', 'renewalRateTrendPercent', 'renewalTrendPercent', 'retentionRateTrendPercent']),
-  }
-}
-
-function getActivityLogList(payload: any): any[] {
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload?.data)) return payload.data
-  if (Array.isArray(payload?.content)) return payload.content
-  if (Array.isArray(payload?.items)) return payload.items
-  if (Array.isArray(payload?.records)) return payload.records
-  if (Array.isArray(payload?.list)) return payload.list
-  if (Array.isArray(payload?.data?.content)) return payload.data.content
-  if (Array.isArray(payload?.data?.items)) return payload.data.items
-  if (Array.isArray(payload?.data?.records)) return payload.data.records
-  if (Array.isArray(payload?.data?.list)) return payload.data.list
-  return []
-}
-
-function normalizeActivityLog(log: any, index: number): ActivityLog | null {
-  const title =
-    readStringValue(log, ['title', 'message', 'description', 'action', 'activity', 'eventName', 'event_name']) ||
-    readStringValue(log?.metadata, ['title', 'message', 'description', 'action']) ||
-    readStringValue(log?.details, ['title', 'message', 'description', 'action']) ||
-    'Activity logged'
-
-  return {
-    id: String(log?.id || log?.logId || log?.eventId || log?.uuid || `${title}-${index}`),
-    eventType: String(log?.eventType || log?.event_type || log?.type || 'ACTION'),
-    title,
-    createdAt: log?.createdAt || log?.created_at || log?.createdDate || log?.timestamp || log?.eventTime || log?.time
-      ? String(log?.createdAt || log?.created_at || log?.createdDate || log?.timestamp || log?.eventTime || log?.time)
-      : undefined,
   }
 }
 
@@ -249,79 +198,6 @@ export const adminApi = {
     return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
   },
 
-  async getStaffList(pageOrParams: number | AdminListParams = 1, size = ADMIN_LIST_PAGE_SIZE) {
-    const params = typeof pageOrParams === 'number'
-      ? { page: pageOrParams, size }
-      : pageOrParams
-    const request = buildListRequest({
-      sortField: 'createdAt',
-      filters: {},
-      sortBy: 'DESC',
-      page: 1,
-      size: ADMIN_LIST_PAGE_SIZE,
-    }, params)
-
-    console.log('[adminApi.getStaffList] request payload', request)
-    return axiosClient.post('/api/user/staff/list', request)
-  },
-
-  async getStaffAccountLimit() {
-    return axiosClient.get('/api/user/staff/limit')
-  },
-
-  async getActivityLogs(params?: AdminListParams) {
-    const request = buildListRequest({
-      sortField: 'createdAt',
-      filters: {},
-      sortBy: 'DESC',
-      page: 1,
-      size: ADMIN_LIST_PAGE_SIZE,
-    }, params)
-
-    console.log('[adminApi.getActivityLogs] request payload', request)
-    const response = await axiosClient.post('/api/activity-log/list', request)
-
-    return attachPaginationMeta(getActivityLogList(response)
-      .map((log, index) => normalizeActivityLog(log, index))
-      .filter((log): log is ActivityLog => Boolean(log)), response)
-  },
-
-  async getJobPostings(params?: AdminListParams<JobListFilters>) {
-    const request = buildJobListRequest(params)
-
-    console.log('[adminApi.getJobPostings] request payload', request)
-    const response = await axiosClient.post('/api/job-posting/list', request)
-
-    return attachPaginationMeta(getJobPostingList(response)
-      .map((job) => normalizeJobPosting(job))
-      .filter((job): job is JobPosting => Boolean(job)), response)
-  },
-
-  async getJobPostingById(id: string) {
-    const response = await axiosClient.get(`/api/job-posting/${encodeURIComponent(id)}`)
-    const job = normalizeJobPosting(getResponsePayload(response))
-
-    if (!job) {
-      throw new Error('Job posting not found')
-    }
-
-    return job
-  },
-
-  async createJobPosting(payload: JobPostingPayload) {
-    const response = await axiosClient.post('/api/job-posting', payload)
-    return normalizeJobPosting(getResponsePayload(response))
-  },
-
-  async updateJobPosting(id: string, payload: JobPostingPayload) {
-    const response = await axiosClient.put(`/api/job-posting/${encodeURIComponent(id)}`, payload)
-    return normalizeJobPosting(getResponsePayload(response))
-  },
-
-  async deleteJobPosting(id: string) {
-    return axiosClient.delete(`/api/job-posting/${encodeURIComponent(id)}`)
-  },
-
   async getUserById(id: string) {
     const response = await axiosClient.get(`/api/user/${encodeURIComponent(id)}`)
     const user = normalizeTenantAdminUser(getUserDetailPayload(response))
@@ -331,17 +207,5 @@ export const adminApi = {
     }
 
     return user
-  },
-
-  async createStaff(payload: { email: string; fullName: string; role: string[]; status?: string; tenantId?: string }) {
-    return axiosClient.post('/api/user/staff', payload)
-  },
-
-  async updateStaff(id: string, payload: { email: string; fullName: string; role: string[]; status?: string; tenantId?: string }) {
-    return axiosClient.put(`/api/user/staff/${encodeURIComponent(id)}`, payload)
-  },
-
-  async deleteStaff(id: string) {
-    return axiosClient.delete(`/api/user/staff/${encodeURIComponent(id)}`)
   }
 }
