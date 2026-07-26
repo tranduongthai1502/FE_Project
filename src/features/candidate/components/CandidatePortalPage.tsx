@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CandidateChangePasswordView } from '@/features/auth'
+import { ChangePasswordView } from '@/components/common/ChangePasswordView'
+import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 import { applications, candidateNavItems } from '../data/candidateData'
 import { useCandidatePanel } from '../hooks/useCandidatePanel'
@@ -104,7 +105,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
         <header className="candidate-topbar">
           <div className="candidate-search">
             <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="search" placeholder="Search jobs, documents..." aria-label="Search jobs and documents" maxLength={50}/>
+            <input type="search" placeholder="Search jobs, documents..." aria-label="Search jobs and documents" maxLength={FIELD_LENGTH_LIMITS.defaultText}/>
           </div>
 
           <nav className="candidate-tabs" aria-label="Candidate top navigation">
@@ -167,7 +168,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
 
         <div className={`candidate-content ${activePanel === 'changePassword' ? 'candidate-content-settings' : ''}`}>
           {activePanel === 'changePassword' ? (
-            <CandidateChangePasswordView
+            <ChangePasswordView
               onBack={() => selectPanel('dashboard')}
               triggerToast={triggerToast}
             />

@@ -1,14 +1,15 @@
 import { useCallback, useEffect } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
-import { authApi } from '../services/authApi'
+import { authApi } from '@/services/api/authApi'
 import { getPageForUserRole, unsupportedRoleMessage } from '../utils/authRole'
 import {
   AUTH_EXPIRED_EVENT_NAME,
   clearAuthStorage,
   getStoredRequirePasswordChange,
   getStoredAuthRole,
+  hasStoredAuthToken,
   saveAuthRole,
-} from '../utils/authStorage'
+} from '@/services/api/authStorage'
 
 const pathByAuthRole = {
   candidate: '/candidate',
@@ -30,7 +31,8 @@ export function useAuthSession(
   navigate: NavigateFunction,
   triggerToast: (message: string, type?: 'success' | 'error') => void,
 ) {
-  const currentRole = getStoredAuthRole()
+  const storedRole = getStoredAuthRole()
+  const currentRole = hasStoredAuthToken() ? storedRole : null
   const requirePasswordChange = getStoredRequirePasswordChange()
   const defaultPath = currentRole
     ? requirePasswordChange

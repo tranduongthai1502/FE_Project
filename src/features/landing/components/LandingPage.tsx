@@ -4,6 +4,7 @@ import { landingFeatures, landingProcessSteps, landingRoleCards } from '../data/
 type LandingPageProps = {
   onGoToLogin: () => void
   onGoToSignup: () => void
+  onGoToLanding?: () => void
 }
 
 function DashboardPreview() {
@@ -71,14 +72,19 @@ function DashboardPreview() {
   )
 }
 
-export function LandingPage({ onGoToLogin, onGoToSignup }: LandingPageProps) {
+export function LandingPage({ onGoToLanding, onGoToLogin, onGoToSignup }: LandingPageProps) {
+  const goToLanding = () => {
+    onGoToLanding?.()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <main className="landing-page">
       <nav className="landing-nav" aria-label="Main navigation">
-        <a className="landing-brand" href="/landingpage" aria-label="JobFusion landing page">
+        <button type="button" className="landing-brand" onClick={goToLanding} aria-label="JobFusion landing page">
           <span>J</span>
           <strong>JobFusion</strong>
-        </a>
+        </button>
         <div className="landing-nav-links">
           <a href="#features">Features</a>
           <a href="#process">How It Works</a>
@@ -110,7 +116,7 @@ export function LandingPage({ onGoToLogin, onGoToSignup }: LandingPageProps) {
                 Get Started Free <span aria-hidden="true">-&gt;</span>
               </button>
               <button type="button" className="landing-demo">
-                <span aria-hidden="true">▶</span> Watch Demo
+                <span aria-hidden="true">&#9654;</span> Watch Demo
               </button>
             </div>
             <div className="landing-trust">
@@ -211,7 +217,7 @@ export function LandingPage({ onGoToLogin, onGoToSignup }: LandingPageProps) {
               <h3>{role.title}</h3>
               {role.items.map((item) => (
                 <p key={item}>
-                  <span>✓</span>
+                  <span>&#10003;</span>
                   {item}
                 </p>
               ))}
@@ -230,10 +236,10 @@ export function LandingPage({ onGoToLogin, onGoToSignup }: LandingPageProps) {
 
       <footer className="landing-footer">
         <div>
-          <a className="footer-brand" href="/landingpage" aria-label="JobFusion landing page">
+          <button type="button" className="footer-brand" onClick={goToLanding} aria-label="JobFusion landing page">
             <span>J</span>
             <strong>JobFusion</strong>
-          </a>
+          </button>
           <p>A complete AI-powered recruitment SaaS platform for businesses in Vietnam and across the region.</p>
         </div>
         <div>

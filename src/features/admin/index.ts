@@ -1,4 +1,4 @@
-export { RoleDashboardPage } from './components/RoleDashboardPage'
+export { SuperAdminDashboard } from './components/SuperAdminDashboard'
 export { adminApi } from './services/adminApi'
 export type {
   CreatePlanPayload,
@@ -7,4 +7,4 @@ export type {
   Tenant,
   UpdatePlanPayload,
   UpdateTenantPayload,
-} from './types/admin.types'
+} from '@/services/api/api.types'

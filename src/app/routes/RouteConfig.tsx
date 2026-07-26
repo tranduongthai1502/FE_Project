@@ -1,14 +1,9 @@
 import type { ReactElement } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { CandidatePortalPage } from '@/pages/CandidatePortalPage'
-import { LandingPage } from '@/pages/LandingPage'
-import { LoginPage } from '@/pages/LoginPage'
-import { RoleDashboardPage } from '@/pages/RoleDashboardPage'
-import { SignupPage } from '@/pages/SignupPage'
-import { TenantActivationDemoPage } from '@/pages/TenantActivationDemoPage'
-import { ActivationPage } from '@/pages/ActivationPage'
-import type { AppRole } from '@/features/auth'
+import { LandingPage } from '@/features/landing'
+import { LoginFeature, SignupFeature, type AppRole } from '@/features/auth'
+import { RoleRoutes } from './RoleRoutes'
 
 export type AppPage = AppRole
 
@@ -44,20 +39,26 @@ export function RouteConfig({
   protect,
   triggerToast,
 }: RouteConfigProps) {
+  const landingPage = (
+    <LandingPage
+      onGoToLanding={() => navigate('/landingpage')}
+      onGoToLogin={() => navigate('/login')}
+      onGoToSignup={() => navigate('/signup')}
+    />
+  )
+
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={defaultPath} replace />} />
-      <Route
-        path="/landingpage"
-        element={<LandingPage onGoToLogin={() => navigate('/login')} onGoToSignup={() => navigate('/signup')} />}
-      />
+      <Route path="/" element={defaultPath === '/landingpage' ? landingPage : <Navigate to={defaultPath} replace />} />
+      <Route path="/landingpage" element={landingPage} />
+      <Route path="/landing" element={<Navigate to="/landingpage" replace />} />
       <Route
         path="/login"
         element={
           loginRedirect ? (
             <Navigate to={loginRedirect} replace />
           ) : (
-            <LoginPage
+            <LoginFeature
               onGoToSignup={() => navigate('/signup')}
               onSignInSuccess={onSignInSuccess}
               triggerToast={triggerToast}
@@ -71,64 +72,11 @@ export function RouteConfig({
           loginRedirect ? (
             <Navigate to={loginRedirect} replace />
           ) : (
-            <SignupPage onGoToSignin={() => navigate('/login')} triggerToast={triggerToast} />
+            <SignupFeature onGoToSignin={() => navigate('/login')} triggerToast={triggerToast} />
           )
         }
       />
-      <Route
-        path="/tenant/activate-demo"
-        element={<TenantActivationDemoPage onGoToLogin={() => navigate('/login')} />}
-      />
-      <Route
-        path="/tenant/activate"
-        element={
-          <ActivationPage
-            navigate={navigate}
-            onSignInSuccess={onSignInSuccess}
-            triggerToast={triggerToast}
-          />
-        }
-      />
-      <Route
-        path="/tenant/active"
-        element={
-          <ActivationPage
-            navigate={navigate}
-            onSignInSuccess={onSignInSuccess}
-            triggerToast={triggerToast}
-          />
-        }
-      />
-      <Route
-        path="/activate"
-        element={
-          <ActivationPage
-            navigate={navigate}
-            onSignInSuccess={onSignInSuccess}
-            triggerToast={triggerToast}
-          />
-        }
-      />
-      <Route
-        path="/candidate/*"
-        element={protect('candidate', <CandidatePortalPage onLogout={onLogout} triggerToast={triggerToast} />)}
-      />
-      <Route
-        path="/tenant-admin/*"
-        element={protect('tenantAdmin', <RoleDashboardPage role="tenantAdmin" onLogout={onLogout} triggerToast={triggerToast} />)}
-      />
-      <Route
-        path="/super-admin/*"
-        element={protect('superAdmin', <RoleDashboardPage role="superAdmin" onLogout={onLogout} triggerToast={triggerToast} />)}
-      />
-      <Route
-        path="/hr/*"
-        element={protect('hr', <RoleDashboardPage role="hr" onLogout={onLogout} triggerToast={triggerToast} />)}
-      />
-      <Route
-        path="/interviewer/*"
-        element={protect('interviewer', <RoleDashboardPage role="interviewer" onLogout={onLogout} triggerToast={triggerToast} />)}
-      />
+      {RoleRoutes({ onLogout, protect, triggerToast })}
       <Route path="*" element={<Navigate to={defaultPath} replace />} />
     </Routes>
   )

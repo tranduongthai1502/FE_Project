@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react'
+import type { ReactElement } from 'react'
 import { BrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Toast } from '@/components/common/Toast'
 import { useAuthSession } from '@/features/auth'
@@ -18,14 +18,6 @@ function AppRouteContent() {
     loginRedirect,
     requirePasswordChange,
   } = useAuthSession(navigate, triggerToast)
-
-  useEffect(() => {
-    if (!location.hash.startsWith('#/')) {
-      return
-    }
-
-    navigate(location.hash.slice(1), { replace: true })
-  }, [location.hash, navigate])
 
   const toast = <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
 

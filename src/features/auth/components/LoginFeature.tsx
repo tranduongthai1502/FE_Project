@@ -12,13 +12,14 @@ import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/components/icons/Icon
 import { ForgotPasswordForm } from './ForgotPasswordForm'
 import { OtpForm } from './OtpForm'
 import { ResetPasswordForm } from './ResetPasswordForm'
-import { getPasswordStrength } from '../utils/passwordStrength'
+import { getPasswordStrength } from '@/utils/passwordStrength'
 import { validateEmail, validateRequired } from '../utils/validation'
-import { authApi } from '../services/authApi'
+import { authApi } from '@/services/api/authApi'
 import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
 import { authErrorMessages } from '../errors'
-import { saveRequirePasswordChange } from '../utils/authStorage'
+import { saveRequirePasswordChange } from '@/services/api/authStorage'
 import { getPageForUserRole } from '../utils/authRole'
+import { FIELD_LENGTH_LIMITS, validateOptionalEmail, validationErrorMessages } from '@/services/api/axiosErrorHandler'
 
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = authErrorMessages.accountNotFound
@@ -375,7 +376,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   const updatePassword = (nextPassword: string) => {
     setPassword(nextPassword)
     if (passwordError) {
-      setPasswordError(validateRequired(nextPassword, 'Please enter your password.'))
+      setPasswordError(validateRequired(nextPassword, validationErrorMessages.passwordRequired))
     }
   }
 
@@ -383,15 +384,11 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     updatePassword(event.target.value)
   }
 
-  const validateForgotEmail = (value: string) => (
-    value.trim() ? validateEmail(value) : 'Please enter your email address.'
-  )
-
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
     const nextEmailError = validateEmail(email)
-    const nextPasswordError = validateRequired(password, 'Please enter your password.')
+    const nextPasswordError = validateRequired(password, validationErrorMessages.passwordRequired)
 
     setEmailError(nextEmailError)
     setPasswordError(nextPasswordError)
@@ -476,7 +473,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
 
     const nextEmailError = forgotEmail.trim()
       ? validateEmail(forgotEmail)
-      : 'Please enter your email address.'
+      : validateOptionalEmail(forgotEmail)
     setForgotEmailError(nextEmailError)
 
     if (nextEmailError) {
@@ -700,7 +697,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
-                maxLength={50}
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 id="email"
                 name="email"
                 type="email"
@@ -726,7 +723,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
-                maxLength={50}
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -756,7 +753,6 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
           <div className="login-options-row">
             <label className="check-row" htmlFor="keep-logged-in">
               <input
-                maxLength={50}
                 id="keep-logged-in"
                 name="keep-logged-in"
                 type="checkbox"
@@ -798,7 +794,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
                 emailError={forgotEmailError}
                 setEmailError={setForgotEmailError}
                 isLoading={isSendingCode}
-                validateEmail={validateForgotEmail}
+                validateEmail={validateOptionalEmail}
                 handleSendCode={handleSendCode}
                 handleBackToLogin={handleCloseForgotPassword}
               />

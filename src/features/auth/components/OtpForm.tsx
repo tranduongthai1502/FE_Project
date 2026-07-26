@@ -4,6 +4,7 @@ import type {
   KeyboardEvent,
   MutableRefObject,
 } from 'react'
+import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 type OtpFormProps = {
   otp: string[]
@@ -55,7 +56,7 @@ export function OtpForm({
             <input
               key={idx}
               type="text"
-              maxLength={1}
+              maxLength={FIELD_LENGTH_LIMITS.otpDigit}
               className={`otp-input ${otpError ? 'has-error' : ''}`}
               value={digit}
               ref={(el) => {

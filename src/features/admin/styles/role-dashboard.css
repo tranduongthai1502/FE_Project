@@ -2071,7 +2071,7 @@
 }
 
 .staff-management-toolbar label,
-.admin-search-input {
+.search-input {
   display: flex;
   align-items: center;
   border: 1px solid #f0b8a8;
@@ -2093,7 +2093,7 @@
 }
 
 .staff-management-toolbar select,
-.admin-search-input input {
+.search-input input {
   min-width: 0;
   flex: 1;
   border: 0;
@@ -2105,7 +2105,7 @@
   font-weight: bold;
 }
 
-.admin-search-input input::placeholder {
+.search-input input::placeholder {
   color: #858d9d;
 }
 
@@ -2118,11 +2118,11 @@
   border-radius: 999px;
 }
 
-.admin-search-input input {
+.search-input input {
   width: 100%;
 }
 
-.admin-search-input i {
+.search-input i {
   color: #667085;
   font-size: 11px;
 }
@@ -2855,7 +2855,7 @@
   background: #f7f8fd;
 }
 
-.create-tenant-breadcrumb {
+.create-tenant-page-breadcrumb {
   max-width: 980px;
   margin: 0 0 52px;
 }
@@ -2942,7 +2942,7 @@
   }
 }
 
-.tenant-breadcrumb {
+.breadcrumb {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2952,24 +2952,24 @@
   font-weight: 700;
 }
 
-.tenant-breadcrumb strong {
+.breadcrumb strong {
   color: #d93408;
 }
 
-.tenant-breadcrumb .breadcrumb-item {
+.breadcrumb .breadcrumb__item {
   display: contents;
 }
 
-.tenant-breadcrumb i {
+.breadcrumb i {
   font-size: 12px;
 }
 
-.tenant-breadcrumb .breadcrumb-separator {
+.breadcrumb .breadcrumb__separator {
   color: #98a2b3;
   font-weight: 800;
 }
 
-.tenant-breadcrumb .fa-house{
+.breadcrumb .fa-house{
   font-size:18px;
 }
 
@@ -3266,7 +3266,7 @@
   background: #f7f8fd;
 }
 
-.tenant-breadcrumb button {
+.breadcrumb button {
   border: 0;
   background: transparent;
   color: #0d1b2a;
@@ -3775,7 +3775,7 @@
     minmax(104px, 0.95fr)
     minmax(120px, 1.25fr)
     minmax(82px, 0.2fr)
-    minmax(34px, 0.45fr);
+    minmax(72px, 0.45fr);
   align-items: center;
   gap: 16px;
   min-height: 62px;
@@ -3793,6 +3793,10 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.tenant-list-table-row > :nth-child(7) {
+  justify-self: center;
 }
 
 .tenant-list-table-row-clickable {
@@ -3976,8 +3980,8 @@
 }
 
 .tenant-list-table-row button {
-  justify-self: end;
-  margin-right: 10px;
+  justify-self: center;
+  margin-right: 0;
   width: 28px;
   height: 28px;
   display: grid;
@@ -4685,7 +4689,7 @@
   height: 28px;
 }
 
-.tenant-breadcrumb button {
+.breadcrumb button {
   padding: 0;
   border: 0;
   background: transparent;
@@ -4700,7 +4704,7 @@
   background: #f7f8fd;
 }
 
-.subscription-plan-detail-content .tenant-breadcrumb strong {
+.subscription-plan-detail-content .breadcrumb strong {
   color: #d93408;
 }
 
