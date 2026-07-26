@@ -20,7 +20,7 @@ import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/services/api/axi
 const requiredJobFieldMessage = validationErrorMessages.requiredField
 const departmentRequiredMessage = validationErrorMessages.departmentRequired
 const employmentTypeRequiredMessage = validationErrorMessages.employmentTypeRequired
-const duplicateJobTitleMessage = validationErrorMessages.duplicateJobTitle
+const duplicateJobTitleConfirmMessage = 'A job posting with this title already exists. Are you sure you want to create another one?'
 const salaryPairMessage = validationErrorMessages.salaryPairRequired
 const salaryOrderMessage = validationErrorMessages.salaryOrderInvalid
 const salaryPositiveMessage = 'Salary must be a positive number.'
@@ -327,6 +327,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [jobConfirmAction, setJobConfirmAction] = useState<JobConfirmAction>(null)
   const [jobConfirmTarget, setJobConfirmTarget] = useState<JobPosting | null>(null)
   const [isJobActionSubmitting, setIsJobActionSubmitting] = useState(false)
+  const [pendingDuplicateTitlePayload, setPendingDuplicateTitlePayload] = useState<JobPostingPayload | null>(null)
   const activeJobCount = jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobs.reduce((total, job) => total + job.applicantCount, 0)
   const pendingReviewCount = jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
@@ -398,6 +399,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobForm(emptyJobForm)
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobFieldErrors({})
+    setPendingDuplicateTitlePayload(null)
     setSelectedJob(null)
     setJobView('create')
     if (location.pathname !== hrCreateJobPostingPath) {
@@ -467,6 +469,16 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     const numericValue = Number(value)
     setJobForm((current) => ({ ...current, [field]: value === '' || !Number.isFinite(numericValue) ? 0 : numericValue }))
   }
+  const hasDuplicateJobTitle = (payload: JobPostingPayload) => {
+    const title = payload.title.trim()
+    if (!title) return false
+
+    return jobs.some((job) => (
+      job.id !== selectedJob?.id &&
+      job.title.trim().toLowerCase() === title.toLowerCase() &&
+      ['open', 'draft'].includes(job.status.trim().toLowerCase())
+    ))
+  }
   const getJobValidationErrors = (payload: JobPostingPayload) => {
     const nextErrors: JobFieldErrors = {}
     const title = payload.title.trim()
@@ -486,14 +498,6 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
     if (!payload.description.trim()) nextErrors.description = requiredJobFieldMessage
     if (!payload.requirements.trim()) nextErrors.requirements = requiredJobFieldMessage
-
-    if (title && jobs.some((job) => (
-      job.id !== selectedJob?.id &&
-      job.title.trim().toLowerCase() === title.toLowerCase() &&
-      ['open', 'draft'].includes(job.status.trim().toLowerCase())
-    ))) {
-      nextErrors.title = duplicateJobTitleMessage
-    }
 
     if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
     if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
@@ -587,6 +591,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setIsCancelConfirmOpen(false)
     setJobFieldErrors({})
+    setPendingDuplicateTitlePayload(null)
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobForm(emptyJobForm)
     if (jobView === 'edit' && selectedJob) {
@@ -623,6 +628,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setIsCancelConfirmOpen(false)
     setJobFieldErrors({})
+    setPendingDuplicateTitlePayload(null)
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobForm(emptyJobForm)
     setSelectedJob(null)
@@ -644,6 +650,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const openEditJob = (job: JobPosting) => {
     setSelectedJob(job)
     setJobFieldErrors({})
+    setPendingDuplicateTitlePayload(null)
     setIsCancelConfirmOpen(false)
     setSalaryInputValues({
       salaryMin: job.salaryMin ? String(job.salaryMin) : '',
@@ -726,7 +733,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       setIsJobActionSubmitting(false)
     }
   }
-  const saveJob = async (payload: JobPostingPayload = jobForm) => {
+  const saveJob = async (payload: JobPostingPayload = jobForm, options: { allowDuplicateTitle?: boolean } = {}) => {
     if (isActionLocked || isSavingJob) return
     const nextErrors = getJobValidationErrors(payload)
 
@@ -735,7 +742,14 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       return
     }
 
+    if (!options.allowDuplicateTitle && hasDuplicateJobTitle(payload)) {
+      setJobFieldErrors({})
+      setPendingDuplicateTitlePayload(payload)
+      return
+    }
+
     setJobFieldErrors({})
+    setPendingDuplicateTitlePayload(null)
     setIsSavingJob(true)
     try {
       const isEditingJob = jobView === 'edit' && selectedJob
@@ -751,7 +765,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       const apiFieldErrors = getJobFieldErrorsFromApiError(error)
 
       if (isJobTitleAlreadyExistsError(error)) {
-        setJobFieldErrors({ title: duplicateJobTitleMessage })
+        setPendingDuplicateTitlePayload(payload)
       } else if (Object.keys(apiFieldErrors).length > 0) {
         setJobFieldErrors(apiFieldErrors)
         triggerToast?.('Please check the highlighted fields.', 'error')
@@ -1039,6 +1053,17 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             onConfirm={discardJobFormChanges}
           />
         )}
+        {pendingDuplicateTitlePayload && (
+          <ConfirmActionModal
+            isSubmitting={isSavingJob}
+            title="Confirm Action"
+            message={duplicateJobTitleConfirmMessage}
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={() => setPendingDuplicateTitlePayload(null)}
+            onConfirm={() => saveJob(pendingDuplicateTitlePayload, { allowDuplicateTitle: true })}
+          />
+        )}
       </div>
     )
   }
@@ -1188,18 +1213,27 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
   const location = useLocation()
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('hr', location.pathname))
-  const [jobsViewResetKey, setJobsViewResetKey] = useState(0)
+  const [viewResetKeys, setViewResetKeys] = useState<Record<RoleHomeView, number>>({
+    dashboard: 0,
+    jobs: 0,
+    settings: 0,
+  })
   const selectView = (view: RoleHomeView) => {
-    const shouldResetJobsView = view === 'jobs' && activeView === 'jobs'
-
     setActiveView(view)
     navigate(getRoleHomeViewPath('hr', view))
-    if (shouldResetJobsView) {
-      window.sessionStorage.removeItem(jobFormRefreshViewKey)
-      setJobsViewResetKey((value) => value + 1)
-    }
   }
-  const navItems = buildNavigation(hrNav, activeView, selectView)
+  const reloadViewFromSidebar = (view: RoleHomeView) => {
+    setActiveView(view)
+    navigate(getRoleHomeViewPath('hr', view))
+    if (view === 'jobs') {
+      window.sessionStorage.removeItem(jobFormRefreshViewKey)
+    }
+    setViewResetKeys((current) => ({
+      ...current,
+      [view]: current[view] + 1,
+    }))
+  }
+  const navItems = buildNavigation(hrNav, activeView, reloadViewFromSidebar)
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
@@ -1209,11 +1243,11 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
   return (
     <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsPanel onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : activeView === 'jobs' ? (
-        <HrJobsView key={jobsViewResetKey} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <HrJobsView key={viewResetKeys.jobs} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
-      <div className={`role-content ${styles.content}`}>
+      <div key={viewResetKeys.dashboard} className={`role-content ${styles.content}`}>
         <div className={`role-title-row ${styles.title}`}>
           <div>
             <h1>Welcome back, Alex</h1>

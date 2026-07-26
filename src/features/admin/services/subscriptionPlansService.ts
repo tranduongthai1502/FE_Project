@@ -1,5 +1,11 @@
 import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
 import type { AdminListParams, SubscriptionPlan } from '@/services/api/api.types'
+import {
+  getBackendErrorMessage,
+  getErrorCode,
+  getErrorRawMessage,
+  validationErrorMessages,
+} from '@/services/api/axiosErrorHandler'
 
 export const TOP_TIER_PLAN_LIST_SIZE = 1000
 
@@ -203,4 +209,24 @@ export function getPlanFeatureState(plan?: SubscriptionPlan) {
       enabled: status ? status === 'ENABLED' : feature.enabled,
     }
   })
+}
+
+export function getSubscriptionPlanFieldErrors(error: unknown, message: string): CreatePlanFieldErrors {
+  const rawErrorText = [
+    getErrorCode(error),
+    getBackendErrorMessage(error),
+    getErrorRawMessage(error),
+    message,
+  ].join(' ').toLowerCase()
+
+  if (
+    rawErrorText.includes('plan') ||
+    rawErrorText.includes('name') ||
+    rawErrorText.includes('duplicate') ||
+    rawErrorText.includes('already exist')
+  ) {
+    return { planName: validationErrorMessages.duplicatePlanName }
+  }
+
+  return {}
 }

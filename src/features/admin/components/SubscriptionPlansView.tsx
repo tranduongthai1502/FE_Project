@@ -9,6 +9,7 @@ import {
   getDerivedJobUsage,
   getHighestPricedActivePlan,
   getPlanFeatureState,
+  getSubscriptionPlanFieldErrors,
   getSubscriptionPlanUsagePercent,
   hasDuplicatePlanName,
   hasFeatureChanges,
@@ -144,7 +145,9 @@ function CreatePlanView({
       onCreated()
     } catch (error) {
       const message = getAdminErrorMessage(error, 'Failed to create subscription plan.')
-      setPlanError(message)
+      const nextFieldErrors = getSubscriptionPlanFieldErrors(error, message)
+      setFieldErrors(nextFieldErrors)
+      setPlanError(Object.keys(nextFieldErrors).length > 0 ? '' : message)
     } finally {
       setIsSavingPlan(false)
     }
@@ -475,8 +478,10 @@ function EditPlanDetailView({
       onSaved()
     } catch (error) {
       const message = getAdminErrorMessage(error, 'Failed to update subscription plan.')
+      const nextFieldErrors = getSubscriptionPlanFieldErrors(error, message)
       setIsSaveConfirmOpen(false)
-      setPlanError(message)
+      setFieldErrors(nextFieldErrors)
+      setPlanError(Object.keys(nextFieldErrors).length > 0 ? '' : message)
     } finally {
       setIsSavingPlan(false)
     }

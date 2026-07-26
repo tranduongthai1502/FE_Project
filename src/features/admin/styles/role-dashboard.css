@@ -3775,7 +3775,7 @@
     minmax(104px, 0.95fr)
     minmax(120px, 1.25fr)
     minmax(82px, 0.2fr)
-    minmax(34px, 0.45fr);
+    minmax(72px, 0.45fr);
   align-items: center;
   gap: 16px;
   min-height: 62px;
@@ -3793,6 +3793,10 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.tenant-list-table-row > :nth-child(7) {
+  justify-self: center;
 }
 
 .tenant-list-table-row-clickable {
@@ -3976,8 +3980,8 @@
 }
 
 .tenant-list-table-row button {
-  justify-self: end;
-  margin-right: 10px;
+  justify-self: center;
+  margin-right: 0;
   width: 28px;
   height: 28px;
   display: grid;

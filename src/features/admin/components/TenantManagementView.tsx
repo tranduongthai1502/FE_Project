@@ -6,6 +6,7 @@ import {
   buildTenantListParams,
   duplicateCompanyNameMessage,
   emptyTenantForm,
+  getCreateTenantFieldErrors,
   invalidTenantEmailMessage,
   isValidTenantAdminEmail,
   normalizeFilterValue,
@@ -336,8 +337,10 @@ export function TenantManagementView({
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
       const message = getAdminErrorMessage(error, 'Failed to create tenant.')
+      const fieldErrors = getCreateTenantFieldErrors(error, message)
       setIsCreateConfirmOpen(false)
-      setTenantError(message)
+      setTenantFieldErrors(fieldErrors)
+      setTenantError(Object.keys(fieldErrors).length > 0 ? '' : message)
     } finally {
       setIsSubmittingTenant(false)
     }

@@ -1,6 +1,13 @@
-import { validateEmail, validationErrorMessages } from '@/services/api/axiosErrorHandler'
+import {
+  getBackendErrorMessage,
+  getErrorCode,
+  getErrorRawMessage,
+  validateEmail,
+  validationErrorMessages,
+} from '@/services/api/axiosErrorHandler'
 import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant } from '@/services/api/api.types'
 import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
+import type { CreateTenantFieldErrors } from '../components/CreateTenantPage'
 
 export type TenantStatusFilter = 'all' | 'active' | 'inactive'
 
@@ -82,4 +89,32 @@ export function buildTenantListParams(
     page,
     size: ADMIN_LIST_PAGE_SIZE,
   }
+}
+
+export function getCreateTenantFieldErrors(error: unknown, message: string): CreateTenantFieldErrors {
+  const rawErrorText = [
+    getErrorCode(error),
+    getBackendErrorMessage(error),
+    getErrorRawMessage(error),
+    message,
+  ].join(' ').toLowerCase()
+
+  if (rawErrorText.includes('email')) {
+    return { adminEmail: validationErrorMessages.emailAlreadyRegistered }
+  }
+
+  if (rawErrorText.includes('domain')) {
+    return { domain: 'Domain already exists. Please use another domain.' }
+  }
+
+  if (
+    rawErrorText.includes('company') ||
+    rawErrorText.includes('tenant') ||
+    rawErrorText.includes('name_already_exists') ||
+    rawErrorText.includes('duplicate_name')
+  ) {
+    return { companyName: duplicateCompanyNameMessage }
+  }
+
+  return {}
 }

@@ -16,6 +16,8 @@ export function buildPlanPayload(payload: CreatePlanPayload & { status?: string 
   return {
     "name": payload.name.trim(),
     "description": payload.description.trim(),
+    "billingCycle": 'MONTHLY',
+    "price": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
     "monthlyPrice": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
     "maxStaffAccount": payload.staffAccountUnlimited ? null : Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
     "staffAccountUnlimited": Boolean(payload.staffAccountUnlimited),

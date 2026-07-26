@@ -186,6 +186,10 @@ export const adminApi = {
     return axiosClient.put(`/api/tenant/${encodeURIComponent(tenantId)}`, buildTenantUpdatePayload(payload))
   },
 
+  async deleteTenant(tenantId: string) {
+    return axiosClient.delete(`/api/tenant/${encodeURIComponent(tenantId)}`)
+  },
+
   async createPlan(payload: CreatePlanPayload) {
     return axiosClient.post('/api/plan', buildPlanPayload(payload))
   },

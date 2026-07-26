@@ -2,6 +2,8 @@ import axiosClient from '@/services/api/axiosClient'
 import { API_LIST_PAGE_SIZE } from '@/services/api/apiConstants'
 import type {
   AdminListParams,
+  JobCriteriaPayload,
+  JobCriteriaResponse,
   JobListFilters,
   JobListRequest,
   JobPosting,
@@ -65,5 +67,49 @@ export const hrApi = {
 
   async deleteJobPosting(id: string) {
     return axiosClient.delete(`/api/job-posting/${encodeURIComponent(id)}`)
+  },
+
+  async checkTitleUniqueness(title: string, excludeId?: string) {
+    const params = new URLSearchParams({ title })
+    if (excludeId) params.append('excludeId', excludeId)
+    return axiosClient.get(`/api/job-posting/check-title?${params.toString()}`)
+  },
+
+  async createJobCriteria(requests: JobCriteriaPayload[]): Promise<JobCriteriaResponse[]> {
+    const backendRequests = requests.map((req) => ({
+      jobId: req.jobId,
+      criterionName: req.criterionName || req.name || '',
+      category: req.category,
+      description: req.description,
+      weight: req.weight,
+    }))
+    const response = await axiosClient.post('/api/job-criteria', backendRequests)
+    return getResponsePayload(response)
+  },
+
+  async getJobCriteriaById(id: string): Promise<JobCriteriaResponse> {
+    const response = await axiosClient.get(`/api/job-criteria/${encodeURIComponent(id)}`)
+    return getResponsePayload(response)
+  },
+
+  async getJobCriteriaByJobId(jobId: string): Promise<JobCriteriaResponse[]> {
+    const response = await axiosClient.get(`/api/job-criteria/job/${encodeURIComponent(jobId)}`)
+    return getResponsePayload(response)
+  },
+
+  async updateJobCriteria(id: string, payload: JobCriteriaPayload): Promise<JobCriteriaResponse> {
+    const backendPayload = {
+      jobId: payload.jobId,
+      criterionName: payload.criterionName || payload.name || '',
+      category: payload.category,
+      description: payload.description,
+      weight: payload.weight,
+    }
+    const response = await axiosClient.put(`/api/job-criteria/${encodeURIComponent(id)}`, backendPayload)
+    return getResponsePayload(response)
+  },
+
+  async deleteJobCriteria(id: string) {
+    return axiosClient.delete(`/api/job-criteria/${encodeURIComponent(id)}`)
   },
 }

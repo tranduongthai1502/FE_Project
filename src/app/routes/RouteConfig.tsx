@@ -39,13 +39,19 @@ export function RouteConfig({
   protect,
   triggerToast,
 }: RouteConfigProps) {
+  const landingPage = (
+    <LandingPage
+      onGoToLanding={() => navigate('/landingpage')}
+      onGoToLogin={() => navigate('/login')}
+      onGoToSignup={() => navigate('/signup')}
+    />
+  )
+
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={defaultPath} replace />} />
-      <Route
-        path="/landingpage"
-        element={<LandingPage onGoToLogin={() => navigate('/login')} onGoToSignup={() => navigate('/signup')} />}
-      />
+      <Route path="/" element={defaultPath === '/landingpage' ? landingPage : <Navigate to={defaultPath} replace />} />
+      <Route path="/landingpage" element={landingPage} />
+      <Route path="/landing" element={<Navigate to="/landingpage" replace />} />
       <Route
         path="/login"
         element={
@@ -70,7 +76,7 @@ export function RouteConfig({
           )
         }
       />
-      <RoleRoutes onLogout={onLogout} protect={protect} triggerToast={triggerToast} />
+      {RoleRoutes({ onLogout, protect, triggerToast })}
       <Route path="*" element={<Navigate to={defaultPath} replace />} />
     </Routes>
   )

@@ -18,7 +18,14 @@ import { shouldToastHttpError } from '@/utils/httpStatusManager'
 import { getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
 import { normalizeTenantAdminUser } from '@/services/api/apiMappers'
 import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
-import { FIELD_LENGTH_LIMITS, validateStaffEmail, validationErrorMessages } from '@/services/api/axiosErrorHandler'
+import {
+  FIELD_LENGTH_LIMITS,
+  getBackendErrorMessage,
+  getErrorCode,
+  getErrorRawMessage,
+  validateStaffEmail,
+  validationErrorMessages,
+} from '@/services/api/axiosErrorHandler'
 
 const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
 const passwordChangeRequiredMessage = 'Please change your password before using Tenant Admin features.'
@@ -37,6 +44,8 @@ type TenantWorkspaceData = {
   tenantDetail: Tenant | null
   tenantPlan: SubscriptionPlan | null
 }
+
+type StaffFormFieldErrors = Partial<Record<'fullName' | 'email' | 'role', string>>
 
 const tenantWorkspaceRequestCache = new Map<string, Promise<TenantWorkspaceData>>()
 
@@ -362,6 +371,39 @@ function formatActivityDateTime(value?: string) {
   return `${dateLabel} • ${timeLabel}`
 }
 
+function getStaffFormFieldErrors(error: unknown, message: string): StaffFormFieldErrors {
+  const rawErrorText = [
+    getErrorCode(error),
+    getBackendErrorMessage(error),
+    getErrorRawMessage(error),
+    message,
+  ].join(' ').toLowerCase()
+
+  if (rawErrorText.includes('email')) {
+    return { email: validationErrorMessages.emailAlreadyRegistered }
+  }
+
+  if (rawErrorText.includes('full') || rawErrorText.includes('name') || rawErrorText.includes('duplicate')) {
+    return { fullName: validationErrorMessages.duplicateStaffFullName }
+  }
+
+  if (rawErrorText.includes('role')) {
+    return { role: validationErrorMessages.accountRoleRequired }
+  }
+
+  return {}
+}
+
+function hasDuplicateStaffFullName(staffList: StaffMember[], fullName: string, ignoredStaffId?: string) {
+  const normalizedFullName = fullName.trim().toLowerCase()
+  if (!normalizedFullName) return false
+
+  return staffList.some((staff) => (
+    staff.id !== ignoredStaffId &&
+    staff.fullName.trim().toLowerCase() === normalizedFullName
+  ))
+}
+
 function getActivityIcon(eventType: string, index: number) {
   const normalized = eventType.trim().toLowerCase()
   if (normalized.includes('auth') || normalized.includes('login') || normalized.includes('password')) return 'fa-key'
@@ -655,6 +697,7 @@ function StaffManagementView({
 function CreateStaffAccountView({
   staffMember,
   staffList = [],
+  serverFieldErrors = {},
   onHome,
   onCancel,
   onConfirm,
@@ -663,6 +706,7 @@ function CreateStaffAccountView({
 }: {
   staffMember?: StaffMember
   staffList?: StaffMember[]
+  serverFieldErrors?: StaffFormFieldErrors
   onHome: () => void
   onCancel: () => void
   onConfirm: (payload: { fullName: string; email: string; role: string[]; status?: UserStatus }) => void
@@ -685,6 +729,12 @@ function CreateStaffAccountView({
   
   const [status, setStatus] = useState<UserStatus>(staffMember?.status || 'ACTIVE')
 
+  useEffect(() => {
+    if (serverFieldErrors.fullName) setFullNameError(serverFieldErrors.fullName)
+    if (serverFieldErrors.email) setEmailError(serverFieldErrors.email)
+    if (serverFieldErrors.role) setRoleError(serverFieldErrors.role)
+  }, [serverFieldErrors])
+
   const handleRoleToggle = (role: string) => {
     setSelectedRoles(prev => {
       if (prev.includes(role)) {
@@ -699,7 +749,11 @@ function CreateStaffAccountView({
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (isActionLocked) return
-    const nextFullNameError = fullName.trim() ? '' : validationErrorMessages.staffFullNameRequired
+    const nextFullNameError = !fullName.trim()
+      ? validationErrorMessages.staffFullNameRequired
+      : hasDuplicateStaffFullName(staffList, fullName, staffMember?.id)
+        ? validationErrorMessages.duplicateStaffFullName
+        : ''
     const nextEmailError = validateStaffEmail(email, staffList.map((staff) => staff.email), isEdit)
     const nextRoleError = selectedRoles.length > 0 ? '' : validationErrorMessages.roleRequired
 
@@ -873,6 +927,8 @@ function CreateStaffAccountView({
 
 function EditStaffAccountView({
   staffMember,
+  staffList = [],
+  serverFieldErrors = {},
   onHome,
   onStaffManagement,
   onCancel,
@@ -881,6 +937,8 @@ function EditStaffAccountView({
   isActionLocked = false,
 }: {
   staffMember: StaffMember
+  staffList?: StaffMember[]
+  serverFieldErrors?: StaffFormFieldErrors
   onHome: () => void
   onStaffManagement: () => void
   onCancel: () => void
@@ -899,6 +957,11 @@ function EditStaffAccountView({
 
     return roles.length > 0 ? roles : ['hr']
   })
+
+  useEffect(() => {
+    if (serverFieldErrors.fullName) setFullNameError(serverFieldErrors.fullName)
+    if (serverFieldErrors.role) setRoleError(serverFieldErrors.role)
+  }, [serverFieldErrors])
 
   const getInitials = (name: string) => {
     const words = name.trim().split(/\s+/).filter(Boolean)
@@ -941,6 +1004,10 @@ function EditStaffAccountView({
     if (isActionLocked) return
     if (!fullName.trim()) {
       setFullNameError(validationErrorMessages.staffFullNameRequired)
+      return
+    }
+    if (hasDuplicateStaffFullName(staffList, fullName, staffMember.id)) {
+      setFullNameError(validationErrorMessages.duplicateStaffFullName)
       return
     }
     if (selectedRoles.length === 0) {
@@ -1362,6 +1429,16 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
   const [tenantPlan, setTenantPlan] = useState<SubscriptionPlan | null>(null)
   const [selectedStaffId, setSelectedStaffId] = useState(() => getTenantAdminStaffIdFromUrl(location.pathname))
+  const [viewResetKeys, setViewResetKeys] = useState<Record<TenantAdminView, number>>({
+    dashboard: 0,
+    jobs: 0,
+    settings: 0,
+    staffManagement: 0,
+    staffCreate: 0,
+    staffEdit: 0,
+    staffDetail: 0,
+    staffActivityLog: 0,
+  })
   const changeView = (view: TenantAdminView, staffId?: string) => {
     if (isPasswordChangeRequired && view !== 'settings') {
       setActiveView('settings')
@@ -1374,7 +1451,24 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     setSelectedStaffId(staffId || '')
     navigate(getTenantAdminViewPath(view, staffId))
   }
-  const navItems = buildNavigation(tenantNav, activeView, changeView).map((item) => (
+  const reloadViewFromSidebar = (view: TenantAdminView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getTenantAdminViewPath('settings'))
+      triggerToast?.(passwordChangeRequiredMessage, 'error')
+      return
+    }
+
+    setStaffFormFieldErrors({})
+    setActiveView(view)
+    setSelectedStaffId('')
+    navigate(getTenantAdminViewPath(view))
+    setViewResetKeys((current) => ({
+      ...current,
+      [view]: current[view] + 1,
+    }))
+  }
+  const navItems = buildNavigation(tenantNav, activeView, reloadViewFromSidebar).map((item) => (
     isPasswordChangeRequired && item.label !== 'Settings'
       ? {
           ...item,
@@ -1490,6 +1584,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [staffSearchQuery, setStaffSearchQuery] = useState('')
   const [debouncedStaffSearchQuery, setDebouncedStaffSearchQuery] = useState('')
   const [isActionLocked, setIsActionLocked] = useState(() => isStoredCurrentUserInactive())
+  const [staffFormFieldErrors, setStaffFormFieldErrors] = useState<StaffFormFieldErrors>({})
 
   const shouldLoadTenantWorkspace =
     activeView === 'dashboard' ||
@@ -1668,6 +1763,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const handleCreateStaffSubmit = async (payload: { fullName: string; email: string; role: string[]; status?: UserStatus }) => {
     if (!guardTenantActive()) return
 
+    setStaffFormFieldErrors({})
     setIsSaving(true)
     try {
       await tenantAdminApi.createStaff({
@@ -1686,7 +1782,12 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
       changeView('staffManagement')
     } catch (error) {
-      if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
+      const message = getAdminErrorMessage(error, 'Error system. Please try again.')
+      const fieldErrors = getStaffFormFieldErrors(error, message)
+
+      if (Object.keys(fieldErrors).length > 0) {
+        setStaffFormFieldErrors(fieldErrors)
+      } else if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
         handleActionError(error, 'Error system. Please try again.')
       }
     } finally {
@@ -1698,6 +1799,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     if (!selectedStaff) return
     if (!guardTenantActive()) return
 
+    setStaffFormFieldErrors({})
     setIsSaving(true)
     try {
       await tenantAdminApi.updateStaff(selectedStaff.id, {
@@ -1744,7 +1846,12 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       setRefreshKey(prev => prev + 1)
       changeView('staffDetail', selectedStaff.id)
     } catch (error) {
-      if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
+      const message = getAdminErrorMessage(error, 'Error system. Please try again.')
+      const fieldErrors = getStaffFormFieldErrors(error, message)
+
+      if (Object.keys(fieldErrors).length > 0) {
+        setStaffFormFieldErrors(fieldErrors)
+      } else if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
         handleActionError(error, 'Error system. Please try again.')
       }
     } finally {
@@ -1834,13 +1941,16 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     <DashboardShell navItems={navItems} subtitle="Tenant Admin" onLogout={onLogout} onChangePassword={() => changeView('settings')}>
       {activeView === 'settings' ? (
         <AccountSettingsPanel
+          key={viewResetKeys.settings}
           isPasswordChangeRequired={isPasswordChangeRequired}
           onBack={() => changeView('dashboard')}
           triggerToast={triggerToast}
         />
       ) : activeView === 'staffCreate' ? (
         <CreateStaffAccountView
+          key={viewResetKeys.staffCreate}
           staffList={staffAccountList}
+          serverFieldErrors={staffFormFieldErrors}
           onHome={() => changeView('dashboard')}
           onCancel={() => changeView('staffManagement')}
           onConfirm={handleCreateStaffSubmit}
@@ -1850,7 +1960,10 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       ) : activeView === 'staffEdit' ? (
         selectedStaff ? (
           <EditStaffAccountView
+            key={`${selectedStaff.id}-${viewResetKeys.staffEdit}`}
             staffMember={selectedStaff}
+            staffList={staffAccountList}
+            serverFieldErrors={staffFormFieldErrors}
             onHome={() => changeView('dashboard')}
             onStaffManagement={() => changeView('staffManagement')}
             onCancel={() => changeView('staffDetail', selectedStaff.id)}
@@ -1876,6 +1989,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         </div>
       ) : activeView === 'staffDetail' && selectedStaff && selectedStaffMatchesDetailRoute ? (
         <StaffDetailView
+          key={`${selectedStaff.id}-${viewResetKeys.staffDetail}`}
           staffMember={selectedStaff}
           recentActivities={recentActivities}
           isLoadingActivities={isLoadingActivities}
@@ -1899,6 +2013,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         />
       ) : activeView === 'staffActivityLog' && selectedStaff && selectedStaffMatchesDetailRoute ? (
         <StaffActivityLogView
+          key={`${selectedStaff.id}-${viewResetKeys.staffActivityLog}`}
           staffMember={selectedStaff}
           onHome={() => changeView('dashboard')}
           onStaffManagement={() => changeView('staffManagement')}
@@ -1913,6 +2028,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
         </div>
       ) : activeView === 'staffManagement' ? (
         <StaffManagementView 
+          key={viewResetKeys.staffManagement}
           staffList={staffList}
           isLoading={isLoadingStaff || isLoadingTenantDetail}
           error={staffError}
@@ -1923,12 +2039,14 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             if (!guardTenantActive()) return
             clearSelectedStaff()
             setSelectedStaff(null)
+            setStaffFormFieldErrors({})
             changeView('staffCreate')
           }}
           onEdit={(staff) => {
             if (!guardTenantActive()) return
             saveSelectedStaff(staff)
             setSelectedStaff(staff)
+            setStaffFormFieldErrors({})
             changeView('staffEdit', staff.id)
           }}
           onDelete={(staff) => {
@@ -1954,7 +2072,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           isActionLocked={isActionLocked}
         />
       ) : (
-      <div className="role-content">
+      <div key={viewResetKeys.dashboard} className="role-content">
         <div className="role-metrics four tenant-dashboard-metrics">
           <MetricCard icon="fa-briefcase" label="Active Job Postings" value="24" note="+12%" />
           <MetricCard icon="fa-users" label="Total Applicants" value="842" note="+340" />

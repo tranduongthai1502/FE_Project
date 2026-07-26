@@ -45,6 +45,7 @@ const regionOptions = [
 ]
 
 export function CreateTenantPage({
+  error,
   form,
   plans,
   fieldErrors = {},
@@ -88,6 +89,8 @@ export function CreateTenantPage({
         </header>
 
         <form className="tenant-create-form" onSubmit={onSubmit} noValidate>
+          {error && <p className="tenant-modal-error">{error}</p>}
+
           <div className="tenant-form-grid">
             <label>
               <span>Company Name <b>*</b></span>

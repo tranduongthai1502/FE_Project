@@ -49,6 +49,7 @@ export const validationErrorMessages = {
   duplicateCompanyName: 'This company name is already registered.',
   validEmailAddressRequired: 'Please enter a valid email address.',
   staffFullNameRequired: "Please enter the staff member's full name.",
+  duplicateStaffFullName: 'This staff name is already registered.',
   roleRequired: 'Please assign at least one role.',
   accountRoleRequired: 'Please assign at least one role to this account.',
   departmentRequired: 'Please select department type.',

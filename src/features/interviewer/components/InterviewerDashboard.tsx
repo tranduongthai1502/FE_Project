@@ -14,11 +14,24 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   const location = useLocation()
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('interviewer', location.pathname))
+  const [viewResetKeys, setViewResetKeys] = useState<Record<RoleHomeView, number>>({
+    dashboard: 0,
+    jobs: 0,
+    settings: 0,
+  })
   const selectView = (view: RoleHomeView) => {
     setActiveView(view)
     navigate(getRoleHomeViewPath('interviewer', view))
   }
-  const navItems = buildNavigation(interviewerNav, activeView, selectView)
+  const reloadViewFromSidebar = (view: RoleHomeView) => {
+    setActiveView(view)
+    navigate(getRoleHomeViewPath('interviewer', view))
+    setViewResetKeys((current) => ({
+      ...current,
+      [view]: current[view] + 1,
+    }))
+  }
+  const navItems = buildNavigation(interviewerNav, activeView, reloadViewFromSidebar)
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
@@ -28,9 +41,9 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   return (
     <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsPanel onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
-      <div className={`role-content ${styles.content}`}>
+      <div key={viewResetKeys.dashboard} className={`role-content ${styles.content}`}>
         <h1>Interviewer Dashboard</h1>
         <p>Tuesday, October 24, 2024</p>
 

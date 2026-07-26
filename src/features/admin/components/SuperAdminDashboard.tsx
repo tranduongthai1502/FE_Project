@@ -171,7 +171,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
       ) : activeView === 'settings' ? (
         <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
-        <div className="role-content super-admin-content">
+        <div key={viewResetKeys.dashboard} className="role-content super-admin-content">
         <Breadcrumb items={[{ label: 'Home' }, { label: 'Dashboard' }]} />
         {dashboardErrorMessage && (
           <p className="super-admin-alert">

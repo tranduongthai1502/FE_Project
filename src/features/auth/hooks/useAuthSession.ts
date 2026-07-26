@@ -7,6 +7,7 @@ import {
   clearAuthStorage,
   getStoredRequirePasswordChange,
   getStoredAuthRole,
+  hasStoredAuthToken,
   saveAuthRole,
 } from '@/services/api/authStorage'
 
@@ -30,7 +31,8 @@ export function useAuthSession(
   navigate: NavigateFunction,
   triggerToast: (message: string, type?: 'success' | 'error') => void,
 ) {
-  const currentRole = getStoredAuthRole()
+  const storedRole = getStoredAuthRole()
+  const currentRole = hasStoredAuthToken() ? storedRole : null
   const requirePasswordChange = getStoredRequirePasswordChange()
   const defaultPath = currentRole
     ? requirePasswordChange

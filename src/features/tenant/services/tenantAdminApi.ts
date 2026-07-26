@@ -141,6 +141,10 @@ export const tenantAdminApi = {
     return axiosClient.delete(`/api/user/staff/${encodeURIComponent(id)}`)
   },
 
+  async resendStaffActivation(id: string) {
+    return axiosClient.post(`/api/user/staff/${encodeURIComponent(id)}/resend-activation`)
+  },
+
   normalizeStaffList(response: unknown) {
     return getTenantList(response)
       .map((item) => normalizeTenantAdminUser(item))

@@ -87,6 +87,27 @@ export type JobPostingPayload = {
   allowDuplicateTitle?: boolean
 }
 
+export type JobCriteriaPayload = {
+  id?: string
+  jobId?: string
+  category?: string
+  name?: string
+  criterionName?: string
+  weight?: number
+  description?: string
+}
+
+export type JobCriteriaResponse = {
+  id: string
+  jobId: string
+  category?: string
+  name: string
+  weight?: number
+  description?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export type StaffPayload = {
   email: string
   fullName: string

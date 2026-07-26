@@ -29,6 +29,10 @@ export function getStoredRequirePasswordChange() {
   )
 }
 
+export function hasStoredAuthToken() {
+  return Boolean(window.localStorage.getItem('access_token') || window.sessionStorage.getItem('access_token'))
+}
+
 export function saveRequirePasswordChange(value: boolean, keepLoggedIn: boolean) {
   const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
   const inactiveStorage = keepLoggedIn ? window.sessionStorage : window.localStorage
