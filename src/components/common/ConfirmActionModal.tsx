@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 export function ConfirmActionModal({
   isSubmitting,
   onCancel,
@@ -12,7 +14,7 @@ export function ConfirmActionModal({
   onCancel: () => void
   onConfirm: () => void
   title?: string
-  message?: string
+  message?: ReactNode
   cancelLabel?: string
   confirmLabel?: string
   submittingLabel?: string
@@ -26,7 +28,7 @@ export function ConfirmActionModal({
             <i className="fa-solid fa-xmark"></i>
           </button>
         </header>
-        <p>{message}</p>
+        <div className="tenant-confirm-message">{message}</div>
         <footer>
           <button type="button" onClick={onCancel} disabled={isSubmitting}>{cancelLabel}</button>
           <button type="button" onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? submittingLabel : confirmLabel}</button>

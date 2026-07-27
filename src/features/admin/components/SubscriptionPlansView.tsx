@@ -766,6 +766,8 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [planListError, setPlanListError] = useState('')
   const [isLoadingPlanDetail, setIsLoadingPlanDetail] = useState(false)
   const [planDetailError, setPlanDetailError] = useState('')
+  const [deletePlanTarget, setDeletePlanTarget] = useState<SubscriptionPlan | null>(null)
+  const [isDeletingPlan, setIsDeletingPlan] = useState(false)
   const [refreshPlansKey, setRefreshPlansKey] = useState(0)
   const [planPage, setPlanPage] = useState(1)
   const [planPageCount, setPlanPageCount] = useState(1)
@@ -1009,6 +1011,33 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
     navigate(getSubscriptionPlanEditPath(planId))
   }
 
+  const requestDeletePlan = (plan: SubscriptionPlan) => {
+    setDeletePlanTarget(plan)
+  }
+
+  const confirmDeletePlan = async () => {
+    if (!deletePlanTarget) return
+
+    setIsDeletingPlan(true)
+    setPlanListError('')
+
+    try {
+      await adminApi.deletePlan(deletePlanTarget.id)
+      setPlans((currentPlans) => currentPlans.filter((plan) => plan.id !== deletePlanTarget.id))
+      setSelectedPlanDetail((plan) => plan?.id === deletePlanTarget.id ? null : plan)
+      if (selectedPlanId === deletePlanTarget.id) {
+        openPlanList()
+      }
+      setDeletePlanTarget(null)
+      setRefreshPlansKey((value) => value + 1)
+      triggerToast?.('Subscription plan deleted successfully.', 'success')
+    } catch (error) {
+      setPlanListError(getAdminErrorMessage(error, 'Failed to delete subscription plan.'))
+    } finally {
+      setIsDeletingPlan(false)
+    }
+  }
+
   if (activeView === 'create') {
     return <CreatePlanView onBack={() => {
       setActiveView('list')
@@ -1049,6 +1078,14 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 </h1>
               </div>
               <div className="plan-detail-title-actions">
+                <button
+                  type="button"
+                  className="plan-detail-delete-button"
+                  onClick={() => requestDeletePlan(selectedPlan)}
+                  disabled={isDeletingPlan}
+                >
+                  Delete
+                </button>
                 <button type="button" onClick={() => openPlanEdit(selectedPlan.id)}>Edit</button>
               </div>
             </div>
@@ -1153,6 +1190,27 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 )}
               </div>
             </section>
+
+            {deletePlanTarget && (
+              <ConfirmActionModal
+                isSubmitting={isDeletingPlan}
+                title="Confirm Action"
+                message={(
+                  <>
+                    Are you sure you want to delete <span className="tenant-confirm-target-name">{deletePlanTarget.name}</span>?
+                    <br />
+                    This action cannot be undone.
+                  </>
+                )}
+                cancelLabel="Cancel"
+                confirmLabel="Delete"
+                submittingLabel="Deleting..."
+                onCancel={() => {
+                  if (!isDeletingPlan) setDeletePlanTarget(null)
+                }}
+                onConfirm={confirmDeletePlan}
+              />
+            )}
           </>
         )}
       </div>
@@ -1328,6 +1386,21 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                         <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
+                    <button
+                      type="button"
+                      className="icon-tooltip subscription-delete-action"
+                      aria-label={`Delete ${plan.name}`}
+                      data-tooltip="Delete"
+                      disabled={isDeletingPlan}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        requestDeletePlan(plan)
+                      }}
+                    >
+                      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="#565E74" />
+                      </svg>
+                    </button>
                   </span>
                 </div>
               )
@@ -1357,6 +1430,27 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
           </div>
         </footer>
       </section>
+
+      {deletePlanTarget && (
+        <ConfirmActionModal
+          isSubmitting={isDeletingPlan}
+          title="Confirm Action"
+          message={(
+            <>
+              Are you sure you want to delete <span className="tenant-confirm-target-name">{deletePlanTarget.name}</span>?
+              <br />
+              This action cannot be undone.
+            </>
+          )}
+          cancelLabel="Cancel"
+          confirmLabel="Delete"
+          submittingLabel="Deleting..."
+          onCancel={() => {
+            if (!isDeletingPlan) setDeletePlanTarget(null)
+          }}
+          onConfirm={confirmDeletePlan}
+        />
+      )}
     </div>
   )
 }
