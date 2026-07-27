@@ -2891,7 +2891,7 @@
 }
 
 .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2) {
-  grid-column: 13 / 19;
+  grid-column: 13 / 25;
   max-width: none;
 }
 
@@ -3327,29 +3327,42 @@
   color: #667085;
 }
 
-.tenant-detail-title-row > button {
-  min-height: 38px;
-  padding: 0 18px;
-  border: 0;
+.tenant-detail-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.tenant-detail-actions button {
+  min-width: 100px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #d93408;
   border-radius: 6px;
   background: #d93408;
   color: #ffffff;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
 }
 
-.tenant-detail-title-row > button.status-activate {
+.tenant-detail-actions button.status-activate {
   background: #d93408;
   color: #ffffff;
 }
 
-.tenant-detail-title-row > button.status-deactivate {
+.tenant-detail-actions button.status-deactivate {
   background: #d93408;
   color: #ffffff;
 }
 
-.tenant-detail-title-row > button:disabled {
+.tenant-detail-actions button.tenant-detail-delete-button {
+  background: #ffffff;
+  color: #d93408;
+}
+
+.tenant-detail-actions button:disabled {
+  border-color: #e4e7ec;
   background: #e4e7ec;
   color: #667085;
   cursor: not-allowed;
@@ -3775,7 +3788,7 @@
     minmax(104px, 0.95fr)
     minmax(120px, 1.25fr)
     minmax(82px, 0.2fr)
-    minmax(72px, 0.45fr);
+    minmax(92px, 0.5fr);
   align-items: center;
   gap: 16px;
   min-height: 62px;
@@ -3998,6 +4011,23 @@
   height: 27px;
 }
 
+.tenant-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tenant-row-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.tenant-delete-action:hover svg path,
+.tenant-delete-action:focus-visible svg path {
+  fill: #d93408;
+}
+
 .tenant-list-table-state {
   display: grid;
   min-height: 150px;
@@ -4125,11 +4155,19 @@
   cursor: pointer;
 }
 
-.tenant-confirm-modal p {
+.tenant-confirm-message {
   padding: 12px 28px 36px;
   color: #475467;
   font-size: 16px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tenant-confirm-target-name {
+  display: inline;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tenant-confirm-modal footer {
@@ -4200,7 +4238,7 @@
 
 .tenant-form-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) minmax(220px, 260px);
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
   gap: 20px;
   padding: 22px 24px;
 }
@@ -4517,7 +4555,7 @@
     minmax(88px, 1.05fr)
     minmax(88px, 1.05fr)
     minmax(78px, 0.7fr)
-    minmax(34px, 0.45fr);
+    minmax(92px, 0.5fr);
   align-items: center;
   gap: 16px;
   min-height: 56px;
@@ -4616,6 +4654,10 @@
   stroke: #98a2b3;
 }
 
+.subscription-table-row.inactive-plan-row .subscription-delete-action svg path {
+  fill: #98a2b3;
+}
+
 .subscription-table-row button {
   width: 28px;
   height: 28px;
@@ -4680,13 +4722,26 @@
   cursor: not-allowed;
 }
 
-.subscription-table-actions{
-  display:flex;
+.subscription-table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .subscription-table-actions button svg {
   width: 28px;
   height: 28px;
+}
+
+.subscription-table-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.subscription-delete-action:hover svg path,
+.subscription-delete-action:focus-visible svg path {
+  fill: #d93408;
 }
 
 .breadcrumb button {
@@ -4772,13 +4827,25 @@
 .plan-detail-title-actions button {
   min-width: 78px;
   min-height: 34px;
-  border: 0;
+  border: 1px solid #d93408;
   border-radius: 6px;
   background: #d93408;
   color: #ffffff;
   cursor: pointer;
   font-size: 13px;
   font-weight: 900;
+}
+
+.plan-detail-title-actions .plan-detail-delete-button {
+  background: transparent;
+  color: #d93408;
+}
+
+.plan-detail-title-actions button:disabled {
+  border-color: #e4e7ec;
+  background: #e4e7ec;
+  color: #667085;
+  cursor: not-allowed;
 }
 
 .plan-detail-card {
@@ -6989,6 +7056,7 @@
 
   .role-title-row div:last-child,
   .plan-detail-title-actions,
+  .tenant-detail-actions,
   .super-admin-hero-actions {
     width: 100%;
     display: grid;
@@ -6999,7 +7067,7 @@
   .role-title-row button,
   .subscription-title-row button,
   .plan-detail-title-actions button,
-  .tenant-detail-title-row > button,
+  .tenant-detail-actions button,
   .tenant-create-btn {
     width: 100%;
     justify-content: center;
