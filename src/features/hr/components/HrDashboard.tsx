@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
@@ -328,6 +328,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [jobConfirmTarget, setJobConfirmTarget] = useState<JobPosting | null>(null)
   const [isJobActionSubmitting, setIsJobActionSubmitting] = useState(false)
   const [pendingDuplicateTitlePayload, setPendingDuplicateTitlePayload] = useState<JobPostingPayload | null>(null)
+  const applicationDeadlineInputRef = useRef<HTMLInputElement>(null)
   const activeJobCount = jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobs.reduce((total, job) => total + job.applicantCount, 0)
   const pendingReviewCount = jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
@@ -569,6 +570,18 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobFieldErrors({})
   }
   const getInputClassName = (hasError?: boolean) => (hasError ? styles.jobInputError : undefined)
+  const openApplicationDeadlinePicker = () => {
+    const deadlineInput = applicationDeadlineInputRef.current
+    if (!deadlineInput) return
+
+    deadlineInput.focus()
+    if (typeof deadlineInput.showPicker === 'function') {
+      deadlineInput.showPicker()
+      return
+    }
+
+    deadlineInput.click()
+  }
   const openCreateJob = () => {
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setJobForm(emptyJobForm)
@@ -981,10 +994,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <label className={styles.deadlineField}>
                   <span>Application Deadline</span>
                   <div className={styles.iconInput}>
-                    <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4C0 3.45 0.195833 2.97917 0.5875 2.5875C0.979167 2.19583 1.45 2 2 2H3V0H5V2H13V0H15V2H16C16.55 2 17.0208 2.19583 17.4125 2.5875C17.8042 2.97917 18 3.45 18 4V18C18 18.55 17.8042 19.0208 17.4125 19.4125C17.0208 19.8042 16.55 20 16 20H2ZM2 18H16V8H2V18ZM2 6H16V4H2V6ZM2 6V4V6Z" fill="#565E74" />
-                    </svg>
-                    <input className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="date" value={jobForm.applicationDeadline.slice(0, 10)} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('applicationDeadline', e.target.value ? new Date(e.target.value).toISOString() : '')} />
+                    <button type="button" className={styles.datePickerButton} onClick={openApplicationDeadlinePicker} aria-label="Choose application deadline">
+                      <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4C0 3.45 0.195833 2.97917 0.5875 2.5875C0.979167 2.19583 1.45 2 2 2H3V0H5V2H13V0H15V2H16C16.55 2 17.0208 2.19583 17.4125 2.5875C17.8042 2.97917 18 3.45 18 4V18C18 18.55 17.8042 19.0208 17.4125 19.4125C17.0208 19.8042 16.55 20 16 20H2ZM2 18H16V8H2V18ZM2 6H16V4H2V6ZM2 6V4V6Z" fill="#565E74" />
+                      </svg>
+                    </button>
+                    <input ref={applicationDeadlineInputRef} className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="date" value={jobForm.applicationDeadline.slice(0, 10)} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('applicationDeadline', e.target.value ? new Date(e.target.value).toISOString() : '')} />
                   </div>
                   <JobFieldError message={jobFieldErrors.applicationDeadline} />
                 </label>

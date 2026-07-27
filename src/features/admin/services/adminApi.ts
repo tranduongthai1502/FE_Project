@@ -202,6 +202,10 @@ export const adminApi = {
     return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
   },
 
+  async deletePlan(planId: string) {
+    return axiosClient.delete(`/api/plan/${encodeURIComponent(planId)}`)
+  },
+
   async getUserById(id: string) {
     const response = await axiosClient.get(`/api/user/${encodeURIComponent(id)}`)
     const user = normalizeTenantAdminUser(getUserDetailPayload(response))

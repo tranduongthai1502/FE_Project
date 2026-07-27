@@ -7,6 +7,7 @@ import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/services/api/axi
 export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
 
 const requiredFieldMessage = validationErrorMessages.requiredField
+const planNamePreviewLength = 20
 
 function FieldError({ message }: { message?: string }) {
   return (
@@ -43,6 +44,16 @@ const regionOptions = [
   'VietNam',
   'Other',
 ]
+
+function formatPlanOptionLabel(plan: SubscriptionPlan) {
+  const trimmedName = plan.name.trim()
+  const displayName = trimmedName.length > planNamePreviewLength
+    ? `${trimmedName.slice(0, planNamePreviewLength)}...`
+    : trimmedName
+  const priceLabel = plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / month`
+
+  return `${displayName} - ${priceLabel}`
+}
 
 export function CreateTenantPage({
   error,
@@ -117,7 +128,7 @@ export function CreateTenantPage({
                   { value: '', label: isLoadingPlans ? 'Loading plans...' : 'Select a plan', disabled: true },
                   ...plans.map((plan) => ({
                     value: plan.id,
-                    label: plan.priceLabel ? `${plan.name} - ${plan.priceLabel}` : plan.name,
+                    label: formatPlanOptionLabel(plan),
                   })),
                 ]}
                 onChange={(nextValue) => onChange('planId', nextValue)}

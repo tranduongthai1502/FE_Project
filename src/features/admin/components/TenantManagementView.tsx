@@ -57,9 +57,11 @@ export function TenantManagementView({
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false)
   const [isPlanConfirmOpen, setIsPlanConfirmOpen] = useState(false)
+  const [deleteTenantTarget, setDeleteTenantTarget] = useState<Tenant | null>(null)
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isUpdatingTenantStatus, setIsUpdatingTenantStatus] = useState(false)
   const [isUpdatingTenantPlan, setIsUpdatingTenantPlan] = useState(false)
+  const [isDeletingTenant, setIsDeletingTenant] = useState(false)
   const [isLoadingTenants, setIsLoadingTenants] = useState(false)
   const [isLoadingTenantStats, setIsLoadingTenantStats] = useState(false)
   const [isLoadingTenantDetail, setIsLoadingTenantDetail] = useState(false)
@@ -485,6 +487,31 @@ export function TenantManagementView({
     setActiveView('list')
     navigate(getSuperAdminViewPath('tenantManagement'))
   }
+  const requestDeleteTenant = (tenant: Tenant) => {
+    setDeleteTenantTarget(tenant)
+  }
+  const confirmDeleteTenant = async () => {
+    if (!deleteTenantTarget) return
+
+    setIsDeletingTenant(true)
+    setTenantListError('')
+
+    try {
+      await adminApi.deleteTenant(deleteTenantTarget.id)
+      setTenants((currentTenants) => currentTenants.filter((tenant) => tenant.id !== deleteTenantTarget.id))
+      setTenantDetail((tenant) => tenant?.id === deleteTenantTarget.id ? null : tenant)
+      if (selectedTenantId === deleteTenantTarget.id) {
+        closeTenantDetail()
+      }
+      setDeleteTenantTarget(null)
+      setRefreshTenantsKey((value) => value + 1)
+      triggerToast?.('Tenant deleted successfully.', 'success')
+    } catch (error) {
+      setTenantListError(getAdminErrorMessage(error, 'Failed to delete tenant.'))
+    } finally {
+      setIsDeletingTenant(false)
+    }
+  }
   const openCreateTenant = () => {
     setSelectedTenantId('')
     setActiveView('list')
@@ -661,10 +688,10 @@ export function TenantManagementView({
     const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.createdAt || '') || tenantAdminUser?.createdAt || tenantCreatedDate
     const canUpdateTenantStatus = tenantStatus.className !== 'pending'
     const statusActionLabel = isActive
-      ? 'Inactive'
+      ? 'Deactivate Tenant'
       : tenantStatus.className === 'pending'
         ? 'Pending Activation'
-        : 'Active'
+        : 'Activate Tenant'
     const statusActionClassName = isActive ? 'status-deactivate' : 'status-activate'
     const statusActionMessage = isActive
       ? 'Are you sure you want to deactivate this tenant?'
@@ -694,14 +721,24 @@ export function TenantManagementView({
                 <h1>{selectedTenant.name}</h1>
                 <em className={tenantStatus.className}>{tenantStatus.label}</em>
               </div>
-              <button
-                type="button"
-                className={statusActionClassName}
-                onClick={() => canUpdateTenantStatus && setIsStatusConfirmOpen(true)}
-                disabled={!canUpdateTenantStatus || isUpdatingTenantStatus}
-              >
-                {statusActionLabel}
-              </button>
+              <div className="tenant-detail-actions">
+                <button
+                  type="button"
+                  className="tenant-detail-delete-button"
+                  onClick={() => requestDeleteTenant(selectedTenant)}
+                  disabled={isDeletingTenant}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className={statusActionClassName}
+                  onClick={() => canUpdateTenantStatus && setIsStatusConfirmOpen(true)}
+                  disabled={!canUpdateTenantStatus || isUpdatingTenantStatus}
+                >
+                  {statusActionLabel}
+                </button>
+              </div>
             </div>
 
             <div className="tenant-detail-grid">
@@ -822,6 +859,21 @@ export function TenantManagementView({
                   if (!isUpdatingTenantPlan) setIsPlanConfirmOpen(false)
                 }}
                 onConfirm={confirmUpdateTenantPlan}
+              />
+            )}
+
+            {deleteTenantTarget && (
+              <ConfirmActionModal
+                isSubmitting={isDeletingTenant}
+                title="Confirm Action"
+                message={`Are you sure you want to delete ${deleteTenantTarget.name}? This action cannot be undone.`}
+                cancelLabel="Cancel"
+                confirmLabel="Delete"
+                submittingLabel="Deleting..."
+                onCancel={() => {
+                  if (!isDeletingTenant) setDeleteTenantTarget(null)
+                }}
+                onConfirm={confirmDeleteTenant}
               />
             )}
           </>
@@ -954,22 +1006,39 @@ export function TenantManagementView({
                   <strong>{hasUnlimitedQuota ? 'Unlimited' : `${tenant.userQuotaUsed}/${tenant.userQuotaLimit}`}</strong>
                 </span>
                 <em className={status.className}>{status.label}</em>
-                <button
-                  type="button"
-                  className="icon-tooltip"
-                  aria-label={`View ${tenant.name}`}
-                  data-tooltip="Detail"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    handleOpenTenantDetail()
-                  }}
-                >
-                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <span className="tenant-row-actions">
+                  <button
+                    type="button"
+                    className="icon-tooltip"
+                    aria-label={`View ${tenant.name}`}
+                    data-tooltip="Detail"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      handleOpenTenantDetail()
+                    }}
+                  >
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-tooltip tenant-delete-action"
+                    aria-label={`Delete ${tenant.name}`}
+                    data-tooltip="Delete"
+                    disabled={isDeletingTenant}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      requestDeleteTenant(tenant)
+                    }}
+                  >
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="#565E74" />
+                    </svg>
+                  </button>
+                </span>
               </div>
             )
           })
@@ -990,6 +1059,21 @@ export function TenantManagementView({
           </div>
         </footer>
       </section>
+
+      {deleteTenantTarget && (
+        <ConfirmActionModal
+          isSubmitting={isDeletingTenant}
+          title="Confirm Action"
+          message={`Are you sure you want to delete ${deleteTenantTarget.name}? This action cannot be undone.`}
+          cancelLabel="Cancel"
+          confirmLabel="Delete"
+          submittingLabel="Deleting..."
+          onCancel={() => {
+            if (!isDeletingTenant) setDeleteTenantTarget(null)
+          }}
+          onConfirm={confirmDeleteTenant}
+        />
+      )}
     </div>
   )
 }
