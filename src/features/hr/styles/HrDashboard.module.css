@@ -869,30 +869,33 @@
 
 .jobRequirementList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 32px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .jobRequirementList li {
-  position: relative;
-  padding-left: 20px;
-  color: #344054;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  color: #5b4038;
   font-size: 12px;
-  line-height: 1.5;
+  font-weight: 400;
+  line-height: 1.7;
 }
 
-.jobRequirementList li::before {
-  content: '\f058';
-  position: absolute;
-  left: 0;
-  top: 1px;
-  color: #d93408;
-  font-family: 'Font Awesome 6 Free';
-  font-size: 11px;
-  font-weight: 900;
+.jobRequirementList li svg {
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+
+.jobRequirementList li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .jobBenefitsBox {
@@ -1155,7 +1158,7 @@
 }
 
 .criteriaSetup {
-  min-height: 610px;
+  min-height: 360px;
   display: grid;
   align-content: start;
   gap: 18px;
@@ -1234,13 +1237,18 @@
 
 .criteriaTableCard {
   overflow: hidden;
+  border: 1px solid #f3d0c7;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .criteriaTableCard > header {
-  min-height: 36px;
+  min-height: 50px;
   display: flex;
   align-items: center;
-  padding: 0 18px;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 20px;
   color: #101c33;
   font-size: 12px;
   font-weight: 900;
@@ -1249,22 +1257,36 @@
 .criteriaTableRow {
   display: grid;
   grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(110px, 0.6fr) minmax(80px, 0.4fr);
-  align-items: start;
+  align-items: center;
   gap: 14px;
-  min-height: 42px;
-  padding: 10px 20px;
+  min-height: 54px;
+  padding: 10px 34px;
   border-top: 1px solid #f3d0c7;
   color: #344054;
   font-size: 11px;
 }
 
-.criteriaTableRow[draggable='true'] {
-  cursor: grab;
+.criteriaTableRowNoAction {
+  grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(110px, 0.6fr);
+}
+
+.criteriaTableRow > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.criteriaEditableRow {
+  cursor: pointer;
+}
+
+.criteriaEditableRow:focus-visible {
+  outline: 2px solid rgba(217, 52, 8, 0.35);
+  outline-offset: -2px;
 }
 
 .criteriaTableHead {
   background: #eef3ff;
-  color: #667085;
+  color: #4f5f7a;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -1330,16 +1352,52 @@
 
 .criteriaTableState {
   display: grid;
-  min-height: 54px;
+  min-height: 72px;
   place-items: center;
   border-top: 1px solid #f3d0c7;
-  color: #667085;
-  font-size: 11px;
-  font-weight: 800;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
-.criteriaTableRow button,
-.criteriaTableCard footer button {
+.criteriaTableState strong {
+  color: #101c33;
+  font-size: 14px;
+}
+
+.criteriaTableState p {
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.criteriaSkeletonTable {
+  display: grid;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #f3d0c7;
+}
+
+.criteriaSkeletonTable span {
+  height: 36px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #f2f4f7 0%, #ffffff 48%, #f2f4f7 100%);
+}
+
+.criteriaRowActions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.criteriaRowActions button {
+  width: 40px;
+  height: 31px;
+  display: grid;
+  place-items: center;
   border: 0;
   background: transparent;
   color: #d93408;
@@ -1349,33 +1407,37 @@
 }
 
 .criteriaDeleteButton {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 31px;
   display: grid;
   place-items: center;
-  border-radius: 5px !important;
-  background: #fff1ee !important;
-  color: #d93408 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #565e74 !important;
 }
 
 .criteriaTableCard footer {
-  min-height: 44px;
+  min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 20px;
+  padding: 0 34px;
   border-top: 1px solid #f3d0c7;
 }
 
 .criteriaTableCard footer div {
   display: flex;
-  gap: 24px;
+  align-items: center;
+  gap: 18px;
 }
 
 .criteriaTableCard footer strong {
   color: #101c33;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .criteriaTableCard footer strong span {
@@ -1383,10 +1445,42 @@
   min-width: 34px;
   justify-content: center;
   margin-left: 8px;
-  padding: 5px 8px;
+  padding: 8px 12px;
   border-radius: 5px;
   background: #e8eefc;
   color: #565e74;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.criteriaTableCard footer button {
+  border: 0;
+  background: transparent;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 0;
+}
+
+.criteriaTableCard footer button + button {
+  padding-left: 18px;
+  border-left: 1px solid #f3d0c7;
+  color: #667085;
+  font-weight: 700;
+}
+
+.criteriaTableCard footer button:disabled {
+  color: #98a2b3;
+  cursor: not-allowed;
+}
+
+.criteriaTableError {
+  margin: -8px 34px 12px;
+  color: #d93408;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
 }
 
 .criteriaWeightComplete span {
@@ -1399,16 +1493,109 @@
   color: #d93408 !important;
 }
 
-.criteriaNote {
-  display: grid;
-  gap: 4px;
-  color: #667085;
-  font-size: 11px;
-  line-height: 1.5;
+.criteriaWeightWarning span {
+  background: #fff7ed !important;
+  color: #f79009 !important;
 }
 
-.criteriaNote p {
-  margin: 0;
+.criteriaFormRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(110px, 0.6fr) minmax(80px, 0.4fr);
+  gap: 14px;
+  padding: 10px 20px;
+  border-top: 1px solid #f3d0c7;
+}
+
+.criteriaFormRow {
+  align-items: start;
+}
+
+.criteriaFormRow label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.criteriaFormRow label > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  color: #344054;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.criteriaFormRow input,
+.criteriaFormRow select,
+.criteriaFormRow textarea {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #f0d7d0;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #101c33;
+  font: inherit;
+  outline: 0;
+  padding: 0 10px;
+}
+
+.criteriaFormRow textarea {
+  min-height: 106px;
+  padding: 9px 10px;
+  resize: vertical;
+}
+
+.criteriaFormRow input:focus,
+.criteriaFormRow select:focus,
+.criteriaFormRow textarea:focus {
+  border-color: #d93408;
+  box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
+}
+
+.criteriaFormRow small {
+  min-height: 14px;
+  color: #d93408;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.criteriaFormRow small[aria-hidden='true'] {
+  visibility: hidden;
+}
+
+.criteriaSaveBar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 34px 0;
+}
+
+.criteriaSaveBar button {
+  min-height: 34px;
+  border: 1px solid #d0d5dd;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #344054;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 0 14px;
+}
+
+.criteriaSaveBar button:last-child {
+  border-color: #d93408;
+  background: #d93408;
+  color: #ffffff;
+}
+
+.criteriaSaveBar button:disabled {
+  border-color: #d0d5dd;
+  background: #eaecf0;
+  color: #98a2b3;
+  cursor: not-allowed;
 }
 
 .criteriaActions {
@@ -2335,6 +2522,18 @@
     grid-template-columns: 1fr;
   }
 
+  .jobRequirementList li {
+    grid-template-columns: 12px minmax(0, 1fr);
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .jobRequirementList li svg {
+    width: 12px;
+    height: 12px;
+    margin-top: 4px;
+  }
+
   .criteriaTableHead {
     display: none;
   }
@@ -2342,6 +2541,19 @@
   .criteriaTableRow {
     align-items: start;
     padding: 14px 18px;
+  }
+
+  .criteriaFormRow {
+    grid-template-columns: 1fr;
+  }
+
+  .criteriaSaveBar {
+    width: 100%;
+    padding: 12px 18px 0;
+  }
+
+  .criteriaSaveBar button {
+    flex: 1;
   }
 
   .criteriaTableCard footer,

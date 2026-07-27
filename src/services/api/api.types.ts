@@ -104,6 +104,7 @@ export type JobCriteriaResponse = {
   id: string
   jobId: string
   category?: string
+  criterionName?: string
   name: string
   weight?: number
   description?: string
