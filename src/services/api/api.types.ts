@@ -95,6 +95,7 @@ export type JobCriteriaPayload = {
   criterionName?: string
   weight?: number
   description?: string
+  sortOrder?: number
 }
 
 export type JobCriteriaResponse = {
@@ -104,6 +105,7 @@ export type JobCriteriaResponse = {
   name: string
   weight?: number
   description?: string
+  sortOrder?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -206,6 +208,12 @@ export type PlanDashboardStats = {
   monthlyRevenueTrendPercent?: number
   renewalRate?: number
   renewalRateTrendPercent?: number
+}
+
+export type DashboardStatsJobPostingResponse = {
+  totalActivePostings?: number
+  totalApplicants?: number
+  postingsExpiringSoon?: number
 }
 
 export type TenantAdminUser = {

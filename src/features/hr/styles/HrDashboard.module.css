@@ -377,13 +377,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin: 18px 0 22px;
+  margin: 18px 0 10px;
 }
 
 .jobsHeader h1 {
   color: #101c33;
   font-size: 24px;
   line-height: 1.15;
+}
+
+.jobsHeader p {
+  margin-top: 6px;
+  color: #565e74;
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 .jobsHeader button {
@@ -659,12 +666,12 @@
 .jobsActions {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .jobsActions button {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border: 0;
@@ -712,6 +719,10 @@
   opacity: 0.5;
 }
 
+.paginationIconButton i {
+  margin: 0;
+}
+
 .jobsTableCard footer .activePage {
   border-color: #d93408;
   background: #d93408;
@@ -744,26 +755,94 @@
   color: #079455;
 }
 
+.jobDetailTabs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 34px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #f0b8a8;
+}
+
+.jobDetailTabs button {
+  align-self: stretch;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #344054;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.jobDetailTabs .activeJobDetailTab {
+  border-bottom-color: #d93408;
+  color: #d93408;
+}
+
 .jobDetailGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 330px;
   gap: 18px;
 }
 
 .jobDetailCard,
 .jobSidePanel section,
+.recentActivityCard,
+.criteriaChoiceGrid article,
+.criteriaTableCard,
 .jobFormPanel {
   border: 1px solid #f0b8a8;
   border-radius: 8px;
   background: #ffffff;
 }
 
-.jobDetailCard {
-  min-height: 320px;
-  padding: 22px;
+.jobDetailMain {
+  display: grid;
+  gap: 18px;
 }
 
-.jobDetailCard h2,
+.jobDetailCard {
+  min-height: 360px;
+  padding: 18px;
+}
+
+.jobDetailCard h2 {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 2px 12px;
+  margin: 0 0 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f6ddd7;
+}
+
+.jobDetailCard h2 span {
+  grid-row: span 2;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #ffe9e3;
+  color: #d93408;
+}
+
+.jobDetailCard h2 span i {
+  margin: 0;
+}
+
+.jobDetailCard h2 b {
+  color: #101c33;
+  font-size: 13px;
+}
+
+.jobDetailCard h2 small {
+  color: #667085;
+  font-size: 9px;
+  font-weight: 800;
+}
+
 .jobForm h2 {
   margin: 0 0 18px;
   color: #101c33;
@@ -788,18 +867,136 @@
   word-break: break-word;
 }
 
+.jobRequirementList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jobRequirementList li {
+  position: relative;
+  padding-left: 20px;
+  color: #344054;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.jobRequirementList li::before {
+  content: '\f058';
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: #d93408;
+  font-family: 'Font Awesome 6 Free';
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.jobBenefitsBox {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-left: 3px solid #d93408;
+  border-radius: 6px;
+  background: #f4f6fb;
+}
+
+.jobBenefitsBox strong {
+  margin-top: 0;
+}
+
+.recentActivityCard {
+  padding: 14px 18px;
+}
+
+.recentActivityCard header,
+.recentActivityCard section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recentActivityCard header {
+  margin-bottom: 8px;
+}
+
+.recentActivityCard header strong,
+.jobActionsCard h3,
+.hiringTeamCard h3,
+.funnelHealthCard h3 {
+  color: #101c33;
+  font-size: 12px;
+}
+
+.recentActivityCard header button {
+  border: 0;
+  background: transparent;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.recentActivityCard section {
+  min-height: 54px;
+  border-top: 1px solid #f3d0c7;
+}
+
+.recentActivityCard section > span,
+.hiringTeamCard span,
+.hiringTeamCard button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #efe3ff;
+  color: #5a3da3;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.recentActivityCard section:nth-of-type(2) > span {
+  background: #dcecff;
+  color: #2d5b84;
+}
+
+.recentActivityCard section div {
+  flex: 1;
+}
+
+.recentActivityCard section strong {
+  display: block;
+  color: #101c33;
+  font-size: 11px;
+}
+
+.recentActivityCard section small {
+  color: #d93408;
+  font-size: 10px;
+}
+
 .jobSidePanel {
   display: grid;
   align-content: start;
-  gap: 18px;
+  gap: 16px;
+}
+
+.jobStatsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .jobSidePanel section {
-  min-height: 92px;
+  min-height: 86px;
   display: grid;
-  place-items: center;
   padding: 18px;
-  text-align: center;
 }
 
 .jobSidePanel small {
@@ -815,8 +1012,415 @@
 }
 
 .jobSidePanel span {
-  color: #12b76a;
+  color: #667085;
   font-size: 10px;
+}
+
+.jobStatsRow section {
+  place-items: center;
+  text-align: center;
+}
+
+.jobStatsRow section:first-child span {
+  color: #12b76a;
+}
+
+.funnelHealthCard h3,
+.jobActionsCard h3,
+.hiringTeamCard h3 {
+  margin: 0 0 16px;
+}
+
+.funnelHealthCard h3 i {
+  color: #d93408;
+}
+
+.funnelHealthCard label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #344054;
+  font-size: 11px;
+}
+
+.funnelHealthCard label b {
+  color: #101c33;
+}
+
+.funnelHealthCard div {
+  height: 6px;
+  margin: 8px 0 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ffe4dd;
+}
+
+.funnelHealthCard div span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff6b4a;
+}
+
+.jobActionsCard button {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #101c33;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+
+.jobActionsCard button > span:first-child {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.jobActionsCard button > span:last-child {
+  min-width: 0;
+}
+
+.jobActionsCard button svg,
+.jobActionsCard button i {
+  width: auto;
+  max-width: 18px;
+  max-height: 18px;
+  flex: 0 0 auto;
+}
+
+.jobActionsCard button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.jobActionsCard button:hover,
+.jobActionsCard button:focus-visible,
+.jobActionsCard button:active,
+.jobActionsCard .jobActionDanger:hover,
+.jobActionsCard .jobActionDanger:focus-visible,
+.jobActionsCard .jobActionDanger:active {
+  color: #d93408;
+}
+
+.hiringTeamCard div {
+  display: flex;
+  align-items: center;
+}
+
+.hiringTeamCard span + span,
+.hiringTeamCard button {
+  margin-left: -5px;
+}
+
+.hiringTeamCard span:nth-child(1) {
+  background: #ffd8cf;
+  color: #b42318;
+}
+
+.hiringTeamCard span:nth-child(2) {
+  background: #dcecff;
+  color: #2d5b84;
+}
+
+.hiringTeamCard span:nth-child(3) {
+  background: #e8ecf5;
+  color: #344054;
+}
+
+.hiringTeamCard button {
+  border: 1px dashed #d93408;
+  background: #ffffff;
+  color: #d93408;
+  cursor: pointer;
+}
+
+.jobsActions button svg {
+  display: block;
+  max-width: 24px;
+  max-height: 24px;
+}
+
+.hiringTeamCard p {
+  margin: 14px 0 0;
+  color: #667085;
+  font-size: 11px;
+}
+
+.criteriaSetup {
+  min-height: 610px;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.criteriaChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.criteriaChoiceGrid article {
+  padding: 22px;
+}
+
+.criteriaChoiceGrid article > span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: #ff6b4a;
+  color: #ffffff;
+}
+
+.criteriaChoiceGrid article > span i {
+  margin: 0;
+}
+
+.criteriaChoiceGrid article:nth-child(2) > span {
+  background: #eef0f5;
+  color: #565e74;
+}
+
+.criteriaChoiceGrid h2 {
+  margin: 0 0 8px;
+  color: #101c33;
+  font-size: 15px;
+}
+
+.criteriaChoiceGrid p {
+  max-width: 520px;
+  min-height: 38px;
+  color: #344054;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.criteriaChoiceGrid button,
+.criteriaActions button {
+  min-height: 34px;
+  padding: 0 18px;
+  border: 1px solid #d93408;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.criteriaChoiceGrid button:disabled,
+.criteriaActions button:disabled,
+.criteriaTableCard footer button:disabled,
+.criteriaDeleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.criteriaChoiceGrid article:first-child button,
+.criteriaActions button:last-child {
+  background: #d93408;
+  color: #ffffff;
+}
+
+.criteriaTableCard {
+  overflow: hidden;
+}
+
+.criteriaTableCard > header {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.criteriaTableRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(110px, 0.6fr) minmax(80px, 0.4fr);
+  align-items: start;
+  gap: 14px;
+  min-height: 42px;
+  padding: 10px 20px;
+  border-top: 1px solid #f3d0c7;
+  color: #344054;
+  font-size: 11px;
+}
+
+.criteriaTableRow[draggable='true'] {
+  cursor: grab;
+}
+
+.criteriaTableHead {
+  background: #eef3ff;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.criteriaTableHead {
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.criteriaTableRow label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.criteriaTableRow input,
+.criteriaTableRow select,
+.criteriaTableRow textarea {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #f0d7d0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #101c33;
+  font: inherit;
+  outline: 0;
+  padding: 0 10px;
+}
+
+.criteriaTableRow textarea {
+  min-height: 54px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.criteriaTableRow input:focus,
+.criteriaTableRow select:focus,
+.criteriaTableRow textarea:focus {
+  border-color: #d93408;
+  box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
+}
+
+.criteriaTableRow input:disabled,
+.criteriaTableRow select:disabled,
+.criteriaTableRow textarea:disabled {
+  background: #f7f8fd;
+  color: #667085;
+}
+
+.criteriaTableRow small {
+  min-height: 13px;
+  color: #d93408;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.criteriaTableRow small[aria-hidden='true'] {
+  visibility: hidden;
+}
+
+.criteriaTableState {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
+  border-top: 1px solid #f3d0c7;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.criteriaTableRow button,
+.criteriaTableCard footer button {
+  border: 0;
+  background: transparent;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.criteriaDeleteButton {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px !important;
+  background: #fff1ee !important;
+  color: #d93408 !important;
+}
+
+.criteriaTableCard footer {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 20px;
+  border-top: 1px solid #f3d0c7;
+}
+
+.criteriaTableCard footer div {
+  display: flex;
+  gap: 24px;
+}
+
+.criteriaTableCard footer strong {
+  color: #101c33;
+  font-size: 11px;
+}
+
+.criteriaTableCard footer strong span {
+  display: inline-flex;
+  min-width: 34px;
+  justify-content: center;
+  margin-left: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #e8eefc;
+  color: #565e74;
+}
+
+.criteriaWeightComplete span {
+  background: #dcfae6 !important;
+  color: #079455 !important;
+}
+
+.criteriaWeightInvalid span {
+  background: #fff1ee !important;
+  color: #d93408 !important;
+}
+
+.criteriaNote {
+  display: grid;
+  gap: 4px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.criteriaNote p {
+  margin: 0;
+}
+
+.criteriaActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.criteriaActions button {
+  height: 34px;
+  flex: 0 0 auto;
 }
 
 .jobForm {
@@ -976,6 +1580,30 @@
   pointer-events: none;
 }
 
+.datePickerButton {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  z-index: 2;
+  width: 22px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.datePickerButton svg {
+  position: static;
+  width: 14px;
+  height: 18px;
+  transform: none;
+  pointer-events: auto;
+}
+
 .iconInput input {
   padding-left: 30px;
 }
@@ -1085,6 +1713,7 @@
 }
 
 .richTextBox {
+  position: relative;
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -1097,8 +1726,8 @@
   min-height: 34px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 0 16px;
+  gap: 8px;
+  padding: 0 12px;
   border-bottom: 1px solid #f0d7d0;
   color: #101c33;
   font-size: 11px;
@@ -1106,14 +1735,202 @@
   text-transform: none;
 }
 
-.richTextToolbar span {
-  display: inline-grid;
+.richTextToolbar button {
+  width: 26px;
+  height: 26px;
+  display: grid;
   place-items: center;
-  min-width: 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #101c33;
+  cursor: pointer;
+  font-size: 11px;
 }
 
-.richTextToolbar svg {
-  display: block;
+.richTextToolbar button i,
+.richTextToolbar button svg,
+.jobsActions button i,
+.jobsActions button svg,
+.jobActionsCard button i,
+.jobActionsCard button svg {
+  margin: 0;
+}
+
+.richTextToolbar button:hover,
+.richTextToolbar button:focus-visible,
+.activeRichTextTool {
+  background: #ffe9e3 !important;
+  color: #d93408 !important;
+}
+
+.richTextEditor {
+  min-height: 120px;
+  height: 100%;
+  padding: 12px;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+  outline: 0;
+}
+
+.richTextEditor:global(.ProseMirror p) {
+  margin: 0 0 8px;
+}
+
+.richTextEditor:global(.ProseMirror ul),
+.richTextEditor:global(.ProseMirror ol),
+.richTextDisplay ul,
+.richTextDisplay ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.richTextEditor:global(.ProseMirror a),
+.richTextDisplay a {
+  color: #d93408;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.richTextEditor:global(.ProseMirror p.is-editor-empty:first-child::before) {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: #667085;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+.richTextDisplay {
+  color: #344054;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.richTextDisplay p {
+  margin: 0 0 8px;
+}
+
+.richTextFileInput {
+  display: none;
+}
+
+.richTextAttachmentError {
+  min-height: 16px;
+  padding: 0 12px 8px;
+  color: #d93408;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.richTextAttachmentError[aria-hidden='true'] {
+  display: none;
+}
+
+.richTextLinkDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(16, 28, 51, 0.18);
+}
+
+.richTextLinkDialog {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #f0b8a8;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(16, 28, 51, 0.18);
+}
+
+.richTextLinkDialog header,
+.richTextLinkDialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.richTextLinkDialog header strong {
+  color: #101c33;
+  font-size: 13px;
+}
+
+.richTextLinkDialog header button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #565e74;
+  cursor: pointer;
+}
+
+.richTextLinkDialog label {
+  display: grid;
+  gap: 6px;
+}
+
+.richTextLinkDialog label span {
+  color: #344054;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.richTextLinkDialog input {
+  min-height: 34px;
+  border: 1px solid #f0d7d0;
+  border-radius: 4px;
+  padding: 0 10px;
+  color: #101c33;
+  font-size: 12px;
+  outline: 0;
+}
+
+.richTextLinkDialog input:focus {
+  border-color: #d93408;
+  box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
+}
+
+.richTextLinkDialog small {
+  min-height: 13px;
+  color: #d93408;
+  font-size: 9px;
+}
+
+.richTextLinkDialog small[aria-hidden='true'] {
+  visibility: hidden;
+}
+
+.richTextLinkDialog footer {
+  justify-content: flex-end;
+}
+
+.richTextLinkDialog footer button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid #d93408;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #d93408;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.richTextLinkDialog footer button:last-child {
+  background: #d93408;
+  color: #ffffff;
 }
 
 .jobForm textarea {
@@ -1136,6 +1953,14 @@
 }
 
 .jobFormAside .richTextBox textarea {
+  min-height: 128px;
+}
+
+.jobFormMain .richTextEditor {
+  min-height: 116px;
+}
+
+.jobFormAside .richTextEditor {
   min-height: 128px;
 }
 
@@ -1457,11 +2282,33 @@
   }
 
   .jobDetailGrid,
+  .criteriaChoiceGrid,
   .jobForm,
   .aiJobLayout,
   .jobFieldGrid,
   .locationRow {
     grid-template-columns: 1fr;
+  }
+
+  .jobRequirementList,
+  .jobStatsRow,
+  .criteriaTableRow {
+    grid-template-columns: 1fr;
+  }
+
+  .criteriaTableHead {
+    display: none;
+  }
+
+  .criteriaTableRow {
+    align-items: start;
+    padding: 14px 18px;
+  }
+
+  .criteriaTableCard footer,
+  .criteriaActions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .aiJobInputPanel,
