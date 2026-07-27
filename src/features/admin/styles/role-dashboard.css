@@ -5863,71 +5863,106 @@
 .prompt-management-metrics {
   grid-template-columns: 1fr 1fr 1fr;
   gap: 18px;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
 }
 
 .prompt-summary-card {
-  min-height: 128px;
-  padding: 22px;
+  min-height: 142px;
+  padding: 18px 22px;
 }
 
 .prompt-summary-card > span {
+  width: 30px;
+  height: 30px;
   background: #ffe9e3;
   color: #d93408;
+  font-size: 13px;
 }
 
 .prompt-summary-card small {
-  margin-top: 18px;
+  margin-top: 16px;
+  color: #667085;
+  font-size: 10px;
+  line-height: 1.2;
 }
 
 .prompt-summary-card strong {
-  font-size: 28px;
+  margin-top: 10px;
+  color: #101c33;
+  font-size: 22px;
+  line-height: 1.1;
 }
 
 .prompt-summary-card em {
   top: 18px;
-  right: 18px;
-  padding: 4px 8px;
+  right: 20px;
+  min-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
   border-radius: 4px;
   background: #edf3ff;
   color: #6480b7;
-  font-size: 10px;
+  font-size: 8px;
+  font-weight: 900;
 }
 
-.system-health-card > i {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  color: #12b76a;
-  font-size: 13px;
+.system-health-card > span,
+.latency-card > span {
+  background: #eaf1ff;
+  color: #6480b7;
 }
 
-.system-health-card div {
+.system-health-card > strong {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 7px;
+  margin-top: 10px;
   color: #667085;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.system-health-card div strong {
+.system-health-card > strong b {
   display: inline;
   margin: 0;
   color: #12b76a;
   font-size: 18px;
+  line-height: 1;
 }
 
-.system-health-card div strong + strong {
+.system-health-card > strong b:nth-of-type(2) {
   color: #f79009;
+}
+
+.system-health-card em {
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+}
+
+.system-health-card em i {
+  width: 5px;
+  height: 5px;
+  display: block;
+  border-radius: 50%;
+  background: #3ccb75;
 }
 
 .latency-card .latency-line {
   display: block;
-  height: 5px;
-  margin-top: 18px;
+  width: 100%;
+  height: 4px;
+  margin-top: 16px;
   border-radius: 999px;
   background: linear-gradient(90deg, #d93408 82%, #e7eefc 82%);
+}
+
+.latency-card em {
+  position: static;
+  width: 100%;
+  padding: 0;
+  background: transparent;
 }
 
 .prompt-table-card {
@@ -7911,19 +7946,19 @@
 
 .staff-log-content {
   min-height: calc(100vh - 70px);
-  padding: 20px 26px 34px;
-  background: #f7f8fd;
+  padding: 20px 32px 34px;
+  background: #f5f7ff;
 }
 
 .staff-log-breadcrumb {
-  margin-bottom: 26px;
+  margin-bottom: 24px;
 }
 
 .staff-log-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 24px;
 }
 
 .staff-log-header h1 {
@@ -7942,8 +7977,8 @@
 }
 
 .staff-log-export-btn {
-  min-height: 44px;
-  padding: 0 20px;
+  min-height: 36px;
+  padding: 0 18px;
   border: 1px solid #d93408;
   border-radius: 5px;
   background: #ffffff;
@@ -7954,7 +7989,7 @@
 }
 
 .staff-log-subject {
-  margin-top: 22px;
+  margin-top: 16px;
 }
 
 .staff-log-subject h2 {
@@ -7977,13 +8012,13 @@
 }
 
 .staff-log-filter-card {
-  min-height: 48px;
+  min-height: 46px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 18px;
-  padding: 8px 12px;
+  margin-top: 16px;
+  padding: 7px 12px;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
   background: #ffffff;
@@ -8019,40 +8054,254 @@
   font-weight: 800;
 }
 
+.staff-log-filter-select {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: #eef4ff;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.staff-log-filter-select {
+  position: relative;
+  min-width: 150px;
+}
+
+.staff-log-date-range-control {
+  position: relative;
+  min-width: 224px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #eef4ff;
+  color: #475467;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.staff-log-filter-select select {
+  width: 100%;
+  appearance: none;
+  padding: 0 18px 0 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  outline: 0;
+}
+
+.staff-log-filter-select > i {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+}
+
+.staff-log-date-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  outline: 0;
+  pointer-events: none;
+}
+
+.staff-log-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+.staff-log-date-range-icon {
+  position: relative;
+  z-index: 1;
+  width: 13px;
+  height: 15px;
+  flex: 0 0 13px;
+}
+
+.staff-log-date-picker-trigger {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.staff-log-date-range-label {
+  position: relative;
+  z-index: 1;
+  color: #475467;
+  white-space: nowrap;
+}
+
+.staff-log-date-range-separator {
+  position: relative;
+  z-index: 1;
+  color: #475467;
+}
+
 .staff-log-filter-card button.clear {
   background: transparent;
   color: #d93408;
 }
 
 .staff-log-empty-state {
-  min-height: 420px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 18px;
-  color: #667085;
-  text-align: center;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 64px 24px 44px;
+  background: transparent;
 }
 
-.staff-log-empty-state > i {
-  color: #f3d9d3;
-  font-size: 72px;
+.staff-log-empty-main-icon {
+  width: 110px;
+  height: 80px;
+  margin-right: 74px;
 }
 
-.staff-log-empty-state > span {
-  width: 38px;
-  height: 38px;
+.staff-log-empty-small-icon {
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: #f04a1a;
-  color: #ffffff;
-  box-shadow: 0 12px 26px rgba(217, 52, 8, 0.24);
+  margin-top: -2px;
+  margin-left: 104px;
+  border-radius: 12px;
+  background: #ff4a1c;
+  box-shadow: 0 14px 30px rgba(217, 52, 8, 0.24);
+}
+
+.staff-log-empty-small-icon svg {
+  width: 21px;
+  height: 21px;
 }
 
 .staff-log-empty-state p {
-  color: #475467;
+  margin-top: 20px;
+  color: #101c33;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.staff-log-table-card {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #f0b8a8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.staff-log-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(80px, 0.4fr) minmax(150px, 1.2fr) minmax(100px, 0.6fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 58px;
+  padding: 0 24px;
+  border-bottom: 1px solid #f0d7d0;
+  color: #243044;
   font-size: 12px;
+}
+
+.staff-log-table-row > * {
+  min-width: 0;
+}
+
+.staff-log-table-head {
+  min-height: 54px;
+  background: #eef3ff;
+  color: #667084;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.staff-log-activity-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.staff-log-activity-cell i {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef3ff;
+  color: #3b5998;
+  font-size: 12px;
+}
+
+.staff-log-activity-cell strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #101c33;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staff-log-table-card footer {
+  min-height: 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 22px;
+  color: #667085;
+  font-size: 11px;
+}
+
+.staff-log-table-card footer div {
+  display: flex;
+  gap: 6px;
+}
+
+.staff-log-table-card footer button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #e3e8f2;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #344054;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.staff-log-table-card footer button.active {
+  border-color: #d93408;
+  background: #d93408;
+  color: #ffffff;
+}
+
+.staff-log-table-card footer button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .activity-list-container {
@@ -8267,9 +8516,15 @@
   }
 
   .staff-log-export-btn,
-  .staff-log-filter-card button {
+  .staff-log-filter-card button,
+  .staff-log-filter-select,
+  .staff-log-date-range-control {
     width: 100%;
     justify-content: center;
+  }
+
+  .staff-log-date-input {
+    width: 1px;
   }
 }
 

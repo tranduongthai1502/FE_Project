@@ -27,6 +27,7 @@ import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { MetricCard } from '@/components/common/MetricCard'
 import { ScrollableSelect } from '@/components/common/ScrollableSelect'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/utils/pagination'
+import { formatCurrencyInput, parseCurrencyInput } from '@/utils/currencyFormat'
 import {
   FIELD_LENGTH_LIMITS,
   validatePositiveNumberOrUnlimited,
@@ -127,7 +128,7 @@ function CreatePlanView({
     const payload: CreatePlanPayload = {
       "name": planName,
       "description": description,
-      "monthlyPrice": Number(monthlyPrice || 0),
+      "monthlyPrice": parseCurrencyInput(monthlyPrice),
       "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
       "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
@@ -217,12 +218,11 @@ function CreatePlanView({
               <span>$</span>
               <input
                 maxLength={FIELD_LENGTH_LIMITS.defaultText}
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={monthlyPrice}
                 onChange={(event) => {
-                  setMonthlyPrice(event.target.value)
+                  setMonthlyPrice(formatCurrencyInput(event.target.value))
                   if (fieldErrors.monthlyPrice) setFieldErrors((current) => ({ ...current, monthlyPrice: '' }))
                 }}
                 placeholder="0.00"
@@ -386,7 +386,7 @@ function EditPlanDetailView({
 }) {
   const [planName, setPlanName] = useState(plan.name)
   const [description, setDescription] = useState(plan.description)
-  const [monthlyPrice, setMonthlyPrice] = useState(plan.monthlyPrice.toFixed(2))
+  const [monthlyPrice, setMonthlyPrice] = useState(formatCurrencyInput(plan.monthlyPrice.toFixed(2)))
   const [maxStaffAccount, setMaxStaffAccount] = useState(plan.maxStaffAccount == null ? '' : String(plan.maxStaffAccount))
   const [maxActiveJobPosting, setMaxActiveJobPosting] = useState(plan.maxActiveJobPosting == null ? '' : String(plan.maxActiveJobPosting))
   const [features, setFeatures] = useState(() => getPlanFeatureState(plan))
@@ -458,7 +458,7 @@ function EditPlanDetailView({
     const payload: UpdatePlanPayload = {
       "name": planName,
       "description": description,
-      "monthlyPrice": Number(monthlyPrice || 0),
+      "monthlyPrice": parseCurrencyInput(monthlyPrice),
       "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
       "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
@@ -491,7 +491,7 @@ function EditPlanDetailView({
   const hasDraftChanges = Boolean(
     planName !== plan.name ||
     description !== plan.description ||
-    monthlyPrice !== plan.monthlyPrice.toFixed(2) ||
+    parseCurrencyInput(monthlyPrice) !== plan.monthlyPrice ||
     maxStaffAccount !== (plan.maxStaffAccount == null ? '' : String(plan.maxStaffAccount)) ||
     maxActiveJobPosting !== (plan.maxActiveJobPosting == null ? '' : String(plan.maxActiveJobPosting)) ||
     isStaffUnlimited !== plan.staffAccountUnlimited ||
@@ -580,12 +580,11 @@ function EditPlanDetailView({
                     <span>$</span>
                     <input
                       maxLength={FIELD_LENGTH_LIMITS.defaultText}
-                      type="number"
-                      min="0"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={monthlyPrice}
                       onChange={(event) => {
-                        setMonthlyPrice(event.target.value)
+                        setMonthlyPrice(formatCurrencyInput(event.target.value))
                         if (fieldErrors.monthlyPrice) setFieldErrors((current) => ({ ...current, monthlyPrice: '' }))
                       }}
                       required
@@ -1099,7 +1098,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 </div>
                 <div>
                   <span>Base Price</span>
-                  <strong className="price">{selectedPlan.priceLabel || `$${selectedPlan.monthlyPrice.toFixed(2)} / month`}</strong>
+                  <strong className="price">{selectedPlan.priceLabel || `$${formatCurrencyInput(selectedPlan.monthlyPrice.toFixed(2))} / month`}</strong>
                 </div>
                 <div>
                   <span>Staff Limit</span>
@@ -1365,7 +1364,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   <span className="table-name-tooltip" data-tooltip={plan.name} title={plan.name} tabIndex={0}>
                     <strong>{plan.name}</strong>
                   </span>
-                  <span className="subscription-price-cell">{plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / month`}</span>
+                  <span className="subscription-price-cell">{plan.priceLabel || `$${formatCurrencyInput(plan.monthlyPrice.toFixed(2))} / month`}</span>
                   <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                   <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                   <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : 'Inactive'}</em>

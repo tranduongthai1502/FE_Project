@@ -168,7 +168,8 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
           className="prompt-summary-card system-health-card"
           icon="fa-shield-halved"
           label="System Health"
-          value={<><strong>6</strong> Optimal <strong>2</strong> Review</>}
+          value={<><b>6</b><span>Optimal</span><b>2</b><span>Review</span></>}
+          note={<><i></i><i></i></>}
         />
         <MetricCard
           className="prompt-summary-card latency-card"

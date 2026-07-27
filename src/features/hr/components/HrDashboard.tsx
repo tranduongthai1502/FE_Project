@@ -9,6 +9,7 @@ import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
 import { getListPageCount, getListTotalElements } from '@/utils/pagination'
+import { formatCurrencyInput, parseCurrencyInput } from '@/utils/currencyFormat'
 import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
 import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
@@ -517,9 +518,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       const { salaryMin: _removedMin, salaryMax: _removedMax, ...nextErrors } = current
       return nextErrors
     })
-    setSalaryInputValues((current) => ({ ...current, [field]: value }))
-    const numericValue = Number(value)
-    setJobForm((current) => ({ ...current, [field]: value === '' || !Number.isFinite(numericValue) ? 0 : numericValue }))
+    const formattedValue = formatCurrencyInput(value)
+    setSalaryInputValues((current) => ({ ...current, [field]: formattedValue }))
+    setJobForm((current) => ({ ...current, [field]: formattedValue === '' ? 0 : parseCurrencyInput(formattedValue) }))
   }
   const generateAiJobContent = () => {
     if (isActionLocked) return
@@ -631,8 +632,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setPendingDuplicateTitlePayload(null)
     setIsCancelConfirmOpen(false)
     setSalaryInputValues({
-      salaryMin: job.salaryMin ? String(job.salaryMin) : '',
-      salaryMax: job.salaryMax ? String(job.salaryMax) : '',
+      salaryMin: job.salaryMin ? formatCurrencyInput(String(job.salaryMin)) : '',
+      salaryMax: job.salaryMax ? formatCurrencyInput(String(job.salaryMax)) : '',
     })
     setJobForm({
       title: job.title,
@@ -991,7 +992,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <JobFieldError message={jobFieldErrors.applicationDeadline} />
               </label>
               <div className={styles.aiSalaryField}>
-                <span>Salary Range</span>
+                <span>Salary Range (Optional)</span>
                 <div className={styles.aiSalaryControls}>
                   <div className={styles.salaryInputSlot}>
                     <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMin ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Minimum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMin} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMin', e.target.value)} placeholder="0" /></div>
@@ -1104,7 +1105,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   <JobFieldError message={jobFieldErrors.applicationDeadline} />
                 </label>
                 <div className={styles.salaryRangeRow}>
-                  <span>Salary Range</span>
+                  <span>Salary Range (Optional)</span>
                   <div className={styles.salaryRangeControls}>
                     <div className={styles.salaryInputSlot}>
                       <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMin ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Minimum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMin} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMin', e.target.value)} /></div>

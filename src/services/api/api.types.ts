@@ -48,6 +48,8 @@ export type ActivityLog = {
   id: string
   eventType: string
   title: string
+  description?: string
+  ipAddress?: string
   createdAt?: string
 }
 
