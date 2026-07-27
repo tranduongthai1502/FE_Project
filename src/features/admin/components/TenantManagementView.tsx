@@ -35,6 +35,7 @@ import { ScrollableSelect } from '@/components/common/ScrollableSelect'
 import styles from '../styles/TenantManagementView.module.css'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/utils/pagination'
+import { formatCurrencyInput } from '@/utils/currencyFormat'
 import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 export function TenantManagementView({
@@ -678,7 +679,7 @@ export function TenantManagementView({
     const tenantStartDate = formatTenantDate(subscriptionPlanCreatedAt)
     const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
     const monthlyBillingLabel = activeSubscriptionPlan
-      ? activeSubscriptionPlan.priceLabel || `$${activeSubscriptionPlan.monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month`
+      ? activeSubscriptionPlan.priceLabel || `$${formatCurrencyInput(activeSubscriptionPlan.monthlyPrice.toFixed(2))} / month`
       : '-'
     const daysRemainingLabel = getDaysRemainingLabel(subscriptionExpirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
@@ -975,7 +976,7 @@ export function TenantManagementView({
               : 0
             const expirationDateLabel = formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'
             const monthlyPriceLabel = tenantPlan
-              ? tenantPlan.priceLabel || `$${tenantPlan.monthlyPrice.toFixed(2)} / month`
+              ? tenantPlan.priceLabel || `$${formatCurrencyInput(tenantPlan.monthlyPrice.toFixed(2))} / month`
               : '-'
             const handleOpenTenantDetail = () => openTenantDetail(tenant.id)
 

@@ -251,7 +251,7 @@ export function validateStaffEmail(value: string, existingEmails: string[], isEd
 }
 
 export function isValidPriceInput(value: string) {
-  const trimmedValue = value.trim()
+  const trimmedValue = value.replace(/,/g, '').trim()
   return /^\d+(\.\d{1,2})?$/.test(trimmedValue) && Number(trimmedValue) >= 0
 }
 

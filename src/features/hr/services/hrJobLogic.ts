@@ -1,6 +1,7 @@
 import type { JobCriteriaResponse, JobPosting, JobPostingPayload } from '@/services/api/api.types'
 import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/services/api/axiosErrorHandler'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
+import { stripCurrencyGrouping } from '@/utils/currencyFormat'
 import { getRichTextPlainText } from './hrRichTextUtils'
 
 export type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
@@ -235,8 +236,8 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
   const nextErrors: JobFieldErrors = {}
   const title = payload.title.trim()
   const requiresSalaryPair = ['FULL_TIME', 'PART_TIME'].includes(payload.employmentType)
-  const minSalaryValue = salaryInputValues.salaryMin.trim()
-  const maxSalaryValue = salaryInputValues.salaryMax.trim()
+  const minSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMin)
+  const maxSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMax)
   const minSalaryEntered = minSalaryValue !== ''
   const maxSalaryEntered = maxSalaryValue !== ''
   const salaryNumberPattern = /^\d+(\.\d+)?$/
@@ -278,8 +279,8 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
 
 export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInputValues: { salaryMin: string; salaryMax: string }) {
   const nextErrors: JobFieldErrors = {}
-  const minSalaryValue = salaryInputValues.salaryMin.trim()
-  const maxSalaryValue = salaryInputValues.salaryMax.trim()
+  const minSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMin)
+  const maxSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMax)
   const minSalaryEntered = minSalaryValue !== ''
   const maxSalaryEntered = maxSalaryValue !== ''
   const salaryNumberPattern = /^\d+(\.\d+)?$/
