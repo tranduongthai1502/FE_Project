@@ -128,11 +128,11 @@ export function buildPlanListParams(sort: PlanSortOption, page: number): AdminLi
   const filters = buildPlanListFilters()
 
   if (sort === 'price-asc') {
-    return { sortField: 'monthlyPrice', sortBy: 'ASC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
+    return { sortField: 'price', sortBy: 'ASC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
   }
 
   if (sort === 'price-desc') {
-    return { sortField: 'monthlyPrice', sortBy: 'DESC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
+    return { sortField: 'price', sortBy: 'DESC', filters, page, size: ADMIN_LIST_PAGE_SIZE }
   }
 
   if (sort === 'oldest') {
@@ -173,7 +173,7 @@ export function isActiveSubscriptionPlan(plan: SubscriptionPlan) {
 
 export function buildTopTierPlanParams(): AdminListParams {
   return {
-    sortField: 'monthlyPrice',
+    sortField: 'price',
     filters: { status: 'ACTIVE' },
     sortBy: 'DESC',
     page: 1,

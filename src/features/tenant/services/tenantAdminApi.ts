@@ -4,7 +4,6 @@ import type {
   ActivityLog,
   AdminListParams,
   StaffMember,
-  Tenant,
   TenantAdminUser,
 } from '@/services/api/api.types'
 import { attachPaginationMeta } from '@/utils/pagination'
@@ -66,9 +65,9 @@ function readStringValue(payload: any, keys: string[]) {
 
 function normalizeActivityLog(log: any, index: number): ActivityLog | null {
   const title =
-    readStringValue(log, ['title', 'message', 'description', 'action', 'activity', 'eventName', 'event_name']) ||
-    readStringValue(log?.metadata, ['title', 'message', 'description', 'action']) ||
-    readStringValue(log?.details, ['title', 'message', 'description', 'action']) ||
+    readStringValue(log, ['description', 'title', 'message', 'action', 'activity', 'eventName', 'event_name']) ||
+    readStringValue(log?.metadata, ['description', 'title', 'message', 'action']) ||
+    readStringValue(log?.details, ['description', 'title', 'message', 'action']) ||
     'Activity logged'
 
   return {

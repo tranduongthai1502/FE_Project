@@ -38,4 +38,12 @@ export const authApi = {
       newPassword: payload.newPassword,
     })
   },
+
+  async activateAccount(token: string, password?: string) {
+    return axiosClient.post('/api/auth/activate', { token, password })
+  },
+
+  async getActivationDetails(token: string) {
+    return axiosClient.get('/api/auth/activate', { params: { token } })
+  },
 }

@@ -13,19 +13,30 @@ export function buildPlanPayload(payload: CreatePlanPayload & { status?: string 
   const maxStaffAccount = payload.maxStaffAccount === null ? null : Number(payload.maxStaffAccount)
   const maxActiveJobPosting = payload.maxActiveJobPosting === null ? null : Number(payload.maxActiveJobPosting)
 
+  const normalizedMaxStaff = payload.staffAccountUnlimited
+    ? null
+    : Number.isFinite(maxStaffAccount) && maxStaffAccount && maxStaffAccount >= 1
+      ? maxStaffAccount
+      : 1
+
+  const normalizedMaxJobs = payload.activeJobPostingUnlimited
+    ? null
+    : Number.isFinite(maxActiveJobPosting) && maxActiveJobPosting && maxActiveJobPosting >= 1
+      ? maxActiveJobPosting
+      : 1
+
   return {
     "name": payload.name.trim(),
     "description": payload.description.trim(),
     "billingCycle": 'MONTHLY',
     "price": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
-    "monthlyPrice": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
-    "maxStaffAccount": payload.staffAccountUnlimited ? null : Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
+    "maxStaffAccount": normalizedMaxStaff,
     "staffAccountUnlimited": Boolean(payload.staffAccountUnlimited),
-    "maxActiveJobPosting": payload.activeJobPostingUnlimited ? null : Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
+    "maxActiveJobPosting": normalizedMaxJobs,
     "activeJobPostingUnlimited": Boolean(payload.activeJobPostingUnlimited),
     "features": payload.features.map((feature) => ({
       "key": String(feature.key),
-      "status": String(feature.status),
+      "status": String(feature.status || 'ACTIVE').toUpperCase() === 'DISABLED' ? 'INACTIVE' : 'ACTIVE',
     })),
     "status": normalizeResourceStatus(payload.status),
   }
