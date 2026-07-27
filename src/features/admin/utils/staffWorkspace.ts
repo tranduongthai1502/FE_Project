@@ -1,5 +1,5 @@
 import type { AppRole } from '@/features/auth'
-import { saveAuthRole } from '@/features/auth/utils/authStorage'
+import { saveAuthRole } from '@/services/api/authStorage'
 
 function getStoredUser() {
   const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')

@@ -1,4 +1,5 @@
 import type { Dispatch, FormEventHandler, SetStateAction } from 'react'
+import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 type ForgotPasswordFormProps = {
   email: string
@@ -44,7 +45,7 @@ export function ForgotPasswordForm({
         <label htmlFor="email" className="form-label">Email Address</label>
         <div className="input-wrapper">
           <input
-            maxLength={50}
+            maxLength={FIELD_LENGTH_LIMITS.defaultText}
             type="email"
             id="email"
             className={`form-input ${emailError ? 'has-error' : ''}`}

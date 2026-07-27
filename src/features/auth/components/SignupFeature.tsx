@@ -8,11 +8,12 @@ import {
   validatePassword,
   validatePhone,
 } from '../utils/validation'
-import { getPasswordStrength } from '../utils/passwordStrength'
-import { authApi } from '../services/authApi'
+import { getPasswordStrength } from '@/utils/passwordStrength'
+import { authApi } from '@/services/api/authApi'
 import { getAppErrorMessage } from '../../../utils/errorManager'
 import { shouldToastHttpError } from '../../../utils/httpStatusManager'
 import { authErrorMessages } from '../errors'
+import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 type SignupFeatureProps = {
   onGoToSignin: () => void
@@ -110,7 +111,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${fullNameError ? 'has-error' : ''}`}>
               <UserIcon />
               <input
-                maxLength={50}
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 id="fullName"
                 name="fullName"
                 type="text"
@@ -138,7 +139,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
               <MailIcon />
               <input
-                maxLength={50}
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 id="signupEmail"
                 name="email"
                 type="email"
@@ -166,7 +167,6 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${phoneError ? 'has-error' : ''}`}>
               <PhoneIcon />
               <input
-                maxLength={50}
                 id="phone"
                 name="phone"
                 type="tel"
@@ -177,7 +177,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
                 placeholder="0xxxxxxxxx"
                 autoComplete="tel"
                 inputMode="numeric"
-                maxLength={10}
+                maxLength={FIELD_LENGTH_LIMITS.phone}
                 aria-invalid={phoneError ? 'true' : 'false'}
                 aria-describedby={phoneError ? 'phone-error' : undefined}
               />
@@ -196,7 +196,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
-                maxLength={50}
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 id="signupPassword"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -235,7 +235,7 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
             <div className={`input-wrap ${confirmPasswordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
-                maxLength={50}
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 id="confirmPassword"
                 name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}

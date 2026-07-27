@@ -1,4 +1,5 @@
 import type { Dispatch, FormEventHandler, SetStateAction } from 'react'
+import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 type PasswordStrength = {
   requirements: {
@@ -68,7 +69,7 @@ export function ResetPasswordForm({
         <label htmlFor="newPassword" className="form-label">New Password</label>
         <div className="input-wrapper">
           <input
-            maxLength={50}
+            maxLength={FIELD_LENGTH_LIMITS.defaultText}
             type={showNewPassword ? 'text' : 'password'}
             id="newPassword"
             className={`form-input ${newPasswordError ? 'has-error' : ''}`}
@@ -98,7 +99,7 @@ export function ResetPasswordForm({
         <label htmlFor="confirmPassword" className="form-label">Confirm New Password</label>
         <div className="input-wrapper">
           <input
-            maxLength={50}
+            maxLength={FIELD_LENGTH_LIMITS.defaultText}
             type={showConfirmPassword ? 'text' : 'password'}
             id="confirmPassword"
             className={`form-input ${confirmPasswordError ? 'has-error' : ''}`}

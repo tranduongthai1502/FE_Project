@@ -20,7 +20,7 @@ export function useCandidatePanel(pathname: string, navigate: NavigateFunction) 
   const selectPanel = (panel: CandidatePanel) => {
     setActivePanel(panel)
     const nextPath = getCandidatePanelPath(panel)
-    if (window.location.pathname !== nextPath) {
+    if (pathname !== nextPath) {
       navigate(nextPath)
     }
   }
