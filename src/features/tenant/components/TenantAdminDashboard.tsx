@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/components/common/navigation'
 import { tenantNav } from './tenantNavigation'
@@ -15,7 +15,7 @@ import { ConfirmActionModal } from '@/components/common/ConfirmActionModal'
 import { getErrorMessage as getAdminErrorMessage, inactiveUserActionMessage, isInactiveUserActionError } from '@/services/error/errorMessages'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { shouldToastHttpError } from '@/utils/httpStatusManager'
-import { getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
+import { getCompactPageItems, getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
 import { normalizeTenantAdminUser } from '@/services/api/apiMappers'
 import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
 import {
@@ -30,6 +30,7 @@ import {
 const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
 const passwordChangeRequiredMessage = 'Please change your password before using Tenant Admin features.'
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
+const ACTIVITY_LOG_PAGE_SIZE = 5
 
 type StaffAccountLimit = {
   used?: number
@@ -404,12 +405,38 @@ function hasDuplicateStaffFullName(staffList: StaffMember[], fullName: string, i
   ))
 }
 
-function getActivityIcon(eventType: string, index: number) {
-  const normalized = eventType.trim().toLowerCase()
-  if (normalized.includes('auth') || normalized.includes('login') || normalized.includes('password')) return 'fa-key'
-  if (normalized.includes('assign') || normalized.includes('user') || normalized.includes('staff')) return 'fa-user-plus'
-  if (normalized.includes('setting') || normalized.includes('config')) return 'fa-gear'
-  return ['fa-pen', 'fa-user-plus', 'fa-key', 'fa-gear'][index % 4]
+function getActivityIconType(eventType: string | undefined, index: number) {
+  const normalized = String(eventType || '').trim().toLowerCase()
+  if (normalized.includes('auth') || normalized.includes('login') || normalized.includes('password')) return 'login'
+  if (normalized.includes('assign') || normalized.includes('user') || normalized.includes('staff') || normalized.includes('account')) return 'account'
+  if (normalized.includes('setting') || normalized.includes('config') || normalized.includes('action')) return 'action'
+  return ['action', 'account', 'login'][index % 3]
+}
+
+function ActivityLogIcon({ eventType, index }: { eventType?: string; index: number }) {
+  const iconType = getActivityIconType(eventType, index)
+
+  if (iconType === 'login') {
+    return (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 12V10.6667H10.6667V1.33333H6V0H10.6667C11.0333 0 11.3472 0.130556 11.6083 0.391667C11.8694 0.652778 12 0.966667 12 1.33333V10.6667C12 11.0333 11.8694 11.3472 11.6083 11.6083C11.3472 11.8694 11.0333 12 10.6667 12H6ZM4.66667 9.33333L3.75 8.36667L5.45 6.66667H0V5.33333H5.45L3.75 3.63333L4.66667 2.66667L8 6L4.66667 9.33333Z" fill="#565E74" />
+      </svg>
+    )
+  }
+
+  if (iconType === 'account') {
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M8.33333 5.3C8.65556 4.94444 8.90278 4.53889 9.075 4.08333C9.24722 3.62778 9.33333 3.15556 9.33333 2.66667C9.33333 2.17778 9.24722 1.70556 9.075 1.25C8.90278 0.794444 8.65556 0.388889 8.33333 0.0333333C9 0.122222 9.55556 0.416667 10 0.916667C10.4444 1.41667 10.6667 2 10.6667 2.66667C10.6667 3.33333 10.4444 3.91667 10 4.41667C9.55556 4.91667 9 5.21111 8.33333 5.3ZM12 10.6667V8.66667C12 8.26667 11.9111 7.88611 11.7333 7.525C11.5556 7.16389 11.3222 6.84444 11.0333 6.56667C11.6 6.76667 12.125 7.025 12.6083 7.34167C13.0917 7.65833 13.3333 8.1 13.3333 8.66667V10.6667H12ZM13.3333 6V4.66667H12V3.33333H13.3333V2H14.6667V3.33333H16V4.66667H14.6667V6H13.3333ZM5.33333 5.33333C4.6 5.33333 3.97222 5.07222 3.45 4.55C2.92778 4.02778 2.66667 3.4 2.66667 2.66667C2.66667 1.93333 2.92778 1.30556 3.45 0.783333C3.97222 0.261111 4.6 0 5.33333 0C6.06667 0 6.69444 0.261111 7.21667 0.783333C7.73889 1.30556 8 1.93333 8 2.66667C8 3.4 7.73889 4.02778 7.21667 4.55C6.69444 5.07222 6.06667 5.33333 5.33333 5.33333ZM0 10.6667V8.8C0 8.42222 0.0972222 8.075 0.291667 7.75833C0.486111 7.44167 0.744444 7.2 1.06667 7.03333C1.75556 6.68889 2.45556 6.43056 3.16667 6.25833C3.87778 6.08611 4.6 6 5.33333 6C6.06667 6 6.78889 6.08611 7.5 6.25833C8.21111 6.43056 8.91111 6.68889 9.6 7.03333C9.92222 7.2 10.1806 7.44167 10.375 7.75833C10.5694 8.075 10.6667 8.42222 10.6667 8.8V10.6667H0ZM5.33333 4C5.7 4 6.01389 3.86944 6.275 3.60833C6.53611 3.34722 6.66667 3.03333 6.66667 2.66667C6.66667 2.3 6.53611 1.98611 6.275 1.725C6.01389 1.46389 5.7 1.33333 5.33333 1.33333C4.96667 1.33333 4.65278 1.46389 4.39167 1.725C4.13056 1.98611 4 2.3 4 2.66667C4 3.03333 4.13056 3.34722 4.39167 3.60833C4.65278 3.86944 4.96667 4 5.33333 4ZM1.33333 9.33333H9.33333V8.8C9.33333 8.67778 9.30278 8.56667 9.24167 8.46667C9.18056 8.36667 9.1 8.28889 9 8.23333C8.4 7.93333 7.79444 7.70833 7.18333 7.55833C6.57222 7.40833 5.95556 7.33333 5.33333 7.33333C4.71111 7.33333 4.09444 7.40833 3.48333 7.55833C2.87222 7.70833 2.26667 7.93333 1.66667 8.23333C1.56667 8.28889 1.48611 8.36667 1.425 8.46667C1.36389 8.56667 1.33333 8.67778 1.33333 8.8V9.33333Z" fill="#4F5D72" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M4.86667 13.3333L4.6 11.2C4.45556 11.1444 4.31944 11.0778 4.19167 11C4.06389 10.9222 3.93889 10.8389 3.81667 10.75L1.83333 11.5833L0 8.41667L1.71667 7.11667C1.70556 7.03889 1.7 6.96389 1.7 6.89167C1.7 6.81944 1.7 6.74444 1.7 6.66667C1.7 6.58889 1.7 6.51389 1.7 6.44167C1.7 6.36944 1.70556 6.29444 1.71667 6.21667L0 4.91667L1.83333 1.75L3.81667 2.58333C3.93889 2.49444 4.06667 2.41111 4.2 2.33333C4.33333 2.25556 4.46667 2.18889 4.6 2.13333L4.86667 0H8.53333L8.8 2.13333C8.94444 2.18889 9.08055 2.25556 9.20833 2.33333C9.33611 2.41111 9.46111 2.49444 9.58333 2.58333L11.5667 1.75L13.4 4.91667L11.6833 6.21667C11.6944 6.29444 11.7 6.36944 11.7 6.44167C11.7 6.51389 11.7 6.58889 11.7 6.66667C11.7 6.74444 11.7 6.81944 11.7 6.89167C11.7 6.96389 11.6889 7.03889 11.6667 7.11667L13.3833 8.41667L11.55 11.5833L9.58333 10.75C9.46111 10.8389 9.33333 10.9222 9.2 11C9.06667 11.0778 8.93333 11.1444 8.8 11.2L8.53333 13.3333H4.86667ZM6.03333 12H7.35L7.58333 10.2333C7.92778 10.1444 8.24722 10.0139 8.54167 9.84167C8.83611 9.66944 9.10556 9.46111 9.35 9.21667L11 9.9L11.65 8.76667L10.2167 7.68333C10.2722 7.52778 10.3111 7.36389 10.3333 7.19167C10.3556 7.01944 10.3667 6.84444 10.3667 6.66667C10.3667 6.48889 10.3556 6.31389 10.3333 6.14167C10.3111 5.96944 10.2722 5.80556 10.2167 5.65L11.65 4.56667L11 3.43333L9.35 4.13333C9.10556 3.87778 8.83611 3.66389 8.54167 3.49167C8.24722 3.31944 7.92778 3.18889 7.58333 3.1L7.36667 1.33333H6.05L5.81667 3.1C5.47222 3.18889 5.15278 3.31944 4.85833 3.49167C4.56389 3.66389 4.29444 3.87222 4.05 4.11667L2.4 3.43333L1.75 4.56667L3.18333 5.63333C3.12778 5.8 3.08889 5.96667 3.06667 6.13333C3.04444 6.3 3.03333 6.47778 3.03333 6.66667C3.03333 6.84444 3.04444 7.01667 3.06667 7.18333C3.08889 7.35 3.12778 7.51667 3.18333 7.68333L1.75 8.76667L2.4 9.9L4.05 9.2C4.29444 9.45555 4.56389 9.66944 4.85833 9.84167C5.15278 10.0139 5.47222 10.1444 5.81667 10.2333L6.03333 12ZM6.73333 9C7.37778 9 7.92778 8.77222 8.38333 8.31667C8.83889 7.86111 9.06667 7.31111 9.06667 6.66667C9.06667 6.02222 8.83889 5.47222 8.38333 5.01667C7.92778 4.56111 7.37778 4.33333 6.73333 4.33333C6.07778 4.33333 5.525 4.56111 5.075 5.01667C4.625 5.47222 4.4 6.02222 4.4 6.66667C4.4 7.31111 4.625 7.86111 5.075 8.31667C5.525 8.77222 6.07778 9 6.73333 9Z" fill="#C2410C" />
+    </svg>
+  )
 }
 
 function StaffManagementView({
@@ -469,8 +496,8 @@ function StaffManagementView({
     }
   }, [currentPage, error, isLoading, onPageChange, staffList.length])
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Oct 12, 2023'
+  const formatDate = (dateStr?: string, fallback = 'Oct 12, 2023') => {
+    if (!dateStr) return fallback
     try {
       const date = new Date(dateStr)
       if (isNaN(date.getTime())) return dateStr
@@ -1330,7 +1357,7 @@ function StaffDetailView({
                 recentActivities.map((activity, index) => (
                   <div className="activity-item" key={activity.id}>
                     <div className="activity-icon-wrapper">
-                      <div className="activity-icon"><i className={`fa-solid ${getActivityIcon(activity.eventType, index)}`}></i></div>
+                      <div className="activity-icon"><ActivityLogIcon eventType={activity.eventType} index={index} /></div>
                       <div className="activity-line"></div>
                     </div>
                     <div className="activity-details">
@@ -1350,15 +1377,68 @@ function StaffDetailView({
 
 function StaffActivityLogView({
   staffMember,
+  activityLogs,
+  isLoadingActivities,
+  activityError,
+  currentPage,
+  pageCount,
+  eventTypeFilter,
+  startDateFilter,
+  endDateFilter,
+  isClearingActivityLogs,
   onHome,
   onStaffManagement,
   onBack,
+  onPageChange,
+  onEventTypeFilterChange,
+  onStartDateFilterChange,
+  onEndDateFilterChange,
+  onClearFilters,
 }: {
   staffMember: StaffMember
+  activityLogs: ActivityLog[]
+  isLoadingActivities: boolean
+  activityError: string
+  currentPage: number
+  pageCount: number
+  eventTypeFilter: string
+  startDateFilter: string
+  endDateFilter: string
+  isClearingActivityLogs: boolean
   onHome: () => void
   onStaffManagement: () => void
   onBack: () => void
+  onPageChange: (page: number) => void
+  onEventTypeFilterChange: (value: string) => void
+  onStartDateFilterChange: (value: string) => void
+  onEndDateFilterChange: (value: string) => void
+  onClearFilters: () => void
 }) {
+  const totalElements = getListTotalElements(activityLogs, activityLogs.length)
+  const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * ACTIVITY_LOG_PAGE_SIZE) + 1
+  const displayEnd = displayStart === 0 ? 0 : Math.min(totalElements, displayStart + activityLogs.length - 1)
+  const pageItems = getCompactPageItems(currentPage, pageCount)
+  const shouldShowActivityTable = isLoadingActivities || Boolean(activityError) || activityLogs.length > 0
+  const startDateInputRef = useRef<HTMLInputElement>(null)
+  const endDateInputRef = useRef<HTMLInputElement>(null)
+  const openDatePicker = (input: HTMLInputElement | null) => {
+    if (!input) return
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker()
+      return
+    }
+
+    input.focus()
+    input.click()
+  }
+
+  useEffect(() => {
+    if (!isLoadingActivities && !activityError && activityLogs.length === 0 && currentPage > 1) {
+      onPageChange(Math.max(1, currentPage - 1))
+    }
+  }, [activityError, activityLogs.length, currentPage, isLoadingActivities, onPageChange])
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Oct 12, 2023'
 
@@ -1371,6 +1451,8 @@ function StaffActivityLogView({
       year: 'numeric',
     })
   }
+  const startDateLabel = formatDate(startDateFilter, 'Oct 12, 2025')
+  const endDateLabel = formatDate(endDateFilter, 'Oct 19, 2025')
 
   return (
     <div className="role-content staff-log-content">
@@ -1403,17 +1485,101 @@ function StaffActivityLogView({
       <section className="staff-log-filter-card">
         <strong><i className="fa-solid fa-filter"></i> Filter Logs:</strong>
         <div>
-          <button type="button">All Event Types <i className="fa-solid fa-chevron-down"></i></button>
-          <button type="button"><i className="fa-regular fa-calendar"></i> Oct 12, 2023 - Oct 19, 2023</button>
-          <button type="button" className="clear">Clear All</button>
+          <label className="staff-log-filter-select">
+            <select aria-label="Filter logs by event type" value={eventTypeFilter} onChange={(event) => onEventTypeFilterChange(event.target.value)}>
+              <option value="">All Event Types</option>
+              <option value="ACCOUNT">Account</option>
+              <option value="LOGIN">Login</option>
+              <option value="ACTION">Action</option>
+            </select>
+            <i className="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </label>
+          <div className="staff-log-date-range-control">
+            <span className="staff-log-date-range-label">{startDateLabel}</span>
+            <button type="button" className="staff-log-date-picker-trigger" aria-label="Choose start date" onClick={() => openDatePicker(startDateInputRef.current)}>
+              <svg className="staff-log-date-range-icon" width="15" height="17" viewBox="0 0 15 17" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M1.66667 16.6667C1.20833 16.6667 0.815972 16.5035 0.489583 16.1771C0.163194 15.8507 0 15.4583 0 15V3.33333C0 2.875 0.163194 2.48264 0.489583 2.15625C0.815972 1.82986 1.20833 1.66667 1.66667 1.66667H2.5V0H4.16667V1.66667H10.8333V0H12.5V1.66667H13.3333C13.7917 1.66667 14.184 1.82986 14.5104 2.15625C14.8368 2.48264 15 2.875 15 3.33333V15C15 15.4583 14.8368 15.8507 14.5104 16.1771C14.184 16.5035 13.7917 16.6667 13.3333 16.6667H1.66667ZM1.66667 15H13.3333V6.66667H1.66667V15ZM1.66667 5H13.3333V3.33333H1.66667V5ZM1.66667 5V3.33333V5ZM7.5 10C7.26389 10 7.06597 9.92014 6.90625 9.76042C6.74653 9.60069 6.66667 9.40278 6.66667 9.16667C6.66667 8.93056 6.74653 8.73264 6.90625 8.57292C7.06597 8.41319 7.26389 8.33333 7.5 8.33333C7.73611 8.33333 7.93403 8.41319 8.09375 8.57292C8.25347 8.73264 8.33333 8.93056 8.33333 9.16667C8.33333 9.40278 8.25347 9.60069 8.09375 9.76042C7.93403 9.92014 7.73611 10 7.5 10ZM4.16667 10C3.93056 10 3.73264 9.92014 3.57292 9.76042C3.41319 9.60069 3.33333 9.40278 3.33333 9.16667C3.33333 8.93056 3.41319 8.73264 3.57292 8.57292C3.73264 8.41319 3.93056 8.33333 4.16667 8.33333C4.40278 8.33333 4.60069 8.41319 4.76042 8.57292C4.92014 8.73264 5 8.93056 5 9.16667C5 9.40278 4.92014 9.60069 4.76042 9.76042C4.60069 9.92014 4.40278 10 4.16667 10ZM10.8333 10C10.5972 10 10.3993 9.92014 10.2396 9.76042C10.0799 9.60069 10 9.40278 10 9.16667C10 8.93056 10.0799 8.73264 10.2396 8.57292C10.3993 8.41319 10.5972 8.33333 10.8333 8.33333C11.0694 8.33333 11.2674 8.41319 11.4271 8.57292C11.5868 8.73264 11.6667 8.93056 11.6667 9.16667C11.6667 9.40278 11.5868 9.60069 11.4271 9.76042C11.2674 9.92014 11.0694 10 10.8333 10ZM7.5 13.3333C7.26389 13.3333 7.06597 13.2535 6.90625 13.0938C6.74653 12.934 6.66667 12.7361 6.66667 12.5C6.66667 12.2639 6.74653 12.066 6.90625 11.9062C7.06597 11.7465 7.26389 11.6667 7.5 11.6667C7.73611 11.6667 7.93403 11.7465 8.09375 11.9062C8.25347 12.066 8.33333 12.2639 8.33333 12.5C8.33333 12.7361 8.25347 12.934 8.09375 13.0938C7.93403 13.2535 7.73611 13.3333 7.5 13.3333ZM4.16667 13.3333C3.93056 13.3333 3.73264 13.2535 3.57292 13.0938C3.41319 12.934 3.33333 12.7361 3.33333 12.5C3.33333 12.2639 3.41319 12.066 3.57292 11.9062C3.73264 11.7465 3.93056 11.6667 4.16667 11.6667C4.40278 11.6667 4.60069 11.7465 4.76042 11.9062C4.92014 12.066 5 12.2639 5 12.5C5 12.7361 4.92014 12.934 4.76042 13.0938C4.60069 13.2535 4.40278 13.3333 4.16667 13.3333ZM10.8333 13.3333C10.5972 13.3333 10.3993 13.2535 10.2396 13.0938C10.0799 12.934 10 12.7361 10 12.5C10 12.2639 10.0799 12.066 10.2396 11.9062C10.3993 11.7465 10.5972 11.6667 10.8333 11.6667C11.0694 11.6667 11.2674 11.7465 11.4271 11.9062C11.5868 12.066 11.6667 12.2639 11.6667 12.5C11.6667 12.7361 11.5868 12.934 11.4271 13.0938C11.2674 13.2535 11.0694 13.3333 10.8333 13.3333Z" fill="#565E74" />
+              </svg>
+            </button>
+            <span className="staff-log-date-range-separator">-</span>
+            <span className="staff-log-date-range-label">{endDateLabel}</span>
+            <button type="button" className="staff-log-date-picker-trigger" aria-label="Choose end date" onClick={() => openDatePicker(endDateInputRef.current)}>
+              <svg className="staff-log-date-range-icon" width="15" height="17" viewBox="0 0 15 17" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M1.66667 16.6667C1.20833 16.6667 0.815972 16.5035 0.489583 16.1771C0.163194 15.8507 0 15.4583 0 15V3.33333C0 2.875 0.163194 2.48264 0.489583 2.15625C0.815972 1.82986 1.20833 1.66667 1.66667 1.66667H2.5V0H4.16667V1.66667H10.8333V0H12.5V1.66667H13.3333C13.7917 1.66667 14.184 1.82986 14.5104 2.15625C14.8368 2.48264 15 2.875 15 3.33333V15C15 15.4583 14.8368 15.8507 14.5104 16.1771C14.184 16.5035 13.7917 16.6667 13.3333 16.6667H1.66667ZM1.66667 15H13.3333V6.66667H1.66667V15ZM1.66667 5H13.3333V3.33333H1.66667V5ZM1.66667 5V3.33333V5ZM7.5 10C7.26389 10 7.06597 9.92014 6.90625 9.76042C6.74653 9.60069 6.66667 9.40278 6.66667 9.16667C6.66667 8.93056 6.74653 8.73264 6.90625 8.57292C7.06597 8.41319 7.26389 8.33333 7.5 8.33333C7.73611 8.33333 7.93403 8.41319 8.09375 8.57292C8.25347 8.73264 8.33333 8.93056 8.33333 9.16667C8.33333 9.40278 8.25347 9.60069 8.09375 9.76042C7.93403 9.92014 7.73611 10 7.5 10ZM4.16667 10C3.93056 10 3.73264 9.92014 3.57292 9.76042C3.41319 9.60069 3.33333 9.40278 3.33333 9.16667C3.33333 8.93056 3.41319 8.73264 3.57292 8.57292C3.73264 8.41319 3.93056 8.33333 4.16667 8.33333C4.40278 8.33333 4.60069 8.41319 4.76042 8.57292C4.92014 8.73264 5 8.93056 5 9.16667C5 9.40278 4.92014 9.60069 4.76042 9.76042C4.60069 9.92014 4.40278 10 4.16667 10ZM10.8333 10C10.5972 10 10.3993 9.92014 10.2396 9.76042C10.0799 9.60069 10 9.40278 10 9.16667C10 8.93056 10.0799 8.73264 10.2396 8.57292C10.3993 8.41319 10.5972 8.33333 10.8333 8.33333C11.0694 8.33333 11.2674 8.41319 11.4271 8.57292C11.5868 8.73264 11.6667 8.93056 11.6667 9.16667C11.6667 9.40278 11.5868 9.60069 11.4271 9.76042C11.2674 9.92014 11.0694 10 10.8333 10ZM7.5 13.3333C7.26389 13.3333 7.06597 13.2535 6.90625 13.0938C6.74653 12.934 6.66667 12.7361 6.66667 12.5C6.66667 12.2639 6.74653 12.066 6.90625 11.9062C7.06597 11.7465 7.26389 11.6667 7.5 11.6667C7.73611 11.6667 7.93403 11.7465 8.09375 11.9062C8.25347 12.066 8.33333 12.2639 8.33333 12.5C8.33333 12.7361 8.25347 12.934 8.09375 13.0938C7.93403 13.2535 7.73611 13.3333 7.5 13.3333ZM4.16667 13.3333C3.93056 13.3333 3.73264 13.2535 3.57292 13.0938C3.41319 12.934 3.33333 12.7361 3.33333 12.5C3.33333 12.2639 3.41319 12.066 3.57292 11.9062C3.73264 11.7465 3.93056 11.6667 4.16667 11.6667C4.40278 11.6667 4.60069 11.7465 4.76042 11.9062C4.92014 12.066 5 12.2639 5 12.5C5 12.7361 4.92014 12.934 4.76042 13.0938C4.60069 13.2535 4.40278 13.3333 4.16667 13.3333ZM10.8333 13.3333C10.5972 13.3333 10.3993 13.2535 10.2396 13.0938C10.0799 12.934 10 12.7361 10 12.5C10 12.2639 10.0799 12.066 10.2396 11.9062C10.3993 11.7465 10.5972 11.6667 10.8333 11.6667C11.0694 11.6667 11.2674 11.7465 11.4271 11.9062C11.5868 12.066 11.6667 12.2639 11.6667 12.5C11.6667 12.7361 11.5868 12.934 11.4271 13.0938C11.2674 13.2535 11.0694 13.3333 10.8333 13.3333Z" fill="#565E74" />
+              </svg>
+            </button>
+            <input ref={startDateInputRef} className="staff-log-date-input" aria-label="Filter logs start date" type="date" value={startDateFilter} onChange={(event) => onStartDateFilterChange(event.target.value)} />
+            <input ref={endDateInputRef} className="staff-log-date-input" aria-label="Filter logs end date" type="date" value={endDateFilter} onChange={(event) => onEndDateFilterChange(event.target.value)} />
+          </div>
+          <button type="button" className="clear" disabled={isClearingActivityLogs} onClick={onClearFilters}>
+            {isClearingActivityLogs ? 'Clearing...' : 'Clear All'}
+          </button>
         </div>
       </section>
 
-      <section className="staff-log-empty-state">
-        <i className="fa-regular fa-user-plus"></i>
-        <span><i className="fa-regular fa-calendar-check"></i></span>
-        <p>No activity recorded for this account yet.</p>
-      </section>
+      {shouldShowActivityTable ? (
+        <section className="staff-log-table-card">
+          <div className="staff-log-table-row staff-log-table-head">
+            <span>Activity</span>
+            <span>Event Type</span>
+            <span>Description</span>
+            <span>IP Address</span>
+          </div>
+
+          {isLoadingActivities ? (
+          <div className="tenant-list-table-state">Loading activity logs...</div>
+          ) : activityError ? (
+          <div className="tenant-list-table-state error">{activityError}</div>
+          ) : (
+            activityLogs.map((activity, index) => {
+              const createdAt = activity.createdAt ? new Date(activity.createdAt) : null
+              const hasValidDate = createdAt && !Number.isNaN(createdAt.getTime())
+              const eventTypeLabel = String(activity.eventType || '').replace(/[_-]+/g, ' ').trim() || 'Action'
+              const descriptionLabel = activity.description || (hasValidDate ? formatActivityDateTime(activity.createdAt) : activity.createdAt) || '-'
+              const ipAddressLabel = activity.ipAddress || '-'
+
+              return (
+                <div className="staff-log-table-row" key={activity.id}>
+                  <span className="staff-log-activity-cell">
+                    <span className="activity-log-table-icon"><ActivityLogIcon eventType={activity.eventType} index={index} /></span>
+                    <strong>{activity.title}</strong>
+                  </span>
+                  <span>{eventTypeLabel}</span>
+                  <span>{descriptionLabel}</span>
+                  <span>{ipAddressLabel}</span>
+                </div>
+              )
+            })
+          )}
+
+          <footer>
+            <span>Showing {displayStart}-{displayEnd} of {totalElements} Log{totalElements === 1 ? '' : 's'}</span>
+            <div>
+              <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={currentPage === 1} onClick={() => onPageChange(Math.max(1, currentPage - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+              {pageItems.map((item, index) => (
+                item === 'ellipsis' ? (
+                  <span className="pagination-ellipsis" key={`activity-ellipsis-${index}`}>...</span>
+                ) : (
+                  <button type="button" className={item === currentPage ? 'active' : ''} key={item} onClick={() => onPageChange(item)}>{item}</button>
+                )
+              ))}
+              <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={currentPage === pageCount} onClick={() => onPageChange(Math.min(pageCount, currentPage + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </footer>
+        </section>
+      ) : (
+          <section className="staff-log-empty-state">
+            <svg className="staff-log-empty-main-icon" width="110" height="80" viewBox="0 0 110 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M85 50V35H70V25H85V10H95V25H110V35H95V50H85ZM40 40C34.5 40 29.7917 38.0417 25.875 34.125C21.9583 30.2083 20 25.5 20 20C20 14.5 21.9583 9.79167 25.875 5.875C29.7917 1.95833 34.5 0 40 0C45.5 0 50.2083 1.95833 54.125 5.875C58.0417 9.79167 60 14.5 60 20C60 25.5 58.0417 30.2083 54.125 34.125C50.2083 38.0417 45.5 40 40 40ZM0 80V66C0 63.1667 0.729167 60.5625 2.1875 58.1875C3.64583 55.8125 5.58333 54 8 52.75C13.1667 50.1667 18.4167 48.2292 23.75 46.9375C29.0833 45.6458 34.5 45 40 45C45.5 45 50.9167 45.6458 56.25 46.9375C61.5833 48.2292 66.8333 50.1667 72 52.75C74.4167 54 76.3542 55.8125 77.8125 58.1875C79.2708 60.5625 80 63.1667 80 66V80H0ZM10 70H70V66C70 65.0833 69.7708 64.25 69.3125 63.5C68.8542 62.75 68.25 62.1667 67.5 61.75C63 59.5 58.4583 57.8125 53.875 56.6875C49.2917 55.5625 44.6667 55 40 55C35.3333 55 30.7083 55.5625 26.125 56.6875C21.5417 57.8125 17 59.5 12.5 61.75C11.75 62.1667 11.1458 62.75 10.6875 63.5C10.2292 64.25 10 65.0833 10 66V70ZM40 30C42.75 30 45.1042 29.0208 47.0625 27.0625C49.0208 25.1042 50 22.75 50 20C50 17.25 49.0208 14.8958 47.0625 12.9375C45.1042 10.9792 42.75 10 40 10C37.25 10 34.8958 10.9792 32.9375 12.9375C30.9792 14.8958 30 17.25 30 20C30 22.75 30.9792 25.1042 32.9375 27.0625C34.8958 29.0208 37.25 30 40 30Z" fill="#E4BEB4" fillOpacity="0.4" />
+            </svg>
+            <span className="staff-log-empty-small-icon">
+              <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M2.5 25C1.8125 25 1.22396 24.7552 0.734375 24.2656C0.244792 23.776 0 23.1875 0 22.5V8.75C0 8.0625 0.244792 7.47396 0.734375 6.98438C1.22396 6.49479 1.8125 6.25 2.5 6.25H8.75V2.5C8.75 1.8125 8.99479 1.22396 9.48438 0.734375C9.97396 0.244792 10.5625 0 11.25 0H13.75C14.4375 0 15.026 0.244792 15.5156 0.734375C16.0052 1.22396 16.25 1.8125 16.25 2.5V6.25H22.5C23.1875 6.25 23.776 6.49479 24.2656 6.98438C24.7552 7.47396 25 8.0625 25 8.75V22.5C25 23.1875 24.7552 23.776 24.2656 24.2656C23.776 24.7552 23.1875 25 22.5 25H2.5ZM2.5 22.5H22.5V8.75H16.25C16.25 9.4375 16.0052 10.026 15.5156 10.5156C15.026 11.0052 14.4375 11.25 13.75 11.25H11.25C10.5625 11.25 9.97396 11.0052 9.48438 10.5156C8.99479 10.026 8.75 9.4375 8.75 8.75H2.5V22.5ZM5 20H12.5V19.4375C12.5 19.0833 12.401 18.7552 12.2031 18.4531C12.0052 18.151 11.7292 17.9167 11.375 17.75C10.9583 17.5625 10.5365 17.4219 10.1094 17.3281C9.68229 17.2344 9.22917 17.1875 8.75 17.1875C8.27083 17.1875 7.81771 17.2344 7.39062 17.3281C6.96354 17.4219 6.54167 17.5625 6.125 17.75C5.77083 17.9167 5.49479 18.151 5.29688 18.4531C5.09896 18.7552 5 19.0833 5 19.4375V20ZM15 18.125H20V16.25H15V18.125ZM8.75 16.25C9.27083 16.25 9.71354 16.0677 10.0781 15.7031C10.4427 15.3385 10.625 14.8958 10.625 14.375C10.625 13.8542 10.4427 13.4115 10.0781 13.0469C9.71354 12.6823 9.27083 12.5 8.75 12.5C8.22917 12.5 7.78646 12.6823 7.42188 13.0469C7.05729 13.4115 6.875 13.8542 6.875 14.375C6.875 14.8958 7.05729 15.3385 7.42188 15.7031C7.78646 16.0677 8.22917 16.25 8.75 16.25ZM15 14.375H20V12.5H15V14.375ZM11.25 8.75H13.75V2.5H11.25V8.75Z" fill="white" />
+              </svg>
+            </span>
+            <p>No activity recorded for this account yet.</p>
+          </section>
+      )}
     </div>
   )
 }
@@ -1568,7 +1734,14 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [staffDetailError, setStaffDetailError] = useState('')
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(() => getStoredSelectedStaff())
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([])
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
+  const [activityLogPage, setActivityLogPage] = useState(1)
+  const [activityLogPageCount, setActivityLogPageCount] = useState(1)
+  const [activityEventTypeFilter, setActivityEventTypeFilter] = useState('')
+  const [activityStartDateFilter, setActivityStartDateFilter] = useState('')
+  const [activityEndDateFilter, setActivityEndDateFilter] = useState('')
   const [isLoadingActivities, setIsLoadingActivities] = useState(false)
+  const [isClearingActivityLogs, setIsClearingActivityLogs] = useState(false)
   const [activityError, setActivityError] = useState('')
   
   // Modals & Save states
@@ -1687,28 +1860,53 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       return
     }
 
+    const staffUserId = selectedStaff?.id
+    if (!staffUserId) {
+      setRecentActivities([])
+      setActivityLogs([])
+      setActivityLogPageCount(1)
+      setActivityError('')
+      return
+    }
+
     let isActive = true
+    const isLogListView = activeView === 'staffActivityLog'
+    const activityFilterEntries = {
+      ...(tenantId ? { tenantId } : {}),
+      userId: staffUserId,
+      ...(isLogListView && activityEventTypeFilter ? { eventType: activityEventTypeFilter } : {}),
+      ...(isLogListView && activityStartDateFilter ? { startDate: new Date(`${activityStartDateFilter}T00:00:00`).toISOString() } : {}),
+      ...(isLogListView && activityEndDateFilter ? { endDate: new Date(`${activityEndDateFilter}T23:59:59`).toISOString() } : {}),
+    }
+    const activityFilters = Object.keys(activityFilterEntries).length > 0 ? activityFilterEntries : null
     setIsLoadingActivities(true)
     setActivityError('')
 
     tenantAdminApi.getActivityLogs({
       sortField: 'createdAt',
-      filters: {
-        eventType: 'ACTION',
-        ...(tenantId ? { tenantId } : {}),
-      },
+      filters: activityFilters,
       sortBy: 'DESC',
-      page: 1,
-      size: 4,
+      page: isLogListView ? activityLogPage : 1,
+      size: isLogListView ? ACTIVITY_LOG_PAGE_SIZE : 4,
     })
       .then((items) => {
         if (isActive) {
-          setRecentActivities(items)
+          if (isLogListView) {
+            setActivityLogs(items)
+            setActivityLogPageCount(getListPageCount(items, activityLogPage, ACTIVITY_LOG_PAGE_SIZE))
+          } else {
+            setRecentActivities(items.slice(0, 4))
+          }
         }
       })
       .catch((error) => {
         if (isActive) {
-          setRecentActivities([])
+          if (isLogListView) {
+            setActivityLogs([])
+            setActivityLogPageCount(1)
+          } else {
+            setRecentActivities([])
+          }
           setActivityError(getAdminErrorMessage(error, 'Failed to load activity logs.'))
         }
       })
@@ -1721,7 +1919,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     return () => {
       isActive = false
     }
-  }, [activeView, refreshKey, tenantId])
+  }, [activeView, activityEndDateFilter, activityEventTypeFilter, activityLogPage, activityStartDateFilter, refreshKey, selectedStaff?.id, tenantId])
 
   const hasTenantQuota = Boolean(tenantDetail)
   const isStaffQuotaUnlimited = staffAccountLimit.unlimited ?? (Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0))
@@ -1888,6 +2086,31 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     }
   }
 
+  const handleClearActivityLogs = async () => {
+    if (!selectedStaff) return
+    if (!guardTenantActive()) return
+
+    setIsClearingActivityLogs(true)
+    try {
+      await tenantAdminApi.deleteStaffActivityLogs(selectedStaff.id)
+      triggerToast?.('Activity logs cleared successfully.', 'success')
+      setActivityEventTypeFilter('')
+      setActivityStartDateFilter('')
+      setActivityEndDateFilter('')
+      setActivityLogPage(1)
+      setActivityLogs([])
+      setRecentActivities([])
+      setActivityLogPageCount(1)
+      setRefreshKey(prev => prev + 1)
+    } catch (error) {
+      if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
+        handleActionError(error, 'Failed to clear activity logs.')
+      }
+    } finally {
+      setIsClearingActivityLogs(false)
+    }
+  }
+
   const handleToggleStatus = async (staff: StaffMember) => {
     if (!guardTenantActive()) {
       setStatusConfirmStaff(null)
@@ -2008,16 +2231,42 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             if (!guardTenantActive()) return
             setStatusConfirmStaff(selectedStaff)
           }}
-          onViewLogs={() => changeView('staffActivityLog', selectedStaff.id)}
+          onViewLogs={() => {
+            setActivityLogPage(1)
+            changeView('staffActivityLog', selectedStaff.id)
+          }}
           isActionLocked={isActionLocked}
         />
       ) : activeView === 'staffActivityLog' && selectedStaff && selectedStaffMatchesDetailRoute ? (
         <StaffActivityLogView
           key={`${selectedStaff.id}-${viewResetKeys.staffActivityLog}`}
           staffMember={selectedStaff}
+          activityLogs={activityLogs}
+          isLoadingActivities={isLoadingActivities}
+          activityError={activityError}
+          currentPage={activityLogPage}
+          pageCount={activityLogPageCount}
+          eventTypeFilter={activityEventTypeFilter}
+          startDateFilter={activityStartDateFilter}
+          endDateFilter={activityEndDateFilter}
+          isClearingActivityLogs={isClearingActivityLogs}
           onHome={() => changeView('dashboard')}
           onStaffManagement={() => changeView('staffManagement')}
           onBack={() => changeView('staffDetail', selectedStaff.id)}
+          onPageChange={setActivityLogPage}
+          onEventTypeFilterChange={(value) => {
+            setActivityEventTypeFilter(value)
+            setActivityLogPage(1)
+          }}
+          onStartDateFilterChange={(value) => {
+            setActivityStartDateFilter(value)
+            setActivityLogPage(1)
+          }}
+          onEndDateFilterChange={(value) => {
+            setActivityEndDateFilter(value)
+            setActivityLogPage(1)
+          }}
+          onClearFilters={handleClearActivityLogs}
         />
       ) : (activeView === 'staffDetail' || activeView === 'staffActivityLog') ? (
         <div className="role-content staff-management-content">

@@ -25,12 +25,12 @@ type StaffPayload = {
   tenantId?: string
 }
 
-function buildListRequest(params?: AdminListParams): AdminListParams {
+function buildListRequest(params?: AdminListParams<Record<string, unknown> | null>): AdminListParams<Record<string, unknown> | null> {
   const page = params?.page ?? 1
 
   return {
     sortField: params?.sortField ?? 'createdAt',
-    filters: params?.filters ?? {},
+    filters: params?.filters ?? null,
     sortBy: params?.sortBy ?? 'DESC',
     page: Math.max(1, page),
     size: params?.size ?? TENANT_ADMIN_LIST_PAGE_SIZE,
@@ -38,16 +38,20 @@ function buildListRequest(params?: AdminListParams): AdminListParams {
 }
 
 function getActivityLogList(payload: any): any[] {
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload?.data)) return payload.data
-  if (Array.isArray(payload?.content)) return payload.content
-  if (Array.isArray(payload?.items)) return payload.items
-  if (Array.isArray(payload?.records)) return payload.records
-  if (Array.isArray(payload?.list)) return payload.list
-  if (Array.isArray(payload?.data?.content)) return payload.data.content
-  if (Array.isArray(payload?.data?.items)) return payload.data.items
-  if (Array.isArray(payload?.data?.records)) return payload.data.records
-  if (Array.isArray(payload?.data?.list)) return payload.data.list
+  const candidates = [
+    payload,
+    payload?.data,
+    payload?.data?.data,
+  ]
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate
+    if (Array.isArray(candidate?.content)) return candidate.content
+    if (Array.isArray(candidate?.items)) return candidate.items
+    if (Array.isArray(candidate?.records)) return candidate.records
+    if (Array.isArray(candidate?.list)) return candidate.list
+  }
+
   return []
 }
 
@@ -64,16 +68,27 @@ function readStringValue(payload: any, keys: string[]) {
 }
 
 function normalizeActivityLog(log: any, index: number): ActivityLog | null {
+  const description =
+    readStringValue(log, ['description', 'desc', 'detailDescription', 'detail_description']) ||
+    readStringValue(log?.metadata, ['description', 'desc', 'detailDescription', 'detail_description']) ||
+    readStringValue(log?.details, ['description', 'desc', 'detailDescription', 'detail_description'])
+  const ipAddress =
+    readStringValue(log, ['ipAddress', 'ip_address', 'clientIp', 'client_ip', 'ip']) ||
+    readStringValue(log?.metadata, ['ipAddress', 'ip_address', 'clientIp', 'client_ip', 'ip']) ||
+    readStringValue(log?.details, ['ipAddress', 'ip_address', 'clientIp', 'client_ip', 'ip'])
   const title =
-    readStringValue(log, ['description', 'title', 'message', 'action', 'activity', 'eventName', 'event_name']) ||
-    readStringValue(log?.metadata, ['description', 'title', 'message', 'action']) ||
-    readStringValue(log?.details, ['description', 'title', 'message', 'action']) ||
+    readStringValue(log, ['title', 'message', 'action', 'activity', 'eventName', 'event_name']) ||
+    readStringValue(log?.metadata, ['title', 'message', 'action', 'activity', 'eventName', 'event_name']) ||
+    readStringValue(log?.details, ['title', 'message', 'action', 'activity', 'eventName', 'event_name']) ||
+    description ||
     'Activity logged'
 
   return {
     id: String(log?.id || log?.logId || log?.eventId || log?.uuid || `${title}-${index}`),
     eventType: String(log?.eventType || log?.event_type || log?.type || 'ACTION'),
     title,
+    description,
+    ipAddress,
     createdAt: log?.createdAt || log?.created_at || log?.createdDate || log?.timestamp || log?.eventTime || log?.time
       ? String(log?.createdAt || log?.created_at || log?.createdDate || log?.timestamp || log?.eventTime || log?.time)
       : undefined,
@@ -106,15 +121,22 @@ export const tenantAdminApi = {
     return tenant
   },
 
-  async getActivityLogs(params?: AdminListParams) {
-    const request = buildListRequest(params)
+  async getActivityLogs(params?: AdminListParams<Record<string, unknown> | null>) {
+    const uiPage = params?.page ?? 1
+    const request = {
+      ...buildListRequest(params),
+      page: Math.max(0, uiPage - 1),
+    }
 
-    console.log('[tenantAdminApi.getActivityLogs] request payload', request)
     const response = await axiosClient.post('/api/activity-log/list', request)
 
     return attachPaginationMeta(getActivityLogList(response)
       .map((log, index) => normalizeActivityLog(log, index))
       .filter((log): log is ActivityLog => Boolean(log)), response)
+  },
+
+  async deleteStaffActivityLogs(id: string) {
+    return axiosClient.delete(`/api/activity-log/staff/${encodeURIComponent(id)}`)
   },
 
   async getUserById(id: string) {

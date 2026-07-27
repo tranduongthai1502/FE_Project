@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import type { CreateTenantForm, SubscriptionPlan } from '@/services/api/api.types'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { ScrollableSelect } from '@/components/common/ScrollableSelect'
+import { formatCurrencyInput } from '@/utils/currencyFormat'
 import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/services/api/axiosErrorHandler'
 
 export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
@@ -50,7 +51,7 @@ function formatPlanOptionLabel(plan: SubscriptionPlan) {
   const displayName = trimmedName.length > planNamePreviewLength
     ? `${trimmedName.slice(0, planNamePreviewLength)}...`
     : trimmedName
-  const priceLabel = plan.priceLabel || `$${plan.monthlyPrice.toFixed(2)} / month`
+  const priceLabel = plan.priceLabel || `$${formatCurrencyInput(plan.monthlyPrice.toFixed(2))} / month`
 
   return `${displayName} - ${priceLabel}`
 }
