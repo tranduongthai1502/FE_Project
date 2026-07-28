@@ -755,6 +755,7 @@
 .jobStatusBadge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   margin-left: 10px;
   padding: 4px 10px;
   border-radius: 999px;
@@ -765,10 +766,24 @@
   vertical-align: middle;
 }
 
+.jobStatusBadge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
 .jobStatusBadge:global(.open),
 .jobStatusBadge:global(.active) {
   background: #dcfae6;
   color: #079455;
+}
+
+.jobStatusBadge:global(.draft) {
+  background: #fff3e8;
+  color: #d97706;
 }
 
 .jobDetailTabs {
