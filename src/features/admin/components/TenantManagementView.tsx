@@ -649,7 +649,7 @@ export function TenantManagementView({
     const isActive = tenantStatus.isActive
     const activeSubscriptionPlan = nextSelectedPlan || selectedPlan
     const hasUnlimitedStaffQuota = Boolean(activeSubscriptionPlan?.staffAccountUnlimited)
-    const hasUnlimitedJobQuota = Boolean(activeSubscriptionPlan?.activeJobPostingUnlimited)
+    const hasUnlimitedJobQuota = Boolean(selectedTenant?.activeJobPostingUnlimited ?? activeSubscriptionPlan?.activeJobPostingUnlimited)
     const staffLimit = hasUnlimitedStaffQuota
       ? 0
       : selectedTenant?.userQuotaLimit || activeSubscriptionPlan?.maxStaffAccount || 0

@@ -227,6 +227,8 @@ function getStaffAccountLimitPayload(payload: any): any {
 
 function normalizeStaffAccountLimit(payload: any): StaffAccountLimit {
   const data = getStaffAccountLimitPayload(payload)
+  const maxStaffValue = data?.maxStaff ?? data?.max_staff
+  const hasMaxStaffField = data?.maxStaff !== undefined || data?.max_staff !== undefined
   const used = readFiniteNumber(data, [
     'used',
     'current',
@@ -243,6 +245,8 @@ function normalizeStaffAccountLimit(payload: any): StaffAccountLimit {
     'limit',
     'max',
     'quota',
+    'maxStaff',
+    'max_staff',
     'staffLimit',
     'staffAccountLimit',
     'maxStaffAccount',
@@ -256,7 +260,7 @@ function normalizeStaffAccountLimit(payload: any): StaffAccountLimit {
     'staff_account_unlimited',
     'isUnlimited',
     'is_unlimited',
-  ]) ?? (limit !== undefined && limit <= 0)
+  ]) ?? ((hasMaxStaffField && maxStaffValue == null) || (limit !== undefined && limit <= 0))
 
   return { used, limit, unlimited }
 }
@@ -1922,11 +1926,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   }, [activeView, activityEndDateFilter, activityEventTypeFilter, activityLogPage, activityStartDateFilter, refreshKey, selectedStaff?.id, tenantId])
 
   const hasTenantQuota = Boolean(tenantDetail)
-  const isStaffQuotaUnlimited = staffAccountLimit.unlimited ?? (Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0))
+  const isStaffQuotaUnlimited = staffAccountLimit.unlimited ?? (Boolean(tenantDetail?.userQuotaUnlimited) || Boolean(tenantPlan?.staffAccountUnlimited) || (hasTenantQuota && (tenantDetail?.userQuotaLimit || 0) <= 0))
   const staffAccountCount = staffAccountLimit.used ?? tenantDetail?.userQuotaUsed ?? staffAccountList.length
   const maxStaffQuota = isStaffQuotaUnlimited
     ? Math.max(staffAccountCount, 1)
-    : staffAccountLimit.limit || tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 10
+    : staffAccountLimit.limit || tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 0
   const staffQuotaSummary = isStaffQuotaUnlimited ? 'Unlimited Seats' : `${staffAccountCount} / ${maxStaffQuota} Seats`
   const staffQuotaRingLabel = isStaffQuotaUnlimited ? String(staffAccountCount) : `${staffAccountCount}/${maxStaffQuota}`
   const remainingStaffSeats = Math.max(0, maxStaffQuota - staffAccountCount)

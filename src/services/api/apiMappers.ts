@@ -225,17 +225,26 @@ export function normalizeTenant(tenant: any): Tenant | null {
       activeJobPostingUnlimited: tenant?.activeJobPostingUnlimited,
     }
   const nestedPlan = normalizeSubscriptionPlan(planSource, planId ? String(planId) : undefined)
+  const maxStaffValue = tenant?.maxStaff ?? tenant?.max_staff
   const maxUsersValue = tenant?.maxUsers ?? tenant?.max_users
+  const hasMaxStaffField = tenant?.maxStaff !== undefined || tenant?.max_staff !== undefined
   const hasMaxUsersField = tenant?.maxUsers !== undefined || tenant?.max_users !== undefined
   const userQuotaUnlimited =
     isTruthyFlag(tenant?.userQuotaUnlimited) ||
     isTruthyFlag(tenant?.user_quota_unlimited) ||
     isTruthyFlag(tenant?.staffAccountUnlimited) ||
     isTruthyFlag(tenant?.staff_account_unlimited) ||
+    isUnlimitedValue(maxStaffValue) ||
     isUnlimitedValue(maxUsersValue) ||
+    (hasMaxStaffField && maxStaffValue == null) ||
     (hasMaxUsersField && maxUsersValue == null)
   const quotaLimit = Number(
     tenant?.userQuotaLimit ??
+    tenant?.staffAccountLimit ??
+    tenant?.staffAccountsLimit ??
+    tenant?.userLimit ??
+    tenant?.usersLimit ??
+    maxStaffValue ??
     maxUsersValue ??
     tenant?.maxStaffAccount ??
     tenant?.maxStaffAccounts ??
@@ -245,6 +254,9 @@ export function normalizeTenant(tenant: any): Tenant | null {
   )
   const activeJobPostingLimit = Number(
     tenant?.activeJobPostingLimit ??
+    tenant?.activeJobPostingsLimit ??
+    tenant?.activeJobLimit ??
+    tenant?.activeJobsLimit ??
     tenant?.maxActiveJobPosting ??
     tenant?.maxActiveJobPostings ??
     tenant?.jobPostingLimit ??
@@ -253,11 +265,27 @@ export function normalizeTenant(tenant: any): Tenant | null {
     planObject?.maxActiveJobPostings ??
     0
   )
+  const activeJobPostingUnlimited =
+    isTruthyFlag(tenant?.activeJobPostingUnlimited) ||
+    isTruthyFlag(tenant?.active_job_posting_unlimited) ||
+    isTruthyFlag(tenant?.jobPostingUnlimited) ||
+    isTruthyFlag(tenant?.job_posting_unlimited) ||
+    isTruthyFlag(planObject?.activeJobPostingUnlimited) ||
+    isTruthyFlag(planObject?.active_job_posting_unlimited) ||
+    isUnlimitedValue(tenant?.activeJobPostingLimit) ||
+    isUnlimitedValue(tenant?.activeJobPostingsLimit) ||
+    isUnlimitedValue(tenant?.maxActiveJobPosting) ||
+    isUnlimitedValue(tenant?.maxActiveJobPostings)
   const activeJobPostingUsed = Number(
     tenant?.activeJobPostingUsed ??
     tenant?.activeJobPostingsUsed ??
+    tenant?.jobPostingUsed ??
+    tenant?.jobPostingsUsed ??
     tenant?.usedActiveJobPosting ??
     tenant?.usedActiveJobPostings ??
+    tenant?.activeJobPostingCount ??
+    tenant?.activeJobPostingsCount ??
+    tenant?.totalActiveJobPostings ??
     tenant?.activeJobCount ??
     tenant?.activeJobs ??
     tenant?.jobCount ??
@@ -288,11 +316,27 @@ export function normalizeTenant(tenant: any): Tenant | null {
     subscriptionPlanDetail: nestedPlan || undefined,
     subscriptionPlan: String(planObject?.name || tenant?.planName || tenant?.subscriptionPlanName || (typeof plan === 'string' ? plan : '') || '-'),
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
-    userQuotaUsed: Number(tenant?.userQuotaUsed ?? tenant?.activeUsers ?? tenant?.usedStaffAccount ?? tenant?.staffUsed ?? tenant?.userCount ?? 0),
+    userQuotaUsed: Number(
+      tenant?.userQuotaUsed ??
+      tenant?.staffAccountUsed ??
+      tenant?.staffAccountsUsed ??
+      tenant?.usedStaffAccount ??
+      tenant?.usedStaffAccounts ??
+      tenant?.staffAccountCount ??
+      tenant?.staffAccountsCount ??
+      tenant?.totalStaffAccounts ??
+      tenant?.activeUsers ??
+      tenant?.usersUsed ??
+      tenant?.usedUsers ??
+      tenant?.staffUsed ??
+      tenant?.userCount ??
+      0
+    ),
     userQuotaLimit: Number.isFinite(quotaLimit) ? quotaLimit : 0,
     userQuotaUnlimited,
     activeJobPostingUsed: Number.isFinite(activeJobPostingUsed) ? activeJobPostingUsed : undefined,
     activeJobPostingLimit: Number.isFinite(activeJobPostingLimit) ? activeJobPostingLimit : undefined,
+    activeJobPostingUnlimited,
     efficiencyScore: Number.isFinite(efficiencyScore) ? efficiencyScore : undefined,
     status: String(tenant?.status ?? tenant?.accountStatus ?? tenant?.tenantStatus ?? (tenant?.active === true ? 'Active' : 'Inactive')),
     adminUserId: adminUserId ? String(adminUserId) : undefined,

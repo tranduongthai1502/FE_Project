@@ -102,10 +102,17 @@
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.8fr);
   gap: 18px;
+  align-items: start;
+}
+
+.dashboardColumn {
+  display: grid;
+  align-content: start;
+  gap: 18px;
 }
 
 .activityPanel {
-  min-height: 310px;
+  min-height: 0;
 }
 
 .activityPanel article {
@@ -189,7 +196,7 @@
 }
 
 .quickPanel {
-  min-height: 205px;
+  min-height: 0;
 }
 
 .quickPanel div {
@@ -219,7 +226,7 @@
 }
 
 .pipelinePanel {
-  min-height: 100px;
+  min-height: 0;
 }
 
 .pipelineTrack {
@@ -256,7 +263,7 @@
 }
 
 .topPicks {
-  min-height: 205px;
+  min-height: 0;
 }
 
 .topPicks :global(.role-panel-head) {
@@ -403,6 +410,12 @@
   cursor: pointer;
   font-size: 11px;
   font-weight: 900;
+}
+
+.jobsHeader .secondaryJobButton,
+.jobsHeader .secondaryJobButton + button {
+  padding-right: 21px;
+  padding-left: 21px;
 }
 
 .jobsHeader button:disabled {
@@ -664,8 +677,11 @@
 }
 
 .jobsActions {
-  display: inline-flex;
+  width: 76px;
+  display: grid;
+  grid-template-columns: repeat(2, 30px);
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
@@ -1014,6 +1030,14 @@
   font-size: 24px;
 }
 
+.jobSidePanel .jobStatusStatValue {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .jobSidePanel span {
   color: #667085;
   font-size: 10px;
@@ -1073,6 +1097,7 @@
   gap: 10px;
   width: 100%;
   border: 0;
+  border-radius: 5px;
   background: transparent;
   color: #101c33;
   cursor: pointer;
@@ -1091,6 +1116,10 @@
   min-width: 0;
 }
 
+.jobActionsCard button > span {
+  color: inherit;
+}
+
 .jobActionsCard button svg,
 .jobActionsCard button i {
   width: auto;
@@ -1106,11 +1135,20 @@
 
 .jobActionsCard button:hover,
 .jobActionsCard button:focus-visible,
-.jobActionsCard button:active,
 .jobActionsCard .jobActionDanger:hover,
-.jobActionsCard .jobActionDanger:focus-visible,
+.jobActionsCard .jobActionDanger:focus-visible {
+  color: #d93408;
+}
+
+.jobActionsCard button:active,
 .jobActionsCard .jobActionDanger:active {
   color: #d93408;
+}
+
+.jobActionsCard button:disabled:hover,
+.jobActionsCard button:disabled:focus-visible,
+.jobActionsCard button:disabled:active {
+  color: #101c33;
 }
 
 .hiringTeamCard div {
@@ -1236,6 +1274,7 @@
 }
 
 .criteriaTableCard {
+  --criteria-table-x-padding: 34px;
   overflow: hidden;
   border: 1px solid #f3d0c7;
   border-radius: 8px;
@@ -1248,7 +1287,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 0 20px;
+  padding: 0 var(--criteria-table-x-padding);
   color: #101c33;
   font-size: 12px;
   font-weight: 900;
@@ -1258,9 +1297,9 @@
   display: grid;
   grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(110px, 0.6fr) minmax(80px, 0.4fr);
   align-items: center;
-  gap: 14px;
+  gap: 24px;
   min-height: 54px;
-  padding: 10px 34px;
+  padding: 10px var(--criteria-table-x-padding);
   border-top: 1px solid #f3d0c7;
   color: #344054;
   font-size: 11px;
@@ -1273,6 +1312,11 @@
 .criteriaTableRow > span {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.criteriaTableRowNoAction > span:last-child {
+  justify-self: end;
+  text-align: right;
 }
 
 .criteriaEditableRow {
@@ -1424,7 +1468,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 34px;
+  padding: 0 var(--criteria-table-x-padding);
   border-top: 1px solid #f3d0c7;
 }
 
@@ -1454,6 +1498,9 @@
 }
 
 .criteriaTableCard footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 0;
   background: transparent;
   color: #d93408;
@@ -1476,7 +1523,7 @@
 }
 
 .criteriaTableError {
-  margin: -8px 34px 12px;
+  margin: -8px var(--criteria-table-x-padding) 12px;
   color: #d93408;
   font-size: 11px;
   font-weight: 800;
@@ -1489,7 +1536,7 @@
 }
 
 .criteriaWeightInvalid span {
-  background: #fff1ee !important;
+  background: #f24e1e1a !important;
   color: #d93408 !important;
 }
 
@@ -1501,9 +1548,12 @@
 .criteriaFormRow {
   display: grid;
   grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr) minmax(110px, 0.6fr) minmax(80px, 0.4fr);
-  gap: 14px;
-  padding: 10px 20px;
+  gap: 24px;
+  padding: 10px var(--criteria-table-x-padding);
   border-top: 1px solid #f3d0c7;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .criteriaFormRow {
@@ -1535,7 +1585,7 @@
   border: 1px solid #f0d7d0;
   border-radius: 5px;
   background: #ffffff;
-  color: #101c33;
+  color: #344054;
   font: inherit;
   outline: 0;
   padding: 0 10px;
@@ -1570,7 +1620,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 14px 34px 0;
+  padding: 0 26px;
 }
 
 .criteriaSaveBar button {
@@ -1634,15 +1684,32 @@
 }
 
 .jobFormPanel h2 {
+  color: #101c33;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.3;
   padding-bottom: 12px;
   border-bottom: 1px solid #f0d7d0;
+}
+
+.jobFormPanel > span,
+.jobFormPanel label > span,
+.locationRow > span,
+.salaryRangeRow > span {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .jobForm label {
   display: grid;
   gap: 3px;
   color: #667085;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1752,6 +1819,11 @@
   box-shadow: none;
 }
 
+.jobForm input::placeholder,
+.jobForm textarea::placeholder {
+  opacity: 0.5;
+}
+
 .iconInput {
   position: relative;
 }
@@ -1843,6 +1915,139 @@
   appearance: none;
 }
 
+.deadlinePickerShell {
+  z-index: 5;
+}
+
+.deadlineCalendar {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: min(312px, 100%);
+  padding: 14px;
+  border: 1px solid #f0b8a8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 36px rgba(16, 28, 51, 0.16);
+  color: #101c33;
+  text-transform: none;
+}
+
+.deadlineCalendar header,
+.deadlineCalendar footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.deadlineCalendar header {
+  margin-bottom: 12px;
+}
+
+.deadlineCalendar header strong {
+  color: #101c33;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.deadlineCalendar button {
+  border: 0;
+  background: transparent;
+  color: #344054;
+  cursor: pointer;
+  font: inherit;
+  text-transform: none;
+}
+
+.deadlineCalendar header button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  color: #565e74;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.deadlineCalendar header button:hover,
+.deadlineCalendar header button:focus-visible,
+.deadlineCalendarGrid button:hover,
+.deadlineCalendarGrid button:focus-visible {
+  background: #fff1ee;
+  color: #d93408;
+  outline: 0;
+}
+
+.deadlineCalendarWeekdays,
+.deadlineCalendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.deadlineCalendarWeekdays {
+  margin-bottom: 6px;
+}
+
+.deadlineCalendarWeekdays span {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.deadlineCalendarGrid button {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: #101c33;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.deadlineCalendarGrid .outsideCalendarDay {
+  color: #98a2b3;
+  font-weight: 500;
+}
+
+.deadlineCalendarGrid .todayCalendarDay {
+  box-shadow: inset 0 0 0 1px #d93408;
+  color: #d93408;
+}
+
+.deadlineCalendarGrid .selectedCalendarDay {
+  background: #d93408;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.deadlineCalendar footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f6ddd7;
+}
+
+.deadlineCalendar footer button {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 5px;
+  color: #d93408;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.deadlineCalendar footer button:hover,
+.deadlineCalendar footer button:focus-visible {
+  background: #fff1ee;
+  outline: 0;
+}
+
 .moneyInput {
   min-height: 38px;
   display: flex;
@@ -1863,10 +2068,15 @@
 }
 
 .moneyInput span {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin-bottom: 0;
   padding-left: 12px;
   color: #101c33;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .moneyInput input {
@@ -1938,11 +2148,26 @@
   height: 100%;
 }
 
+.richTextField > span {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.richTextField > span b {
+  color: #d93408;
+}
+
 .richTextBox {
   position: relative;
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
+  margin-top: 10px;
   border: 1px solid #f0b8a8;
   border-radius: 5px;
   background: #ffffff;
@@ -1966,6 +2191,7 @@
   height: 26px;
   display: grid;
   place-items: center;
+  padding: 5px;
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -2538,9 +2764,14 @@
     display: none;
   }
 
+  .criteriaTableCard {
+    --criteria-table-x-padding: 18px;
+  }
+
   .criteriaTableRow {
     align-items: start;
-    padding: 14px 18px;
+    padding-top: 14px;
+    padding-bottom: 14px;
   }
 
   .criteriaFormRow {
@@ -2549,7 +2780,7 @@
 
   .criteriaSaveBar {
     width: 100%;
-    padding: 12px 18px 0;
+    padding: 0 18px;
   }
 
   .criteriaSaveBar button {
@@ -2588,5 +2819,212 @@
     align-items: flex-start;
     flex-direction: column;
     padding: 14px 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .jobsContent {
+    padding: 14px 12px 20px;
+  }
+
+  .jobsHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  .jobsHeader h1 {
+    font-size: 20px;
+  }
+
+  .jobsHeader > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .jobsHeader button,
+  .jobsHeader .secondaryJobButton,
+  .jobsHeader .secondaryJobButton + button {
+    width: 100%;
+    margin-right: 0;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .jobsMetrics {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .jobsToolbar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .jobsSearch:global(.search-input) {
+    width: 100%;
+  }
+
+  .jobsToolbar label {
+    width: 100%;
+  }
+
+  .jobsTableCard {
+    border-radius: 8px;
+  }
+
+  .jobsTableRow:not(.jobsTableHead) {
+    gap: 10px;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > strong,
+  .jobsTableRow:not(.jobsTableHead) > span,
+  .jobsTableRow:not(.jobsTableHead) > em {
+    min-height: 22px;
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > span:not(:first-child),
+  .jobsTableRow:not(.jobsTableHead) > em {
+    display: grid;
+    grid-template-columns: 118px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    white-space: normal;
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > span:nth-child(2)::before {
+    content: 'Department';
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > span:nth-child(3)::before {
+    content: 'Employment Type';
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > em::before {
+    content: 'Status';
+    width: auto;
+    height: auto;
+    margin-right: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #667085;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > span:nth-child(5)::before {
+    content: 'Applicants';
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > span:nth-child(6)::before {
+    content: 'Date Created';
+  }
+
+  .jobsTableRow:not(.jobsTableHead) > span:not(:first-child)::before {
+    color: #667085;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .jobsActions {
+    width: 100%;
+    grid-template-columns: repeat(2, 36px);
+    justify-content: start;
+    gap: 12px;
+    padding-top: 4px;
+  }
+
+  .jobsActions button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #f0d7d0;
+    border-radius: 6px;
+  }
+
+  .jobDetailGrid,
+  .jobForm {
+    gap: 14px;
+  }
+
+  .jobDetailCard,
+  .jobSidePanel section,
+  .recentActivityCard,
+  .criteriaTableCard,
+  .jobFormPanel {
+    border-radius: 7px;
+  }
+
+  .jobStatsRow {
+    gap: 10px;
+  }
+
+  .jobDetailCard {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .jobDetailCard h2 {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .recentActivityCard header,
+  .recentActivityCard section {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .recentActivityCard section {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .recentActivityCard section > i {
+    display: none;
+  }
+
+  .jobActionsCard button {
+    min-height: 40px;
+  }
+
+  .criteriaTableCard footer div {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .criteriaTableCard footer strong {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .criteriaSaveBar {
+    flex-direction: column-reverse;
+  }
+
+  .criteriaSaveBar button {
+    width: 100%;
+  }
+
+  .jobFormPanel {
+    padding: 14px;
+  }
+
+  .jobForm footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px 0 0;
+  }
+
+  .jobForm footer button {
+    width: 100%;
   }
 }
