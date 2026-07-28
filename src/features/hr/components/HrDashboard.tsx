@@ -46,6 +46,7 @@ import {
   isDraftJobStatus,
   isJobTitleAlreadyExistsError,
   isOpenJobStatus,
+  jobTitleMaxLength,
   mapCriteriaResponseToRow,
   maxCriteriaCount,
   normalizeWeightInput,
@@ -616,32 +617,30 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }
   const saveCriteria = async () => {
     if (isActionLocked || isSavingCriteria || isClosedJobStatus(selectedJob?.status) || !selectedJob?.id || !isEditingCriteria) return
-    const isSavingEmptyCriteriaSet = criteriaForms.length === 0
     const validRows = validateCriterionForms()
     if (!validRows) return
-    if (!isSavingEmptyCriteriaSet && Math.round(getCriteriaTotalWithForm() * 10) / 10 !== 100) {
+    if (validRows.length === 0) {
+      triggerToast?.('Please add at least one criterion before saving.', 'error')
+      return
+    }
+
+    if (Math.round(getCriteriaTotalWithForm() * 10) / 10 !== 100) {
       triggerToast?.('Total weight must equal 100% before saving.', 'error')
       return
     }
 
     setIsSavingCriteria(true)
     try {
-      if (isSavingEmptyCriteriaSet) {
-        await hrApi.deleteJobCriteriaByJobId(selectedJob.id)
-      } else {
-        await Promise.all(deletedCriteriaIds.map((id) => hrApi.deleteJobCriteria(id)))
-      }
+      await Promise.all(deletedCriteriaIds.map((id) => hrApi.deleteJobCriteria(id)))
 
-      if (validRows.length > 0) {
-        await hrApi.createJobCriteria(validRows.map((row) => ({
-          ...(row.id ? { id: row.id } : {}),
-          jobId: selectedJob.id,
-          criterionName: row.name,
-          category: row.category,
-          description: row.description,
-          weight: Number(row.weight),
-        })))
-      }
+      await hrApi.createJobCriteria(validRows.map((row) => ({
+        ...(row.id ? { id: row.id } : {}),
+        jobId: selectedJob.id,
+        criterionName: row.name,
+        category: row.category,
+        description: row.description,
+        weight: Number(row.weight),
+      })))
       await reloadJobCriteria(selectedJob.id)
       setIsEditingCriteria(false)
       setCriteriaForms([])
@@ -668,12 +667,16 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setDeletedCriteriaIds((currentIds) => Array.from(new Set([...currentIds, ...idsToDelete])))
   }
   const updateJobFormField = <Field extends keyof JobPostingPayload>(field: Field, value: JobPostingPayload[Field]) => {
+    const nextValue = field === 'title' && typeof value === 'string'
+      ? (value.slice(0, jobTitleMaxLength) as JobPostingPayload[Field])
+      : value
+
     setJobFieldErrors((current) => {
       if (!current[field]) return current
       const { [field]: _removed, ...nextErrors } = current
       return nextErrors
     })
-    setJobForm((current) => ({ ...current, [field]: value }))
+    setJobForm((current) => ({ ...current, [field]: nextValue }))
   }
   const updateSalaryField = (field: 'salaryMin' | 'salaryMax', value: string) => {
     setJobFieldErrors((current) => {
@@ -928,8 +931,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     const normalizedCriteriaWeight = Math.round(totalCriteriaWeight * 10) / 10
     const isCriteriaReadOnly = selectedJobIsClosed || isActionLocked || isSavingCriteria
     const projectedCriteriaWeight = Math.round(getCriteriaTotalWithForm() * 10) / 10
-    const isSavingEmptyCriteriaSet = criteriaForms.length === 0
-    const isCriterionSaveDisabled = isCriteriaReadOnly || !isEditingCriteria || (!isSavingEmptyCriteriaSet && (criteriaForms.length === 0 || projectedCriteriaWeight !== 100))
+    const isCriterionSaveDisabled = isCriteriaReadOnly || !isEditingCriteria || criteriaForms.length === 0 || projectedCriteriaWeight !== 100
     const jobStatusStat = selectedJobIsClosed
       ? { label: '', value: 'CLOSED', helper: 'Position Filled' }
       : selectedJobIsDraft
@@ -1161,7 +1163,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <section className={styles.aiJobInputPanel}>
               <label className={styles.fullField}>
                 <span>Job Title <b>*</b></span>
-                <input className={getInputClassName(Boolean(jobFieldErrors.title))} value={jobForm.title} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('title', e.target.value)} placeholder="e.g. Senior Product Designer" />
+                <input className={getInputClassName(Boolean(jobFieldErrors.title))} value={jobForm.title} maxLength={jobTitleMaxLength} onChange={(e) => updateJobFormField('title', e.target.value)} placeholder="e.g. Senior Product Designer" />
                 <JobFieldError message={jobFieldErrors.title} />
               </label>
               <label className={styles.aiDepartmentField}>
@@ -1259,7 +1261,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <label className={styles.fullField}>
                   <span>Job Title <b>*</b></span>
                   <input
-                    maxLength={FIELD_LENGTH_LIMITS.defaultText}
+                    maxLength={jobTitleMaxLength}
                     className={getInputClassName(Boolean(jobFieldErrors.title))}
                     value={jobForm.title}
                     onChange={(e) => updateJobFormField('title', e.target.value)}
