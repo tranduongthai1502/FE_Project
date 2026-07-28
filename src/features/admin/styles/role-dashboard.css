@@ -397,7 +397,7 @@
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 173px;
+  width: 183px;
   padding: 10px 0;
   border: 1px solid #e2e8f0;
   border-radius: 18px;
@@ -435,8 +435,16 @@
   text-align: center;
 }
 
+.role-user-dropdown-item svg {
+  width: 28px;
+  height: 24px;
+  flex: 0 0 28px;
+  display: block;
+  padding-right: 10px;
+}
+
 .role-user-dropdown-item.logout {
-  color: #000000;
+  color: #475569;
 }
 
 .role-content {
