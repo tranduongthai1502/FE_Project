@@ -251,6 +251,7 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
   if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
   if (!getRichTextPlainText(payload.description)) nextErrors.description = requiredJobFieldMessage
   if (!getRichTextPlainText(payload.requirements)) nextErrors.requirements = requiredJobFieldMessage
+  if (!getRichTextPlainText(payload.benefits)) nextErrors.benefits = requiredJobFieldMessage
   if (getRichTextPlainText(payload.description).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.description = `Description must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
   if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = `Requirements must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
   if (getRichTextPlainText(payload.benefits).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.benefits = `Benefits must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
