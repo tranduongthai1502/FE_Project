@@ -1684,6 +1684,10 @@
 }
 
 .jobFormPanel h2 {
+  color: #101c33;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.3;
   padding-bottom: 12px;
   border-bottom: 1px solid #f0d7d0;
 }
@@ -1694,13 +1698,18 @@
 .salaryRangeRow > span {
   display: inline-block;
   margin-bottom: 10px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .jobForm label {
   display: grid;
   gap: 3px;
   color: #667085;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1808,6 +1817,11 @@
   border-color: #d93408;
   outline: 0;
   box-shadow: none;
+}
+
+.jobForm input::placeholder,
+.jobForm textarea::placeholder {
+  opacity: 0.5;
 }
 
 .iconInput {
@@ -2134,11 +2148,26 @@
   height: 100%;
 }
 
+.richTextField > span {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.richTextField > span b {
+  color: #d93408;
+}
+
 .richTextBox {
   position: relative;
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
+  margin-top: 10px;
   border: 1px solid #f0b8a8;
   border-radius: 5px;
   background: #ffffff;
@@ -2162,6 +2191,7 @@
   height: 26px;
   display: grid;
   place-items: center;
+  padding: 5px;
   border: 0;
   border-radius: 4px;
   background: transparent;

@@ -225,12 +225,17 @@ function JobsEmptyState() {
 function getHrJobViewFromPath(pathname: string): 'list' | 'detail' | 'create' | 'edit' | 'ai' {
   if (pathname === hrGenerateJobAiPath) return 'ai'
   if (pathname === hrCreateJobPostingPath) return 'create'
+  if (pathname.startsWith(hrJobDetailPathPrefix) && pathname.endsWith('/edit')) return 'edit'
   if (pathname.startsWith(hrJobDetailPathPrefix)) return 'detail'
   return 'list'
 }
 
 function getHrJobDetailPath(jobId: string) {
   return `${hrJobsPath}/${encodeURIComponent(jobId)}`
+}
+
+function getHrJobEditPath(jobId: string) {
+  return `${getHrJobDetailPath(jobId)}/edit`
 }
 
 function getHrJobIdFromPath(pathname: string) {
@@ -380,8 +385,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     if (!jobId) return
     if (selectedJob?.id === jobId) return
 
+    const nextJobView = getHrJobViewFromPath(location.pathname)
     let isActive = true
-    setJobView('detail')
+    setJobView(nextJobView)
     setJobDetailTab('overview')
     setJobCriteria([])
     setIsEditingCriteria(false)
@@ -393,6 +399,30 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       .then((job) => {
         if (!isActive) return
         setSelectedJob(job)
+        if (nextJobView === 'edit') {
+          setJobFieldErrors({})
+          setPendingDuplicateTitlePayload(null)
+          setIsCancelConfirmOpen(false)
+          setSalaryInputValues({
+            salaryMin: job.salaryMin ? formatCurrencyInput(String(job.salaryMin)) : '',
+            salaryMax: job.salaryMax ? formatCurrencyInput(String(job.salaryMax)) : '',
+          })
+          setJobForm({
+            title: job.title,
+            department: job.department,
+            level: job.level || '',
+            employmentType: job.employmentType || 'FULL_TIME',
+            locationType: job.locationType || 'OFFICE',
+            location: job.location || '',
+            applicationDeadline: job.applicationDeadline || '',
+            description: job.description || '',
+            requirements: job.requirements || '',
+            benefits: job.benefits || '',
+            salaryMin: job.salaryMin || 0,
+            salaryMax: job.salaryMax || 0,
+            status: job.status || 'DRAFT',
+          })
+        }
       })
       .catch((error) => {
         if (!isActive) return
@@ -596,17 +626,20 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
     setIsSavingCriteria(true)
     try {
-      await Promise.all(deletedCriteriaIds.map((id) => hrApi.deleteJobCriteria(id)))
+      if (isSavingEmptyCriteriaSet) {
+        await hrApi.deleteJobCriteriaByJobId(selectedJob.id)
+      } else {
+        await Promise.all(deletedCriteriaIds.map((id) => hrApi.deleteJobCriteria(id)))
+      }
 
       if (validRows.length > 0) {
-        await hrApi.createJobCriteria(validRows.map((row, index) => ({
-          id: row.id,
+        await hrApi.createJobCriteria(validRows.map((row) => ({
+          ...(row.id ? { id: row.id } : {}),
           jobId: selectedJob.id,
           criterionName: row.name,
           category: row.category,
           description: row.description,
           weight: Number(row.weight),
-          sortOrder: index + 1,
         })))
       }
       await reloadJobCriteria(selectedJob.id)
@@ -669,7 +702,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setIsDeadlineCalendarOpen((isOpen) => !isOpen)
   }
   const selectDeadlineDate = (date: Date) => {
-    updateJobFormField('applicationDeadline', new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString())
+    updateJobFormField('applicationDeadline', getLocalDateKey(date))
     setIsDeadlineCalendarOpen(false)
   }
   const clearDeadlineDate = () => {
@@ -781,7 +814,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       status: job.status || 'DRAFT',
     })
     setJobView('edit')
-    updateHrJobsPath(hrJobsPath)
+    updateHrJobsPath(getHrJobEditPath(job.id))
   }
   const requestJobAction = (action: Exclude<JobConfirmAction, null>, job: JobPosting) => {
     if (isActionLocked || isJobActionSubmitting) return
@@ -1303,7 +1336,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   <JobFieldError message={jobFieldErrors.applicationDeadline} />
                 </label>
                 <div className={styles.salaryRangeRow}>
-                  <span>Salary Range (Optional)</span>
+                  <span>Salary Range</span>
                   <div className={styles.salaryRangeControls}>
                     <div className={styles.salaryInputSlot}>
                       <div className={`${styles.moneyInput} ${jobFieldErrors.salaryMin ? styles.moneyInputError : ''}`}><span>$</span><input aria-label="Minimum salary" type="text" inputMode="decimal" value={salaryInputValues.salaryMin} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateSalaryField('salaryMin', e.target.value)} /></div>
@@ -1335,7 +1368,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               </div>
             </section>
             <section className={styles.jobFormPanel}>
-              <div className={styles.richTextField}><span>Benefits</span>
+              <div className={styles.richTextField}><span>Benefits <b>*</b></span>
                 <JobRichTextEditor hasError={Boolean(jobFieldErrors.benefits)} value={jobForm.benefits} onChange={(value) => updateJobFormField('benefits', value)} placeholder="Enter company benefits and perks..." />
                 <JobFieldError message={jobFieldErrors.benefits} />
               </div>

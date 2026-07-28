@@ -183,6 +183,7 @@ export type Tenant = {
   userQuotaUnlimited?: boolean
   activeJobPostingUsed?: number
   activeJobPostingLimit?: number
+  activeJobPostingUnlimited?: boolean
   efficiencyScore?: number
   status: string
   adminUserId?: string

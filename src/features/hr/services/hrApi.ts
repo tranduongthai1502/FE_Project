@@ -193,13 +193,12 @@ export const hrApi = {
 
   async createJobCriteria(requests: JobCriteriaPayload[]): Promise<JobCriteriaResponse[]> {
     const backendRequests = requests.map((req) => ({
-      id: req.id,
+      ...(req.id ? { id: req.id } : {}),
       jobId: req.jobId,
       criterionName: req.criterionName || req.name || '',
       description: req.description,
       category: req.category,
       weight: req.weight,
-      sortOrder: req.sortOrder,
     }))
     const response = await axiosClient.post('/api/job-criteria', backendRequests)
     return getJobCriteriaList(getResponsePayload(response))
@@ -233,5 +232,9 @@ export const hrApi = {
 
   async deleteJobCriteria(id: string) {
     return axiosClient.delete(`/api/job-criteria/${encodeURIComponent(id)}`)
+  },
+
+  async deleteJobCriteriaByJobId(jobId: string) {
+    return axiosClient.delete(`/api/job-criteria/job/${encodeURIComponent(jobId)}`)
   },
 }
