@@ -1279,28 +1279,24 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
           icon="fa-layer-group"
           label="Active Plans"
           value={planStatsActivePlans}
-          note={<><i className="fa-solid fa-arrow-trend-up"></i> {planStatsActivePlansTrendLabel}</>}
         />
         <MetricCard
           className="subscription-plan-card"
           icon="fa-crown"
           label="Top Tier"
           value={planStatsTopTierName}
-          note={<><i className="fa-solid fa-users"></i> {planStatsTopTierStaffLabel} accounts</>}
         />
         <MetricCard
           className="subscription-plan-card"
           icon="fa-money-bill-trend-up"
           label="Monthly Active Plan Revenue"
           value={planStatsMonthlyRevenueLabel}
-          note={<><i className="fa-solid fa-arrow-trend-up"></i> {planStatsMonthlyTrendLabel}</>}
         />
         <MetricCard
           className="subscription-plan-card recommendation"
           icon="fa-rotate"
           label="Renewal Rate"
           value={planStatsRenewalRateLabel}
-          note={<><i className="fa-solid fa-arrow-trend-up"></i> {planStatsRenewalTrendLabel}</>}
         />
       </div>
 

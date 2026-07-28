@@ -1222,8 +1222,8 @@ function StaffDetailView({
     return name.slice(0, 2).toUpperCase()
   }
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Oct 12, 2023'
+  const formatDate = (dateStr?: string, fallback = 'Oct 12, 2023') => {
+    if (!dateStr) return fallback
     try {
       const date = new Date(dateStr)
       if (isNaN(date.getTime())) return dateStr
@@ -1443,8 +1443,8 @@ function StaffActivityLogView({
     }
   }, [activityError, activityLogs.length, currentPage, isLoadingActivities, onPageChange])
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Oct 12, 2023'
+  const formatDate = (dateStr?: string, fallback = 'Oct 12, 2023') => {
+    if (!dateStr) return fallback
 
     const date = new Date(dateStr)
     if (Number.isNaN(date.getTime())) return dateStr
