@@ -27,6 +27,8 @@ export const salaryPairMessage = validationErrorMessages.salaryPairRequired
 export const salaryOrderMessage = validationErrorMessages.salaryOrderInvalid
 export const salaryPositiveMessage = 'Salary must be a positive number.'
 export const deadlineFutureMessage = 'Application deadline must be today or a future date.'
+export const jobTitleMaxLength = 100
+export const jobTitleLengthMessage = `Job title must be ${jobTitleMaxLength} characters or less.`
 export const criteriaCategories = ['Technical Skills', 'Experience', 'Education', 'Soft Skills', 'Culture Fit']
 export const criteriaNameLimit = 100
 export const criteriaDescriptionLimit = 500
@@ -245,6 +247,7 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
   const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
 
   if (!title) nextErrors.title = requiredJobFieldMessage
+  if (title.length > jobTitleMaxLength) nextErrors.title = jobTitleLengthMessage
   if (!payload.department.trim()) nextErrors.department = departmentRequiredMessage
   if (!payload.employmentType.trim()) nextErrors.employmentType = employmentTypeRequiredMessage
   if (!payload.locationType.trim()) nextErrors.locationType = requiredJobFieldMessage
