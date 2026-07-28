@@ -59,10 +59,10 @@ const hrJobDetailPathPrefix = `${hrJobsPath}/`
 
 type ToastTrigger = (message: string, type?: 'success' | 'error') => void
 
-function JobFieldError({ message }: { message?: string }) {
+function JobFieldError({ message, showDefaultMessage = true }: { message?: string; showDefaultMessage?: boolean }) {
   return (
     <small className={styles.jobFieldError} aria-hidden={!message}>
-      {message || requiredJobFieldMessage}
+      {message || (showDefaultMessage ? requiredJobFieldMessage : '')}
     </small>
   )
 }
@@ -1368,15 +1368,17 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               </div>
             </section>
             <section className={styles.jobFormPanel}>
-              <div className={styles.richTextField}><span>Benefits <b>*</b></span>
+              <div className={styles.richTextField}><span>Benefits</span>
                 <JobRichTextEditor hasError={Boolean(jobFieldErrors.benefits)} value={jobForm.benefits} onChange={(value) => updateJobFormField('benefits', value)} placeholder="Enter company benefits and perks..." />
-                <JobFieldError message={jobFieldErrors.benefits} />
+                <JobFieldError message={jobFieldErrors.benefits} showDefaultMessage={false} />
               </div>
             </section>
             <footer>
               <button type="button" onClick={handleCancelJobForm} disabled={isSavingJob}>Cancel</button>
-              <button type="button" disabled={isActionLocked || isSavingJob} onClick={() => saveJob({ ...jobForm, status: 'DRAFT' })}>Save as Draft</button>
-              <button type="submit" disabled={isActionLocked || isSavingJob}>{isSavingJob ? 'Saving...' : 'Save'}</button>
+              {jobView === 'create' && (
+                <button type="button" disabled={isActionLocked || isSavingJob} onClick={() => saveJob({ ...jobForm, status: 'DRAFT' })}>Save as Draft</button>
+              )}
+              <button type="submit" disabled={isActionLocked || isSavingJob}>{isSavingJob ? 'Saving...' : (jobView === 'edit' ? 'Save Change' : 'Save')}</button>
             </footer>
           </aside>
         </form>
