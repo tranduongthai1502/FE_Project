@@ -136,3 +136,35 @@ export function RichTextDisplay({ fallback, value }: { fallback: string; value?:
 
   return <div className={styles.richTextDisplay} dangerouslySetInnerHTML={{ __html: value || '' }} />
 }
+
+function RequirementCheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <circle cx="15" cy="15" r="13" stroke="#B62B06" strokeWidth="2.5" />
+      <path d="M9 15.3L13 19.3L21.5 10.8" stroke="#B62B06" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function RequirementsDisplay({ fallback, value }: { fallback: string; value?: string }) {
+  if (!getRichTextPlainText(value)) return <p>{fallback}</p>
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(value || '', 'text/html')
+  const items = Array.from(doc.querySelectorAll('li'))
+    .map((item) => item.textContent?.trim() || '')
+    .filter(Boolean)
+
+  if (items.length === 0) return <RichTextDisplay fallback={fallback} value={value} />
+
+  return (
+    <ul className={styles.jobRequirementList}>
+      {items.map((item, index) => (
+        <li key={`${item}-${index}`}>
+          <RequirementCheckIcon />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}

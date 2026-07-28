@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
-import { JobRichTextEditor, RichTextDisplay } from './HrRichTextEditor'
+import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRichTextEditor'
 import type { RoleHomeView } from '@/app/routes/route.types'
 import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload } from '@/services/api/api.types'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
@@ -36,7 +36,6 @@ import {
   formatJobStatus,
   getAiJobValidationErrors,
   getCriteriaSaveError,
-  getCriteriaSnapshot,
   getDaysOpen,
   getDaysUntilDeadline,
   getJobActionConfirmMessage,
@@ -79,6 +78,14 @@ function RevisionHistoryIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M9 18C6.7 18 4.69583 17.2375 2.9875 15.7125C1.27917 14.1875 0.3 12.2833 0.05 10H2.1C2.33333 11.7333 3.10417 13.1667 4.4125 14.3C5.72083 15.4333 7.25 16 9 16C10.95 16 12.6042 15.3208 13.9625 13.9625C15.3208 12.6042 16 10.95 16 9C16 7.05 15.3208 5.39583 13.9625 4.0375C12.6042 2.67917 10.95 2 9 2C7.85 2 6.775 2.26667 5.775 2.8C4.775 3.33333 3.93333 4.06667 3.25 5H6V7H0V1H2V3.35C2.85 2.28333 3.8875 1.45833 5.1125 0.875C6.3375 0.291667 7.63333 0 9 0C10.25 0 11.4208 0.2375 12.5125 0.7125C13.6042 1.1875 14.5542 1.82917 15.3625 2.6375C16.1708 3.44583 16.8125 4.39583 17.2875 5.4875C17.7625 6.57917 18 7.75 18 9C18 10.25 17.7625 11.4208 17.2875 12.5125C16.8125 13.6042 16.1708 14.5542 15.3625 15.3625C14.5542 16.1708 13.6042 16.8125 12.5125 17.2875C11.4208 17.7625 10.25 18 9 18ZM11.8 13.2L8 9.4V4H10V8.6L13.2 11.8L11.8 13.2Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function CriteriaTrashIcon() {
+  return (
+    <svg width="40" height="31" viewBox="0 0 40 31" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <path d="M12.5 24.25C12.5 24.913 12.7634 25.5489 13.2322 26.0178C13.7011 26.4866 14.337 26.75 15 26.75H25C25.663 26.75 26.2989 26.4866 26.7678 26.0178C27.2366 25.5489 27.5 24.913 27.5 24.25V9.25H12.5V24.25ZM15 11.75H25V24.25H15V11.75ZM24.375 5.5L23.125 4.25H16.875L15.625 5.5H11.25V8H28.75V5.5H24.375Z" fill="#565E74" />
     </svg>
   )
 }
@@ -195,12 +202,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [pendingDuplicateTitlePayload, setPendingDuplicateTitlePayload] = useState<JobPostingPayload | null>(null)
   const [jobDetailTab, setJobDetailTab] = useState<JobDetailTab>('overview')
   const [jobCriteria, setJobCriteria] = useState<JobCriteriaResponse[]>([])
-  const [criteriaRows, setCriteriaRows] = useState<EditableCriterion[]>([])
+  const [isEditingCriteria, setIsEditingCriteria] = useState(false)
+  const [criteriaForms, setCriteriaForms] = useState<EditableCriterion[]>([])
   const [criteriaFieldErrors, setCriteriaFieldErrors] = useState<Record<string, CriteriaFieldErrors>>({})
   const [deletedCriteriaIds, setDeletedCriteriaIds] = useState<string[]>([])
   const [isLoadingCriteria, setIsLoadingCriteria] = useState(false)
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
-  const [isCriteriaCancelConfirmOpen, setIsCriteriaCancelConfirmOpen] = useState(false)
   const activeJobCount = jobStats?.totalActivePostings ?? jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
@@ -314,14 +321,16 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           .slice()
           .sort((first, second) => (first.sortOrder ?? 0) - (second.sortOrder ?? 0))
         setJobCriteria(nextCriteria)
-        setCriteriaRows(nextCriteria.map(mapCriteriaResponseToRow))
+        setIsEditingCriteria(false)
+        setCriteriaForms([])
         setCriteriaFieldErrors({})
         setDeletedCriteriaIds([])
       })
       .catch(() => {
         if (!isActive) return
         setJobCriteria([])
-        setCriteriaRows([])
+        setIsEditingCriteria(false)
+        setCriteriaForms([])
         setCriteriaFieldErrors({})
         setDeletedCriteriaIds([])
       })
@@ -354,155 +363,165 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isJobFormDirty, jobView])
 
-  const addCriterionRow = () => {
-    if (isActionLocked || isClosedJobStatus(selectedJob?.status) || criteriaRows.length >= maxCriteriaCount) return
-
-    setCriteriaRows((currentRows) => [...currentRows, createEmptyCriterionRow()])
+  const reloadJobCriteria = async (jobId: string) => {
+    const nextCriteria = await hrApi.getJobCriteriaByJobId(jobId)
+    setJobCriteria(nextCriteria.slice().sort((first, second) => (first.sortOrder ?? 0) - (second.sortOrder ?? 0)))
   }
-  const updateCriterionRow = (clientId: string, field: keyof Pick<EditableCriterion, 'name' | 'description' | 'category' | 'weight'>, value: string) => {
+  const startEditCriteria = () => {
+    if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
+
+    setIsEditingCriteria(true)
+    setCriteriaForms(jobCriteria.length > 0 ? jobCriteria.map(mapCriteriaResponseToRow) : [createEmptyCriterionRow()])
+    setCriteriaFieldErrors({})
+    setDeletedCriteriaIds([])
+  }
+  const addCriterionRow = () => {
+    if (isActionLocked || isClosedJobStatus(selectedJob?.status) || criteriaForms.length >= maxCriteriaCount) return
+
+    setCriteriaForms((currentForms) => [...currentForms, createEmptyCriterionRow()])
+  }
+  const updateCriterionForm = (clientId: string, field: keyof Pick<EditableCriterion, 'name' | 'description' | 'category' | 'weight'>, value: string) => {
     if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
 
     const nextValue = field === 'weight' ? normalizeWeightInput(value) : value
-    setCriteriaRows((currentRows) => currentRows.map((row) => (
-      row.clientId === clientId ? { ...row, [field]: nextValue } : row
+    setCriteriaForms((currentForms) => currentForms.map((form) => (
+      form.clientId === clientId ? { ...form, [field]: nextValue } : form
     )))
     setCriteriaFieldErrors((currentErrors) => {
-      const rowErrors = currentErrors[clientId]
-      if (!rowErrors?.[field]) return currentErrors
-      const { [field]: _removed, ...nextRowErrors } = rowErrors
-      return { ...currentErrors, [clientId]: nextRowErrors }
+      const formErrors = currentErrors[clientId]
+      if (!formErrors?.[field]) return currentErrors
+      const { [field]: _removed, ...nextFormErrors } = formErrors
+      return { ...currentErrors, [clientId]: nextFormErrors }
     })
   }
-  const deleteCriterionRow = (row: EditableCriterion) => {
-    if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
+  const cancelCriterionForm = () => {
+    if (isSavingCriteria) return
 
-    if (row.id) {
-      setDeletedCriteriaIds((currentIds) => currentIds.includes(row.id as string) ? currentIds : [...currentIds, row.id as string])
-    }
-    setCriteriaRows((currentRows) => currentRows.filter((item) => item.clientId !== row.clientId))
+    setIsEditingCriteria(false)
+    setCriteriaForms([])
+    setCriteriaFieldErrors({})
+    setDeletedCriteriaIds([])
+  }
+  const removeDraftCriterion = (clientId: string) => {
+    if (isSavingCriteria) return
+
+    setCriteriaForms((currentForms) => {
+      const removedForm = currentForms.find((form) => form.clientId === clientId)
+      if (removedForm?.id) {
+        setDeletedCriteriaIds((currentIds) => currentIds.includes(removedForm.id as string) ? currentIds : [...currentIds, removedForm.id as string])
+      }
+      return currentForms.filter((form) => form.clientId !== clientId)
+    })
     setCriteriaFieldErrors((currentErrors) => {
-      const { [row.clientId]: _removed, ...nextErrors } = currentErrors
+      const { [clientId]: _removed, ...nextErrors } = currentErrors
       return nextErrors
     })
   }
-  const moveCriterionRow = (sourceClientId: string, targetClientId: string) => {
-    if (sourceClientId === targetClientId || isActionLocked || isClosedJobStatus(selectedJob?.status)) return
+  const getCriteriaTotalWithForm = () => {
+    const savedTotal = jobCriteria.reduce((total, item) => total + (Number(item.weight) || 0), 0)
+    if (criteriaForms.length === 0) return savedTotal
 
-    setCriteriaRows((currentRows) => {
-      const sourceIndex = currentRows.findIndex((row) => row.clientId === sourceClientId)
-      const targetIndex = currentRows.findIndex((row) => row.clientId === targetClientId)
-      if (sourceIndex < 0 || targetIndex < 0) return currentRows
-
-      const nextRows = currentRows.slice()
-      const [movedRow] = nextRows.splice(sourceIndex, 1)
-      nextRows.splice(targetIndex, 0, movedRow)
-      return nextRows
-    })
+    const draftTotal = criteriaForms.reduce((total, form) => {
+      const currentWeight = Number(normalizeWeightInput(form.weight))
+      return total + (Number.isFinite(currentWeight) ? currentWeight : 0)
+    }, 0)
+    return draftTotal
   }
-  const resetCriteriaRows = () => {
-    setCriteriaRows(jobCriteria.map(mapCriteriaResponseToRow))
-    setCriteriaFieldErrors({})
-    setDeletedCriteriaIds([])
-    setIsCriteriaCancelConfirmOpen(false)
-  }
-  const hasUnsavedCriteriaChanges = () => (
-    deletedCriteriaIds.length > 0 ||
-    JSON.stringify(getCriteriaSnapshot(criteriaRows)) !== JSON.stringify(getCriteriaSnapshot(jobCriteria.map(mapCriteriaResponseToRow)))
-  )
-  const handleCancelCriteria = () => {
-    if (isSavingCriteria) return
-
-    if (hasUnsavedCriteriaChanges()) {
-      setIsCriteriaCancelConfirmOpen(true)
-      return
-    }
-
-    resetCriteriaRows()
-  }
-  const validateCriteriaRows = () => {
+  const validateCriterionForms = () => {
     const nextErrors: Record<string, CriteriaFieldErrors> = {}
-    const trimmedRows = criteriaRows.map((row) => ({
-      ...row,
-      name: row.name.trim(),
-      description: row.description.trim(),
-      category: row.category.trim() || criteriaCategories[0],
-      weight: normalizeWeightInput(row.weight),
+    const trimmedRows = criteriaForms.map((form) => ({
+      ...form,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      category: form.category.trim() || criteriaCategories[0],
+      weight: normalizeWeightInput(form.weight),
     }))
+    const draftNameCounts = new Map<string, number>()
 
-    if (trimmedRows.length < 1) {
-      triggerToast?.('Each job must have at least 1 criterion before saving.', 'error')
-      return null
-    }
-
-    if (trimmedRows.length > maxCriteriaCount) {
-      triggerToast?.('Each job can have at most 20 criteria.', 'error')
-      return null
-    }
-
-    const nameCounts = new Map<string, number>()
     trimmedRows.forEach((row) => {
       const normalizedName = row.name.toLowerCase()
-      if (normalizedName) nameCounts.set(normalizedName, (nameCounts.get(normalizedName) || 0) + 1)
+      if (normalizedName) draftNameCounts.set(normalizedName, (draftNameCounts.get(normalizedName) || 0) + 1)
     })
 
-    let totalWeight = 0
     trimmedRows.forEach((row) => {
       const rowErrors: CriteriaFieldErrors = {}
       const numericWeight = Number(row.weight)
+      const normalizedName = row.name.toLowerCase()
 
-      if (!row.name) rowErrors.name = 'Name is required.'
-      if (row.name.length > criteriaNameLimit) rowErrors.name = `Name must be ${criteriaNameLimit} characters or less.`
-      if (row.name && nameCounts.get(row.name.toLowerCase()) && Number(nameCounts.get(row.name.toLowerCase())) > 1) rowErrors.name = 'Criterion name must be unique in this job.'
-      if (!criteriaCategories.includes(row.category)) rowErrors.category = 'Category is required.'
-      if (row.description.length > criteriaDescriptionLimit) rowErrors.description = `Description must be ${criteriaDescriptionLimit} characters or less.`
-      if (!/^\d+(\.\d)?$/.test(row.weight) || !Number.isFinite(numericWeight) || numericWeight < 1 || numericWeight > 100) {
-        rowErrors.weight = 'Weightage must be from 1 to 100%.'
+      if (!row.name) rowErrors.name = 'Criterion name is required.'
+      if (row.name.length > criteriaNameLimit) rowErrors.name = `Must be ${criteriaNameLimit} characters or less.`
+      if (normalizedName && Number(draftNameCounts.get(normalizedName)) > 1) {
+        rowErrors.name = 'Criterion name must be unique in this job.'
       }
-
-      totalWeight += Number.isFinite(numericWeight) ? numericWeight : 0
+      if (!criteriaCategories.includes(row.category)) rowErrors.category = 'Category is required.'
+      if (row.description.length > criteriaDescriptionLimit) rowErrors.description = `Must be ${criteriaDescriptionLimit} characters or less.`
+      if (!/^\d+(\.\d)?$/.test(row.weight) || !Number.isFinite(numericWeight) || numericWeight < 1 || numericWeight > 100) {
+        rowErrors.weight = 'Must be between 1 and 100.'
+      }
       if (Object.keys(rowErrors).length > 0) nextErrors[row.clientId] = rowErrors
     })
 
-    if (Math.round(totalWeight * 10) / 10 !== 100) {
-      triggerToast?.('Total Weightage must equal exactly 100% before saving.', 'error')
-    }
-
     setCriteriaFieldErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0 || Math.round(totalWeight * 10) / 10 !== 100) return null
+    if (Object.keys(nextErrors).length > 0) return null
 
     return trimmedRows
   }
   const saveCriteria = async () => {
-    if (isActionLocked || isSavingCriteria || isClosedJobStatus(selectedJob?.status) || !selectedJob?.id) return
-    const validRows = validateCriteriaRows()
+    if (isActionLocked || isSavingCriteria || isClosedJobStatus(selectedJob?.status) || !selectedJob?.id || !isEditingCriteria) return
+    const validRows = validateCriterionForms()
     if (!validRows) return
+    if (Math.round(getCriteriaTotalWithForm() * 10) / 10 !== 100) {
+      triggerToast?.('Total weight must equal 100% before saving.', 'error')
+      return
+    }
 
     setIsSavingCriteria(true)
     try {
       await Promise.all(deletedCriteriaIds.map((id) => hrApi.deleteJobCriteria(id)))
-      const savedRows = await Promise.all(validRows.map((row, index) => {
-        const payload = {
+
+      const existingRows = validRows.filter((row) => row.id)
+      await Promise.all(existingRows.map((row) => hrApi.updateJobCriteria(row.id as string, {
+        jobId: selectedJob.id,
+        criterionName: row.name,
+        category: row.category,
+        description: row.description,
+        weight: Number(row.weight),
+      })))
+
+      const newRows = validRows.filter((row) => !row.id)
+      if (newRows.length > 0) {
+        await hrApi.createJobCriteria(newRows.map((row) => ({
           jobId: selectedJob.id,
           criterionName: row.name,
           category: row.category,
           description: row.description,
           weight: Number(row.weight),
-          sortOrder: index + 1,
-        }
-
-        return row.id ? hrApi.updateJobCriteria(row.id, payload) : hrApi.createJobCriteria([payload]).then((items) => items[0])
-      }))
-      const nextCriteria = savedRows.filter((item): item is JobCriteriaResponse => Boolean(item))
-      setJobCriteria(nextCriteria)
-      setCriteriaRows(nextCriteria.map(mapCriteriaResponseToRow))
-      setDeletedCriteriaIds([])
+        })))
+      }
+      await reloadJobCriteria(selectedJob.id)
+      setIsEditingCriteria(false)
+      setCriteriaForms([])
       setCriteriaFieldErrors({})
+      setDeletedCriteriaIds([])
       triggerToast?.('Criteria saved successfully.', 'success')
     } catch (error) {
       triggerToast?.(getCriteriaSaveError(error), 'error')
     } finally {
       setIsSavingCriteria(false)
     }
+  }
+  const clearAllCriteria = async () => {
+    if (isActionLocked || isSavingCriteria || isClosedJobStatus(selectedJob?.status) || !selectedJob?.id) return
+    if (jobCriteria.length === 0 && criteriaForms.length === 0) return
+
+    const idsToDelete = (isEditingCriteria ? criteriaForms : jobCriteria)
+      .map((criterion) => criterion.id)
+      .filter((id): id is string => Boolean(id))
+
+    setIsEditingCriteria(true)
+    setCriteriaForms([])
+    setCriteriaFieldErrors({})
+    setDeletedCriteriaIds((currentIds) => Array.from(new Set([...currentIds, ...idsToDelete])))
   }
   const updateJobFormField = <Field extends keyof JobPostingPayload>(field: Field, value: JobPostingPayload[Field]) => {
     setJobFieldErrors((current) => {
@@ -761,9 +780,11 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     const selectedJobIsClosed = isClosedJobStatus(selectedJob.status)
     const selectedJobIsOpen = isOpenJobStatus(selectedJob.status)
     const daysUntilDeadline = getDaysUntilDeadline(selectedJob.applicationDeadline)
-    const totalCriteriaWeight = criteriaRows.reduce((total, item) => total + (Number(item.weight) || 0), 0)
+    const totalCriteriaWeight = jobCriteria.reduce((total, item) => total + (Number(item.weight) || 0), 0)
     const normalizedCriteriaWeight = Math.round(totalCriteriaWeight * 10) / 10
     const isCriteriaReadOnly = selectedJobIsClosed || isActionLocked || isSavingCriteria
+    const projectedCriteriaWeight = Math.round(getCriteriaTotalWithForm() * 10) / 10
+    const isCriterionSaveDisabled = isCriteriaReadOnly || !isEditingCriteria || projectedCriteriaWeight !== 100 || (criteriaForms.length === 0 && deletedCriteriaIds.length === 0)
 
     return (
       <div className={`role-content ${styles.jobsContent}`}>
@@ -775,15 +796,17 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
         ]} />
         <div className={styles.jobsHeader}>
           <h1>{selectedJob.title} <em className={`${styles.jobStatusBadge} ${selectedJob.status.toLowerCase()}`}>{formatJobStatus(selectedJob.status)}</em></h1>
-          <div>
-            {(selectedJobIsDraft || selectedJobIsClosed) && (
-              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('open', selectedJob)}>Open</button>
-            )}
-            {selectedJobIsOpen && (
-              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('close', selectedJob)}>Close</button>
-            )}
-            <button type="button" disabled={isActionLocked} onClick={() => openEditJob(selectedJob)}>Edit</button>
-          </div>
+          {jobDetailTab === 'overview' && (
+            <div>
+              {(selectedJobIsDraft || selectedJobIsClosed) && (
+                <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('open', selectedJob)}>Open</button>
+              )}
+              {selectedJobIsOpen && (
+                <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('close', selectedJob)}>Close</button>
+              )}
+              <button type="button" disabled={isActionLocked} onClick={() => openEditJob(selectedJob)}>Edit</button>
+            </div>
+          )}
         </div>
         <div className={styles.jobDetailTabs}>
           <button type="button" className={jobDetailTab === 'overview' ? styles.activeJobDetailTab : undefined} onClick={() => setJobDetailTab('overview')}>Job Overview</button>
@@ -797,7 +820,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <strong>Job Description</strong>
                 <RichTextDisplay value={selectedJob.description} fallback="No description provided." />
                 <strong>Key Requirements</strong>
-                <RichTextDisplay value={selectedJob.requirements} fallback="No requirements provided." />
+                <RequirementsDisplay value={selectedJob.requirements} fallback="No requirements provided." />
                 <div className={styles.jobBenefitsBox}>
                   <strong>Company Benefits</strong>
                   <RichTextDisplay value={selectedJob.benefits} fallback="No benefits provided." />
@@ -844,87 +867,95 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
         ) : (
           <section className={styles.criteriaSetup}>
             <article className={styles.criteriaTableCard}>
-              <header>Evaluation Criteria</header>
-              <div className={`${styles.criteriaTableRow} ${styles.criteriaTableHead}`}>
-                <span>Criterion Name</span><span>Description</span><span>Category</span><span>Weightage (%)</span><span>Actions</span>
+              <header>
+                <span>Evaluation Criteria</span>
+              </header>
+              <div className={`${styles.criteriaTableRow} ${styles.criteriaTableHead} ${!isEditingCriteria ? styles.criteriaTableRowNoAction : ''}`}>
+                <span>Criterion Name</span><span>Description</span><span>Category</span><span>Weightage (%)</span>{isEditingCriteria && <span>Actions</span>}
               </div>
               {isLoadingCriteria ? (
-                <div className={styles.criteriaTableState}>Loading criteria...</div>
-              ) : criteriaRows.length > 0 ? (
-                criteriaRows.map((item) => {
-                  const rowErrors = criteriaFieldErrors[item.clientId] || {}
+                <div className={styles.criteriaSkeletonTable}>
+                  {Array.from({ length: 4 }).map((_, index) => <span key={index}></span>)}
+                </div>
+              ) : !isEditingCriteria && jobCriteria.length > 0 ? (
+                jobCriteria.map((item) => (
+                  <div className={`${styles.criteriaTableRow} ${styles.criteriaTableRowNoAction} ${styles.criteriaEditableRow}`} key={item.id} onClick={startEditCriteria} role="button" tabIndex={0} onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') startEditCriteria()
+                  }}>
+                    <span>{item.name}</span>
+                    <span>{item.description || '-'}</span>
+                    <span>{item.category || '-'}</span>
+                    <span>{item.weight ?? 0}%</span>
+                  </div>
+                ))
+              ) : null}
+              {criteriaForms.map((form) => {
+                const rowErrors = criteriaFieldErrors[form.clientId] || {}
 
-                  return (
-                    <div
-                      className={styles.criteriaTableRow}
-                      draggable={!isCriteriaReadOnly}
-                      key={item.clientId}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDragStart={(event) => event.dataTransfer.setData('text/plain', item.clientId)}
-                      onDrop={(event) => {
-                        event.preventDefault()
-                        moveCriterionRow(event.dataTransfer.getData('text/plain'), item.clientId)
-                      }}
-                    >
-                      <label>
-                        <input value={item.name} maxLength={criteriaNameLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionRow(item.clientId, 'name', event.target.value)} placeholder="Criterion name" />
-                        <small aria-hidden={!rowErrors.name}>{rowErrors.name || 'Name error'}</small>
-                      </label>
-                      <label>
-                        <textarea value={item.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionRow(item.clientId, 'description', event.target.value)} placeholder="Optional description" />
-                        <small aria-hidden={!rowErrors.description}>{rowErrors.description || 'Description error'}</small>
-                      </label>
-                      <label>
-                        <select value={item.category || criteriaCategories[0]} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionRow(item.clientId, 'category', event.target.value)}>
-                          {criteriaCategories.map((category) => <option value={category} key={category}>{category}</option>)}
-                        </select>
-                        <small aria-hidden={!rowErrors.category}>{rowErrors.category || 'Category error'}</small>
-                      </label>
-                      <label>
-                        <input value={item.weight} inputMode="decimal" disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionRow(item.clientId, 'weight', event.target.value)} placeholder="0" />
-                        <small aria-hidden={!rowErrors.weight}>{rowErrors.weight || 'Weightage error'}</small>
-                      </label>
-                      <span>
-                        <button type="button" className={styles.criteriaDeleteButton} disabled={isCriteriaReadOnly || criteriaRows.length <= 1} onClick={() => deleteCriterionRow(item)} aria-label="Delete criterion">
-                          <i className="fa-solid fa-trash-can"></i>
-                        </button>
-                      </span>
-                    </div>
-                  )
-                })
-              ) : (
+                return (
+                  <div className={styles.criteriaFormRow} key={form.clientId}>
+                  <label>
+                    <span>Criterion Name *</span>
+                    <input value={form.name} maxLength={criteriaNameLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} placeholder="System Architecture" />
+                    <small aria-hidden={!rowErrors.name}>{rowErrors.name || 'Criterion name error'}</small>
+                  </label>
+                  <label>
+                    <span>Description</span>
+                    <textarea value={form.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} placeholder="Describe what this criterion evaluates" />
+                    <small aria-hidden={!rowErrors.description}>{rowErrors.description || 'Description error'}</small>
+                  </label>
+                  <label>
+                    <span>Category</span>
+                    <select value={form.category || criteriaCategories[0]} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'category', event.target.value)}>
+                      {criteriaCategories.map((category) => <option value={category} key={category}>{category}</option>)}
+                    </select>
+                    <small aria-hidden={!rowErrors.category}>{rowErrors.category || 'Category error'}</small>
+                  </label>
+                  <label>
+                    <span>Weight</span>
+                    <input value={form.weight} inputMode="decimal" disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'weight', event.target.value)} placeholder="40" />
+                    <small aria-hidden={!rowErrors.weight}>{rowErrors.weight || 'Weight error'}</small>
+                  </label>
+                  <span className={styles.criteriaRowActions}>
+                    <button type="button" className={styles.criteriaDeleteButton} disabled={isCriteriaReadOnly} onClick={() => removeDraftCriterion(form.clientId)} aria-label="Remove draft criterion">
+                      <CriteriaTrashIcon />
+                    </button>
+                  </span>
+                </div>
+                )
+              })}
+              {!isLoadingCriteria && jobCriteria.length === 0 && !isEditingCriteria && (
                 <div className={styles.criteriaTableState}>
-                  Job has no criteria. CVs can still be received, but AI matching score will not be calculated.
+                  No criteria yet. Add at least one criterion or use Auto-suggest with AI
                 </div>
               )}
-              <footer>
+              <footer title={isEditingCriteria && projectedCriteriaWeight !== 100 ? 'Total weight must equal 100% before candidates are evaluated.' : undefined}>
                 <div>
-                  <button type="button" disabled={isCriteriaReadOnly || criteriaRows.length >= maxCriteriaCount} onClick={addCriterionRow}>+ Add Criterion</button>
-                  <button type="button" disabled={isCriteriaReadOnly} onClick={addCriterionRow}><i className="fa-solid fa-wand-magic-sparkles"></i> Re-suggest with AI</button>
+                  {isEditingCriteria ? (
+                    <button type="button" disabled={isCriteriaReadOnly || criteriaForms.length >= maxCriteriaCount} onClick={addCriterionRow}>+ Add Criterion</button>
+                  ) : (
+                    <button type="button" disabled={isCriteriaReadOnly} onClick={startEditCriteria}>Edit Criterion</button>
+                  )}
+                  <button type="button" disabled={isCriteriaReadOnly} onClick={isEditingCriteria ? addCriterionRow : startEditCriteria}><i className="fa-solid fa-wand-magic-sparkles"></i> Re-suggest with AI</button>
+                  {isEditingCriteria && (
+                    <button type="button" disabled={isCriteriaReadOnly || criteriaForms.length === 0} onClick={clearAllCriteria}>Clear All</button>
+                  )}
                 </div>
-                <strong className={normalizedCriteriaWeight === 100 ? styles.criteriaWeightComplete : styles.criteriaWeightInvalid}>Total Weightage: <span>{normalizedCriteriaWeight}%</span></strong>
+                <strong className={normalizedCriteriaWeight === 100 ? styles.criteriaWeightComplete : styles.criteriaWeightInvalid}>
+                  {isEditingCriteria ? 'Projected total: ' : 'Total Weightage: '}<span>{isEditingCriteria ? projectedCriteriaWeight : normalizedCriteriaWeight}%</span>
+                </strong>
               </footer>
+              {isEditingCriteria && (
+                <div className={styles.criteriaSaveBar}>
+                  <button type="button" disabled={isSavingCriteria} onClick={cancelCriterionForm}>Cancel</button>
+                  <button type="button" disabled={isCriterionSaveDisabled} onClick={saveCriteria}>{isSavingCriteria ? 'Saving...' : 'Save Criteria'}</button>
+                </div>
+              )}
+              {(isEditingCriteria ? projectedCriteriaWeight !== 100 && criteriaForms.length > 0 : normalizedCriteriaWeight !== 100 && jobCriteria.length > 0) && (
+                <p className={styles.criteriaTableError}>All criteria must have a total weight of 100%.</p>
+              )}
             </article>
-            <div className={styles.criteriaNote}>
-              <p>Existing scored applicants are not rescored after criteria changes. Only applicants submitted after saving use the new criteria order and values.</p>
-              {selectedJobIsClosed && <p>Closed jobs are view-only.</p>}
-            </div>
-            <div className={styles.criteriaActions}>
-              <button type="button" disabled={isCriteriaReadOnly} onClick={handleCancelCriteria}>Cancel</button>
-              <button type="button" disabled={isCriteriaReadOnly} onClick={saveCriteria}>{isSavingCriteria ? 'Saving...' : 'Save Criteria'}</button>
-            </div>
           </section>
-        )}
-        {isCriteriaCancelConfirmOpen && (
-          <ConfirmActionModal
-            isSubmitting={isSavingCriteria}
-            title="Confirm Action"
-            message="Are you sure you want to cancel? Your changes will not be saved."
-            cancelLabel="Cancel"
-            confirmLabel="Confirm"
-            onCancel={() => setIsCriteriaCancelConfirmOpen(false)}
-            onConfirm={resetCriteriaRows}
-          />
         )}
         {jobConfirmAction && jobConfirmTarget && (
           <ConfirmActionModal

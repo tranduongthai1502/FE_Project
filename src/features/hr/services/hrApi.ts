@@ -102,6 +102,44 @@ function buildBackendJobPostingPayload(payload: JobPostingPayload) {
   }
 }
 
+function getJobCriteriaList(payload: any): any[] {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.content)) return payload.content
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.records)) return payload.records
+  if (Array.isArray(payload?.list)) return payload.list
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.data?.content)) return payload.data.content
+  if (Array.isArray(payload?.data?.items)) return payload.data.items
+  if (Array.isArray(payload?.data?.records)) return payload.data.records
+  if (Array.isArray(payload?.data?.list)) return payload.data.list
+  if (payload && typeof payload === 'object') return [payload]
+  return []
+}
+
+function normalizeJobCriteria(item: any): JobCriteriaResponse | null {
+  if (!item || typeof item !== 'object') return null
+
+  const id = String(item.id ?? item.criteriaId ?? '')
+  const jobId = String(item.jobId ?? item.job?.id ?? '')
+  const criterionName = String(item.criterionName ?? item.name ?? '')
+
+  if (!id && !criterionName) return null
+
+  return {
+    id,
+    jobId,
+    category: item.category,
+    criterionName,
+    name: criterionName,
+    weight: item.weight === undefined || item.weight === null ? undefined : Number(item.weight),
+    description: item.description ?? '',
+    sortOrder: item.sortOrder === undefined || item.sortOrder === null ? undefined : Number(item.sortOrder),
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }
+}
+
 export const hrApi = {
   async getJobPostings(params?: AdminListParams<JobListFilters>) {
     const request = buildJobListRequest(params)
@@ -157,23 +195,26 @@ export const hrApi = {
     const backendRequests = requests.map((req) => ({
       jobId: req.jobId,
       criterionName: req.criterionName || req.name || '',
-      category: req.category,
       description: req.description,
+      category: req.category,
       weight: req.weight,
-      sortOrder: req.sortOrder,
     }))
     const response = await axiosClient.post('/api/job-criteria', backendRequests)
-    return getResponsePayload(response)
+    return getJobCriteriaList(getResponsePayload(response))
+      .map((item) => normalizeJobCriteria(item))
+      .filter((item): item is JobCriteriaResponse => Boolean(item))
   },
 
   async getJobCriteriaById(id: string): Promise<JobCriteriaResponse> {
     const response = await axiosClient.get(`/api/job-criteria/${encodeURIComponent(id)}`)
-    return getResponsePayload(response)
+    return normalizeJobCriteria(getResponsePayload(response)) as JobCriteriaResponse
   },
 
   async getJobCriteriaByJobId(jobId: string): Promise<JobCriteriaResponse[]> {
     const response = await axiosClient.get(`/api/job-criteria/job/${encodeURIComponent(jobId)}`)
-    return getResponsePayload(response)
+    return getJobCriteriaList(getResponsePayload(response))
+      .map((item) => normalizeJobCriteria(item))
+      .filter((item): item is JobCriteriaResponse => Boolean(item))
   },
 
   async updateJobCriteria(id: string, payload: JobCriteriaPayload): Promise<JobCriteriaResponse> {
@@ -183,10 +224,9 @@ export const hrApi = {
       category: payload.category,
       description: payload.description,
       weight: payload.weight,
-      sortOrder: payload.sortOrder,
     }
     const response = await axiosClient.put(`/api/job-criteria/${encodeURIComponent(id)}`, backendPayload)
-    return getResponsePayload(response)
+    return normalizeJobCriteria(getResponsePayload(response)) as JobCriteriaResponse
   },
 
   async deleteJobCriteria(id: string) {
