@@ -55,6 +55,7 @@ const jobFormRefreshViewKey = 'jobfusion.hr.jobFormRefreshView'
 const hrJobsPath = '/hr/jobs'
 const hrCreateJobPostingPath = '/hr/jobs/createjobposting'
 const hrGenerateJobAiPath = '/hr/jobs/createjobposting/generatewithai'
+const hrJobDetailPathPrefix = `${hrJobsPath}/`
 
 type ToastTrigger = (message: string, type?: 'success' | 'error') => void
 
@@ -64,6 +65,49 @@ function JobFieldError({ message }: { message?: string }) {
       {message || requiredJobFieldMessage}
     </small>
   )
+}
+
+const calendarWeekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+function getDateInputValue(value?: string) {
+  return value ? value.slice(0, 10) : ''
+}
+
+function formatDeadlineDisplay(value?: string) {
+  const dateValue = getDateInputValue(value)
+  if (!dateValue) return ''
+  const [year, month, day] = dateValue.split('-')
+  return year && month && day ? `${day}/${month}/${year}` : ''
+}
+
+function getCalendarMonth(value?: string) {
+  const dateValue = getDateInputValue(value)
+  if (dateValue) {
+    const [year, month] = dateValue.split('-').map(Number)
+    if (Number.isFinite(year) && Number.isFinite(month)) return new Date(year, month - 1, 1)
+  }
+  const today = new Date()
+  return new Date(today.getFullYear(), today.getMonth(), 1)
+}
+
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function getCalendarDays(monthDate: Date) {
+  const year = monthDate.getFullYear()
+  const month = monthDate.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const startDate = new Date(year, month, 1 - firstDay.getDay())
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + index)
+    return date
+  })
 }
 
 function DownloadJobIcon() {
@@ -86,6 +130,14 @@ function CriteriaTrashIcon() {
   return (
     <svg width="40" height="31" viewBox="0 0 40 31" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <path d="M12.5 24.25C12.5 24.913 12.7634 25.5489 13.2322 26.0178C13.7011 26.4866 14.337 26.75 15 26.75H25C25.663 26.75 26.2989 26.4866 26.7678 26.0178C27.2366 25.5489 27.5 24.913 27.5 24.25V9.25H12.5V24.25ZM15 11.75H25V24.25H15V11.75ZM24.375 5.5L23.125 4.25H16.875L15.625 5.5H11.25V8H28.75V5.5H24.375Z" fill="#565E74" />
+    </svg>
+  )
+}
+
+function CriteriaAiSuggestIcon() {
+  return (
+    <svg width="15" height="14" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <path d="M6 8.38125L6.75 6.75L8.38125 6L6.75 5.25L6 3.61875L5.25 5.25L3.61875 6L5.25 6.75L6 8.38125ZM6 12L4.125 7.875L0 6L4.125 4.125L6 0L7.875 4.125L12 6L7.875 7.875L6 12ZM12 13.5L11.0625 11.4375L9 10.5L11.0625 9.5625L12 7.5L12.9375 9.5625L15 10.5L12.9375 11.4375L12 13.5Z" fill="#5B4039" />
     </svg>
   )
 }
@@ -172,7 +224,19 @@ function JobsEmptyState() {
 
 function getHrJobViewFromPath(pathname: string): 'list' | 'detail' | 'create' | 'edit' | 'ai' {
   if (pathname === hrGenerateJobAiPath) return 'ai'
-  return pathname === hrCreateJobPostingPath ? 'create' : 'list'
+  if (pathname === hrCreateJobPostingPath) return 'create'
+  if (pathname.startsWith(hrJobDetailPathPrefix)) return 'detail'
+  return 'list'
+}
+
+function getHrJobDetailPath(jobId: string) {
+  return `${hrJobsPath}/${encodeURIComponent(jobId)}`
+}
+
+function getHrJobIdFromPath(pathname: string) {
+  if (pathname === hrCreateJobPostingPath || pathname === hrGenerateJobAiPath) return ''
+  if (!pathname.startsWith(hrJobDetailPathPrefix)) return ''
+  return decodeURIComponent(pathname.slice(hrJobDetailPathPrefix.length).split('/')[0] || '')
 }
 
 function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: boolean; onHome: () => void; triggerToast?: ToastTrigger }) {
@@ -195,6 +259,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [salaryInputValues, setSalaryInputValues] = useState({ salaryMin: '', salaryMax: '' })
   const [jobFieldErrors, setJobFieldErrors] = useState<JobFieldErrors>({})
   const [isSavingJob, setIsSavingJob] = useState(false)
+  const [isDeadlineCalendarOpen, setIsDeadlineCalendarOpen] = useState(false)
+  const [deadlineCalendarMonth, setDeadlineCalendarMonth] = useState(() => getCalendarMonth(emptyJobForm.applicationDeadline))
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
   const [jobConfirmAction, setJobConfirmAction] = useState<JobConfirmAction>(null)
   const [jobConfirmTarget, setJobConfirmTarget] = useState<JobPosting | null>(null)
@@ -208,6 +274,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [deletedCriteriaIds, setDeletedCriteriaIds] = useState<string[]>([])
   const [isLoadingCriteria, setIsLoadingCriteria] = useState(false)
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
+  const [pendingCriteriaCancelAction, setPendingCriteriaCancelAction] = useState<(() => void) | null>(null)
   const activeJobCount = jobStats?.totalActivePostings ?? jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
@@ -309,6 +376,38 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }, [location.pathname])
 
   useEffect(() => {
+    const jobId = getHrJobIdFromPath(location.pathname)
+    if (!jobId) return
+    if (selectedJob?.id === jobId) return
+
+    let isActive = true
+    setJobView('detail')
+    setJobDetailTab('overview')
+    setJobCriteria([])
+    setIsEditingCriteria(false)
+    setCriteriaForms([])
+    setCriteriaFieldErrors({})
+    setDeletedCriteriaIds([])
+
+    hrApi.getJobPostingById(jobId)
+      .then((job) => {
+        if (!isActive) return
+        setSelectedJob(job)
+      })
+      .catch((error) => {
+        if (!isActive) return
+        triggerToast?.(getAdminErrorMessage(error, 'Failed to load job posting.'), 'error')
+        setSelectedJob(null)
+        setJobView('list')
+        navigate(hrJobsPath)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [location.pathname, navigate, selectedJob?.id, triggerToast])
+
+  useEffect(() => {
     if (jobView !== 'detail' || jobDetailTab !== 'criteria' || !selectedJob?.id) return
 
     let isActive = true
@@ -394,13 +493,30 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       return { ...currentErrors, [clientId]: nextFormErrors }
     })
   }
-  const cancelCriterionForm = () => {
-    if (isSavingCriteria) return
-
+  const discardCriterionFormChanges = () => {
     setIsEditingCriteria(false)
     setCriteriaForms([])
     setCriteriaFieldErrors({})
     setDeletedCriteriaIds([])
+  }
+  const requestCriteriaCancel = (nextAction?: () => void) => {
+    if (isSavingCriteria) return
+
+    if (!isEditingCriteria) {
+      nextAction?.()
+      return
+    }
+
+    setPendingCriteriaCancelAction(() => nextAction || (() => undefined))
+  }
+  const cancelCriterionForm = () => {
+    requestCriteriaCancel()
+  }
+  const confirmCriteriaCancel = () => {
+    const nextAction = pendingCriteriaCancelAction
+    discardCriterionFormChanges()
+    setPendingCriteriaCancelAction(null)
+    nextAction?.()
   }
   const removeDraftCriterion = (clientId: string) => {
     if (isSavingCriteria) return
@@ -419,6 +535,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }
   const getCriteriaTotalWithForm = () => {
     const savedTotal = jobCriteria.reduce((total, item) => total + (Number(item.weight) || 0), 0)
+    if (isEditingCriteria && criteriaForms.length === 0) return 0
     if (criteriaForms.length === 0) return savedTotal
 
     const draftTotal = criteriaForms.reduce((total, form) => {
@@ -454,6 +571,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
         rowErrors.name = 'Criterion name must be unique in this job.'
       }
       if (!criteriaCategories.includes(row.category)) rowErrors.category = 'Category is required.'
+      if (!row.description) rowErrors.description = 'Description is required.'
       if (row.description.length > criteriaDescriptionLimit) rowErrors.description = `Must be ${criteriaDescriptionLimit} characters or less.`
       if (!/^\d+(\.\d)?$/.test(row.weight) || !Number.isFinite(numericWeight) || numericWeight < 1 || numericWeight > 100) {
         rowErrors.weight = 'Must be between 1 and 100.'
@@ -468,9 +586,10 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }
   const saveCriteria = async () => {
     if (isActionLocked || isSavingCriteria || isClosedJobStatus(selectedJob?.status) || !selectedJob?.id || !isEditingCriteria) return
+    const isSavingEmptyCriteriaSet = criteriaForms.length === 0
     const validRows = validateCriterionForms()
     if (!validRows) return
-    if (Math.round(getCriteriaTotalWithForm() * 10) / 10 !== 100) {
+    if (!isSavingEmptyCriteriaSet && Math.round(getCriteriaTotalWithForm() * 10) / 10 !== 100) {
       triggerToast?.('Total weight must equal 100% before saving.', 'error')
       return
     }
@@ -479,23 +598,15 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     try {
       await Promise.all(deletedCriteriaIds.map((id) => hrApi.deleteJobCriteria(id)))
 
-      const existingRows = validRows.filter((row) => row.id)
-      await Promise.all(existingRows.map((row) => hrApi.updateJobCriteria(row.id as string, {
-        jobId: selectedJob.id,
-        criterionName: row.name,
-        category: row.category,
-        description: row.description,
-        weight: Number(row.weight),
-      })))
-
-      const newRows = validRows.filter((row) => !row.id)
-      if (newRows.length > 0) {
-        await hrApi.createJobCriteria(newRows.map((row) => ({
+      if (validRows.length > 0) {
+        await hrApi.createJobCriteria(validRows.map((row, index) => ({
+          id: row.id,
           jobId: selectedJob.id,
           criterionName: row.name,
           category: row.category,
           description: row.description,
           weight: Number(row.weight),
+          sortOrder: index + 1,
         })))
       }
       await reloadJobCriteria(selectedJob.id)
@@ -554,16 +665,16 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }
   const getInputClassName = (hasError?: boolean) => (hasError ? styles.jobInputError : undefined)
   const openDeadlinePicker = () => {
-    const input = deadlineInputRef.current
-    if (!input) return
-
-    if ('showPicker' in input && typeof input.showPicker === 'function') {
-      input.showPicker()
-      return
-    }
-
-    input.focus()
-    input.click()
+    setDeadlineCalendarMonth(getCalendarMonth(jobForm.applicationDeadline))
+    setIsDeadlineCalendarOpen((isOpen) => !isOpen)
+  }
+  const selectDeadlineDate = (date: Date) => {
+    updateJobFormField('applicationDeadline', new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString())
+    setIsDeadlineCalendarOpen(false)
+  }
+  const clearDeadlineDate = () => {
+    updateJobFormField('applicationDeadline', '')
+    setIsDeadlineCalendarOpen(false)
   }
   const openCreateJob = () => {
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
@@ -638,7 +749,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobDetailTab('overview')
     setJobCriteria([])
     setJobView('detail')
-    updateHrJobsPath(hrJobsPath)
+    updateHrJobsPath(getHrJobDetailPath(job.id))
     try {
       setSelectedJob(await hrApi.getJobPostingById(job.id))
     } catch {
@@ -784,14 +895,25 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     const normalizedCriteriaWeight = Math.round(totalCriteriaWeight * 10) / 10
     const isCriteriaReadOnly = selectedJobIsClosed || isActionLocked || isSavingCriteria
     const projectedCriteriaWeight = Math.round(getCriteriaTotalWithForm() * 10) / 10
-    const isCriterionSaveDisabled = isCriteriaReadOnly || !isEditingCriteria || projectedCriteriaWeight !== 100 || (criteriaForms.length === 0 && deletedCriteriaIds.length === 0)
+    const isSavingEmptyCriteriaSet = criteriaForms.length === 0
+    const isCriterionSaveDisabled = isCriteriaReadOnly || !isEditingCriteria || (!isSavingEmptyCriteriaSet && (criteriaForms.length === 0 || projectedCriteriaWeight !== 100))
+    const jobStatusStat = selectedJobIsClosed
+      ? { label: '', value: 'CLOSED', helper: 'Position Filled' }
+      : selectedJobIsDraft
+        ? { label: '', value: 'NOT YET PUBLISH', helper: '' }
+        : { label: 'Days Open', value: String(getDaysOpen(selectedJob.createdAt)), helper: daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left` }
+    const hiringTeamMessage = selectedJobIsClosed
+      ? 'This posting is closed. No new applications are being accepted.'
+      : selectedJobIsDraft
+        ? 'This posting is a draft and not visible to candidates yet.'
+        : '3 collaborators assigned to this role'
 
     return (
       <div className={`role-content ${styles.jobsContent}`}>
         <Breadcrumb items={[
-          { label: 'Home', onClick: onHome },
-          { label: 'Jobs', onClick: () => { setJobView('list'); updateHrJobsPath(hrJobsPath) } },
-          { label: 'Job Detail', onClick: () => setJobDetailTab('overview') },
+          { label: 'Home', onClick: () => requestCriteriaCancel(onHome) },
+          { label: 'Jobs', onClick: () => requestCriteriaCancel(() => { setJobView('list'); updateHrJobsPath(hrJobsPath) }) },
+          { label: 'Job Detail', onClick: () => requestCriteriaCancel(() => setJobDetailTab('overview')) },
           ...(jobDetailTab === 'criteria' ? [{ label: 'Job Criteria Setup' }] : []),
         ]} />
         <div className={styles.jobsHeader}>
@@ -809,8 +931,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           )}
         </div>
         <div className={styles.jobDetailTabs}>
-          <button type="button" className={jobDetailTab === 'overview' ? styles.activeJobDetailTab : undefined} onClick={() => setJobDetailTab('overview')}>Job Overview</button>
-          <button type="button" className={jobDetailTab === 'criteria' ? styles.activeJobDetailTab : undefined} onClick={() => setJobDetailTab('criteria')}>Criteria Set</button>
+          <button type="button" className={jobDetailTab === 'overview' ? styles.activeJobDetailTab : undefined} onClick={() => requestCriteriaCancel(() => setJobDetailTab('overview'))}>Job Overview</button>
+          <button type="button" className={jobDetailTab === 'criteria' ? styles.activeJobDetailTab : undefined} onClick={() => requestCriteriaCancel(() => setJobDetailTab('criteria'))}>Criteria Set</button>
         </div>
         {jobDetailTab === 'overview' ? (
           <section className={styles.jobDetailGrid}>
@@ -835,7 +957,11 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             <aside className={styles.jobSidePanel}>
               <div className={styles.jobStatsRow}>
                 <section><small>Applicants</small><strong>{selectedJob.applicantCount}</strong><span>+8 this week</span></section>
-                <section><small>Days Open</small><strong>{getDaysOpen(selectedJob.createdAt)}</strong><span>{daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left`}</span></section>
+                <section>
+                  {jobStatusStat.label && <small>{jobStatusStat.label}</small>}
+                  <strong className={!selectedJobIsOpen ? styles.jobStatusStatValue : undefined}>{jobStatusStat.value}</strong>
+                  {jobStatusStat.helper && <span>{jobStatusStat.helper}</span>}
+                </section>
               </div>
               <section className={styles.funnelHealthCard}>
                 <h3><i className="fa-solid fa-square-poll-vertical"></i> Funnel Health</h3>
@@ -860,7 +986,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               <section className={styles.hiringTeamCard}>
                 <h3>Hiring Team</h3>
                 <div><span>JD</span><span>AS</span><span>RL</span><button type="button">+</button></div>
-                <p>3 collaborators assigned to this role</p>
+                <p>{hiringTeamMessage}</p>
               </section>
             </aside>
           </section>
@@ -900,7 +1026,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                     <small aria-hidden={!rowErrors.name}>{rowErrors.name || 'Criterion name error'}</small>
                   </label>
                   <label>
-                    <span>Description</span>
+                    <span>Description *</span>
                     <textarea value={form.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} placeholder="Describe what this criterion evaluates" />
                     <small aria-hidden={!rowErrors.description}>{rowErrors.description || 'Description error'}</small>
                   </label>
@@ -924,7 +1050,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 </div>
                 )
               })}
-              {!isLoadingCriteria && jobCriteria.length === 0 && !isEditingCriteria && (
+              {!isLoadingCriteria && ((isEditingCriteria && criteriaForms.length === 0) || (!isEditingCriteria && jobCriteria.length === 0)) && (
                 <div className={styles.criteriaTableState}>
                   No criteria yet. Add at least one criterion or use Auto-suggest with AI
                 </div>
@@ -936,26 +1062,37 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   ) : (
                     <button type="button" disabled={isCriteriaReadOnly} onClick={startEditCriteria}>Edit Criterion</button>
                   )}
-                  <button type="button" disabled={isCriteriaReadOnly} onClick={isEditingCriteria ? addCriterionRow : startEditCriteria}><i className="fa-solid fa-wand-magic-sparkles"></i> Re-suggest with AI</button>
+                  <button type="button" disabled={isCriteriaReadOnly} onClick={isEditingCriteria ? addCriterionRow : startEditCriteria}><CriteriaAiSuggestIcon /> Re-suggest with AI</button>
                   {isEditingCriteria && (
                     <button type="button" disabled={isCriteriaReadOnly || criteriaForms.length === 0} onClick={clearAllCriteria}>Clear All</button>
                   )}
                 </div>
-                <strong className={normalizedCriteriaWeight === 100 ? styles.criteriaWeightComplete : styles.criteriaWeightInvalid}>
-                  {isEditingCriteria ? 'Projected total: ' : 'Total Weightage: '}<span>{isEditingCriteria ? projectedCriteriaWeight : normalizedCriteriaWeight}%</span>
+                <strong className={(isEditingCriteria ? projectedCriteriaWeight : normalizedCriteriaWeight) === 100 ? styles.criteriaWeightComplete : styles.criteriaWeightInvalid}>
+                  Total Weightage: <span>{isEditingCriteria ? projectedCriteriaWeight : normalizedCriteriaWeight}%</span>
                 </strong>
               </footer>
-              {isEditingCriteria && (
-                <div className={styles.criteriaSaveBar}>
-                  <button type="button" disabled={isSavingCriteria} onClick={cancelCriterionForm}>Cancel</button>
-                  <button type="button" disabled={isCriterionSaveDisabled} onClick={saveCriteria}>{isSavingCriteria ? 'Saving...' : 'Save Criteria'}</button>
-                </div>
-              )}
               {(isEditingCriteria ? projectedCriteriaWeight !== 100 && criteriaForms.length > 0 : normalizedCriteriaWeight !== 100 && jobCriteria.length > 0) && (
                 <p className={styles.criteriaTableError}>All criteria must have a total weight of 100%.</p>
               )}
             </article>
+            {isEditingCriteria && (
+              <div className={styles.criteriaSaveBar}>
+                <button type="button" disabled={isSavingCriteria} onClick={cancelCriterionForm}>Cancel</button>
+                <button type="button" disabled={isCriterionSaveDisabled} onClick={saveCriteria}>{isSavingCriteria ? 'Saving...' : 'Save Criteria'}</button>
+              </div>
+            )}
           </section>
+        )}
+        {pendingCriteriaCancelAction !== null && (
+          <ConfirmActionModal
+            isSubmitting={isSavingCriteria}
+            title="Confirm Action"
+            message="Are you sure you want to cancel? Your changes will not be saved."
+            cancelLabel="Cancel"
+            confirmLabel="Confirm"
+            onCancel={() => setPendingCriteriaCancelAction(null)}
+            onConfirm={confirmCriteriaCancel}
+          />
         )}
         {jobConfirmAction && jobConfirmTarget && (
           <ConfirmActionModal
@@ -1125,13 +1262,43 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 </div>
                 <label className={styles.deadlineField}>
                   <span>Application Deadline</span>
-                  <div className={styles.iconInput}>
+                  <div className={`${styles.iconInput} ${styles.deadlinePickerShell}`}>
                     <button type="button" className={styles.datePickerButton} onClick={openDeadlinePicker} aria-label="Open application deadline calendar">
                       <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4C0 3.45 0.195833 2.97917 0.5875 2.5875C0.979167 2.19583 1.45 2 2 2H3V0H5V2H13V0H15V2H16C16.55 2 17.0208 2.19583 17.4125 2.5875C17.8042 2.97917 18 3.45 18 4V18C18 18.55 17.8042 19.0208 17.4125 19.4125C17.0208 19.8042 16.55 20 16 20H2ZM2 18H16V8H2V18ZM2 6H16V4H2V6ZM2 6V4V6Z" fill="#565E74" />
                       </svg>
                     </button>
-                    <input ref={deadlineInputRef} className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="date" value={jobForm.applicationDeadline.slice(0, 10)} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(e) => updateJobFormField('applicationDeadline', e.target.value ? new Date(e.target.value).toISOString() : '')} />
+                    <input ref={deadlineInputRef} className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="text" value={formatDeadlineDisplay(jobForm.applicationDeadline)} maxLength={FIELD_LENGTH_LIMITS.defaultText} onClick={openDeadlinePicker} onFocus={() => setDeadlineCalendarMonth(getCalendarMonth(jobForm.applicationDeadline))} onChange={() => {}} placeholder="dd/mm/yyyy" readOnly />
+                    {isDeadlineCalendarOpen && (
+                      <div className={styles.deadlineCalendar}>
+                        <header>
+                          <button type="button" onClick={() => setDeadlineCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} aria-label="Previous month">‹</button>
+                          <strong>{deadlineCalendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</strong>
+                          <button type="button" onClick={() => setDeadlineCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} aria-label="Next month">›</button>
+                        </header>
+                        <div className={styles.deadlineCalendarWeekdays}>
+                          {calendarWeekdays.map((day) => <span key={day}>{day}</span>)}
+                        </div>
+                        <div className={styles.deadlineCalendarGrid}>
+                          {getCalendarDays(deadlineCalendarMonth).map((date) => {
+                            const dateKey = getLocalDateKey(date)
+                            const isSelected = dateKey === getDateInputValue(jobForm.applicationDeadline)
+                            const isToday = dateKey === getLocalDateKey(new Date())
+                            const isOutsideMonth = date.getMonth() !== deadlineCalendarMonth.getMonth()
+
+                            return (
+                              <button type="button" className={`${isSelected ? styles.selectedCalendarDay : ''} ${isToday ? styles.todayCalendarDay : ''} ${isOutsideMonth ? styles.outsideCalendarDay : ''}`} key={dateKey} onClick={() => selectDeadlineDate(date)}>
+                                {date.getDate()}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <footer>
+                          <button type="button" onClick={clearDeadlineDate}>Clear</button>
+                          <button type="button" onClick={() => selectDeadlineDate(new Date())}>Today</button>
+                        </footer>
+                      </div>
+                    )}
                   </div>
                   <JobFieldError message={jobFieldErrors.applicationDeadline} />
                 </label>
@@ -1306,13 +1473,13 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <span>{job.applicantCount}</span>
                 <span>{formatJobDate(job.createdAt)}</span>
                 <div className={styles.jobsActions}>
+                  <button type="button" className="icon-tooltip" data-tooltip="Edit" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><EditJobIcon /></button>
                   {(jobIsDraft || jobIsClosed) && (
                     <button type="button" className="icon-tooltip" data-tooltip="Open" aria-label={`Open ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('open', job) }}><OpenJobIcon /></button>
                   )}
                   {jobIsOpen && (
                     <button type="button" className="icon-tooltip" data-tooltip="Close" aria-label={`Close ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('close', job) }}><CloseJobIcon /></button>
                   )}
-                  <button type="button" className="icon-tooltip" data-tooltip="Edit" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><EditJobIcon /></button>
                 </div>
               </article>
             )
@@ -1411,74 +1578,78 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
         </div>
 
         <div className={styles.dashboardGrid}>
-          <section className={`role-panel ${styles.activityPanel}`}>
-            <div className="role-panel-head">
-              <h2>Recent Activity</h2>
-              <a href="#activity">View All</a>
-            </div>
-            <article>
-              <i className="fa-solid fa-headset"></i>
-              <div><strong>AI parsed 50 CVs for Senior React Developer role.</strong><small>2 minutes ago - Automated</small></div>
-              <span>Match 92%</span>
-            </article>
-            <article>
-              <i className="fa-solid fa-user-plus"></i>
-              <div><strong>New application from Sarah Chen for UX Lead.</strong><small>45 minutes ago - LinkedIn Import</small></div>
-              <b></b>
-            </article>
-            <article className={styles.urgent}>
-              <i className="fa-solid fa-exclamation"></i>
-              <div><strong>URGENT: Interview with Marcus V. is starting in 15 mins.</strong><small>In progress - AI Interviewer Ready</small></div>
-              <button type="button" disabled={isActionLocked}>Join</button>
-            </article>
-            <article>
-              <i className="fa-regular fa-circle-check"></i>
-              <div><strong>Job Posting &quot;Cloud Architect&quot; successfully published.</strong><small>2 hours ago - Manual</small></div>
-            </article>
-          </section>
-
-          <section className={`role-panel ${styles.quickPanel}`}>
-            <h2>Quick Actions</h2>
-            <div>
-              <button type="button" disabled={isActionLocked}><i className="fa-regular fa-file-lines"></i> Parse Resume</button>
-              <button type="button" disabled={isActionLocked}><i className="fa-regular fa-envelope"></i> Blast Email</button>
-              <button type="button" disabled={isActionLocked}><i className="fa-solid fa-video"></i> AI Screening</button>
-              <button type="button" disabled={isActionLocked}><i className="fa-solid fa-share-nodes"></i> Social Share</button>
-            </div>
-          </section>
-
-          <section className={`role-panel ${styles.pipelinePanel}`}>
-            <h2>Pipeline Health</h2>
-            <div className={styles.pipelineTrack}><span></span><span></span><span></span><span></span></div>
-            <footer><span>Sourced (450)</span><span>Screened (120)</span><span>Interview (24)</span><span>Offer (4)</span></footer>
-          </section>
-
-          <section className={`role-panel ${styles.topPicks}`}>
-            <div className="role-panel-head">
-              <h2>Top Picks</h2>
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M18 8L16.75 5.25L14 4L16.75 2.75L18 0L19.25 2.75L22 4L19.25 5.25L18 8ZM18 22L16.75 19.25L14 18L16.75 16.75L18 14L19.25 16.75L22 18L19.25 19.25L18 22ZM8 19L5.5 13.5L0 11L5.5 8.5L8 3L10.5 8.5L16 11L10.5 13.5L8 19ZM8 14.15L9 12L11.15 11L9 10L8 7.85L7 10L4.85 11L7 12L8 14.15Z" fill="#AD2B00" />
-              </svg>
-            </div>
-            {[
-              ['JD', 'Jordan Day', 'DevOps Engineer', '98%'],
-              ['ML', 'Maria Lopez', 'Data Scientist', '95%'],
-              ['BK', 'Ben King', 'Product Lead', '89%'],
-            ].map(([initials, name, title, score]) => (
-              <article key={name}>
-                <span>{initials}</span>
-                <div>
-                  <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
-                    <strong>{name}</strong>
-                  </span>
-                  <span className="table-name-tooltip" data-tooltip={title} title={title} tabIndex={0}>
-                    <small>{title}</small>
-                  </span>
-                </div>
-                <em>{score}</em>
+          <div className={styles.dashboardColumn}>
+            <section className={`role-panel ${styles.activityPanel}`}>
+              <div className="role-panel-head">
+                <h2>Recent Activity</h2>
+                <a href="#activity">View All</a>
+              </div>
+              <article>
+                <i className="fa-solid fa-headset"></i>
+                <div><strong>AI parsed 50 CVs for Senior React Developer role.</strong><small>2 minutes ago - Automated</small></div>
+                <span>Match 92%</span>
               </article>
-            ))}
-          </section>
+              <article>
+                <i className="fa-solid fa-user-plus"></i>
+                <div><strong>New application from Sarah Chen for UX Lead.</strong><small>45 minutes ago - LinkedIn Import</small></div>
+                <b></b>
+              </article>
+              <article className={styles.urgent}>
+                <i className="fa-solid fa-exclamation"></i>
+                <div><strong>URGENT: Interview with Marcus V. is starting in 15 mins.</strong><small>In progress - AI Interviewer Ready</small></div>
+                <button type="button" disabled={isActionLocked}>Join</button>
+              </article>
+              <article>
+                <i className="fa-regular fa-circle-check"></i>
+                <div><strong>Job Posting &quot;Cloud Architect&quot; successfully published.</strong><small>2 hours ago - Manual</small></div>
+              </article>
+            </section>
+
+            <section className={`role-panel ${styles.pipelinePanel}`}>
+              <h2>Pipeline Health</h2>
+              <div className={styles.pipelineTrack}><span></span><span></span><span></span><span></span></div>
+              <footer><span>Sourced (450)</span><span>Screened (120)</span><span>Interview (24)</span><span>Offer (4)</span></footer>
+            </section>
+          </div>
+
+          <div className={styles.dashboardColumn}>
+            <section className={`role-panel ${styles.quickPanel}`}>
+              <h2>Quick Actions</h2>
+              <div>
+                <button type="button" disabled={isActionLocked}><i className="fa-regular fa-file-lines"></i> Parse Resume</button>
+                <button type="button" disabled={isActionLocked}><i className="fa-regular fa-envelope"></i> Blast Email</button>
+                <button type="button" disabled={isActionLocked}><i className="fa-solid fa-video"></i> AI Screening</button>
+                <button type="button" disabled={isActionLocked}><i className="fa-solid fa-share-nodes"></i> Social Share</button>
+              </div>
+            </section>
+
+            <section className={`role-panel ${styles.topPicks}`}>
+              <div className="role-panel-head">
+                <h2>Top Picks</h2>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M18 8L16.75 5.25L14 4L16.75 2.75L18 0L19.25 2.75L22 4L19.25 5.25L18 8ZM18 22L16.75 19.25L14 18L16.75 16.75L18 14L19.25 16.75L22 18L19.25 19.25L18 22ZM8 19L5.5 13.5L0 11L5.5 8.5L8 3L10.5 8.5L16 11L10.5 13.5L8 19ZM8 14.15L9 12L11.15 11L9 10L8 7.85L7 10L4.85 11L7 12L8 14.15Z" fill="#AD2B00" />
+                </svg>
+              </div>
+              {[
+                ['JD', 'Jordan Day', 'DevOps Engineer', '98%'],
+                ['ML', 'Maria Lopez', 'Data Scientist', '95%'],
+                ['BK', 'Ben King', 'Product Lead', '89%'],
+              ].map(([initials, name, title, score]) => (
+                <article key={name}>
+                  <span>{initials}</span>
+                  <div>
+                    <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
+                      <strong>{name}</strong>
+                    </span>
+                    <span className="table-name-tooltip" data-tooltip={title} title={title} tabIndex={0}>
+                      <small>{title}</small>
+                    </span>
+                  </div>
+                  <em>{score}</em>
+                </article>
+              ))}
+            </section>
+          </div>
         </div>
       </div>
       )}

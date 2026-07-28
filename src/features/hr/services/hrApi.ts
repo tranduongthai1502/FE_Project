@@ -193,11 +193,13 @@ export const hrApi = {
 
   async createJobCriteria(requests: JobCriteriaPayload[]): Promise<JobCriteriaResponse[]> {
     const backendRequests = requests.map((req) => ({
+      id: req.id,
       jobId: req.jobId,
       criterionName: req.criterionName || req.name || '',
       description: req.description,
       category: req.category,
       weight: req.weight,
+      sortOrder: req.sortOrder,
     }))
     const response = await axiosClient.post('/api/job-criteria', backendRequests)
     return getJobCriteriaList(getResponsePayload(response))
