@@ -9,6 +9,7 @@ export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, str
 
 const requiredFieldMessage = validationErrorMessages.requiredField
 const planNamePreviewLength = 20
+const domainInputMaxLength = 50
 
 function FieldError({ message }: { message?: string }) {
   return (
@@ -141,10 +142,10 @@ export function CreateTenantPage({
               <span>Domain / Identifier <b>*</b></span>
               <div className={fieldErrors.domain ? 'has-error' : ''}>
                 <input
-                  maxLength={FIELD_LENGTH_LIMITS.defaultText}
+                  maxLength={domainInputMaxLength}
                   aria-invalid={Boolean(fieldErrors.domain)}
                   value={form.domain}
-                  onChange={(event) => onChange('domain', event.target.value)}
+                  onChange={(event) => onChange('domain', event.target.value.slice(0, domainInputMaxLength))}
                   placeholder="acme"
                   required
                 />
