@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../services/adminApi'
 import {
@@ -236,15 +236,24 @@ export function TenantManagementView({
     setIsCreateModalOpen(isTenantCreateUrl(location.pathname))
   }, [location.pathname])
 
+  const getTenantFieldMaxLength = (field: keyof CreateTenantForm) => (
+    field === 'domain' ? 50 : FIELD_LENGTH_LIMITS.defaultText
+  )
+  const getTenantFieldMaxLengthMessage = (field: keyof CreateTenantForm) => (
+    `${field === 'domain' ? 'Domain' : 'This field'} must be ${getTenantFieldMaxLength(field)} characters or less.`
+  )
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
-    const nextValue =
-      field === 'companyName'
-        ? value.slice(0, FIELD_LENGTH_LIMITS.defaultText)
-        : field === 'domain'
-          ? value.slice(0, 50)
-          : value
+    const maxLength = getTenantFieldMaxLength(field)
+    const isOverMaxLength = value.length > maxLength
+    const nextValue = isOverMaxLength ? value.slice(0, maxLength) : value
     setTenantError('')
     setTenantFieldErrors((current) => {
+      if (isOverMaxLength) {
+        return {
+          ...current,
+          [field]: getTenantFieldMaxLengthMessage(field),
+        }
+      }
       if (!current[field]) return current
       const { [field]: _removed, ...nextErrors } = current
       return nextErrors
@@ -499,7 +508,9 @@ export function TenantManagementView({
     setActiveView('list')
     navigate(getSuperAdminViewPath('tenantManagement'))
   }
+  const isTenantActive = (tenant: Tenant) => getTenantStatusMeta(tenant.status).className === 'active'
   const requestDeleteTenant = (tenant: Tenant) => {
+    if (isTenantActive(tenant)) return
     setDeleteTenantTarget(tenant)
   }
   const confirmDeleteTenant = async () => {
@@ -512,14 +523,12 @@ export function TenantManagementView({
       await adminApi.deleteTenant(deleteTenantTarget.id)
       setTenants((currentTenants) => currentTenants.filter((tenant) => tenant.id !== deleteTenantTarget.id))
       setTenantDetail((tenant) => tenant?.id === deleteTenantTarget.id ? null : tenant)
-      if (selectedTenantId === deleteTenantTarget.id) {
-        closeTenantDetail()
-      }
+      closeTenantDetail()
       setDeleteTenantTarget(null)
       setRefreshTenantsKey((value) => value + 1)
-      triggerToast?.('Tenant deleted successfully.', 'success')
-    } catch (error) {
-      setTenantListError(getAdminErrorMessage(error, 'Failed to delete tenant.'))
+      triggerToast?.('Tenant permanently deleted.', 'success')
+    } catch {
+      setTenantListError('Error system. Please try again.')
     } finally {
       setIsDeletingTenant(false)
     }
@@ -557,10 +566,12 @@ export function TenantManagementView({
         planId,
         ...tenantAdminPayload,
       })
+      const activatedAt = nextStatus === 'ACTIVE' ? new Date().toISOString() : tenantAdminUser?.activatedAt
       setTenantDetail((tenant) => tenant?.id === currentTenant.id ? { ...tenant, status: nextStatus } : tenant)
       setTenants((currentTenants) => currentTenants.map((tenant) => (
         tenant.id === currentTenant.id ? { ...tenant, status: nextStatus } : tenant
       )))
+      setTenantAdminUser((user) => user ? { ...user, status: nextStatus, activatedAt } : user)
       setIsStatusConfirmOpen(false)
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.(`Tenant ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
@@ -578,6 +589,27 @@ export function TenantManagementView({
       return
     }
 
+    const nextPlan = planById.get(pendingTenantPlanId)
+    if (!nextPlan) return
+
+    const activeUsers = selectedTenant.userQuotaUsed || 0
+    const activeJobPostings = selectedTenant.activeJobPostingUsed || 0
+    const maxUsers = nextPlan.staffAccountUnlimited ? Number.POSITIVE_INFINITY : nextPlan.maxStaffAccount
+    const maxJobPostings = nextPlan.activeJobPostingUnlimited ? Number.POSITIVE_INFINITY : nextPlan.maxActiveJobPosting
+    const exceedsUserLimit = activeUsers > maxUsers
+    const exceedsJobPostingLimit = activeJobPostings > maxJobPostings
+
+    if (exceedsUserLimit || exceedsJobPostingLimit) {
+      const maxUsersLabel = nextPlan.staffAccountUnlimited ? 'Unlimited' : String(nextPlan.maxStaffAccount)
+      const maxJobPostingsLabel = nextPlan.activeJobPostingUnlimited ? 'Unlimited' : String(nextPlan.maxActiveJobPosting)
+      const message = `This tenant currently has ${activeUsers} active users / ${activeJobPostings} job postings, which exceeds the selected plan limits (${maxUsersLabel}/${maxJobPostingsLabel}). Please choose a higher plan or reduce usage before changing the plan.`
+      setPendingTenantPlanId(currentPlanId)
+      setTenantListError('')
+      triggerToast?.(message, 'error')
+      return
+    }
+
+    setTenantListError('')
     setIsPlanConfirmOpen(true)
   }
   const confirmUpdateTenantPlan = async () => {
@@ -597,6 +629,23 @@ export function TenantManagementView({
         planId: pendingTenantPlanId,
         ...tenantAdminPayload,
       })
+      const nextPlan = subscriptionPlans.find((plan) => plan.id === pendingTenantPlanId)
+      const planChangedAt = new Date().toISOString()
+      const nextTenant = {
+        ...selectedTenant,
+        startDate: planChangedAt,
+        subscriptionPlanId: pendingTenantPlanId,
+        subscriptionPlanDetail: nextPlan || selectedTenant.subscriptionPlanDetail,
+        subscriptionPlan: nextPlan?.name || selectedTenant.subscriptionPlan,
+        userQuotaLimit: nextPlan?.staffAccountUnlimited ? 0 : (nextPlan?.maxStaffAccount ?? selectedTenant.userQuotaLimit),
+        userQuotaUnlimited: nextPlan?.staffAccountUnlimited ?? selectedTenant.userQuotaUnlimited,
+        activeJobPostingLimit: nextPlan?.activeJobPostingUnlimited ? 0 : (nextPlan?.maxActiveJobPosting ?? selectedTenant.activeJobPostingLimit),
+        activeJobPostingUnlimited: nextPlan?.activeJobPostingUnlimited ?? selectedTenant.activeJobPostingUnlimited,
+      }
+      setTenantDetail((tenant) => tenant?.id === selectedTenant.id ? nextTenant : tenant)
+      setTenants((currentTenants) => currentTenants.map((tenant) => (
+        tenant.id === selectedTenant.id ? nextTenant : tenant
+      )))
       setIsPlanConfirmOpen(false)
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Subscription plan updated successfully.', 'success')
@@ -647,21 +696,23 @@ export function TenantManagementView({
     const tenantStatus = getTenantStatusMeta(selectedTenant?.status || '')
     const isActive = tenantStatus.isActive
     const activeSubscriptionPlan = nextSelectedPlan || selectedPlan
+    const isPreviewingPlanChange = Boolean(nextSelectedPlan && hasSelectedDifferentPlan)
     const hasUnlimitedStaffQuota = Boolean(activeSubscriptionPlan?.staffAccountUnlimited)
-    const hasUnlimitedJobQuota = Boolean(selectedTenant?.activeJobPostingUnlimited ?? activeSubscriptionPlan?.activeJobPostingUnlimited)
+    const hasUnlimitedJobQuota = Boolean(activeSubscriptionPlan?.activeJobPostingUnlimited)
     const staffLimit = hasUnlimitedStaffQuota
       ? 0
-      : selectedTenant?.userQuotaLimit || activeSubscriptionPlan?.maxStaffAccount || 0
+      : isPreviewingPlanChange
+        ? activeSubscriptionPlan?.maxStaffAccount || 0
+        : selectedTenant?.userQuotaLimit || activeSubscriptionPlan?.maxStaffAccount || 0
     const staffUsed = selectedTenant?.userQuotaUsed || 0
     const staffUsagePercent = getUsagePercent(staffUsed, staffLimit)
     const jobLimit = hasUnlimitedJobQuota
       ? 0
-      : selectedTenant?.activeJobPostingLimit || activeSubscriptionPlan?.maxActiveJobPosting || 0
+      : isPreviewingPlanChange
+        ? activeSubscriptionPlan?.maxActiveJobPosting || 0
+        : selectedTenant?.activeJobPostingLimit || activeSubscriptionPlan?.maxActiveJobPosting || 0
     const activeJobPostingUsed = selectedTenant?.activeJobPostingUsed || 0
     const jobUsagePercent = getUsagePercent(activeJobPostingUsed, jobLimit)
-    const efficiencyScore = selectedTenant?.efficiencyScore
-    const efficiencyScoreLabel = typeof efficiencyScore === 'number' ? `${Math.round(efficiencyScore)}%` : '-'
-    const efficiencyProgress = typeof efficiencyScore === 'number' ? Math.min(100, Math.max(0, Math.round(efficiencyScore))) : 0
     const quotaLabel = selectedTenant
       ? hasUnlimitedStaffQuota
         ? 'Unlimited'
@@ -672,20 +723,26 @@ export function TenantManagementView({
     const tenantDomain = selectedTenant?.domain ? `${selectedTenant.domain}.jobfusion.ai` : selectedTenant?.id || '-'
     const tenantIndustry = selectedTenant?.industry || 'Media & Advertising'
     const tenantRegion = selectedTenant?.region || 'VietNam'
-    const subscriptionPlanCreatedAt = activeSubscriptionPlan?.createdAt || selectedTenant?.subscriptionPlanDetail?.createdAt
-    const subscriptionExpirationDate = addDaysToDate(subscriptionPlanCreatedAt, 30)
+    const subscriptionStartDate = selectedTenant?.startDate || selectedTenant?.createdAt
+    const billingCycle = String(activeSubscriptionPlan?.billingCycle || selectedTenant?.billingCycle || '').trim().toUpperCase()
+    const expirationDaysToAdd = billingCycle === 'YEARLY'
+      ? 365
+      : billingCycle === 'SIX_MONTHLY' || billingCycle === '6_MONTHLY'
+        ? 149
+        : 29
+    const subscriptionExpirationDate = addDaysToDate(subscriptionStartDate, expirationDaysToAdd)
     const tenantExpirationDate = formatTenantDate(subscriptionExpirationDate)
-    const tenantStartDate = formatTenantDate(subscriptionPlanCreatedAt)
+    const tenantStartDate = formatTenantDate(subscriptionStartDate)
     const tenantCreatedDate = selectedTenant ? formatTenantDate(selectedTenant.createdAt) : '-'
     const monthlyBillingLabel = activeSubscriptionPlan
-      ? activeSubscriptionPlan.priceLabel || `$${formatCurrencyInput(activeSubscriptionPlan.monthlyPrice.toFixed(2))} / month`
+      ? activeSubscriptionPlan.priceLabel || `$${formatCurrencyInput((activeSubscriptionPlan.price ?? activeSubscriptionPlan.monthlyPrice).toFixed(2))} /month`
       : '-'
     const daysRemainingLabel = getDaysRemainingLabel(subscriptionExpirationDate)
     const tenantAdminFullName = tenantAdminUser?.fullName || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminFullName : '-')
     const tenantAdminEmail = tenantAdminUser?.email || (selectedTenant ? getTenantAdminPayload(selectedTenant).adminEmail : '-')
     const tenantAdminStatus = selectedTenant?.status || tenantAdminUser?.status || '-'
     const tenantAdminStatusMeta = getTenantStatusMeta(tenantAdminStatus)
-    const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.createdAt || '') || tenantAdminUser?.createdAt || tenantCreatedDate
+    const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.activatedAt || tenantAdminUser?.createdAt || '') || tenantAdminUser?.activatedAt || tenantAdminUser?.createdAt || tenantCreatedDate
     const canUpdateTenantStatus = tenantStatus.className !== 'pending'
     const statusActionLabel = isActive
       ? 'Deactivate Tenant'
@@ -724,9 +781,11 @@ export function TenantManagementView({
               <div className="tenant-detail-actions">
                 <button
                   type="button"
-                  className="tenant-detail-delete-button"
+                  className="tenant-detail-delete-button icon-tooltip"
+                  data-tooltip={isTenantActive(selectedTenant) ? 'Deactivate this tenant before deleting it.' : 'Delete'}
+                  title={isTenantActive(selectedTenant) ? 'Deactivate this tenant before deleting it.' : undefined}
                   onClick={() => requestDeleteTenant(selectedTenant)}
-                  disabled={isDeletingTenant}
+                  disabled={isDeletingTenant || isTenantActive(selectedTenant)}
                 >
                   Delete
                 </button>
@@ -779,13 +838,6 @@ export function TenantManagementView({
                     <i className="tenant-resource-bar jobs"><b style={{ width: `${hasUnlimitedJobQuota ? 100 : jobUsagePercent}%` }} /></i>
                     <small>{hasUnlimitedJobQuota ? 'Unlimited slots available' : `${Math.max(0, jobLimit - activeJobPostingUsed)} slots remaining`}</small>
                   </article>
-                  <article className="tenant-efficiency-row">
-                    <span>Efficiency Score</span>
-                    <strong style={{ '--tenant-efficiency': `${efficiencyProgress}%` } as CSSProperties}>
-                      <i></i>
-                      {efficiencyScoreLabel}
-                    </strong>
-                  </article>
                 </div>
               </section>
 
@@ -802,8 +854,13 @@ export function TenantManagementView({
                     value={pendingTenantPlanId}
                     disabled={isUpdatingTenantPlan || subscriptionPlans.length === 0}
                     placeholder="Select plan"
-                    options={subscriptionPlans.map((plan) => ({ value: plan.id, label: plan.name }))}
-                    onChange={setPendingTenantPlanId}
+                    options={subscriptionPlans
+                      .filter((plan) => plan.status.toLowerCase() === 'active')
+                      .map((plan) => ({ value: plan.id, label: plan.name }))}
+                    onChange={(nextValue) => {
+                      setTenantListError('')
+                      setPendingTenantPlanId(nextValue)
+                    }}
                   />
                   <button type="button" onClick={requestChangeTenantPlan} disabled={!hasSelectedDifferentPlan || isUpdatingTenantPlan}>
                     Change Plan
@@ -866,9 +923,9 @@ export function TenantManagementView({
               <ConfirmActionModal
                 isSubmitting={isDeletingTenant}
                 title="Confirm Action"
-                message={`Are you sure you want to delete ${deleteTenantTarget.name}? This action cannot be undone.`}
+                message={`Are you sure you want to permanently delete ${deleteTenantTarget.name}? This action cannot be undone.`}
                 cancelLabel="Cancel"
-                confirmLabel="Delete"
+                confirmLabel="Confirm"
                 submittingLabel="Deleting..."
                 onCancel={() => {
                   if (!isDeletingTenant) setDeleteTenantTarget(null)
@@ -950,7 +1007,7 @@ export function TenantManagementView({
         <div className="tenant-list-table-row tenant-list-table-head">
           <span>Full Name</span>
           <span>Subscription Plan</span>
-          <span>Monthly Price</span>
+          <span>Price</span>
           <span>Expiration Date</span>
           <span>User Quota</span>
           <span>Status</span>
@@ -974,9 +1031,9 @@ export function TenantManagementView({
               ? Math.min(100, Math.round((tenant.userQuotaUsed / tenant.userQuotaLimit) * 100))
               : 0
             const expirationDateLabel = formatPlanDate(tenant.expirationDate) || tenant.expirationDate || '-'
-            const monthlyPriceLabel = tenantPlan
-              ? tenantPlan.priceLabel || `$${formatCurrencyInput(tenantPlan.monthlyPrice.toFixed(2))} / month`
-              : '-'
+            const monthlyPriceLabel = tenant.priceLabel || (tenantPlan
+              ? tenantPlan.priceLabel || `$${formatCurrencyInput((tenantPlan.price ?? tenantPlan.monthlyPrice).toFixed(2))} /month`
+              : '-')
             const handleOpenTenantDetail = () => openTenantDetail(tenant.id)
 
             return (
@@ -1027,8 +1084,9 @@ export function TenantManagementView({
                     type="button"
                     className="icon-tooltip tenant-delete-action"
                     aria-label={`Delete ${tenant.name}`}
-                    data-tooltip="Delete"
-                    disabled={isDeletingTenant}
+                    data-tooltip={isTenantActive(tenant) ? 'Deactivate this tenant before deleting it.' : 'Delete'}
+                    title={isTenantActive(tenant) ? 'Deactivate this tenant before deleting it.' : undefined}
+                    disabled={isDeletingTenant || isTenantActive(tenant)}
                     onClick={(event) => {
                       event.stopPropagation()
                       requestDeleteTenant(tenant)
@@ -1064,9 +1122,9 @@ export function TenantManagementView({
         <ConfirmActionModal
           isSubmitting={isDeletingTenant}
           title="Confirm Action"
-          message={`Are you sure you want to delete ${deleteTenantTarget.name}? This action cannot be undone.`}
+          message={`Are you sure you want to permanently delete ${deleteTenantTarget.name}? This action cannot be undone.`}
           cancelLabel="Cancel"
-          confirmLabel="Delete"
+          confirmLabel="Confirm"
           submittingLabel="Deleting..."
           onCancel={() => {
             if (!isDeletingTenant) setDeleteTenantTarget(null)

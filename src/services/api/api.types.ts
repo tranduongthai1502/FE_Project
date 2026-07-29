@@ -139,23 +139,25 @@ export type CreatePlanFeature = {
 export type CreatePlanPayload = {
   name: string
   description: string
-  monthlyPrice: number
+  billingCycle: string
+  price: number
   maxStaffAccount: number | null
   staffAccountUnlimited: boolean
   maxActiveJobPosting: number | null
   activeJobPostingUnlimited: boolean
+  status: string
   features: CreatePlanFeature[]
 }
 
-export type UpdatePlanPayload = CreatePlanPayload & {
-  status: string
-}
+export type UpdatePlanPayload = CreatePlanPayload
 
 export type SubscriptionPlan = {
   id: string
   name: string
   description: string
   monthlyPrice: number
+  price?: number
+  billingCycle?: string
   maxStaffAccount: number
   staffAccountUnlimited: boolean
   maxActiveJobPosting: number
@@ -177,6 +179,9 @@ export type Tenant = {
   subscriptionPlanId?: string
   subscriptionPlanDetail?: SubscriptionPlan
   subscriptionPlan: string
+  price?: number
+  billingCycle?: string
+  priceLabel?: string
   expirationDate: string
   userQuotaUsed: number
   userQuotaLimit: number

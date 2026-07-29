@@ -53,6 +53,11 @@
   font-size: 10px;
 }
 
+.edit-plan-actions button[type='submit'] {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
 .edit-plan-actions button:first-of-type {
   border: 1px solid #d93408;
   background: #ffffff;
@@ -2159,31 +2164,40 @@
 
 .staff-empty-state > i {
   color: #f0d7d0;
-  font-size: 54px;
+  font-size: 116px;
+  margin: 0;
 }
 
 .staff-empty-state > span {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  margin-top: 22px;
-  border-radius: 7px;
-  background: #ff5a3d;
+  margin-top: 0;
+  margin-left: 20px;
+  border-radius: 8px;
+  background: #ff5238;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 34px;
+}
+
+.staff-empty-state > span i {
+  font-size: 17px;
+  line-height: 17px;
+  margin: 0;
 }
 
 .staff-empty-state strong {
-  margin-top: 22px;
-  color: #475467;
-  font-size: 12px;
+  margin-top: 28px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .staff-empty-state p {
   margin-top: 4px;
-  color: #667085;
-  font-size: 11px;
+  color: #526384;
+  font-size: 12px;
 }
 
 .create-staff-content {
@@ -3357,11 +3371,13 @@
 .tenant-detail-actions button.status-activate {
   background: #d93408;
   color: #ffffff;
+  font-weight: 700;
 }
 
 .tenant-detail-actions button.status-deactivate {
   background: #d93408;
   color: #ffffff;
+  font-weight: 700;
 }
 
 .tenant-detail-actions button.tenant-detail-delete-button {
@@ -3517,17 +3533,18 @@
 
 .tenant-resource-card {
   grid-column: span 4;
-  min-height: 220px;
+  align-self: start;
+  min-height: 0;
   background: #ffd9cf;
 }
 
 .tenant-resource-card header {
-  margin-bottom: 26px;
+  margin-bottom: 22px;
 }
 
 .tenant-resource-list {
   display: grid;
-  gap: 18px;
+  gap: 22px;
 }
 
 .tenant-resource-list article {
@@ -3535,8 +3552,7 @@
   gap: 7px;
 }
 
-.tenant-resource-list article > div,
-.tenant-efficiency-row {
+.tenant-resource-list article > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3583,38 +3599,6 @@
   color: #654941;
   font-size: 8px;
   font-weight: 500;
-}
-
-.tenant-efficiency-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 22px;
-  border-top: 1px solid #efb8aa;
-}
-
-.tenant-resource-list article.tenant-efficiency-row {
-  display: flex;
-}
-
-.tenant-efficiency-row > strong {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #bd2f08;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.tenant-efficiency-row > strong i {
-  width: 28px;
-  height: 28px;
-  display: inline-block;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at center, #ffd9cf 57%, transparent 58%),
-    conic-gradient(#bd2f08 var(--tenant-efficiency), rgba(189, 47, 8, 0.18) 0);
 }
 
 .tenant-subscription-card {
@@ -4620,6 +4604,15 @@
   white-space: nowrap;
 }
 
+.subscription-table-row > :last-child {
+  justify-self: center;
+}
+
+.subscription-table-head > :last-child {
+  width: 78px;
+  text-align: center;
+}
+
 .subscription-table-row .subscription-price-cell {
   font-weight: 900;
 }
@@ -4658,14 +4651,6 @@
   color: #98a2b3;
 }
 
-.subscription-table-row.inactive-plan-row svg path {
-  stroke: #98a2b3;
-}
-
-.subscription-table-row.inactive-plan-row .subscription-delete-action svg path {
-  fill: #98a2b3;
-}
-
 .subscription-table-row button {
   width: 28px;
   height: 28px;
@@ -4676,6 +4661,10 @@
   background: transparent;
   color: #344054;
   cursor: pointer;
+}
+
+.subscription-table-row.inactive-plan-row .subscription-table-actions button {
+  color: #344054;
 }
 
 .subscription-table-state {
@@ -4731,10 +4720,12 @@
 }
 
 .subscription-table-actions {
+  width: 78px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  overflow: visible;
 }
 
 .subscription-table-actions button svg {
@@ -4742,9 +4733,22 @@
   height: 28px;
 }
 
+.subscription-table-actions .subscription-delete-action svg {
+  width: 27px;
+  height: 27px;
+}
+
+.subscription-table-actions button svg path {
+  vector-effect: non-scaling-stroke;
+}
+
 .subscription-table-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.subscription-table-actions .subscription-delete-action:disabled {
+  opacity: 0.4;
 }
 
 .subscription-delete-action:hover svg path,
@@ -5303,6 +5307,30 @@
 
 .description-field {
   grid-row: span 2;
+}
+
+.plan-price-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.plan-price-row select {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 38px 0 14px;
+  border: 1px solid #efc3b8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 400;
+  outline: 0;
+}
+
+.plan-price-row select:focus {
+  border-color: #d93408;
+  box-shadow: 0 0 0 2px rgba(217, 52, 8, 0.08);
 }
 
 .price-input,
@@ -7251,7 +7279,7 @@
 
   .tenant-list-table-row > :nth-child(1)::before { content: 'Tenant'; }
   .tenant-list-table-row > :nth-child(2)::before { content: 'Plan'; }
-  .tenant-list-table-row > :nth-child(3)::before { content: 'Monthly Price'; }
+  .tenant-list-table-row > :nth-child(3)::before { content: 'Price'; }
   .tenant-list-table-row > :nth-child(4)::before { content: 'Expires'; }
   .tenant-list-table-row > :nth-child(5)::before { content: 'Quota'; }
   .tenant-list-table-row > :nth-child(6)::before { content: 'Status'; }
@@ -7470,6 +7498,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.staff-log-subject h2.staff-truncate-text {
+  margin-bottom: 5px;
 }
 
 .staff-list-table-head {
@@ -7954,12 +7986,12 @@
 
 .staff-log-content {
   min-height: calc(100vh - 70px);
-  padding: 20px 32px 34px;
+  padding: 20px 32px 42px;
   background: #f5f7ff;
 }
 
 .staff-log-breadcrumb {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .staff-log-header {
@@ -7997,7 +8029,7 @@
 }
 
 .staff-log-subject {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .staff-log-subject h2 {
@@ -8025,8 +8057,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 16px;
-  padding: 7px 12px;
+  margin-top: 18px;
+  padding: 7px 18px;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
   background: #ffffff;
@@ -8215,6 +8247,7 @@
 
 .staff-log-table-card {
   width: 100%;
+  margin-top: 34px;
   overflow: hidden;
   border: 1px solid #f0b8a8;
   border-radius: 8px;
@@ -8223,11 +8256,15 @@
 
 .staff-log-table-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(80px, 0.4fr) minmax(150px, 1.2fr) minmax(100px, 0.6fr);
+  grid-template-columns:
+    minmax(170px, 0.9fr)
+    minmax(86px, 0.45fr)
+    minmax(0, 1.8fr)
+    minmax(120px, 0.7fr);
   align-items: center;
-  gap: 16px;
-  min-height: 58px;
-  padding: 0 24px;
+  gap: 14px;
+  min-height: 62px;
+  padding: 0 28px;
   border-bottom: 1px solid #f0d7d0;
   color: #243044;
   font-size: 12px;
@@ -8245,6 +8282,34 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.staff-log-table-row > :first-child,
+.staff-log-table-row > :nth-child(2),
+.staff-log-table-row > :nth-child(4) {
+  justify-self: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.staff-log-table-row > :nth-child(3) {
+  justify-self: start;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.staff-log-date-time-cell {
+  color: #101c33;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.staff-log-description-danger {
+  color: #d93408;
+  font-weight: 900;
 }
 
 .staff-log-activity-cell {
@@ -8310,6 +8375,10 @@
 .staff-log-table-card footer button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.staff-log-table-card footer button i {
+  margin: 0;
 }
 
 .activity-list-container {

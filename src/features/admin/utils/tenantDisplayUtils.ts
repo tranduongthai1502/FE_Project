@@ -49,13 +49,14 @@ export function addDaysToDate(value: string | undefined, days: number) {
 export function getDaysRemainingLabel(expirationDate?: string) {
   if (!expirationDate || expirationDate === '-') return '-'
 
-  const expirationTime = Date.parse(expirationDate)
-  if (Number.isNaN(expirationTime)) return '-'
+  const expiration = new Date(expirationDate)
+  if (Number.isNaN(expiration.getTime())) return '-'
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  expiration.setHours(0, 0, 0, 0)
 
-  const daysRemaining = Math.ceil((expirationTime - today.getTime()) / 86_400_000)
+  const daysRemaining = Math.round((expiration.getTime() - today.getTime()) / 86_400_000)
   return `${Math.max(0, daysRemaining)} Day${Math.max(0, daysRemaining) === 1 ? '' : 's'}`
 }
 

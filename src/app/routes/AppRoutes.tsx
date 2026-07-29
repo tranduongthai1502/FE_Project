@@ -20,11 +20,16 @@ function AppRouteContent() {
   } = useAuthSession(navigate, triggerToast)
 
   const toast = <Toast isVisible={showToast} isFadingOut={toastFadeOut} message={toastMessage} type={toastType} />
+  const requiredPasswordChangePathByPage: Partial<Record<AppPage, string>> = {
+    tenantAdmin: '/tenant-admin/settings',
+    hr: '/hr/settings',
+    interviewer: '/interviewer/settings',
+  }
 
   const protect = (page: AppPage, element: ReactElement) => (
     <ProtectedRoute allowedRole={page} currentRole={currentRole} fallback={<Navigate to="/login" replace />}>
-      {requirePasswordChange && page === 'tenantAdmin' && location.pathname !== '/tenant-admin/settings' ? (
-        <Navigate to="/tenant-admin/settings" replace />
+      {requirePasswordChange && requiredPasswordChangePathByPage[page] && location.pathname !== requiredPasswordChangePathByPage[page] ? (
+        <Navigate to={requiredPasswordChangePathByPage[page]} replace />
       ) : (
         element
       )}

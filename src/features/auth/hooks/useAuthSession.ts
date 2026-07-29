@@ -1,4 +1,5 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import type { NavigateFunction } from 'react-router-dom'
 import { authApi } from '@/services/api/authApi'
 import { getPageForUserRole, unsupportedRoleMessage } from '../utils/authRole'
@@ -23,17 +24,19 @@ const passwordChangePathByAuthRole = {
   candidate: '/candidate/change-password',
   tenantAdmin: '/tenant-admin/settings',
   superAdmin: '/super-admin/settings',
-  hr: '/hr',
-  interviewer: '/interviewer',
+  hr: '/hr/settings',
+  interviewer: '/interviewer/settings',
 }
 
 export function useAuthSession(
   navigate: NavigateFunction,
   triggerToast: (message: string, type?: 'success' | 'error') => void,
 ) {
-  const storedRole = getStoredAuthRole()
-  const currentRole = hasStoredAuthToken() ? storedRole : null
-  const requirePasswordChange = getStoredRequirePasswordChange()
+  const [sessionState, setSessionState] = useState(() => ({
+    currentRole: hasStoredAuthToken() ? getStoredAuthRole() : null,
+    requirePasswordChange: getStoredRequirePasswordChange(),
+  }))
+  const { currentRole, requirePasswordChange } = sessionState
   const defaultPath = currentRole
     ? requirePasswordChange
       ? passwordChangePathByAuthRole[currentRole]
@@ -74,12 +77,23 @@ export function useAuthSession(
     }
 
     saveAuthRole(targetPage, keepLoggedIn)
-    navigate(
-      options?.requirePasswordChange
-        ? passwordChangePathByAuthRole[targetPage]
-        : pathByAuthRole[targetPage],
-      { replace: true },
-    )
+    const shouldRequirePasswordChange = options?.requirePasswordChange || getStoredRequirePasswordChange()
+    const targetPath = shouldRequirePasswordChange
+      ? passwordChangePathByAuthRole[targetPage]
+      : pathByAuthRole[targetPage]
+
+    flushSync(() => {
+      setSessionState({
+        currentRole: targetPage,
+        requirePasswordChange: shouldRequirePasswordChange,
+      })
+    })
+    if (shouldRequirePasswordChange) {
+      window.location.replace(targetPath)
+      return true
+    }
+
+    navigate(targetPath, { replace: true })
     triggerToast('Logged in successfully.')
     return true
   }, [navigate, triggerToast])
@@ -93,6 +107,10 @@ export function useAuthSession(
       // Local logout should still complete if the server token is already invalid.
     } finally {
       clearAuthStorage()
+      setSessionState({
+        currentRole: null,
+        requirePasswordChange: false,
+      })
       navigate('/login', { replace: true })
       triggerToast('Logged out successfully.')
     }

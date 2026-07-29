@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ClipboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
@@ -12,6 +12,7 @@ import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/u
 import { formatCurrencyInput, parseCurrencyInput } from '@/utils/currencyFormat'
 import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
 import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
+import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { SearchInput } from '@/components/common/SearchInput'
 import { ConfirmActionModal } from '@/components/common/ConfirmActionModal'
@@ -589,43 +590,32 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       },
     }))
   }
-  const shouldBlockCriterionPaste = (
-    clientId: string,
-    field: 'name' | 'description',
-    limit: number,
-    event: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const pastedText = event.clipboardData.getData('text')
-    const target = event.currentTarget
-    const currentLength = target.value.length
-    const selectionStart = target.selectionStart ?? currentLength
-    const selectionEnd = target.selectionEnd ?? currentLength
-    const selectedLength = Math.max(0, selectionEnd - selectionStart)
-    const nextLength = currentLength - selectedLength + pastedText.length
-
-    if (nextLength > limit) {
-      event.preventDefault()
-      setCriterionLengthError(clientId, field)
-      return true
-    }
-
-    return false
-  }
   const updateCriterionForm = (clientId: string, field: keyof Pick<EditableCriterion, 'name' | 'description' | 'category' | 'weight'>, value: string) => {
     if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
 
+    const limit = field === 'name' ? criteriaNameLimit : field === 'description' ? criteriaDescriptionLimit : null
     const nextValue = field === 'weight'
       ? normalizeWeightInput(value)
       : field === 'name'
         ? value.slice(0, criteriaNameLimit)
         : field === 'description'
           ? value.slice(0, criteriaDescriptionLimit)
-        : value
+          : value
     setCriteriaForms((currentForms) => currentForms.map((form) => (
       form.clientId === clientId ? { ...form, [field]: nextValue } : form
     )))
     setCriteriaFieldErrors((currentErrors) => {
       const formErrors = currentErrors[clientId]
+      const shouldShowLengthError = limit !== null && value.length > limit
+      if (shouldShowLengthError) {
+        return {
+          ...currentErrors,
+          [clientId]: {
+            ...(formErrors || {}),
+            [field]: criteriaLengthExceededMessage,
+          },
+        }
+      }
       if (!formErrors?.[field]) return currentErrors
       const { [field]: _removed, ...nextFormErrors } = formErrors
       return { ...currentErrors, [clientId]: nextFormErrors }
@@ -1222,12 +1212,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   <div className={styles.criteriaFormRow} key={form.clientId}>
                   <label>
                     <span>Criterion Name *</span>
-                    <input value={form.name} maxLength={criteriaNameLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} onPaste={(event) => shouldBlockCriterionPaste(form.clientId, 'name', criteriaNameLimit, event)} placeholder="System Architecture" />
+                    <input value={form.name} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} placeholder="System Architecture" />
                     <small aria-hidden={!rowErrors.name}>{rowErrors.name || 'Criterion name error'}</small>
                   </label>
                   <label>
                     <span>Description *</span>
-                    <textarea value={form.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} onPaste={(event) => shouldBlockCriterionPaste(form.clientId, 'description', criteriaDescriptionLimit, event)} placeholder="Describe what this criterion evaluates" />
+                    <textarea value={form.description} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} placeholder="Describe what this criterion evaluates" />
                     <small aria-hidden={!rowErrors.description}>{rowErrors.description || 'Description error'}</small>
                   </label>
                   <label>
@@ -1729,17 +1719,34 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('hr', location.pathname))
+  const [isPasswordChangeRequired] = useState(() => getStoredRequirePasswordChange())
+  const [activeView, setActiveView] = useState<RoleHomeView>(() => (
+    getStoredRequirePasswordChange() ? 'settings' : getInitialRoleHomeView('hr', location.pathname)
+  ))
   const [viewResetKeys, setViewResetKeys] = useState<Record<RoleHomeView, number>>({
     dashboard: 0,
     jobs: 0,
     settings: 0,
   })
   const selectView = (view: RoleHomeView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getRoleHomeViewPath('hr', 'settings'))
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setActiveView(view)
     navigate(getRoleHomeViewPath('hr', view))
   }
   const reloadViewFromSidebar = (view: RoleHomeView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getRoleHomeViewPath('hr', 'settings'))
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setActiveView(view)
     navigate(getRoleHomeViewPath('hr', view))
     if (view === 'jobs') {
@@ -1750,17 +1757,41 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
       [view]: current[view] + 1,
     }))
   }
-  const navItems = buildNavigation(hrNav, activeView, reloadViewFromSidebar)
+  const navItems = buildNavigation(hrNav, activeView, reloadViewFromSidebar).map((item) => (
+    isPasswordChangeRequired && item.label !== 'Settings'
+      ? {
+          ...item,
+          onClick: () => {
+            setActiveView('settings')
+            navigate(getRoleHomeViewPath('hr', 'settings'))
+            triggerToast?.('Please change your password before using this workspace.', 'error')
+          },
+        }
+      : item
+  ))
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
+    if (isPasswordChangeRequired) {
+      setActiveView('settings')
+      if (location.pathname !== getRoleHomeViewPath('hr', 'settings')) {
+        navigate(getRoleHomeViewPath('hr', 'settings'), { replace: true })
+      }
+      return
+    }
+
     setActiveView(getInitialRoleHomeView('hr', location.pathname))
-  }, [location.pathname])
+  }, [isPasswordChangeRequired, location.pathname, navigate])
 
   return (
     <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsPanel
+          key={viewResetKeys.settings}
+          isPasswordChangeRequired={isPasswordChangeRequired}
+          onBack={() => selectView('dashboard')}
+          triggerToast={triggerToast}
+        />
       ) : activeView === 'jobs' ? (
         <HrJobsView key={viewResetKeys.jobs} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
