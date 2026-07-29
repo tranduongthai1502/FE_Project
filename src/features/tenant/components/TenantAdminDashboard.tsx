@@ -15,7 +15,7 @@ import { ConfirmActionModal } from '@/components/common/ConfirmActionModal'
 import { getErrorMessage as getAdminErrorMessage, inactiveUserActionMessage, isInactiveUserActionError } from '@/services/error/errorMessages'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { shouldToastHttpError } from '@/utils/httpStatusManager'
-import { getCompactPageItems, getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
+import { getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
 import { normalizeTenantAdminUser } from '@/services/api/apiMappers'
 import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
 import {
@@ -29,6 +29,7 @@ import {
 
 const inactiveTenantActionMessage = 'You do not have permission to perform this action.'
 const passwordChangeRequiredMessage = 'Please change your password before using Tenant Admin features.'
+const vietnamTimeZone = 'Asia/Ho_Chi_Minh'
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
 const ACTIVITY_LOG_PAGE_SIZE = 5
 
@@ -354,24 +355,39 @@ function formatDashboardDate(value?: string) {
 function formatActivityDateTime(value?: string) {
   if (!value) return '-'
 
-  const date = new Date(value)
+  const normalizedValue = /(?:z|[+-]\d{2}:?\d{2})$/i.test(value.trim())
+    ? value
+    : `${value.trim()}Z`
+  const date = new Date(normalizedValue)
   if (Number.isNaN(date.getTime())) return value
 
+  const vietnamDateFormatter = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: vietnamTimeZone,
+    year: 'numeric',
+  })
   const today = new Date()
   const yesterday = new Date()
   yesterday.setDate(today.getDate() - 1)
 
-  const isSameDay = (left: Date, right: Date) => (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  )
-  const dateLabel = isSameDay(date, today)
+  const activityDateKey = vietnamDateFormatter.format(date)
+  const todayDateKey = vietnamDateFormatter.format(today)
+  const yesterdayDateKey = vietnamDateFormatter.format(yesterday)
+  const dateLabel = activityDateKey === todayDateKey
     ? 'TODAY'
-    : isSameDay(date, yesterday)
+    : activityDateKey === yesterdayDateKey
       ? 'YESTERDAY'
-      : date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase()
-  const timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      : date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        timeZone: vietnamTimeZone,
+      }).toUpperCase()
+  const timeLabel = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: vietnamTimeZone,
+  })
 
   return `${dateLabel} • ${timeLabel}`
 }
@@ -441,6 +457,22 @@ function ActivityLogIcon({ eventType, index }: { eventType?: string; index: numb
       <path d="M4.86667 13.3333L4.6 11.2C4.45556 11.1444 4.31944 11.0778 4.19167 11C4.06389 10.9222 3.93889 10.8389 3.81667 10.75L1.83333 11.5833L0 8.41667L1.71667 7.11667C1.70556 7.03889 1.7 6.96389 1.7 6.89167C1.7 6.81944 1.7 6.74444 1.7 6.66667C1.7 6.58889 1.7 6.51389 1.7 6.44167C1.7 6.36944 1.70556 6.29444 1.71667 6.21667L0 4.91667L1.83333 1.75L3.81667 2.58333C3.93889 2.49444 4.06667 2.41111 4.2 2.33333C4.33333 2.25556 4.46667 2.18889 4.6 2.13333L4.86667 0H8.53333L8.8 2.13333C8.94444 2.18889 9.08055 2.25556 9.20833 2.33333C9.33611 2.41111 9.46111 2.49444 9.58333 2.58333L11.5667 1.75L13.4 4.91667L11.6833 6.21667C11.6944 6.29444 11.7 6.36944 11.7 6.44167C11.7 6.51389 11.7 6.58889 11.7 6.66667C11.7 6.74444 11.7 6.81944 11.7 6.89167C11.7 6.96389 11.6889 7.03889 11.6667 7.11667L13.3833 8.41667L11.55 11.5833L9.58333 10.75C9.46111 10.8389 9.33333 10.9222 9.2 11C9.06667 11.0778 8.93333 11.1444 8.8 11.2L8.53333 13.3333H4.86667ZM6.03333 12H7.35L7.58333 10.2333C7.92778 10.1444 8.24722 10.0139 8.54167 9.84167C8.83611 9.66944 9.10556 9.46111 9.35 9.21667L11 9.9L11.65 8.76667L10.2167 7.68333C10.2722 7.52778 10.3111 7.36389 10.3333 7.19167C10.3556 7.01944 10.3667 6.84444 10.3667 6.66667C10.3667 6.48889 10.3556 6.31389 10.3333 6.14167C10.3111 5.96944 10.2722 5.80556 10.2167 5.65L11.65 4.56667L11 3.43333L9.35 4.13333C9.10556 3.87778 8.83611 3.66389 8.54167 3.49167C8.24722 3.31944 7.92778 3.18889 7.58333 3.1L7.36667 1.33333H6.05L5.81667 3.1C5.47222 3.18889 5.15278 3.31944 4.85833 3.49167C4.56389 3.66389 4.29444 3.87222 4.05 4.11667L2.4 3.43333L1.75 4.56667L3.18333 5.63333C3.12778 5.8 3.08889 5.96667 3.06667 6.13333C3.04444 6.3 3.03333 6.47778 3.03333 6.66667C3.03333 6.84444 3.04444 7.01667 3.06667 7.18333C3.08889 7.35 3.12778 7.51667 3.18333 7.68333L1.75 8.76667L2.4 9.9L4.05 9.2C4.29444 9.45555 4.56389 9.66944 4.85833 9.84167C5.15278 10.0139 5.47222 10.1444 5.81667 10.2333L6.03333 12ZM6.73333 9C7.37778 9 7.92778 8.77222 8.38333 8.31667C8.83889 7.86111 9.06667 7.31111 9.06667 6.66667C9.06667 6.02222 8.83889 5.47222 8.38333 5.01667C7.92778 4.56111 7.37778 4.33333 6.73333 4.33333C6.07778 4.33333 5.525 4.56111 5.075 5.01667C4.625 5.47222 4.4 6.02222 4.4 6.66667C4.4 7.31111 4.625 7.86111 5.075 8.31667C5.525 8.77222 6.07778 9 6.73333 9Z" fill="#C2410C" />
     </svg>
   )
+}
+
+function getActivityLogPageItems(currentPage: number, pageCount: number): Array<number | 'ellipsis'> {
+  if (pageCount <= 5) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1)
+  }
+
+  if (currentPage <= 3) {
+    return [1, 2, 3, 'ellipsis', pageCount]
+  }
+
+  if (currentPage >= pageCount - 2) {
+    return [1, 'ellipsis', pageCount - 2, pageCount - 1, pageCount]
+  }
+
+  return [1, 'ellipsis', currentPage, 'ellipsis', pageCount]
 }
 
 function StaffManagementView({
@@ -558,7 +590,7 @@ function StaffManagementView({
         <label>
           <span>Role:</span>
           <select value={roleFilter} onChange={(e) => onRoleFilterChange(e.target.value)}>
-            <option value="all">All Roles</option>
+            <option value="all">All</option>
             <option value="hr">HR</option>
             <option value="interviewer">Interviewer</option>
           </select>
@@ -566,7 +598,7 @@ function StaffManagementView({
         <label>
           <span>Status:</span>
           <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)}>
-            <option value="all">All Status</option>
+            <option value="all">All</option>
             <option value="activated">Active</option>
             <option value="disabled">Inactive</option>
           </select>
@@ -679,7 +711,9 @@ function StaffManagementView({
                     }}
                     disabled={isActionLocked}
                   >
-                    <i className="fa-regular fa-trash-can"></i>
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="#565E74" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -759,6 +793,22 @@ function CreateStaffAccountView({
   })
   
   const [status, setStatus] = useState<UserStatus>(staffMember?.status || 'ACTIVE')
+  const staffFullNameMaxLength = FIELD_LENGTH_LIMITS.defaultText
+  const staffEmailMaxLength = 50
+  const getStaffMaxLengthMessage = (fieldName: string, maxLength: number) => (
+    `${fieldName} must be ${maxLength} characters or less.`
+  )
+  const updateLimitedStaffField = (
+    value: string,
+    maxLength: number,
+    fieldName: string,
+    setter: (nextValue: string) => void,
+    setError: (message: string) => void,
+  ) => {
+    const isOverMaxLength = value.length > maxLength
+    setter(isOverMaxLength ? value.slice(0, maxLength) : value)
+    setError(isOverMaxLength ? getStaffMaxLengthMessage(fieldName, maxLength) : '')
+  }
 
   useEffect(() => {
     if (serverFieldErrors.fullName) setFullNameError(serverFieldErrors.fullName)
@@ -840,14 +890,12 @@ function CreateStaffAccountView({
                 <div>
                   <i className="fa-regular fa-user"></i>
                   <input 
-                    maxLength={FIELD_LENGTH_LIMITS.defaultText}
                     className={fullNameError ? 'has-error' : ''}
                     type="text" 
                     placeholder="e.g. Sarah Jenkins" 
                     value={fullName}
                     onChange={(e) => {
-                      setFullName(e.target.value)
-                      if (fullNameError) setFullNameError('')
+                      updateLimitedStaffField(e.target.value, staffFullNameMaxLength, 'Full name', setFullName, setFullNameError)
                     }}
                     disabled={isSubmitting || isActionLocked}
                   />
@@ -859,14 +907,12 @@ function CreateStaffAccountView({
                 <div>
                   <i className="fa-regular fa-envelope"></i>
                   <input 
-                    maxLength={FIELD_LENGTH_LIMITS.defaultText}
                     className={emailError ? 'has-error' : ''}
                     type="email" 
                     placeholder="sarah.j@jobfusion.com" 
                     value={email}
                     onChange={(e) => {
-                      setEmail(e.target.value)
-                      if (emailError) setEmailError('')
+                      updateLimitedStaffField(e.target.value, staffEmailMaxLength, 'Email', setEmail, setEmailError)
                     }}
                     disabled={isEdit || isSubmitting || isActionLocked}
                   />
@@ -962,7 +1008,6 @@ function EditStaffAccountView({
   serverFieldErrors = {},
   onHome,
   onStaffManagement,
-  onCancel,
   onConfirm,
   isSubmitting = false,
   isActionLocked = false,
@@ -972,7 +1017,6 @@ function EditStaffAccountView({
   serverFieldErrors?: StaffFormFieldErrors
   onHome: () => void
   onStaffManagement: () => void
-  onCancel: () => void
   onConfirm: (payload: { fullName: string; email: string; role: string[]; status: UserStatus }) => void
   isSubmitting?: boolean
   isActionLocked?: boolean
@@ -988,11 +1032,27 @@ function EditStaffAccountView({
 
     return roles.length > 0 ? roles : ['hr']
   })
+  const getInitialSelectedRoles = () => {
+    const roles = staffMember.userRole
+      ? staffMember.userRole.split(',').map((role) => role.trim().toLowerCase())
+      : []
+
+    return roles.length > 0 ? roles : ['hr']
+  }
 
   useEffect(() => {
     if (serverFieldErrors.fullName) setFullNameError(serverFieldErrors.fullName)
     if (serverFieldErrors.role) setRoleError(serverFieldErrors.role)
   }, [serverFieldErrors])
+  const staffFullNameMaxLength = FIELD_LENGTH_LIMITS.defaultText
+  const getStaffMaxLengthMessage = (fieldName: string, maxLength: number) => (
+    `${fieldName} must be ${maxLength} characters or less.`
+  )
+  const updateLimitedStaffFullName = (value: string) => {
+    const isOverMaxLength = value.length > staffFullNameMaxLength
+    setFullName(isOverMaxLength ? value.slice(0, staffFullNameMaxLength) : value)
+    setFullNameError(isOverMaxLength ? getStaffMaxLengthMessage('Full name', staffFullNameMaxLength) : '')
+  }
 
   const getInitials = (name: string) => {
     const words = name.trim().split(/\s+/).filter(Boolean)
@@ -1055,6 +1115,13 @@ function EditStaffAccountView({
       status: staffMember.status,
     })
   }
+  const resetEditStaffForm = () => {
+    setFullName(staffMember.fullName)
+    setSelectedRoles(getInitialSelectedRoles())
+    setFullNameError('')
+    setRoleError('')
+    setShowCancelConfirm(false)
+  }
 
   const isActive = staffMember.status === 'ACTIVE'
   const statusLabel = isActive ? 'Active' : 'Inactive'
@@ -1104,7 +1171,7 @@ function EditStaffAccountView({
               <span>Email Address (Primary)</span>
               <div className="edit-staff-readonly-input">
                 <i className="fa-regular fa-envelope"></i>
-                <input type="email" value={staffMember.email} readOnly maxLength={FIELD_LENGTH_LIMITS.defaultText}/>
+                <input type="email" value={staffMember.email} readOnly maxLength={50}/>
                 <em><i className="fa-solid fa-lock"></i> Read-only</em>
               </div>
             </label>
@@ -1112,13 +1179,11 @@ function EditStaffAccountView({
             <label className="edit-staff-field">
               <span>Full Name</span>
               <input
-                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 className={fullNameError ? 'has-error' : ''}
                 type="text"
                 value={fullName}
                 onChange={(event) => {
-                  setFullName(event.target.value)
-                  if (fullNameError) setFullNameError('')
+                  updateLimitedStaffFullName(event.target.value)
                 }}
                 disabled={isSubmitting || isActionLocked}
               />
@@ -1181,7 +1246,7 @@ function EditStaffAccountView({
           cancelLabel="Cancel"
           confirmLabel="Confirm"
           onCancel={() => setShowCancelConfirm(false)}
-          onConfirm={onCancel}
+          onConfirm={resetEditStaffForm}
         />
       )}
     </div>
@@ -1304,11 +1369,11 @@ function StaffDetailView({
               </div>
               <div>
                 <small>Phone Number</small>
-                <strong>{staffMember.phone || '+1 (555) 234-8891'}</strong>
+                <strong>{staffMember.phone || '_'}</strong>
               </div>
               <div>
                 <small>Office Location</small>
-                <strong>San Francisco, CA (HQ)</strong>
+                <strong>_</strong>
               </div>
             </div>
           </section>
@@ -1421,7 +1486,7 @@ function StaffActivityLogView({
   const totalElements = getListTotalElements(activityLogs, activityLogs.length)
   const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * ACTIVITY_LOG_PAGE_SIZE) + 1
   const displayEnd = displayStart === 0 ? 0 : Math.min(totalElements, displayStart + activityLogs.length - 1)
-  const pageItems = getCompactPageItems(currentPage, pageCount)
+  const pageItems = getActivityLogPageItems(currentPage, pageCount)
   const shouldShowActivityTable = isLoadingActivities || Boolean(activityError) || activityLogs.length > 0
   const startDateInputRef = useRef<HTMLInputElement>(null)
   const endDateInputRef = useRef<HTMLInputElement>(null)
@@ -1454,6 +1519,30 @@ function StaffActivityLogView({
       day: 'numeric',
       year: 'numeric',
     })
+  }
+  const formatLogDateTime = (dateStr?: string) => {
+    if (!dateStr) return '-'
+
+    const normalizedValue = /(?:z|[+-]\d{2}:?\d{2})$/i.test(dateStr.trim())
+      ? dateStr
+      : `${dateStr.trim()}Z`
+    const date = new Date(normalizedValue)
+    if (Number.isNaN(date.getTime())) return dateStr
+
+    const dateLabel = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: vietnamTimeZone,
+      year: 'numeric',
+    }).replace(',', ',')
+    const timeLabel = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: vietnamTimeZone,
+    })
+
+    return `${dateLabel}, ${timeLabel}`
   }
   const startDateLabel = formatDate(startDateFilter, 'Oct 12, 2025')
   const endDateLabel = formatDate(endDateFilter, 'Oct 19, 2025')
@@ -1524,7 +1613,7 @@ function StaffActivityLogView({
       {shouldShowActivityTable ? (
         <section className="staff-log-table-card">
           <div className="staff-log-table-row staff-log-table-head">
-            <span>Activity</span>
+            <span>Date &amp; Time</span>
             <span>Event Type</span>
             <span>Description</span>
             <span>IP Address</span>
@@ -1535,21 +1624,17 @@ function StaffActivityLogView({
           ) : activityError ? (
           <div className="tenant-list-table-state error">{activityError}</div>
           ) : (
-            activityLogs.map((activity, index) => {
-              const createdAt = activity.createdAt ? new Date(activity.createdAt) : null
-              const hasValidDate = createdAt && !Number.isNaN(createdAt.getTime())
+            activityLogs.map((activity) => {
               const eventTypeLabel = String(activity.eventType || '').replace(/[_-]+/g, ' ').trim() || 'Action'
-              const descriptionLabel = activity.description || (hasValidDate ? formatActivityDateTime(activity.createdAt) : activity.createdAt) || '-'
+              const descriptionLabel = activity.description || activity.title || '-'
+              const dateTimeLabel = formatLogDateTime(activity.createdAt)
               const ipAddressLabel = activity.ipAddress || '-'
 
               return (
                 <div className="staff-log-table-row" key={activity.id}>
-                  <span className="staff-log-activity-cell">
-                    <span className="activity-log-table-icon"><ActivityLogIcon eventType={activity.eventType} index={index} /></span>
-                    <strong>{activity.title}</strong>
-                  </span>
+                  <strong className="staff-log-date-time-cell">{dateTimeLabel}</strong>
                   <span>{eventTypeLabel}</span>
-                  <span>{descriptionLabel}</span>
+                  <span className={descriptionLabel.toLowerCase().includes('failed') ? 'staff-log-description-danger' : ''}>{descriptionLabel}</span>
                   <span>{ipAddressLabel}</span>
                 </div>
               )
@@ -2193,7 +2278,6 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             serverFieldErrors={staffFormFieldErrors}
             onHome={() => changeView('dashboard')}
             onStaffManagement={() => changeView('staffManagement')}
-            onCancel={() => changeView('staffDetail', selectedStaff.id)}
             onConfirm={handleUpdateStaffSubmit}
             isSubmitting={isSaving}
             isActionLocked={isActionLocked}

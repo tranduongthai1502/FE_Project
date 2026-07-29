@@ -17,7 +17,7 @@ import { validateEmail, validateRequired } from '../utils/validation'
 import { authApi } from '@/services/api/authApi'
 import { getAppErrorMessage, getErrorCode } from '../../../utils/errorManager'
 import { authErrorMessages } from '../errors'
-import { saveRequirePasswordChange } from '@/services/api/authStorage'
+import { AUTH_PAGE_STORAGE_KEY, saveAuthRole, saveRequirePasswordChange } from '@/services/api/authStorage'
 import { getPageForUserRole } from '../utils/authRole'
 import { FIELD_LENGTH_LIMITS, validateOptionalEmail, validationErrorMessages } from '@/services/api/axiosErrorHandler'
 
@@ -32,6 +32,13 @@ const expiredOtpMessage = authErrorMessages.expiredOtp
 const invalidOtpMessage = authErrorMessages.invalidOtp
 const rememberedEmailStorageKey = 'jobfusion_remembered_email'
 const resendOtpCountdownSeconds = 59
+const passwordChangePathByLoginRole = {
+  candidate: '/candidate/change-password',
+  tenantAdmin: '/tenant-admin/settings',
+  superAdmin: '/super-admin/settings',
+  hr: '/hr/settings',
+  interviewer: '/interviewer/settings',
+}
 type ForgotStep = 'email' | 'otp' | 'reset'
 
 function getAuthResponsePayload(response: any) {
@@ -140,65 +147,6 @@ function getAuthToken(payload: any) {
 
 function getRefreshToken(payload: any) {
   return payload?.refresh_token || payload?.refreshToken || ''
-}
-
-function readBooleanFlag(source: any, keys: string[]) {
-  for (const key of keys) {
-    const value = source?.[key]
-    if (typeof value === 'boolean') return value
-    if (typeof value === 'number') return value === 1
-    if (typeof value === 'string') {
-      const normalizedValue = value.trim().toLowerCase()
-      if (['true', '1', 'yes', 'y'].includes(normalizedValue)) return true
-      if (['false', '0', 'no', 'n'].includes(normalizedValue)) return false
-    }
-  }
-
-  return undefined
-}
-
-function getRequirePasswordChange(payload: any, user: any, userRole: string) {
-  const userType = String(payload?.userType ?? payload?.user_type ?? user?.userType ?? user?.user_type ?? '')
-    .trim()
-    .toUpperCase()
-  const isTenantAdmin = userType === 'TENANT' || getPageForUserRole(userRole) === 'tenantAdmin'
-  const sources = [payload, user]
-  const mustChangePassword = sources.some((source) => readBooleanFlag(source, [
-    'requirePasswordChange',
-    'require_password_change',
-    'requiresPasswordChange',
-    'requires_password_change',
-    'mustChangePassword',
-    'must_change_password',
-    'forcePasswordChange',
-    'force_password_change',
-    'passwordChangeRequired',
-    'password_change_required',
-    'temporaryPassword',
-    'temporary_password',
-    'isTemporaryPassword',
-    'is_temporary_password',
-    'firstLogin',
-    'first_login',
-    'isFirstLogin',
-    'is_first_login',
-    'firstTimeLogin',
-    'first_time_login',
-  ]) === true)
-  const passwordChanged = sources
-    .map((source) => readBooleanFlag(source, [
-      'passwordChanged',
-      'password_changed',
-      'isPasswordChanged',
-      'is_password_changed',
-      'hasChangedPassword',
-      'has_changed_password',
-      'initialPasswordChanged',
-      'initial_password_changed',
-    ]))
-    .find((value) => value !== undefined)
-
-  return isTenantAdmin && (mustChangePassword || passwordChanged === false)
 }
 
 function isAccountNotFoundError(message = '') {
@@ -419,9 +367,12 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         const refreshToken = getRefreshToken(payload)
         const user = getAuthUser(payload)
         const userRole = getAuthUserRole(user, payload)
-        const requirePasswordChange = getRequirePasswordChange(payload, user, userRole)
+        const storedUserPayload = getStoredUserPayload(user, payload)
+        const responseRequirePasswordChange = payload?.user?.requirePasswordChange ?? user?.requirePasswordChange
+        const requirePasswordChange = responseRequirePasswordChange === true ||
+          String(responseRequirePasswordChange).trim().toLowerCase() === 'true'
         const storedUser = {
-          ...getStoredUserPayload(user, payload),
+          ...storedUserPayload,
           requirePasswordChange,
         }
 
@@ -430,6 +381,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         inactiveStorage.removeItem('access_token')
         inactiveStorage.removeItem('refresh_token')
         inactiveStorage.removeItem('user_info')
+        inactiveStorage.removeItem(AUTH_PAGE_STORAGE_KEY)
         if (token) {
           storage.setItem('access_token', token)
         }
@@ -444,6 +396,17 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
           window.localStorage.setItem(rememberedEmailStorageKey, email)
         } else {
           window.localStorage.removeItem(rememberedEmailStorageKey)
+        }
+
+        if (requirePasswordChange) {
+          const targetPage = getPageForUserRole(userRole)
+          const targetPath = targetPage ? passwordChangePathByLoginRole[targetPage] : ''
+
+          if (targetPage && targetPath) {
+            saveAuthRole(targetPage, keepLoggedIn)
+            window.location.replace(targetPath)
+            return
+          }
         }
 
         if (!onSignInSuccess(email, keepLoggedIn, userRole, { requirePasswordChange })) {

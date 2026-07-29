@@ -25,6 +25,9 @@ const legacyRolePages: Record<string, AppRole> = {
   recruiter: 'hr',
   tenant_hr: 'hr',
   tenant_recruiter: 'hr',
+  interview: 'interviewer',
+  tenant_interview: 'interviewer',
+  tenant_interviewer: 'interviewer',
 }
 
 export function getPageForUserRole(userRole: string): AppRole | null {

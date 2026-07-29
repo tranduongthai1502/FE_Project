@@ -53,6 +53,10 @@ function getUserInitials(name: string) {
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase()
 }
 
+function truncateDisplayName(name: string) {
+  return name.length > 10 ? `${name.slice(0, 10)}...` : name
+}
+
 function getInitialSidebarVisibility() {
   return !window.matchMedia('(max-width: 980px)').matches
 }
@@ -78,6 +82,7 @@ export function DashboardShell({
 }) {
   const user = useMemo(() => getStoredUser(), [])
   const displayName = getDisplayName(user)
+  const displayNamePreview = truncateDisplayName(displayName)
   const displayRole = getDisplayRole(user, subtitle)
   const userInitials = getUserInitials(displayName)
   const [isSidebarVisible, setIsSidebarVisible] = useState(getInitialSidebarVisibility)
@@ -162,7 +167,7 @@ export function DashboardShell({
                 <span className="role-user-avatar">{userInitials}</span>
               )}
               <span className="role-user-text">
-                <strong>{displayName}</strong>
+                <strong title={displayName}>{displayNamePreview}</strong>
                 <small>{displayRole}</small>
               </span>
               <i className={`fa-solid fa-chevron-down role-user-chevron ${isUserDropdownOpen ? 'open' : ''}`}></i>

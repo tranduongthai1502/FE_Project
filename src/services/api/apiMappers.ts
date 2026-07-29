@@ -116,8 +116,38 @@ function formatBillingCycle(value: unknown) {
 
   const normalizedLower = normalized.toLowerCase()
   if (normalizedLower === 'mo' || normalizedLower === 'monthly') return 'month'
+  if (normalizedLower === 'yearly' || normalizedLower === 'year' || normalizedLower === 'yr') return 'year'
+  if (
+    normalizedLower === 'six_monthly' ||
+    normalizedLower === '6_monthly' ||
+    normalizedLower === 'six monthly' ||
+    normalizedLower === '6 monthly' ||
+    normalizedLower === 'six-monthly' ||
+    normalizedLower === '6-monthly'
+  ) return 'six month'
 
   return normalized
+}
+
+function normalizeBillingCycleValue(value: unknown) {
+  const normalized = String(value ?? '').trim()
+  if (!normalized) return 'MONTHLY'
+
+  const normalizedLower = normalized.toLowerCase()
+  if (normalizedLower === 'mo' || normalizedLower === 'month' || normalizedLower === 'monthly') return 'MONTHLY'
+  if (normalizedLower === 'yearly' || normalizedLower === 'year' || normalizedLower === 'yr') return 'YEARLY'
+  if (
+    normalizedLower === 'six_monthly' ||
+    normalizedLower === '6_monthly' ||
+    normalizedLower === 'six monthly' ||
+    normalizedLower === '6 monthly' ||
+    normalizedLower === 'six-monthly' ||
+    normalizedLower === '6-monthly' ||
+    normalizedLower === 'six month' ||
+    normalizedLower === '6 month'
+  ) return 'SIX_MONTHLY'
+
+  return normalized.toUpperCase()
 }
 
 export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): SubscriptionPlan | null {
@@ -140,7 +170,9 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
   const maxActiveJobPostingValue = plan?.maxActiveJobPosting ?? plan?.maxActiveJobPostings ?? plan?.max_active_job_posting ?? plan?.max_active_job_postings ?? null
   const maxStaffAccount = Number(maxStaffAccountValue)
   const maxActiveJobPosting = Number(maxActiveJobPostingValue)
-  const billingCycle = formatBillingCycle(plan?.billingCycle || plan?.cycle || plan?.interval)
+  const rawBillingCycle = plan?.billingCycle || plan?.cycle || plan?.interval
+  const billingCycle = normalizeBillingCycleValue(rawBillingCycle)
+  const billingCycleLabel = formatBillingCycle(rawBillingCycle)
   const staffAccountUnlimited =
     isTruthyFlag(plan?.staffAccountUnlimited) ||
     isTruthyFlag(plan?.staff_account_unlimited) ||
@@ -161,7 +193,7 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
       ? plan.planFeatures
       : []
   const priceLabel = Number.isFinite(price)
-    ? `$${price.toFixed(2)} / ${billingCycle}`
+    ? `$${price.toFixed(2)} /${billingCycleLabel}`
     : undefined
 
   return {
@@ -169,6 +201,8 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
     name: String(name),
     description: String(plan?.description || plan?.shortDescription || plan?.tagline || ''),
     monthlyPrice: Number.isFinite(price) ? price : 0,
+    price: Number.isFinite(price) ? price : 0,
+    billingCycle,
     maxStaffAccount: Number.isFinite(maxStaffAccount) ? maxStaffAccount : 0,
     staffAccountUnlimited,
     maxActiveJobPosting: Number.isFinite(maxActiveJobPosting) ? maxActiveJobPosting : 0,
@@ -177,7 +211,7 @@ export function normalizeSubscriptionPlan(plan: any, fallbackId?: string): Subsc
     createdAt: String(plan?.createdAt || plan?.createdDate || plan?.created_at || plan?.createAt || ''),
     features: featureList.map((feature: any) => ({
       key: String(feature?.key || feature?.code || feature?.name || feature?.featureKey || ''),
-      status: String(feature?.status || (feature?.enabled === false ? 'DISABLED' : 'ENABLED')),
+      status: String(feature?.status || (feature?.enabled === false ? 'INACTIVE' : 'ACTIVE')),
     })).filter((feature: CreatePlanFeature) => feature.key),
     priceLabel,
   }
@@ -286,6 +320,7 @@ export function normalizeTenant(tenant: any): Tenant | null {
     tenant?.activeJobPostingCount ??
     tenant?.activeJobPostingsCount ??
     tenant?.totalActiveJobPostings ??
+    tenant?.activeJob ??
     tenant?.activeJobCount ??
     tenant?.activeJobs ??
     tenant?.jobCount ??
@@ -297,6 +332,11 @@ export function normalizeTenant(tenant: any): Tenant | null {
     tenant?.usageEfficiencyScore ??
     tenant?.efficiency
   )
+  const tenantPrice = Number(tenant?.price ?? tenant?.monthlyPrice ?? tenant?.monthly_price ?? tenant?.planPrice ?? tenant?.amount)
+  const tenantBillingCycle = formatBillingCycle(tenant?.billingCycle || tenant?.cycle || tenant?.interval)
+  const tenantPriceLabel = Number.isFinite(tenantPrice)
+    ? `$${tenantPrice.toFixed(2)} /${tenantBillingCycle}`
+    : undefined
 
   return {
     id: String(id),
@@ -315,6 +355,9 @@ export function normalizeTenant(tenant: any): Tenant | null {
       : undefined,
     subscriptionPlanDetail: nestedPlan || undefined,
     subscriptionPlan: String(planObject?.name || tenant?.planName || tenant?.subscriptionPlanName || (typeof plan === 'string' ? plan : '') || '-'),
+    price: Number.isFinite(tenantPrice) ? tenantPrice : undefined,
+    billingCycle: tenantBillingCycle,
+    priceLabel: tenantPriceLabel,
     expirationDate: String(tenant?.expirationDate || tenant?.expiredAt || tenant?.expiresAt || tenant?.endDate || '-'),
     userQuotaUsed: Number(
       tenant?.userQuotaUsed ??
