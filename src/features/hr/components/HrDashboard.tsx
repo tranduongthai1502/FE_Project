@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ClipboardEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
@@ -8,7 +8,7 @@ import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilt
 import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
-import { getListPageCount, getListTotalElements } from '@/utils/pagination'
+import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/utils/pagination'
 import { formatCurrencyInput, parseCurrencyInput } from '@/utils/currencyFormat'
 import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
 import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
@@ -25,6 +25,7 @@ import {
   criteriaCategories,
   criteriaDescriptionLimit,
   criteriaNameLimit,
+  criteriaLengthExceededMessage,
   duplicateJobTitleConfirmMessage,
   emptyJobForm,
   type CriteriaFieldErrors,
@@ -82,6 +83,41 @@ function formatDeadlineDisplay(value?: string) {
   return year && month && day ? `${day}/${month}/${year}` : ''
 }
 
+function formatLocationDisplay(locationType?: string, location?: string) {
+  const type = String(locationType || '').trim().toUpperCase()
+  const resolvedType = type === 'REMOTE' ? 'Remote' : type === 'HYBRID' ? 'Hybrid' : 'Office'
+  const resolvedLocation = String(location || '').trim()
+  return resolvedLocation ? `${resolvedType} - ${resolvedLocation}` : resolvedType
+}
+
+function parseDeadlineInput(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+
+  const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!match) return ''
+
+  const [, dayValue, monthValue, yearValue] = match
+  const day = Number(dayValue)
+  const month = Number(monthValue)
+  const year = Number(yearValue)
+  const date = new Date(year, month - 1, day)
+
+  if (
+    !Number.isFinite(day) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(year) ||
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return ''
+  }
+
+  return getLocalDateKey(date)
+}
+
 function getCalendarMonth(value?: string) {
   const dateValue = getDateInputValue(value)
   if (dateValue) {
@@ -112,26 +148,35 @@ function getCalendarDays(monthDate: Date) {
   })
 }
 
-function DownloadJobIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M8 12L3 7L4.4 5.55L7 8.15V0H9V8.15L11.6 5.55L13 7L8 12ZM2 16C1.45 16 0.979167 15.8042 0.5875 15.4125C0.195833 15.0208 0 14.55 0 14V11H2V14H14V11H16V14C16 14.55 15.8042 15.0208 15.4125 15.4125C15.0208 15.8042 14.55 16 14 16H2Z" fill="currentColor" />
-    </svg>
-  )
-}
-
-function RevisionHistoryIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M9 18C6.7 18 4.69583 17.2375 2.9875 15.7125C1.27917 14.1875 0.3 12.2833 0.05 10H2.1C2.33333 11.7333 3.10417 13.1667 4.4125 14.3C5.72083 15.4333 7.25 16 9 16C10.95 16 12.6042 15.3208 13.9625 13.9625C15.3208 12.6042 16 10.95 16 9C16 7.05 15.3208 5.39583 13.9625 4.0375C12.6042 2.67917 10.95 2 9 2C7.85 2 6.775 2.26667 5.775 2.8C4.775 3.33333 3.93333 4.06667 3.25 5H6V7H0V1H2V3.35C2.85 2.28333 3.8875 1.45833 5.1125 0.875C6.3375 0.291667 7.63333 0 9 0C10.25 0 11.4208 0.2375 12.5125 0.7125C13.6042 1.1875 14.5542 1.82917 15.3625 2.6375C16.1708 3.44583 16.8125 4.39583 17.2875 5.4875C17.7625 6.57917 18 7.75 18 9C18 10.25 17.7625 11.4208 17.2875 12.5125C16.8125 13.6042 16.1708 14.5542 15.3625 15.3625C14.5542 16.1708 13.6042 16.8125 12.5125 17.2875C11.4208 17.7625 10.25 18 9 18ZM11.8 13.2L8 9.4V4H10V8.6L13.2 11.8L11.8 13.2Z" fill="currentColor" />
-    </svg>
-  )
-}
-
 function CriteriaTrashIcon() {
   return (
     <svg width="40" height="31" viewBox="0 0 40 31" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <path d="M12.5 24.25C12.5 24.913 12.7634 25.5489 13.2322 26.0178C13.7011 26.4866 14.337 26.75 15 26.75H25C25.663 26.75 26.2989 26.4866 26.7678 26.0178C27.2366 25.5489 27.5 24.913 27.5 24.25V9.25H12.5V24.25ZM15 11.75H25V24.25H15V11.75ZM24.375 5.5L23.125 4.25H16.875L15.625 5.5H11.25V8H28.75V5.5H24.375Z" fill="#565E74" />
+    </svg>
+  )
+}
+
+function RevisionHistoryOpenIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M7.5 3H4.5C4.10218 3 3.72064 3.15804 3.43934 3.43934C3.15804 3.72064 3 4.10218 3 4.5V13.5C3 13.8978 3.15804 14.2794 3.43934 14.5607C3.72064 14.842 4.10218 15 4.5 15H13.5C13.8978 15 14.2794 14.842 14.5607 14.5607C14.842 14.2794 15 13.8978 15 13.5V10.5M9 9L15 3M11.25 3H15V6.75" stroke="#0B1C30" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function RevisionHistoryUpdateIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M9 15.75C8.0625 15.75 7.1845 15.572 6.366 15.216C5.5475 14.86 4.835 14.3788 4.2285 13.7723C3.622 13.1658 3.14075 12.4532 2.78475 11.6347C2.42875 10.8162 2.2505 9.938 2.25 9C2.2495 8.062 2.42775 7.184 2.78475 6.366C3.14175 5.548 3.62275 4.8355 4.22775 4.2285C4.83275 3.6215 5.54525 3.14025 6.36525 2.78475C7.18525 2.42925 8.0635 2.251 9 2.25C10.025 2.25 10.997 2.46875 11.916 2.90625C12.835 3.34375 13.613 3.9625 14.25 4.7625V3.75C14.25 3.5375 14.322 3.3595 14.466 3.216C14.61 3.0725 14.788 3.0005 15 3C15.212 2.9995 15.3903 3.0715 15.5348 3.216C15.6793 3.3605 15.751 3.5385 15.75 3.75V6.75C15.75 6.9625 15.678 7.14075 15.534 7.28475C15.39 7.42875 15.212 7.5005 15 7.5H12C11.7875 7.5 11.6095 7.428 11.466 7.284C11.3225 7.14 11.2505 6.962 11.25 6.75C11.2495 6.538 11.3215 6.36 11.466 6.216C11.6105 6.072 11.7885 6 12 6H13.3125C12.8 5.3 12.1688 4.75 11.4188 4.35C10.6688 3.95 9.8625 3.75 9 3.75C7.5375 3.75 6.297 4.2595 5.2785 5.2785C4.26 6.2975 3.7505 7.538 3.75 9C3.7495 10.462 4.259 11.7027 5.2785 12.7222C6.298 13.7417 7.5385 14.251 9 14.25C10.1875 14.25 11.25 13.8938 12.1875 13.1813C13.125 12.4688 13.7438 11.55 14.0438 10.425C14.1063 10.225 14.2188 10.075 14.3813 9.975C14.5438 9.875 14.725 9.8375 14.925 9.8625C15.1375 9.8875 15.3063 9.978 15.4313 10.134C15.5563 10.29 15.5938 10.462 15.5438 10.65C15.1813 12.1375 14.3938 13.3595 13.1813 14.316C11.9688 15.2725 10.575 15.7505 9 15.75ZM9.75 8.7L11.625 10.575C11.7625 10.7125 11.8313 10.8875 11.8313 11.1C11.8313 11.3125 11.7625 11.4875 11.625 11.625C11.4875 11.7625 11.3125 11.8312 11.1 11.8312C10.8875 11.8312 10.7125 11.7625 10.575 11.625L8.475 9.525C8.4 9.45 8.34375 9.36575 8.30625 9.27225C8.26875 9.17875 8.25 9.08175 8.25 8.98125V6C8.25 5.7875 8.322 5.6095 8.466 5.466C8.61 5.3225 8.788 5.2505 9 5.25C9.212 5.2495 9.39025 5.3215 9.53475 5.466C9.67925 5.6105 9.751 5.7885 9.75 6V8.7Z" fill="#0B1C30" fillOpacity="0.8" />
+    </svg>
+  )
+}
+
+function RevisionHistoryCreateIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M15.75 10.5V14.25C15.75 14.6478 15.592 15.0294 15.3107 15.3107C15.0294 15.592 14.6478 15.75 14.25 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H7.5V3.75H3.75V14.25H14.25V10.5H15.75Z" fill="#0B1C30" fillOpacity="0.7" />
+      <path d="M15.75 5.25H12.75V2.25H11.25V5.25H8.25V6.75H11.25V9.75H12.75V6.75H15.75V5.25Z" fill="#0B1C30" fillOpacity="0.7" />
     </svg>
   )
 }
@@ -246,6 +291,11 @@ function getHrJobIdFromPath(pathname: string) {
   return decodeURIComponent(pathname.slice(hrJobDetailPathPrefix.length).split('/')[0] || '')
 }
 
+function getHrJobDetailTabFromSearch(search: string): JobDetailTab {
+  const tab = new URLSearchParams(search).get('tab')
+  return tab === 'criteria' ? 'criteria' : 'overview'
+}
+
 function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: boolean; onHome: () => void; triggerToast?: ToastTrigger }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -268,12 +318,13 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [isSavingJob, setIsSavingJob] = useState(false)
   const [isDeadlineCalendarOpen, setIsDeadlineCalendarOpen] = useState(false)
   const [deadlineCalendarMonth, setDeadlineCalendarMonth] = useState(() => getCalendarMonth(emptyJobForm.applicationDeadline))
+  const [deadlineInputValue, setDeadlineInputValue] = useState('')
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
   const [jobConfirmAction, setJobConfirmAction] = useState<JobConfirmAction>(null)
   const [jobConfirmTarget, setJobConfirmTarget] = useState<JobPosting | null>(null)
   const [isJobActionSubmitting, setIsJobActionSubmitting] = useState(false)
   const [pendingDuplicateTitlePayload, setPendingDuplicateTitlePayload] = useState<JobPostingPayload | null>(null)
-  const [jobDetailTab, setJobDetailTab] = useState<JobDetailTab>('overview')
+  const [jobDetailTab, setJobDetailTab] = useState<JobDetailTab>(() => getHrJobDetailTabFromSearch(location.search))
   const [jobCriteria, setJobCriteria] = useState<JobCriteriaResponse[]>([])
   const [isEditingCriteria, setIsEditingCriteria] = useState(false)
   const [criteriaForms, setCriteriaForms] = useState<EditableCriterion[]>([])
@@ -286,6 +337,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
   const jobTotalElements = getListTotalElements(jobs, jobs.length)
+  const safeJobPage = Math.min(jobPage, jobPageCount)
+  const jobPageItems = getCompactPageItems(safeJobPage, jobPageCount)
   const isJobFormDirty = (
     jobForm.title.trim() !== '' ||
     jobForm.department.trim() !== '' ||
@@ -368,6 +421,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setJobForm(emptyJobForm)
+    setDeadlineInputValue('')
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobFieldErrors({})
     setPendingDuplicateTitlePayload(null)
@@ -383,6 +437,11 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }, [location.pathname])
 
   useEffect(() => {
+    if (getHrJobViewFromPath(location.pathname) !== 'detail') return
+    setJobDetailTab(getHrJobDetailTabFromSearch(location.search))
+  }, [location.pathname, location.search])
+
+  useEffect(() => {
     const jobId = getHrJobIdFromPath(location.pathname)
     if (!jobId) return
     if (selectedJob?.id === jobId) return
@@ -390,7 +449,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     const nextJobView = getHrJobViewFromPath(location.pathname)
     let isActive = true
     setJobView(nextJobView)
-    setJobDetailTab('overview')
+    setJobDetailTab(getHrJobDetailTabFromSearch(location.search))
     setJobCriteria([])
     setIsEditingCriteria(false)
     setCriteriaForms([])
@@ -409,6 +468,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
             salaryMin: job.salaryMin ? formatCurrencyInput(String(job.salaryMin)) : '',
             salaryMax: job.salaryMax ? formatCurrencyInput(String(job.salaryMax)) : '',
           })
+          setDeadlineInputValue(formatDeadlineDisplay(job.applicationDeadline || ''))
           setJobForm({
             title: job.title,
             department: job.department,
@@ -438,6 +498,16 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       isActive = false
     }
   }, [location.pathname, navigate, selectedJob?.id, triggerToast])
+
+  const updateJobDetailTab = (tab: JobDetailTab) => {
+    setJobDetailTab(tab)
+    if (jobView !== 'detail') return
+
+    const search = tab === 'criteria' ? '?tab=criteria' : ''
+    if (location.search !== search) {
+      navigate({ pathname: location.pathname, search })
+    }
+  }
 
   useEffect(() => {
     if (jobView !== 'detail' || jobDetailTab !== 'criteria' || !selectedJob?.id) return
@@ -511,10 +581,47 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
     setCriteriaForms((currentForms) => [...currentForms, createEmptyCriterionRow()])
   }
+  const setCriterionLengthError = (clientId: string, field: 'name' | 'description') => {
+    setCriteriaFieldErrors((currentErrors) => ({
+      ...currentErrors,
+      [clientId]: {
+        ...(currentErrors[clientId] || {}),
+        [field]: criteriaLengthExceededMessage,
+      },
+    }))
+  }
+  const shouldBlockCriterionPaste = (
+    clientId: string,
+    field: 'name' | 'description',
+    limit: number,
+    event: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const pastedText = event.clipboardData.getData('text')
+    const target = event.currentTarget
+    const currentLength = target.value.length
+    const selectionStart = target.selectionStart ?? currentLength
+    const selectionEnd = target.selectionEnd ?? currentLength
+    const selectedLength = Math.max(0, selectionEnd - selectionStart)
+    const nextLength = currentLength - selectedLength + pastedText.length
+
+    if (nextLength > limit) {
+      event.preventDefault()
+      setCriterionLengthError(clientId, field)
+      return true
+    }
+
+    return false
+  }
   const updateCriterionForm = (clientId: string, field: keyof Pick<EditableCriterion, 'name' | 'description' | 'category' | 'weight'>, value: string) => {
     if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
 
-    const nextValue = field === 'weight' ? normalizeWeightInput(value) : value
+    const nextValue = field === 'weight'
+      ? normalizeWeightInput(value)
+      : field === 'name'
+        ? value.slice(0, criteriaNameLimit)
+        : field === 'description'
+          ? value.slice(0, criteriaDescriptionLimit)
+        : value
     setCriteriaForms((currentForms) => currentForms.map((form) => (
       form.clientId === clientId ? { ...form, [field]: nextValue } : form
     )))
@@ -598,13 +705,13 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       const normalizedName = row.name.toLowerCase()
 
       if (!row.name) rowErrors.name = 'Criterion name is required.'
-      if (row.name.length > criteriaNameLimit) rowErrors.name = `Must be ${criteriaNameLimit} characters or less.`
+      if (row.name.length > criteriaNameLimit) rowErrors.name = criteriaLengthExceededMessage
       if (normalizedName && Number(draftNameCounts.get(normalizedName)) > 1) {
         rowErrors.name = 'Criterion name must be unique in this job.'
       }
       if (!criteriaCategories.includes(row.category)) rowErrors.category = 'Category is required.'
       if (!row.description) rowErrors.description = 'Description is required.'
-      if (row.description.length > criteriaDescriptionLimit) rowErrors.description = `Must be ${criteriaDescriptionLimit} characters or less.`
+      if (row.description.length > criteriaDescriptionLimit) rowErrors.description = criteriaLengthExceededMessage
       if (!/^\d+(\.\d)?$/.test(row.weight) || !Number.isFinite(numericWeight) || numericWeight < 1 || numericWeight > 100) {
         rowErrors.weight = 'Must be between 1 and 100.'
       }
@@ -701,21 +808,37 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobFieldErrors({})
   }
   const getInputClassName = (hasError?: boolean) => (hasError ? styles.jobInputError : undefined)
-  const openDeadlinePicker = () => {
+  const toggleDeadlinePicker = () => {
     setDeadlineCalendarMonth(getCalendarMonth(jobForm.applicationDeadline))
     setIsDeadlineCalendarOpen((isOpen) => !isOpen)
   }
+  const updateDeadlineInputValue = (value: string) => {
+    const nextInputValue = value.slice(0, FIELD_LENGTH_LIMITS.defaultText)
+    setDeadlineInputValue(nextInputValue)
+
+    const nextDeadlineValue = parseDeadlineInput(nextInputValue)
+    updateJobFormField('applicationDeadline', nextDeadlineValue)
+
+    if (nextDeadlineValue) {
+      setDeadlineCalendarMonth(getCalendarMonth(nextDeadlineValue))
+    }
+  }
   const selectDeadlineDate = (date: Date) => {
-    updateJobFormField('applicationDeadline', getLocalDateKey(date))
+    const nextDeadlineValue = getLocalDateKey(date)
+    setDeadlineInputValue(formatDeadlineDisplay(nextDeadlineValue))
+    updateJobFormField('applicationDeadline', nextDeadlineValue)
+    setDeadlineCalendarMonth(getCalendarMonth(nextDeadlineValue))
     setIsDeadlineCalendarOpen(false)
   }
   const clearDeadlineDate = () => {
+    setDeadlineInputValue('')
     updateJobFormField('applicationDeadline', '')
     setIsDeadlineCalendarOpen(false)
   }
   const openCreateJob = () => {
     window.sessionStorage.removeItem(jobFormRefreshViewKey)
     setJobForm(emptyJobForm)
+    setDeadlineInputValue('')
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobFieldErrors({})
     setIsCancelConfirmOpen(false)
@@ -728,6 +851,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     updateHrJobsPath(hrGenerateJobAiPath)
   }
   const openCreateJobForm = () => {
+    setDeadlineInputValue('')
     setJobView('create')
     updateHrJobsPath(hrCreateJobPostingPath)
   }
@@ -736,6 +860,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setIsCancelConfirmOpen(false)
     setJobFieldErrors({})
     setPendingDuplicateTitlePayload(null)
+    setDeadlineInputValue('')
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobForm(emptyJobForm)
     if (jobView === 'edit' && selectedJob) {
@@ -773,6 +898,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setIsCancelConfirmOpen(false)
     setJobFieldErrors({})
     setPendingDuplicateTitlePayload(null)
+    setDeadlineInputValue('')
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobForm(emptyJobForm)
     setSelectedJob(null)
@@ -798,6 +924,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobFieldErrors({})
     setPendingDuplicateTitlePayload(null)
     setIsCancelConfirmOpen(false)
+    setDeadlineInputValue(formatDeadlineDisplay(job.applicationDeadline || ''))
     setSalaryInputValues({
       salaryMin: job.salaryMin ? formatCurrencyInput(String(job.salaryMin)) : '',
       salaryMax: job.salaryMax ? formatCurrencyInput(String(job.salaryMax)) : '',
@@ -938,11 +1065,24 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       : selectedJobIsDraft
         ? { label: '', value: 'NOT YET PUBLISH', helper: '' }
         : { label: 'Days Open', value: String(getDaysOpen(selectedJob.createdAt)), helper: daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left` }
-    const hiringTeamMessage = selectedJobIsClosed
-      ? 'This posting is closed. No new applications are being accepted.'
-      : selectedJobIsDraft
-        ? 'This posting is a draft and not visible to candidates yet.'
-        : '3 collaborators assigned to this role'
+    const revisionDate = formatJobDate(selectedJob.createdAt)
+    const revisionHistoryItems = [
+      {
+        icon: <RevisionHistoryOpenIcon />,
+        title: 'Open Job Posting',
+        meta: `${selectedJob.title || 'Job'} • ${revisionDate} • 11:00 AM`,
+      },
+      {
+        icon: <RevisionHistoryUpdateIcon />,
+        title: 'Update Job Posting',
+        meta: `${selectedJob.department || 'HR'} • ${revisionDate} • 09:00 AM`,
+      },
+      {
+        icon: <RevisionHistoryCreateIcon />,
+        title: `Create Job Posting: "${selectedJob.title}"`,
+        meta: `${selectedJob.department || 'HR'} • ${revisionDate} • 02:15 PM`,
+      },
+    ]
 
     return (
       <div className={`role-content ${styles.jobsContent}`}>
@@ -967,14 +1107,43 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           )}
         </div>
         <div className={styles.jobDetailTabs}>
-          <button type="button" className={jobDetailTab === 'overview' ? styles.activeJobDetailTab : undefined} onClick={() => requestCriteriaCancel(() => setJobDetailTab('overview'))}>Job Overview</button>
-          <button type="button" className={jobDetailTab === 'criteria' ? styles.activeJobDetailTab : undefined} onClick={() => requestCriteriaCancel(() => setJobDetailTab('criteria'))}>Criteria Set</button>
+          <button type="button" className={jobDetailTab === 'overview' ? styles.activeJobDetailTab : undefined} onClick={() => requestCriteriaCancel(() => updateJobDetailTab('overview'))}>Job Overview</button>
+          <button type="button" className={jobDetailTab === 'criteria' ? styles.activeJobDetailTab : undefined} onClick={() => requestCriteriaCancel(() => updateJobDetailTab('criteria'))}>Criteria Set</button>
         </div>
         {jobDetailTab === 'overview' ? (
           <section className={styles.jobDetailGrid}>
             <div className={styles.jobDetailMain}>
+              <article className={styles.jobGeneralInfoCard}>
+                <h2>General Information</h2>
+                <div className={styles.jobGeneralInfoGrid}>
+                  <div>
+                    <strong>Department</strong>
+                    <span>{selectedJob.department || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <strong>Employment type</strong>
+                    <span>{formatEmploymentType(selectedJob.employmentType)}</span>
+                  </div>
+                  <div>
+                    <strong>Location</strong>
+                    <span>{formatLocationDisplay(selectedJob.locationType, selectedJob.location)}</span>
+                  </div>
+                  <div>
+                    <strong>Application Deadline</strong>
+                    <span>{formatJobDate(selectedJob.applicationDeadline) || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <strong>Salary Range</strong>
+                    <span>
+                      {selectedJob.salaryMin || selectedJob.salaryMax
+                        ? `${formatCurrencyInput(String(selectedJob.salaryMin || 0))} - ${formatCurrencyInput(String(selectedJob.salaryMax || 0))}`
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </article>
               <article className={styles.jobDetailCard}>
-                <h2><span><i className="fa-solid fa-head-side-virus"></i></span><b>Technical Overview</b><small>Core mission and strategic impact</small></h2>
+                <h2>Technical Overview</h2>
                 <strong>Job Description</strong>
                 <RichTextDisplay value={selectedJob.description} fallback="No description provided." />
                 <strong>Key Requirements</strong>
@@ -985,14 +1154,14 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 </div>
               </article>
               <article className={styles.recentActivityCard}>
-                <header><strong>Recent Activity</strong><button type="button">View All Candidates</button></header>
+                <header><strong>Recent Applicants</strong><button type="button">View All Candidates</button></header>
                 <section><span>KS</span><div><strong>Kasper Schmidt</strong><small>Applied 2 hours ago - 98% Match</small></div><i className="fa-solid fa-ellipsis-vertical"></i></section>
                 <section><span>ML</span><div><strong>Maria Lopez</strong><small>Applied 5 hours ago - 92% Match</small></div><i className="fa-solid fa-ellipsis-vertical"></i></section>
               </article>
             </div>
             <aside className={styles.jobSidePanel}>
               <div className={styles.jobStatsRow}>
-                <section><small>Applicants</small><strong>{selectedJob.applicantCount}</strong><span>+8 this week</span></section>
+                <section><small>Applicants</small><strong>{selectedJob.applicantCount}</strong><span>+0 this week</span></section>
                 <section>
                   {jobStatusStat.label && <small>{jobStatusStat.label}</small>}
                   <strong className={!selectedJobIsOpen ? styles.jobStatusStatValue : undefined}>{jobStatusStat.value}</strong>
@@ -1006,23 +1175,19 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <label><span>Sourcing Velocity</span><b>Medium (62%)</b></label>
                 <div><span style={{ width: '62%' }}></span></div>
               </section>
-              <section className={styles.jobActionsCard}>
-                <h3>Job Actions</h3>
-                <button type="button"><span><DownloadJobIcon /></span><span>Download JD (PDF)</span></button>
-                {selectedJobIsOpen ? (
-                  <button type="button" onClick={() => requestJobAction('close', selectedJob)}><span><CloseJobIcon /></span><span>Close Posting</span></button>
-                ) : (
-                  <button type="button" disabled={isActionLocked} onClick={() => requestJobAction('open', selectedJob)}><span><OpenJobIcon /></span><span>Open Posting</span></button>
-                )}
-                {selectedJobIsDraft && (
-                  <button type="button" className={styles.jobActionDanger} disabled={isActionLocked} onClick={() => requestJobAction('deleteDraft', selectedJob)}><span><DeleteJobIcon /></span><span>Delete Draft</span></button>
-                )}
-                <button type="button"><span><RevisionHistoryIcon /></span><span>View Revision History</span></button>
-              </section>
-              <section className={styles.hiringTeamCard}>
-                <h3>Hiring Team</h3>
-                <div><span>JD</span><span>AS</span><span>RL</span><button type="button">+</button></div>
-                <p>{hiringTeamMessage}</p>
+              <section className={styles.revisionHistoryCard}>
+                <h3>Revision History</h3>
+                <div className={styles.revisionHistoryList}>
+                  {revisionHistoryItems.map((item, index) => (
+                    <div className={styles.revisionHistoryItem} key={`${item.title}-${index}`}>
+                      <span className={styles.revisionHistoryIcon}>{item.icon}</span>
+                      <div className={styles.revisionHistoryText}>
+                        <strong>{item.title}</strong>
+                        <small>{item.meta}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </section>
             </aside>
           </section>
@@ -1058,12 +1223,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   <div className={styles.criteriaFormRow} key={form.clientId}>
                   <label>
                     <span>Criterion Name *</span>
-                    <input value={form.name} maxLength={criteriaNameLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} placeholder="System Architecture" />
+                    <input value={form.name} maxLength={criteriaNameLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} onPaste={(event) => shouldBlockCriterionPaste(form.clientId, 'name', criteriaNameLimit, event)} placeholder="System Architecture" />
                     <small aria-hidden={!rowErrors.name}>{rowErrors.name || 'Criterion name error'}</small>
                   </label>
                   <label>
                     <span>Description *</span>
-                    <textarea value={form.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} placeholder="Describe what this criterion evaluates" />
+                    <textarea value={form.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} onPaste={(event) => shouldBlockCriterionPaste(form.clientId, 'description', criteriaDescriptionLimit, event)} placeholder="Describe what this criterion evaluates" />
                     <small aria-hidden={!rowErrors.description}>{rowErrors.description || 'Description error'}</small>
                   </label>
                   <label>
@@ -1299,12 +1464,21 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <label className={styles.deadlineField}>
                   <span>Application Deadline</span>
                   <div className={`${styles.iconInput} ${styles.deadlinePickerShell}`}>
-                    <button type="button" className={styles.datePickerButton} onClick={openDeadlinePicker} aria-label="Open application deadline calendar">
+                    <button type="button" className={styles.datePickerButton} onClick={toggleDeadlinePicker} aria-label="Open application deadline calendar">
                       <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4C0 3.45 0.195833 2.97917 0.5875 2.5875C0.979167 2.19583 1.45 2 2 2H3V0H5V2H13V0H15V2H16C16.55 2 17.0208 2.19583 17.4125 2.5875C17.8042 2.97917 18 3.45 18 4V18C18 18.55 17.8042 19.0208 17.4125 19.4125C17.0208 19.8042 16.55 20 16 20H2ZM2 18H16V8H2V18ZM2 6H16V4H2V6ZM2 6V4V6Z" fill="#565E74" />
                       </svg>
                     </button>
-                    <input ref={deadlineInputRef} className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))} type="text" value={formatDeadlineDisplay(jobForm.applicationDeadline)} maxLength={FIELD_LENGTH_LIMITS.defaultText} onClick={openDeadlinePicker} onFocus={() => setDeadlineCalendarMonth(getCalendarMonth(jobForm.applicationDeadline))} onChange={() => {}} placeholder="dd/mm/yyyy" readOnly />
+                    <input
+                      ref={deadlineInputRef}
+                      className={getInputClassName(Boolean(jobFieldErrors.applicationDeadline))}
+                      type="text"
+                      value={deadlineInputValue}
+                      maxLength={FIELD_LENGTH_LIMITS.defaultText}
+                      onFocus={() => setDeadlineCalendarMonth(getCalendarMonth(jobForm.applicationDeadline))}
+                      onChange={(event) => updateDeadlineInputValue(event.target.value)}
+                      placeholder="dd/mm/yyyy"
+                    />
                     {isDeadlineCalendarOpen && (
                       <div className={styles.deadlineCalendar}>
                         <header>
@@ -1525,11 +1699,15 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           <footer>
             <span>Showing {jobs.length} of {jobTotalElements} entries</span>
             <div>
-              <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Previous page" disabled={jobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-              {Array.from({ length: jobPageCount }, (_, index) => index + 1).map((page) => (
-                <button type="button" className={page === jobPage ? styles.activePage : ''} onClick={() => setJobPage(page)} key={page}>{page}</button>
+              <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Previous page" disabled={safeJobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
+              {jobPageItems.map((item, index) => (
+                item === 'ellipsis' ? (
+                  <span className="pagination-ellipsis" key={`job-ellipsis-${index}`}>...</span>
+                ) : (
+                  <button type="button" className={item === safeJobPage ? styles.activePage : ''} onClick={() => setJobPage(item)} key={item}>{item}</button>
+                )
               ))}
-              <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Next page" disabled={jobPage === jobPageCount} onClick={() => setJobPage((page) => Math.min(jobPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
+              <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Next page" disabled={safeJobPage === jobPageCount} onClick={() => setJobPage((page) => Math.min(jobPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
             </div>
           </footer>
         </section>

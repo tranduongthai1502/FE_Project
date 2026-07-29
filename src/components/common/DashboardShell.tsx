@@ -30,6 +30,12 @@ function getDisplayName(user: StoredUser | null) {
   return user?.full_name || user?.fullName || user?.name || user?.email || 'Alex Thompson'
 }
 
+function formatDisplayName(value: string, limit = 15) {
+  const trimmed = value.trim()
+  if (trimmed.length <= limit) return trimmed
+  return `${trimmed.slice(0, limit)}...`
+}
+
 function formatRoleLabel(role: string) {
   return role
     .replace(/[_-]+/g, ' ')
