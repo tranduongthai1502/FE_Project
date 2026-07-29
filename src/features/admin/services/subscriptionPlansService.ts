@@ -206,7 +206,7 @@ export function getPlanFeatureState(plan?: SubscriptionPlan) {
     const status = featureStatusByKey.get(feature.code)
     return {
       ...feature,
-      enabled: status ? status === 'ENABLED' : feature.enabled,
+      enabled: status ? ['ACTIVE', 'ENABLED', 'TRUE'].includes(status) : feature.enabled,
     }
   })
 }

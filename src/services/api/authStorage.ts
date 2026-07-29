@@ -19,6 +19,9 @@ export function getStoredAuthRole(): StoredAuthRole | null {
 
 export function saveAuthRole(role: StoredAuthRole, keepLoggedIn: boolean) {
   const storage = keepLoggedIn ? window.localStorage : window.sessionStorage
+  const inactiveStorage = keepLoggedIn ? window.sessionStorage : window.localStorage
+
+  inactiveStorage.removeItem(AUTH_PAGE_STORAGE_KEY)
   storage.setItem(AUTH_PAGE_STORAGE_KEY, role)
 }
 

@@ -37,6 +37,35 @@ import {
   validationErrorMessages,
 } from '@/services/api/axiosErrorHandler'
 
+const planNumberFieldMaxLength = 50
+const planDescriptionMaxLength = 500
+const billingCycleOptions = [
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'SIX_MONTHLY', label: '6 Monthly' },
+  { value: 'YEARLY', label: 'Yearly' },
+]
+
+function getPlanMaxLengthMessage(label: string, maxLength: number) {
+  return `${label} must be ${maxLength} characters or less.`
+}
+
+function isPlanMaxLengthError(message?: string) {
+  return Boolean(message?.includes('characters or less.'))
+}
+
+function isActivePlanFeatureStatus(status?: string) {
+  return ['active', 'enabled', 'true'].includes(String(status || '').trim().toLowerCase())
+}
+
+function getPlanFeatureDisplayLabel(featureKey: string) {
+  const normalizedKey = featureKey.trim().toUpperCase()
+  const matchingFeature = planFeatureDefaults.find((feature) => (
+    feature.code === normalizedKey || feature.key.toUpperCase() === normalizedKey
+  ))
+
+  return matchingFeature?.title || formatFeatureLabel(featureKey)
+}
+
 function CreatePlanView({
   onBack,
   onHome,
@@ -52,6 +81,7 @@ function CreatePlanView({
 }) {
   const [planName, setPlanName] = useState('')
   const [description, setDescription] = useState('')
+  const [billingCycle, setBillingCycle] = useState('MONTHLY')
   const [monthlyPrice, setMonthlyPrice] = useState('')
   const [maxStaffAccount, setMaxStaffAccount] = useState('')
   const [maxActiveJobPosting, setMaxActiveJobPosting] = useState('')
@@ -62,6 +92,29 @@ function CreatePlanView({
   const [fieldErrors, setFieldErrors] = useState<CreatePlanFieldErrors>({})
   const [isSavingPlan, setIsSavingPlan] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
+
+  const updateLimitedPlanField = (
+    field: keyof CreatePlanFieldErrors,
+    value: string,
+    maxLength: number,
+    label: string,
+    setter: (nextValue: string) => void,
+    formatter?: (nextValue: string) => string,
+  ) => {
+    const isOverMaxLength = value.length > maxLength
+    const nextValue = isOverMaxLength ? value.slice(0, maxLength) : value
+    setter(formatter ? formatter(nextValue) : nextValue)
+    setFieldErrors((current) => {
+      if (isOverMaxLength) {
+        return {
+          ...current,
+          [field]: getPlanMaxLengthMessage(label, maxLength),
+        }
+      }
+      if (!current[field]) return current
+      return { ...current, [field]: '' }
+    })
+  }
 
   const toggleFeature = (key: string) => {
     setFeatures((current) => current.map((feature) => (
@@ -128,14 +181,16 @@ function CreatePlanView({
     const payload: CreatePlanPayload = {
       "name": planName,
       "description": description,
-      "monthlyPrice": parseCurrencyInput(monthlyPrice),
+      "billingCycle": billingCycle,
+      "price": parseCurrencyInput(monthlyPrice),
       "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
       "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
+      "status": 'ACTIVE',
       "features": features.map((feature) => ({
         "key": feature.code,
-        "status": feature.enabled ? 'ENABLED' : 'DISABLED',
+        "status": feature.enabled ? 'ACTIVE' : 'INACTIVE',
       })),
     }
 
@@ -157,6 +212,7 @@ function CreatePlanView({
   const hasDraftChanges = Boolean(
     planName.trim() ||
     description.trim() ||
+    billingCycle !== 'MONTHLY' ||
     monthlyPrice.trim() ||
     maxStaffAccount.trim() ||
     maxActiveJobPosting.trim() ||
@@ -198,36 +254,43 @@ function CreatePlanView({
         <div className="create-plan-details-grid">
           <label>
             <span>Plan Name <span className="required-mark">*</span></span>
-            <input
-              className={fieldErrors.planName ? 'has-error' : ''}
-              value={planName}
-              onChange={(event) => {
-                setPlanName(event.target.value.slice(0, FIELD_LENGTH_LIMITS.defaultText))
-                if (fieldErrors.planName) setFieldErrors((current) => ({ ...current, planName: '' }))
-              }}
-              placeholder="Plan Name"
-              maxLength={FIELD_LENGTH_LIMITS.defaultText}
-              required
-            />
+              <input
+                className={fieldErrors.planName ? 'has-error' : ''}
+                value={planName}
+                onChange={(event) => {
+                  updateLimitedPlanField('planName', event.target.value, FIELD_LENGTH_LIMITS.defaultText, 'Plan name', setPlanName)
+                }}
+                placeholder="Plan Name"
+                required
+              />
             {fieldErrors.planName && <small className="create-plan-field-error">{fieldErrors.planName}</small>}
           </label>
 
           <label>
-            <span>Monthly Price <span className="required-mark">*</span></span>
-            <div className={`price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
-              <span>$</span>
-              <input
-                maxLength={FIELD_LENGTH_LIMITS.defaultText}
-                type="text"
-                inputMode="decimal"
-                value={monthlyPrice}
-                onChange={(event) => {
-                  setMonthlyPrice(formatCurrencyInput(event.target.value))
-                  if (fieldErrors.monthlyPrice) setFieldErrors((current) => ({ ...current, monthlyPrice: '' }))
-                }}
-                placeholder="0.00"
-                required
-              />
+            <span>Price <span className="required-mark">*</span></span>
+            <div className="plan-price-row">
+              <select
+                value={billingCycle}
+                onChange={(event) => setBillingCycle(event.target.value)}
+                aria-label="Billing cycle"
+              >
+                {billingCycleOptions.map((option) => (
+                  <option value={option.value} key={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <div className={`price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
+                <span>$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={monthlyPrice}
+                  onChange={(event) => {
+                    updateLimitedPlanField('monthlyPrice', event.target.value, planNumberFieldMaxLength, 'Price', setMonthlyPrice, formatCurrencyInput)
+                  }}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
             </div>
             {fieldErrors.monthlyPrice && <small className="create-plan-field-error">{fieldErrors.monthlyPrice}</small>}
           </label>
@@ -238,11 +301,9 @@ function CreatePlanView({
               className={fieldErrors.description ? 'has-error' : ''}
               value={description}
               onChange={(event) => {
-                setDescription(event.target.value)
-                if (fieldErrors.description) setFieldErrors((current) => ({ ...current, description: '' }))
+                updateLimitedPlanField('description', event.target.value, planDescriptionMaxLength, 'Description', setDescription)
               }}
               placeholder="Short Description"
-              maxLength={FIELD_LENGTH_LIMITS.longText}
               required
             />
             {fieldErrors.description && <small className="create-plan-field-error">{fieldErrors.description}</small>}
@@ -253,14 +314,12 @@ function CreatePlanView({
               <span>Max Staff Accounts <span className="required-mark">*</span></span>
               <div className={`limit-input ${isStaffUnlimited ? 'unlimited-selected' : ''} ${fieldErrors.maxStaffAccount ? 'has-error' : ''}`}>
                 <input
-                  maxLength={FIELD_LENGTH_LIMITS.defaultText}
                   type="number"
                   min="0"
                   step="1"
                   value={maxStaffAccount}
                   onChange={(event) => {
-                    setMaxStaffAccount(event.target.value)
-                    if (fieldErrors.maxStaffAccount) setFieldErrors((current) => ({ ...current, maxStaffAccount: '' }))
+                    updateLimitedPlanField('maxStaffAccount', event.target.value, planNumberFieldMaxLength, 'Max staff accounts', setMaxStaffAccount)
                   }}
                   placeholder="0"
                   disabled={isStaffUnlimited}
@@ -286,14 +345,12 @@ function CreatePlanView({
               <span>Max Active Job Postings <span className="required-mark">*</span></span>
               <div className={`limit-input ${isJobsUnlimited ? 'unlimited-selected' : ''} ${fieldErrors.maxActiveJobPosting ? 'has-error' : ''}`}>
                 <input
-                  maxLength={FIELD_LENGTH_LIMITS.defaultText}
                   type="number"
                   min="0"
                   step="1"
                   value={maxActiveJobPosting}
                   onChange={(event) => {
-                    setMaxActiveJobPosting(event.target.value)
-                    if (fieldErrors.maxActiveJobPosting) setFieldErrors((current) => ({ ...current, maxActiveJobPosting: '' }))
+                    updateLimitedPlanField('maxActiveJobPosting', event.target.value, planNumberFieldMaxLength, 'Max active job postings', setMaxActiveJobPosting)
                   }}
                   placeholder="0"
                   disabled={isJobsUnlimited}
@@ -386,6 +443,7 @@ function EditPlanDetailView({
 }) {
   const [planName, setPlanName] = useState(plan.name)
   const [description, setDescription] = useState(plan.description)
+  const [billingCycle, setBillingCycle] = useState(plan.billingCycle || 'MONTHLY')
   const [monthlyPrice, setMonthlyPrice] = useState(formatCurrencyInput(plan.monthlyPrice.toFixed(2)))
   const [maxStaffAccount, setMaxStaffAccount] = useState(plan.maxStaffAccount == null ? '' : String(plan.maxStaffAccount))
   const [maxActiveJobPosting, setMaxActiveJobPosting] = useState(plan.maxActiveJobPosting == null ? '' : String(plan.maxActiveJobPosting))
@@ -399,6 +457,29 @@ function EditPlanDetailView({
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
   const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false)
   const [isRetireConfirmOpen, setIsRetireConfirmOpen] = useState(false)
+
+  const updateLimitedPlanField = (
+    field: keyof CreatePlanFieldErrors,
+    value: string,
+    maxLength: number,
+    label: string,
+    setter: (nextValue: string) => void,
+    formatter?: (nextValue: string) => string,
+  ) => {
+    const isOverMaxLength = value.length > maxLength
+    const nextValue = isOverMaxLength ? value.slice(0, maxLength) : value
+    setter(formatter ? formatter(nextValue) : nextValue)
+    setFieldErrors((current) => {
+      if (isOverMaxLength) {
+        return {
+          ...current,
+          [field]: getPlanMaxLengthMessage(label, maxLength),
+        }
+      }
+      if (!current[field]) return current
+      return { ...current, [field]: '' }
+    })
+  }
 
   const toggleFeature = (key: string) => {
     setFeatures((current) => current.map((feature) => (
@@ -427,18 +508,23 @@ function EditPlanDetailView({
 
     const planNameError = validateRequiredPlanName(planName, hasDuplicatePlanName(existingPlans, planName, plan.id))
     if (planNameError) nextFieldErrors.planName = planNameError
+    else if (isPlanMaxLengthError(fieldErrors.planName)) nextFieldErrors.planName = fieldErrors.planName
 
     const descriptionError = validateRequiredShortDescription(description)
     if (descriptionError) nextFieldErrors.description = descriptionError
+    else if (isPlanMaxLengthError(fieldErrors.description)) nextFieldErrors.description = fieldErrors.description
 
     const monthlyPriceError = validateRequiredPrice(monthlyPrice)
     if (monthlyPriceError) nextFieldErrors.monthlyPrice = monthlyPriceError
+    else if (isPlanMaxLengthError(fieldErrors.monthlyPrice)) nextFieldErrors.monthlyPrice = fieldErrors.monthlyPrice
 
     const staffLimitError = validatePositiveNumberOrUnlimited(maxStaffAccount, isStaffUnlimited)
     if (staffLimitError) nextFieldErrors.maxStaffAccount = staffLimitError
+    else if (isPlanMaxLengthError(fieldErrors.maxStaffAccount)) nextFieldErrors.maxStaffAccount = fieldErrors.maxStaffAccount
 
     const jobLimitError = validatePositiveNumberOrUnlimited(maxActiveJobPosting, isJobsUnlimited)
     if (jobLimitError) nextFieldErrors.maxActiveJobPosting = jobLimitError
+    else if (isPlanMaxLengthError(fieldErrors.maxActiveJobPosting)) nextFieldErrors.maxActiveJobPosting = fieldErrors.maxActiveJobPosting
 
     setFieldErrors(nextFieldErrors)
     if (Object.keys(nextFieldErrors).length > 0) {
@@ -451,22 +537,28 @@ function EditPlanDetailView({
       return
     }
 
-    setIsSaveConfirmOpen(true)
+    if (isActive && assignedTenantCount > 0) {
+      setIsSaveConfirmOpen(true)
+      return
+    }
+
+    await confirmSavePlan()
   }
 
   const confirmSavePlan = async () => {
     const payload: UpdatePlanPayload = {
       "name": planName,
       "description": description,
-      "monthlyPrice": parseCurrencyInput(monthlyPrice),
+      "billingCycle": billingCycle,
+      "price": parseCurrencyInput(monthlyPrice),
       "maxStaffAccount": isStaffUnlimited ? null : Number(maxStaffAccount || 0),
       "staffAccountUnlimited": isStaffUnlimited,
       "maxActiveJobPosting": isJobsUnlimited ? null : Number(maxActiveJobPosting || 0),
       "activeJobPostingUnlimited": isJobsUnlimited,
-      "status": isActive ? 'ACTIVE' : 'DISABLED',
+      "status": isActive ? 'ACTIVE' : 'INACTIVE',
       "features": features.map((feature) => ({
         "key": feature.code,
-        "status": feature.enabled ? 'ENABLED' : 'DISABLED',
+        "status": feature.enabled ? 'ACTIVE' : 'INACTIVE',
       })),
     }
 
@@ -491,6 +583,7 @@ function EditPlanDetailView({
   const hasDraftChanges = Boolean(
     planName !== plan.name ||
     description !== plan.description ||
+    billingCycle !== (plan.billingCycle || 'MONTHLY') ||
     parseCurrencyInput(monthlyPrice) !== plan.monthlyPrice ||
     maxStaffAccount !== (plan.maxStaffAccount == null ? '' : String(plan.maxStaffAccount)) ||
     maxActiveJobPosting !== (plan.maxActiveJobPosting == null ? '' : String(plan.maxActiveJobPosting)) ||
@@ -525,7 +618,6 @@ function EditPlanDetailView({
   }
 
   const activeTenantLabel = `${activeAssignedTenantCount} active tenant${activeAssignedTenantCount === 1 ? '' : 's'}`
-  const assignedTenantLabel = `${assignedTenantCount} tenant${assignedTenantCount === 1 ? '' : 's'}`
 
   return (
     <form className="role-content edit-plan-content" onSubmit={handleSavePlan} noValidate>
@@ -551,10 +643,8 @@ function EditPlanDetailView({
                   className={fieldErrors.planName ? 'has-error' : ''}
                   value={planName}
                   onChange={(event) => {
-                    setPlanName(event.target.value.slice(0, FIELD_LENGTH_LIMITS.defaultText))
-                    if (fieldErrors.planName) setFieldErrors((current) => ({ ...current, planName: '' }))
+                    updateLimitedPlanField('planName', event.target.value, FIELD_LENGTH_LIMITS.defaultText, 'Plan name', setPlanName)
                   }}
-                  maxLength={FIELD_LENGTH_LIMITS.defaultText}
                   required
                 />
                 {fieldErrors.planName && <small className="create-plan-field-error">{fieldErrors.planName}</small>}
@@ -562,12 +652,10 @@ function EditPlanDetailView({
               <label>
                 <span>Short Description</span>
                 <input
-                  maxLength={FIELD_LENGTH_LIMITS.defaultText}
                   className={fieldErrors.description ? 'has-error' : ''}
                   value={description}
                   onChange={(event) => {
-                    setDescription(event.target.value)
-                    if (fieldErrors.description) setFieldErrors((current) => ({ ...current, description: '' }))
+                    updateLimitedPlanField('description', event.target.value, planDescriptionMaxLength, 'Description', setDescription)
                   }}
                   required
                 />
@@ -575,20 +663,29 @@ function EditPlanDetailView({
               </label>
               <div className="edit-price-status-row">
                 <label>
-                  <span>Monthly Price (USD)</span>
-                  <div className={`price-input edit-monthly-price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
-                    <span>$</span>
-                    <input
-                      maxLength={FIELD_LENGTH_LIMITS.defaultText}
-                      type="text"
-                      inputMode="decimal"
-                      value={monthlyPrice}
-                      onChange={(event) => {
-                        setMonthlyPrice(formatCurrencyInput(event.target.value))
-                        if (fieldErrors.monthlyPrice) setFieldErrors((current) => ({ ...current, monthlyPrice: '' }))
-                      }}
-                      required
-                    />
+                  <span>Price</span>
+                  <div className="plan-price-row">
+                    <select
+                      value={billingCycle}
+                      onChange={(event) => setBillingCycle(event.target.value)}
+                      aria-label="Billing cycle"
+                    >
+                      {billingCycleOptions.map((option) => (
+                        <option value={option.value} key={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                    <div className={`price-input edit-monthly-price-input ${fieldErrors.monthlyPrice ? 'has-error' : ''}`}>
+                      <span>$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={monthlyPrice}
+                        onChange={(event) => {
+                          updateLimitedPlanField('monthlyPrice', event.target.value, planNumberFieldMaxLength, 'Price', setMonthlyPrice, formatCurrencyInput)
+                        }}
+                        required
+                      />
+                    </div>
                   </div>
                   {fieldErrors.monthlyPrice && <small className="create-plan-field-error">{fieldErrors.monthlyPrice}</small>}
                 </label>
@@ -614,14 +711,12 @@ function EditPlanDetailView({
                   <span className="edit-resource-limit-placeholder" aria-hidden="true" />
                 ) : (
                   <input
-                    maxLength={FIELD_LENGTH_LIMITS.defaultText}
                     className={fieldErrors.maxStaffAccount ? 'has-error' : ''}
                     type="number"
                     min="0"
                     value={maxStaffAccount}
                     onChange={(event) => {
-                      setMaxStaffAccount(event.target.value)
-                      if (fieldErrors.maxStaffAccount) setFieldErrors((current) => ({ ...current, maxStaffAccount: '' }))
+                      updateLimitedPlanField('maxStaffAccount', event.target.value, planNumberFieldMaxLength, 'Max staff accounts', setMaxStaffAccount)
                     }}
                   />
                 )}
@@ -649,14 +744,12 @@ function EditPlanDetailView({
                   <span className="edit-resource-limit-placeholder" aria-hidden="true" />
                 ) : (
                   <input
-                    maxLength={FIELD_LENGTH_LIMITS.defaultText}
                     className={fieldErrors.maxActiveJobPosting ? 'has-error' : ''}
                     type="number"
                     min="0"
                     value={maxActiveJobPosting}
                     onChange={(event) => {
-                      setMaxActiveJobPosting(event.target.value)
-                      if (fieldErrors.maxActiveJobPosting) setFieldErrors((current) => ({ ...current, maxActiveJobPosting: '' }))
+                      updateLimitedPlanField('maxActiveJobPosting', event.target.value, planNumberFieldMaxLength, 'Max active job postings', setMaxActiveJobPosting)
                     }}
                   />
                 )}
@@ -717,7 +810,7 @@ function EditPlanDetailView({
         <ConfirmActionModal
           isSubmitting={isSavingPlan}
           title="Confirm Action"
-          message={`This plan is currently assigned to ${assignedTenantLabel}. Saving changes will immediately update their resource limits and pricing.`}
+          message="Tenants currently in a paid billing cycle will keep their existing pricing and resource limits until their next renewal; the changes will apply starting each tenant's next cycle."
           cancelLabel="Cancel"
           confirmLabel="Confirm"
           onCancel={() => {
@@ -767,6 +860,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [planDetailError, setPlanDetailError] = useState('')
   const [deletePlanTarget, setDeletePlanTarget] = useState<SubscriptionPlan | null>(null)
   const [isDeletingPlan, setIsDeletingPlan] = useState(false)
+  const [planTenantCounts, setPlanTenantCounts] = useState<Record<string, number>>({})
   const [refreshPlansKey, setRefreshPlansKey] = useState(0)
   const [planPage, setPlanPage] = useState(1)
   const [planPageCount, setPlanPageCount] = useState(1)
@@ -850,6 +944,38 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   }, [activeView, planPage, planSort, refreshPlansKey])
 
   useEffect(() => {
+    if (activeView !== 'list' || plans.length === 0) {
+      if (activeView !== 'list') setPlanTenantCounts({})
+      return
+    }
+
+    let isActive = true
+
+    Promise.all(plans.map(async (plan) => {
+      try {
+        const tenantItems = await adminApi.getTenants({
+          sortField: 'companyName',
+          filters: { planId: plan.id },
+          sortBy: 'ASC',
+          page: 1,
+          size: 1,
+        })
+
+        return [plan.id, getListTotalElements(tenantItems, tenantItems.length)] as const
+      } catch {
+        return [plan.id, 0] as const
+      }
+    })).then((entries) => {
+      if (!isActive) return
+      setPlanTenantCounts(Object.fromEntries(entries))
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeView, plans])
+
+  useEffect(() => {
     if ((activeView !== 'detail' && activeView !== 'edit') || !selectedPlanId) {
       setSelectedPlanDetail(null)
       setPlanDetailError('')
@@ -884,7 +1010,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   }, [activeView, refreshPlansKey, selectedPlanId])
 
   useEffect(() => {
-    if (activeView !== 'detail' || !selectedPlanId) {
+    if ((activeView !== 'detail' && activeView !== 'edit') || !selectedPlanId) {
       setTenants([])
       setSubscriberPage(1)
       setSubscriberPageCount(1)
@@ -1011,8 +1137,15 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   }
 
   const requestDeletePlan = (plan: SubscriptionPlan) => {
+    const tenantCount = selectedPlanId === plan.id ? subscriberTotalCount : (planTenantCounts[plan.id] ?? 0)
+    if (tenantCount > 0) return
     setDeletePlanTarget(plan)
   }
+  const getPlanDeleteTooltip = (tenantCount: number) => (
+    tenantCount > 0
+      ? `Không thể xóa gói này vì hiện có ${tenantCount} tenant đang sử dụng.`
+      : 'Delete'
+  )
 
   const confirmDeletePlan = async () => {
     if (!deletePlanTarget) return
@@ -1047,7 +1180,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   if (activeView === 'detail') {
     const selectedPlan = selectedPlanDetail
     const matchingTenants = selectedPlan ? tenants : []
-    const enabledFeatures = selectedPlan?.features.filter((feature) => feature.status.toLowerCase() === 'enabled') || []
+    const enabledFeatures = selectedPlan?.features.filter((feature) => isActivePlanFeatureStatus(feature.status)) || []
+    const selectedPlanTenantCount = subscriberTotalCount
+    const selectedPlanDeleteTooltip = getPlanDeleteTooltip(selectedPlanTenantCount)
 
     return (
       <div className="role-content subscription-plan-detail-content">
@@ -1079,9 +1214,11 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
               <div className="plan-detail-title-actions">
                 <button
                   type="button"
-                  className="plan-detail-delete-button"
+                  className="plan-detail-delete-button icon-tooltip"
+                  data-tooltip={selectedPlanDeleteTooltip}
+                  title={selectedPlanTenantCount > 0 ? selectedPlanDeleteTooltip : undefined}
                   onClick={() => requestDeletePlan(selectedPlan)}
-                  disabled={isDeletingPlan}
+                  disabled={isDeletingPlan || selectedPlanTenantCount > 0}
                 >
                   Delete
                 </button>
@@ -1098,7 +1235,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                 </div>
                 <div>
                   <span>Base Price</span>
-                  <strong className="price">{selectedPlan.priceLabel || `$${formatCurrencyInput(selectedPlan.monthlyPrice.toFixed(2))} / month`}</strong>
+                  <strong className="price">{selectedPlan.priceLabel || `$${formatCurrencyInput((selectedPlan.price ?? selectedPlan.monthlyPrice).toFixed(2))} /month`}</strong>
                 </div>
                 <div>
                   <span>Staff Limit</span>
@@ -1118,7 +1255,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                     {enabledFeatures.length > 0 ? (
                       enabledFeatures.map((feature) => (
                         <em key={feature.key} className="enabled">
-                          {formatFeatureLabel(feature.key)}
+                          {getPlanFeatureDisplayLabel(feature.key)}
                         </em>
                       ))
                     ) : (
@@ -1218,8 +1355,8 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
 
   if (activeView === 'edit') {
     const selectedPlan = selectedPlanDetail
-    const assignedTenantCount = 0
-    const activeAssignedTenantCount = 0
+    const assignedTenantCount = subscriberTotalCount
+    const activeAssignedTenantCount = tenants.filter((tenant) => tenant.status.toLowerCase() === 'active').length
 
     if (isLoadingPlanDetail) {
       return (
@@ -1325,7 +1462,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
 
         <div className="subscription-table-row subscription-table-head">
           <span>Plan Name</span>
-          <span>Monthly Price</span>
+          <span>Price</span>
           <span>Max Staff Accounts</span>
           <span>Max Job Postings</span>
           <span>Status</span>
@@ -1342,6 +1479,8 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
           <div className="subscription-table-body">
             {pagedPlans.map((plan) => {
               const isActive = plan.status.toLowerCase() === 'active'
+              const tenantCount = planTenantCounts[plan.id] ?? 0
+              const deleteTooltip = getPlanDeleteTooltip(tenantCount)
 
               return (
                 <div
@@ -1360,7 +1499,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                   <span className="table-name-tooltip" data-tooltip={plan.name} title={plan.name} tabIndex={0}>
                     <strong>{plan.name}</strong>
                   </span>
-                  <span className="subscription-price-cell">{plan.priceLabel || `$${formatCurrencyInput(plan.monthlyPrice.toFixed(2))} / month`}</span>
+                  <span className="subscription-price-cell">{plan.priceLabel || `$${formatCurrencyInput((plan.price ?? plan.monthlyPrice).toFixed(2))} /month`}</span>
                   <span>{plan.staffAccountUnlimited ? 'Unlimited' : `${plan.maxStaffAccount} Accounts`}</span>
                   <span>{plan.activeJobPostingUnlimited ? 'Unlimited' : `${plan.maxActiveJobPosting} Active`}</span>
                   <em className={isActive ? 'active' : 'inactive'}>{isActive ? 'Active' : 'Inactive'}</em>
@@ -1385,8 +1524,9 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                       type="button"
                       className="icon-tooltip subscription-delete-action"
                       aria-label={`Delete ${plan.name}`}
-                      data-tooltip="Delete"
-                      disabled={isDeletingPlan}
+                      data-tooltip={deleteTooltip}
+                      title={tenantCount > 0 ? deleteTooltip : undefined}
+                      disabled={isDeletingPlan || tenantCount > 0}
                       onClick={(event) => {
                         event.stopPropagation()
                         requestDeletePlan(plan)

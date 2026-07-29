@@ -3,13 +3,12 @@ import type { CreateTenantForm, SubscriptionPlan } from '@/services/api/api.type
 import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { ScrollableSelect } from '@/components/common/ScrollableSelect'
 import { formatCurrencyInput } from '@/utils/currencyFormat'
-import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/services/api/axiosErrorHandler'
+import { validationErrorMessages } from '@/services/api/axiosErrorHandler'
 
 export type CreateTenantFieldErrors = Partial<Record<keyof CreateTenantForm, string>>
 
 const requiredFieldMessage = validationErrorMessages.requiredField
 const planNamePreviewLength = 20
-const domainInputMaxLength = 50
 
 function FieldError({ message }: { message?: string }) {
   return (
@@ -52,7 +51,7 @@ function formatPlanOptionLabel(plan: SubscriptionPlan) {
   const displayName = trimmedName.length > planNamePreviewLength
     ? `${trimmedName.slice(0, planNamePreviewLength)}...`
     : trimmedName
-  const priceLabel = plan.priceLabel || `$${formatCurrencyInput(plan.monthlyPrice.toFixed(2))} / month`
+  const priceLabel = plan.priceLabel || `$${formatCurrencyInput(plan.monthlyPrice.toFixed(2))} /month`
 
   return `${displayName} - ${priceLabel}`
 }
@@ -112,7 +111,6 @@ export function CreateTenantPage({
                 value={form.companyName}
                 onChange={(event) => onChange('companyName', event.target.value)}
                 placeholder="e.g. Acme Corp"
-                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 required
               />
               <FieldError message={fieldErrors.companyName} />
@@ -142,10 +140,9 @@ export function CreateTenantPage({
               <span>Domain / Identifier <b>*</b></span>
               <div className={fieldErrors.domain ? 'has-error' : ''}>
                 <input
-                  maxLength={domainInputMaxLength}
                   aria-invalid={Boolean(fieldErrors.domain)}
                   value={form.domain}
-                  onChange={(event) => onChange('domain', event.target.value.slice(0, domainInputMaxLength))}
+                  onChange={(event) => onChange('domain', event.target.value)}
                   placeholder="acme"
                   required
                 />
@@ -194,7 +191,6 @@ export function CreateTenantPage({
             <label>
               <span>Admin Full Name <b>*</b></span>
               <input
-                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 aria-invalid={Boolean(fieldErrors.adminFullName)}
                 value={form.adminFullName}
                 onChange={(event) => onChange('adminFullName', event.target.value)}
@@ -207,7 +203,6 @@ export function CreateTenantPage({
             <label>
               <span>Admin Email <b>*</b></span>
               <input
-                maxLength={FIELD_LENGTH_LIMITS.defaultText}
                 aria-invalid={Boolean(fieldErrors.adminEmail)}
                 value={form.adminEmail}
                 onChange={(event) => onChange('adminEmail', event.target.value)}

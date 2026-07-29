@@ -7,23 +7,41 @@ import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
 import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
 import { DashboardShell } from '@/components/common/DashboardShell'
+import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
 import styles from './InterviewerDashboard.module.css'
 import { FIELD_LENGTH_LIMITS } from '@/services/api/axiosErrorHandler'
 
 export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('interviewer', location.pathname))
+  const [isPasswordChangeRequired] = useState(() => getStoredRequirePasswordChange())
+  const [activeView, setActiveView] = useState<RoleHomeView>(() => (
+    getStoredRequirePasswordChange() ? 'settings' : getInitialRoleHomeView('interviewer', location.pathname)
+  ))
   const [viewResetKeys, setViewResetKeys] = useState<Record<RoleHomeView, number>>({
     dashboard: 0,
     jobs: 0,
     settings: 0,
   })
   const selectView = (view: RoleHomeView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getRoleHomeViewPath('interviewer', 'settings'))
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setActiveView(view)
     navigate(getRoleHomeViewPath('interviewer', view))
   }
   const reloadViewFromSidebar = (view: RoleHomeView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getRoleHomeViewPath('interviewer', 'settings'))
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setActiveView(view)
     navigate(getRoleHomeViewPath('interviewer', view))
     setViewResetKeys((current) => ({
@@ -31,17 +49,41 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
       [view]: current[view] + 1,
     }))
   }
-  const navItems = buildNavigation(interviewerNav, activeView, reloadViewFromSidebar)
+  const navItems = buildNavigation(interviewerNav, activeView, reloadViewFromSidebar).map((item) => (
+    isPasswordChangeRequired && item.label !== 'Settings'
+      ? {
+          ...item,
+          onClick: () => {
+            setActiveView('settings')
+            navigate(getRoleHomeViewPath('interviewer', 'settings'))
+            triggerToast?.('Please change your password before using this workspace.', 'error')
+          },
+        }
+      : item
+  ))
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
+    if (isPasswordChangeRequired) {
+      setActiveView('settings')
+      if (location.pathname !== getRoleHomeViewPath('interviewer', 'settings')) {
+        navigate(getRoleHomeViewPath('interviewer', 'settings'), { replace: true })
+      }
+      return
+    }
+
     setActiveView(getInitialRoleHomeView('interviewer', location.pathname))
-  }, [location.pathname])
+  }, [isPasswordChangeRequired, location.pathname, navigate])
 
   return (
     <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsPanel
+          key={viewResetKeys.settings}
+          isPasswordChangeRequired={isPasswordChangeRequired}
+          onBack={() => selectView('dashboard')}
+          triggerToast={triggerToast}
+        />
       ) : (
       <div key={viewResetKeys.dashboard} className={`role-content ${styles.content}`}>
         <h1>Interviewer Dashboard</h1>

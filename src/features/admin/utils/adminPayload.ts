@@ -9,7 +9,7 @@ function normalizeResourceStatus(status?: string) {
 }
 
 export function buildPlanPayload(payload: CreatePlanPayload & { status?: string }) {
-  const monthlyPrice = Number(payload.monthlyPrice)
+  const price = Number(payload.price)
   const maxStaffAccount = payload.maxStaffAccount === null ? null : Number(payload.maxStaffAccount)
   const maxActiveJobPosting = payload.maxActiveJobPosting === null ? null : Number(payload.maxActiveJobPosting)
 
@@ -28,8 +28,8 @@ export function buildPlanPayload(payload: CreatePlanPayload & { status?: string 
   return {
     "name": payload.name.trim(),
     "description": payload.description.trim(),
-    "billingCycle": 'MONTHLY',
-    "price": Number.isFinite(monthlyPrice) ? monthlyPrice : 0,
+    "billingCycle": payload.billingCycle || 'MONTHLY',
+    "price": Number.isFinite(price) ? price : 0,
     "maxStaffAccount": normalizedMaxStaff,
     "staffAccountUnlimited": Boolean(payload.staffAccountUnlimited),
     "maxActiveJobPosting": normalizedMaxJobs,

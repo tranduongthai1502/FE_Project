@@ -12,6 +12,7 @@ import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/u
 import { formatCurrencyInput, parseCurrencyInput } from '@/utils/currencyFormat'
 import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
 import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
+import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { SearchInput } from '@/components/common/SearchInput'
 import { ConfirmActionModal } from '@/components/common/ConfirmActionModal'
@@ -1729,17 +1730,34 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const [activeView, setActiveView] = useState<RoleHomeView>(() => getInitialRoleHomeView('hr', location.pathname))
+  const [isPasswordChangeRequired] = useState(() => getStoredRequirePasswordChange())
+  const [activeView, setActiveView] = useState<RoleHomeView>(() => (
+    getStoredRequirePasswordChange() ? 'settings' : getInitialRoleHomeView('hr', location.pathname)
+  ))
   const [viewResetKeys, setViewResetKeys] = useState<Record<RoleHomeView, number>>({
     dashboard: 0,
     jobs: 0,
     settings: 0,
   })
   const selectView = (view: RoleHomeView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getRoleHomeViewPath('hr', 'settings'))
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setActiveView(view)
     navigate(getRoleHomeViewPath('hr', view))
   }
   const reloadViewFromSidebar = (view: RoleHomeView) => {
+    if (isPasswordChangeRequired && view !== 'settings') {
+      setActiveView('settings')
+      navigate(getRoleHomeViewPath('hr', 'settings'))
+      triggerToast?.('Please change your password before using this workspace.', 'error')
+      return
+    }
+
     setActiveView(view)
     navigate(getRoleHomeViewPath('hr', view))
     if (view === 'jobs') {
@@ -1750,17 +1768,41 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
       [view]: current[view] + 1,
     }))
   }
-  const navItems = buildNavigation(hrNav, activeView, reloadViewFromSidebar)
+  const navItems = buildNavigation(hrNav, activeView, reloadViewFromSidebar).map((item) => (
+    isPasswordChangeRequired && item.label !== 'Settings'
+      ? {
+          ...item,
+          onClick: () => {
+            setActiveView('settings')
+            navigate(getRoleHomeViewPath('hr', 'settings'))
+            triggerToast?.('Please change your password before using this workspace.', 'error')
+          },
+        }
+      : item
+  ))
   const isActionLocked = isStoredCurrentUserInactive()
 
   useEffect(() => {
+    if (isPasswordChangeRequired) {
+      setActiveView('settings')
+      if (location.pathname !== getRoleHomeViewPath('hr', 'settings')) {
+        navigate(getRoleHomeViewPath('hr', 'settings'), { replace: true })
+      }
+      return
+    }
+
     setActiveView(getInitialRoleHomeView('hr', location.pathname))
-  }, [location.pathname])
+  }, [isPasswordChangeRequired, location.pathname, navigate])
 
   return (
     <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       {activeView === 'settings' ? (
-        <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
+        <AccountSettingsPanel
+          key={viewResetKeys.settings}
+          isPasswordChangeRequired={isPasswordChangeRequired}
+          onBack={() => selectView('dashboard')}
+          triggerToast={triggerToast}
+        />
       ) : activeView === 'jobs' ? (
         <HrJobsView key={viewResetKeys.jobs} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
