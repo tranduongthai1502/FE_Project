@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ClipboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
@@ -589,43 +589,32 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       },
     }))
   }
-  const shouldBlockCriterionPaste = (
-    clientId: string,
-    field: 'name' | 'description',
-    limit: number,
-    event: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const pastedText = event.clipboardData.getData('text')
-    const target = event.currentTarget
-    const currentLength = target.value.length
-    const selectionStart = target.selectionStart ?? currentLength
-    const selectionEnd = target.selectionEnd ?? currentLength
-    const selectedLength = Math.max(0, selectionEnd - selectionStart)
-    const nextLength = currentLength - selectedLength + pastedText.length
-
-    if (nextLength > limit) {
-      event.preventDefault()
-      setCriterionLengthError(clientId, field)
-      return true
-    }
-
-    return false
-  }
   const updateCriterionForm = (clientId: string, field: keyof Pick<EditableCriterion, 'name' | 'description' | 'category' | 'weight'>, value: string) => {
     if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
 
+    const limit = field === 'name' ? criteriaNameLimit : field === 'description' ? criteriaDescriptionLimit : null
     const nextValue = field === 'weight'
       ? normalizeWeightInput(value)
       : field === 'name'
         ? value.slice(0, criteriaNameLimit)
         : field === 'description'
           ? value.slice(0, criteriaDescriptionLimit)
-        : value
+          : value
     setCriteriaForms((currentForms) => currentForms.map((form) => (
       form.clientId === clientId ? { ...form, [field]: nextValue } : form
     )))
     setCriteriaFieldErrors((currentErrors) => {
       const formErrors = currentErrors[clientId]
+      const shouldShowLengthError = limit !== null && value.length > limit
+      if (shouldShowLengthError) {
+        return {
+          ...currentErrors,
+          [clientId]: {
+            ...(formErrors || {}),
+            [field]: criteriaLengthExceededMessage,
+          },
+        }
+      }
       if (!formErrors?.[field]) return currentErrors
       const { [field]: _removed, ...nextFormErrors } = formErrors
       return { ...currentErrors, [clientId]: nextFormErrors }
@@ -1222,12 +1211,12 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   <div className={styles.criteriaFormRow} key={form.clientId}>
                   <label>
                     <span>Criterion Name *</span>
-                    <input value={form.name} maxLength={criteriaNameLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} onPaste={(event) => shouldBlockCriterionPaste(form.clientId, 'name', criteriaNameLimit, event)} placeholder="System Architecture" />
+                    <input value={form.name} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'name', event.target.value)} placeholder="System Architecture" />
                     <small aria-hidden={!rowErrors.name}>{rowErrors.name || 'Criterion name error'}</small>
                   </label>
                   <label>
                     <span>Description *</span>
-                    <textarea value={form.description} maxLength={criteriaDescriptionLimit} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} onPaste={(event) => shouldBlockCriterionPaste(form.clientId, 'description', criteriaDescriptionLimit, event)} placeholder="Describe what this criterion evaluates" />
+                    <textarea value={form.description} disabled={isCriteriaReadOnly} onChange={(event) => updateCriterionForm(form.clientId, 'description', event.target.value)} placeholder="Describe what this criterion evaluates" />
                     <small aria-hidden={!rowErrors.description}>{rowErrors.description || 'Description error'}</small>
                   </label>
                   <label>
