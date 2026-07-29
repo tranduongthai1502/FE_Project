@@ -30,6 +30,12 @@ function getDisplayName(user: StoredUser | null) {
   return user?.full_name || user?.fullName || user?.name || user?.email || 'Alex Thompson'
 }
 
+function formatDisplayName(value: string, limit = 15) {
+  const trimmed = value.trim()
+  if (trimmed.length <= limit) return trimmed
+  return `${trimmed.slice(0, limit)}...`
+}
+
 function formatRoleLabel(role: string) {
   return role
     .replace(/[_-]+/g, ' ')
@@ -162,7 +168,7 @@ export function DashboardShell({
                 <span className="role-user-avatar">{userInitials}</span>
               )}
               <span className="role-user-text">
-                <strong>{displayName}</strong>
+                <strong>{formatDisplayName(displayName)}</strong>
                 <small>{displayRole}</small>
               </span>
               <i className={`fa-solid fa-chevron-down role-user-chevron ${isUserDropdownOpen ? 'open' : ''}`}></i>
