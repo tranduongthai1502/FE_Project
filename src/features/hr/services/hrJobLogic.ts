@@ -26,12 +26,14 @@ export const duplicateJobTitleConfirmMessage = 'A job posting with this title al
 export const salaryPairMessage = validationErrorMessages.salaryPairRequired
 export const salaryOrderMessage = validationErrorMessages.salaryOrderInvalid
 export const salaryPositiveMessage = 'Salary must be a positive number.'
+export const deadlineRequiredMessage = 'Please select application deadline.'
 export const deadlineFutureMessage = 'Application deadline must be today or a future date.'
 export const jobTitleMaxLength = 100
 export const jobTitleLengthMessage = `Job title must be ${jobTitleMaxLength} characters or less.`
 export const criteriaCategories = ['Technical Skills', 'Experience', 'Education', 'Soft Skills', 'Culture Fit']
 export const criteriaNameLimit = 100
 export const criteriaDescriptionLimit = 500
+export const criteriaLengthExceededMessage = 'Maximum length reached.'
 export const maxCriteriaCount = 20
 
 const jobApiFieldMap: Record<string, keyof JobPostingPayload> = {
@@ -268,7 +270,9 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
     nextErrors.salaryMax = salaryOrderMessage
   }
 
-  if (payload.applicationDeadline) {
+  if (!payload.applicationDeadline.trim()) {
+    nextErrors.applicationDeadline = deadlineRequiredMessage
+  } else {
     const deadline = new Date(payload.applicationDeadline)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -307,7 +311,9 @@ export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInput
     nextErrors.salaryMax = salaryOrderMessage
   }
 
-  if (payload.applicationDeadline) {
+  if (!payload.applicationDeadline.trim()) {
+    nextErrors.applicationDeadline = deadlineRequiredMessage
+  } else {
     const deadline = new Date(payload.applicationDeadline)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
