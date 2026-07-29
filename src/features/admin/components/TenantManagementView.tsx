@@ -54,7 +54,6 @@ export function TenantManagementView({
   const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
   const [tenantAdminUser, setTenantAdminUser] = useState<TenantAdminUser | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl(location.pathname))
-  const [isCreateConfirmOpen, setIsCreateConfirmOpen] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false)
   const [isPlanConfirmOpen, setIsPlanConfirmOpen] = useState(false)
@@ -238,7 +237,12 @@ export function TenantManagementView({
   }, [location.pathname])
 
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
-    const nextValue = field === 'companyName' ? value.slice(0, FIELD_LENGTH_LIMITS.defaultText) : value
+    const nextValue =
+      field === 'companyName'
+        ? value.slice(0, FIELD_LENGTH_LIMITS.defaultText)
+        : field === 'domain'
+          ? value.slice(0, 50)
+          : value
     setTenantError('')
     setTenantFieldErrors((current) => {
       if (!current[field]) return current
@@ -248,23 +252,34 @@ export function TenantManagementView({
     setTenantForm((current) => ({ ...current, [field]: nextValue }))
   }
 
-  const confirmCloseCreateModal = () => {
-    setIsCreateModalOpen(false)
-    setIsCreateConfirmOpen(false)
-    setIsCreateCancelConfirmOpen(false)
+  const resetCreateTenantForm = () => {
     setTenantError('')
     setTenantFieldErrors({})
     setTenantForm(emptyTenantForm)
+  }
+
+  const resetCreateTenantPage = () => {
+    if (isSubmittingTenant) return
+
+    setIsCreateCancelConfirmOpen(false)
+    setIsCreateModalOpen(true)
+    resetCreateTenantForm()
+    if (!isTenantCreateUrl(location.pathname)) {
+      navigate(getTenantCreatePath())
+    }
+  }
+
+  const confirmCloseCreateModal = () => {
+    setIsCreateModalOpen(false)
+    setIsCreateCancelConfirmOpen(false)
+    resetCreateTenantForm()
     navigate(getSuperAdminViewPath('tenantManagement'))
   }
 
   const goHomeFromCreateTenant = () => {
     setIsCreateModalOpen(false)
-    setIsCreateConfirmOpen(false)
     setIsCreateCancelConfirmOpen(false)
-    setTenantError('')
-    setTenantFieldErrors({})
-    setTenantForm(emptyTenantForm)
+    resetCreateTenantForm()
     onHome()
   }
 
@@ -277,14 +292,15 @@ export function TenantManagementView({
     tenantForm.adminEmail.trim(),
   )
 
-  const requestCloseCreateModal = () => {
+  const requestResetCreateTenantPage = () => {
     if (isSubmittingTenant) return
+
     if (hasTenantDraftChanges) {
       setIsCreateCancelConfirmOpen(true)
       return
     }
 
-    confirmCloseCreateModal()
+    resetCreateTenantPage()
   }
 
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
@@ -314,10 +330,6 @@ export function TenantManagementView({
     }
 
     setTenantFieldErrors({})
-    setIsCreateConfirmOpen(true)
-  }
-
-  const confirmCreateTenant = async () => {
     setIsSubmittingTenant(true)
 
     try {
@@ -330,7 +342,6 @@ export function TenantManagementView({
       setTenantForm(emptyTenantForm)
       setTenantFieldErrors({})
       setIsCreateModalOpen(false)
-      setIsCreateConfirmOpen(false)
       setTenantStatusFilter('all')
       setTenantPlanFilter('')
       setTenantSearchQuery('')
@@ -339,9 +350,9 @@ export function TenantManagementView({
       setRefreshTenantsKey((value) => value + 1)
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
-      const message = getAdminErrorMessage(error, 'Failed to create tenant.')
+      const message = getAdminErrorMessage(error, 'Error system. Please try again.')
       const fieldErrors = getCreateTenantFieldErrors(error, message)
-      setIsCreateConfirmOpen(false)
+      triggerToast?.(message, 'error')
       setTenantFieldErrors(fieldErrors)
       setTenantError(Object.keys(fieldErrors).length > 0 ? '' : message)
     } finally {
@@ -607,23 +618,11 @@ export function TenantManagementView({
           isLoadingPlans={isLoadingPlans}
           isSubmitting={isSubmittingTenant}
           onChange={updateTenantForm}
-          onClose={requestCloseCreateModal}
+          onClose={requestResetCreateTenantPage}
           onGoHome={goHomeFromCreateTenant}
-          onBackToList={requestCloseCreateModal}
+          onBackToList={confirmCloseCreateModal}
           onSubmit={handleCreateTenant}
         />
-
-        {isCreateConfirmOpen && (
-          <ConfirmActionModal
-            isSubmitting={isSubmittingTenant}
-            title="Confirm Action"
-            message="Are you sure you want to proceed? This action will create a new tenant."
-            cancelLabel="Cancel"
-            confirmLabel="Confirm"
-            onCancel={() => setIsCreateConfirmOpen(false)}
-            onConfirm={confirmCreateTenant}
-          />
-        )}
 
         {isCreateCancelConfirmOpen && (
           <ConfirmActionModal
@@ -633,7 +632,7 @@ export function TenantManagementView({
             cancelLabel="Cancel"
             confirmLabel="Confirm"
             onCancel={() => setIsCreateCancelConfirmOpen(false)}
-            onConfirm={confirmCloseCreateModal}
+            onConfirm={resetCreateTenantPage}
           />
         )}
       </>
@@ -1065,16 +1064,4 @@ export function TenantManagementView({
         <ConfirmActionModal
           isSubmitting={isDeletingTenant}
           title="Confirm Action"
-          message={`Are you sure you want to delete ${deleteTenantTarget.name}? This action cannot be undone.`}
-          cancelLabel="Cancel"
-          confirmLabel="Delete"
-          submittingLabel="Deleting..."
-          onCancel={() => {
-            if (!isDeletingTenant) setDeleteTenantTarget(null)
-          }}
-          onConfirm={confirmDeleteTenant}
-        />
-      )}
-    </div>
-  )
-}
+          mess
