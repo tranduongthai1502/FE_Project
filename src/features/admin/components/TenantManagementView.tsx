@@ -1064,4 +1064,16 @@ export function TenantManagementView({
         <ConfirmActionModal
           isSubmitting={isDeletingTenant}
           title="Confirm Action"
-          mess
+          message={`Are you sure you want to delete ${deleteTenantTarget.name}? This action cannot be undone.`}
+          cancelLabel="Cancel"
+          confirmLabel="Delete"
+          submittingLabel="Deleting..."
+          onCancel={() => {
+            if (!isDeletingTenant) setDeleteTenantTarget(null)
+          }}
+          onConfirm={confirmDeleteTenant}
+        />
+      )}
+    </div>
+  )
+}

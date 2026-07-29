@@ -222,4 +222,9 @@ export function CreateTenantPage({
           <footer className="tenant-modal-actions">
             <button type="button" onClick={onClose} disabled={isSubmitting}>Cancel</button>
             <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Confirm'}</button>
-          </footer
+          </footer>
+        </form>
+      </section>
+    </div>
+  )
+}
