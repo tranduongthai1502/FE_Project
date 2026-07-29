@@ -2328,7 +2328,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       <div key={viewResetKeys.dashboard} className="role-content">
         <div className="role-metrics four tenant-dashboard-metrics">
           <MetricCard icon="fa-briefcase" label="Active Job Postings" value="24" note="+12%" />
-          <MetricCard icon="fa-users" label="Total Applicants" value="842" note="+340" />
+          <MetricCard icon="fa-users" label="Total Applicants" value="842" note="+0 this week" />
           <MetricCard icon="fa-clock" label="Time-to-Hire" value="18 Days" note="-3d" />
           <MetricCard icon="fa-calendar-check" label="Interviews Today" value="5" note="Today" />
         </div>
