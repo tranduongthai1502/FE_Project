@@ -394,12 +394,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     })
       .then((items) => {
         if (!isActive) return
-        const visibleItems = search
-          ? items.filter((job) => job.title.trim().toLowerCase().startsWith(search.toLowerCase()))
-          : items
-
-        setJobs(visibleItems)
-        setJobPageCount(search ? Math.max(1, jobPage) : getListPageCount(items, jobPage, HR_LIST_PAGE_SIZE))
+        setJobs(items)
+        setJobPageCount(getListPageCount(items, jobPage, HR_LIST_PAGE_SIZE))
       })
       .catch((error) => {
         if (!isActive) return
@@ -961,7 +957,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
     setIsJobActionSubmitting(true)
     try {
-      if (jobConfirmAction === 'deleteDraft') {
+      if (jobConfirmAction === 'delete') {
         await hrApi.deleteJobPosting(jobConfirmTarget.id)
         setJobConfirmAction(null)
         setJobConfirmTarget(null)
@@ -1085,13 +1081,14 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
           <h1>{selectedJob.title} <em className={`${styles.jobStatusBadge} ${selectedJob.status.toLowerCase()}`}>{formatJobStatus(selectedJob.status)}</em></h1>
           {jobDetailTab === 'overview' && (
             <div>
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || isJobActionSubmitting} onClick={() => requestJobAction('delete', selectedJob)}>Delete</button>
               {(selectedJobIsDraft || selectedJobIsClosed) && (
-                <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('open', selectedJob)}>Open</button>
+                <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || isJobActionSubmitting} onClick={() => requestJobAction('open', selectedJob)}>Open</button>
               )}
               {selectedJobIsOpen && (
-                <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked} onClick={() => requestJobAction('close', selectedJob)}>Close</button>
+                <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || isJobActionSubmitting} onClick={() => requestJobAction('close', selectedJob)}>Close</button>
               )}
-              <button type="button" disabled={isActionLocked} onClick={() => openEditJob(selectedJob)}>Edit</button>
+              <button type="button" disabled={isActionLocked || isJobActionSubmitting} onClick={() => openEditJob(selectedJob)}>Edit</button>
             </div>
           )}
         </div>
@@ -1142,11 +1139,13 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   <RichTextDisplay value={selectedJob.benefits} fallback="No benefits provided." />
                 </div>
               </article>
-              <article className={styles.recentActivityCard}>
-                <header><strong>Recent Applicants</strong><button type="button">View All Candidates</button></header>
-                <section><span>KS</span><div><strong>Kasper Schmidt</strong><small>Applied 2 hours ago - 98% Match</small></div><i className="fa-solid fa-ellipsis-vertical"></i></section>
-                <section><span>ML</span><div><strong>Maria Lopez</strong><small>Applied 5 hours ago - 92% Match</small></div><i className="fa-solid fa-ellipsis-vertical"></i></section>
-              </article>
+              {!selectedJobIsDraft && (
+                <article className={styles.recentActivityCard}>
+                  <header><strong>Recent Applicants</strong><button type="button">View All Candidates</button></header>
+                  <section><span>KS</span><div><strong>Kasper Schmidt</strong><small>Applied 2 hours ago - 98% Match</small></div><i className="fa-solid fa-ellipsis-vertical"></i></section>
+                  <section><span>ML</span><div><strong>Maria Lopez</strong><small>Applied 5 hours ago - 92% Match</small></div><i className="fa-solid fa-ellipsis-vertical"></i></section>
+                </article>
+              )}
             </div>
             <aside className={styles.jobSidePanel}>
               <div className={styles.jobStatsRow}>
@@ -1157,13 +1156,15 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   {jobStatusStat.helper && <span>{jobStatusStat.helper}</span>}
                 </section>
               </div>
-              <section className={styles.funnelHealthCard}>
-                <h3><i className="fa-solid fa-square-poll-vertical"></i> Funnel Health</h3>
-                <label><span>Candidate Fit Quality</span><b>High (84%)</b></label>
-                <div><span style={{ width: '84%' }}></span></div>
-                <label><span>Sourcing Velocity</span><b>Medium (62%)</b></label>
-                <div><span style={{ width: '62%' }}></span></div>
-              </section>
+              {!selectedJobIsDraft && (
+                <section className={styles.funnelHealthCard}>
+                  <h3><i className="fa-solid fa-square-poll-vertical"></i> Funnel Health</h3>
+                  <label><span>Candidate Fit Quality</span><b>High (84%)</b></label>
+                  <div><span style={{ width: '84%' }}></span></div>
+                  <label><span>Sourcing Velocity</span><b>Medium (62%)</b></label>
+                  <div><span style={{ width: '62%' }}></span></div>
+                </section>
+              )}
               <section className={styles.revisionHistoryCard}>
                 <h3>Revision History</h3>
                 <div className={styles.revisionHistoryList}>
