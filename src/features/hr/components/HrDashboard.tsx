@@ -4,12 +4,11 @@ import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
 import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRichTextEditor'
 import type { RoleHomeView } from '@/app/routes/route.types'
-import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, Tenant } from '@/services/api/api.types'
+import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload } from '@/services/api/api.types'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
-import { tenantAdminApi } from '@/features/tenant/services/tenantAdminApi'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
-import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/utils/pagination'
+import { getListPageCount, getListTotalElements } from '@/utils/pagination'
 import { formatCurrencyInput, parseCurrencyInput } from '@/utils/currencyFormat'
 import { getInitialRoleHomeView, getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
 import { AccountSettingsPanel } from '@/components/common/AccountSettingsPanel'
@@ -36,6 +35,7 @@ import {
   type JobFieldErrors,
   formatEmploymentType,
   formatJobDate,
+  formatJobDateTimeInVietnam,
   formatJobStatus,
   getAiJobValidationErrors,
   getCriteriaSaveError,
@@ -84,92 +84,6 @@ function formatDeadlineDisplay(value?: string) {
   if (!dateValue) return ''
   const [year, month, day] = dateValue.split('-')
   return year && month && day ? `${day}/${month}/${year}` : ''
-}
-
-function readStoredUserInfo(): Record<string, any> | null {
-  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
-  if (!rawUser) return null
-
-  try {
-    const parsed = JSON.parse(rawUser)
-    return parsed && typeof parsed === 'object' ? parsed : null
-  } catch {
-    return null
-  }
-}
-
-function getStoredTenantId() {
-  const user = readStoredUserInfo()
-  if (!user) return ''
-
-  const tenant =
-    user.tenant ||
-    user.tenantInfo ||
-    user.company ||
-    user.workspace ||
-    {}
-  const tenantId =
-    user.tenantId ||
-    user.tenant_id ||
-    user.companyId ||
-    user.company_id ||
-    user.workspaceId ||
-    user.workspace_id ||
-    tenant.id ||
-    tenant.tenantId ||
-    tenant.tenant_id ||
-    tenant.uuid
-
-  return tenantId ? String(tenantId) : ''
-}
-
-function getQuotaSources(...sources: Array<Record<string, any> | null | undefined>) {
-  return sources.flatMap((source) => {
-    if (!source || typeof source !== 'object') return []
-
-    return [
-      source,
-      source.data,
-      source.user,
-      source.userInfo,
-      source.account,
-      source.profile,
-      source.tenant,
-      source.tenantDetail,
-      source.tenantInfo,
-      source.company,
-      source.organization,
-      source.subscription,
-      source.subscriptionPlan,
-      source.subscriptionPlanDetail,
-      source.plan,
-      source.currentPlan,
-    ].filter((item): item is Record<string, any> => Boolean(item && typeof item === 'object'))
-  })
-}
-
-function readNumberFromSources(sources: Array<Record<string, any>>, keys: string[]) {
-  for (const source of sources) {
-    for (const key of keys) {
-      const value = Number(source[key])
-      if (Number.isFinite(value)) return value
-    }
-  }
-
-  return undefined
-}
-
-function readBooleanFromSources(sources: Array<Record<string, any>>, keys: string[]) {
-  for (const source of sources) {
-    for (const key of keys) {
-      const value = source[key]
-      if (typeof value === 'boolean') return value
-      const normalized = String(value ?? '').trim().toLowerCase()
-      if (['true', '1', 'yes', 'y', 'unlimited'].includes(normalized)) return true
-    }
-  }
-
-  return false
 }
 
 function formatLocationDisplay(locationType?: string, location?: string) {
@@ -222,6 +136,48 @@ function getLocalDateKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function withDefaultApplicationDeadline(payload: JobPostingPayload): JobPostingPayload {
+  if (payload.applicationDeadline.trim()) return payload
+
+  return {
+    ...payload,
+    applicationDeadline: getLocalDateKey(new Date()),
+  }
+}
+
+function getJobsEllipsisPageItems(currentPage: number, pageCount: number): Array<number | 'ellipsis'> {
+  if (pageCount <= 4) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1)
+  }
+
+  const pages = new Set<number>([1, pageCount, currentPage - 1, currentPage, currentPage + 1])
+
+  if (currentPage <= 3) {
+    pages.add(2)
+    pages.add(3)
+  }
+
+  if (currentPage >= pageCount - 2) {
+    pages.add(pageCount - 2)
+    pages.add(pageCount - 1)
+  }
+
+  const sortedPages = Array.from(pages)
+    .filter((page) => page >= 1 && page <= pageCount)
+    .sort((left, right) => left - right)
+
+  return sortedPages.reduce<Array<number | 'ellipsis'>>((items, page, index) => {
+    const previousPage = sortedPages[index - 1]
+
+    if (previousPage !== undefined && page - previousPage > 1) {
+      items.push('ellipsis')
+    }
+
+    items.push(page)
+    return items
+  }, [])
 }
 
 function getCalendarDays(monthDate: Date) {
@@ -301,14 +257,6 @@ function EditJobIcon() {
       <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M3.75 26.25H26.25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M17.5 7.5L22.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function DeleteJobIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="currentColor" />
     </svg>
   )
 }
@@ -394,8 +342,6 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('')
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [jobStats, setJobStats] = useState<DashboardStatsJobPostingResponse | null>(null)
-  const [tenantId] = useState(() => getStoredTenantId())
-  const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
   const [isLoadingJobs, setIsLoadingJobs] = useState(false)
   const [jobListError, setJobListError] = useState('')
   const [jobPage, setJobPage] = useState(1)
@@ -425,80 +371,11 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
   const [pendingCriteriaCancelAction, setPendingCriteriaCancelAction] = useState<(() => void) | null>(null)
   const activeJobCount = jobStats?.totalActivePostings ?? jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
-  const jobQuotaSources = getQuotaSources(tenantDetail as Record<string, any> | null, jobStats as Record<string, any> | null, readStoredUserInfo())
-  const jobPostingQuotaUsed = readNumberFromSources(jobQuotaSources, [
-    'activeJobPostingUsed',
-    'active_job_posting_used',
-    'activeJobPostingsUsed',
-    'active_job_postings_used',
-    'jobPostingUsed',
-    'job_posting_used',
-    'jobPostingsUsed',
-    'job_postings_used',
-    'usedActiveJobPosting',
-    'used_active_job_posting',
-    'usedActiveJobPostings',
-    'used_active_job_postings',
-    'activeJobPostingCount',
-    'active_job_posting_count',
-    'activeJobPostingsCount',
-    'active_job_postings_count',
-    'totalActiveJobPostings',
-    'total_active_job_postings',
-    'totalActivePostings',
-    'total_active_postings',
-    'activeJobCount',
-    'active_job_count',
-    'activeJobs',
-    'active_jobs',
-    'jobCount',
-    'job_count',
-  ]) ?? activeJobCount
-  const rawJobPostingQuotaLimit = readNumberFromSources(jobQuotaSources, [
-    'activeJobPostingLimit',
-    'active_job_posting_limit',
-    'activeJobPostingsLimit',
-    'active_job_postings_limit',
-    'activeJobLimit',
-    'active_job_limit',
-    'activeJobsLimit',
-    'active_jobs_limit',
-    'maxActiveJobPosting',
-    'max_active_job_posting',
-    'maxActiveJobPostings',
-    'max_active_job_postings',
-    'jobPostingLimit',
-    'job_posting_limit',
-    'jobPostingsLimit',
-    'job_postings_limit',
-  ])
-  const isJobPostingQuotaUnlimited = readBooleanFromSources(jobQuotaSources, [
-    'activeJobPostingUnlimited',
-    'active_job_posting_unlimited',
-    'activeJobPostingsUnlimited',
-    'active_job_postings_unlimited',
-    'jobPostingUnlimited',
-    'job_posting_unlimited',
-    'jobPostingsUnlimited',
-    'job_postings_unlimited',
-  ])
-  const jobPostingQuotaLimit = !isJobPostingQuotaUnlimited && (!Number.isFinite(rawJobPostingQuotaLimit) || Number(rawJobPostingQuotaLimit) <= 0) && jobPostingQuotaUsed > 0
-    ? jobPostingQuotaUsed
-    : rawJobPostingQuotaLimit
-  const hasJobPostingQuotaLimit = !isJobPostingQuotaUnlimited && Number.isFinite(jobPostingQuotaLimit) && Number(jobPostingQuotaLimit) > 0
-  const jobPostingQuotaPercent = hasJobPostingQuotaLimit
-    ? Math.min(100, Math.max(0, (jobPostingQuotaUsed / Number(jobPostingQuotaLimit)) * 100))
-    : isJobPostingQuotaUnlimited
-      ? 100
-      : 0
-  const jobPostingQuotaRemaining = hasJobPostingQuotaLimit
-    ? Math.max(0, Number(jobPostingQuotaLimit) - jobPostingQuotaUsed)
-    : null
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
   const jobTotalElements = getListTotalElements(jobs, jobs.length)
   const safeJobPage = Math.min(jobPage, jobPageCount)
-  const jobPageItems = getCompactPageItems(safeJobPage, jobPageCount)
+  const jobPageItems = getJobsEllipsisPageItems(safeJobPage, jobPageCount)
   const isJobFormDirty = (
     jobForm.title.trim() !== '' ||
     jobForm.department.trim() !== '' ||
@@ -570,27 +447,6 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       isActive = false
     }
   }, [employmentTypeFilter, jobListReloadKey, jobPage, jobView, searchQuery, statusFilter])
-
-  useEffect(() => {
-    if (!tenantId) {
-      setTenantDetail(null)
-      return
-    }
-
-    let isActive = true
-
-    tenantAdminApi.getTenantById(tenantId)
-      .then((tenant) => {
-        if (isActive) setTenantDetail(tenant)
-      })
-      .catch(() => {
-        if (isActive) setTenantDetail(null)
-      })
-
-    return () => {
-      isActive = false
-    }
-  }, [jobListReloadKey, tenantId])
 
   useEffect(() => {
     const refreshView = window.sessionStorage.getItem(jobFormRefreshViewKey)
@@ -674,7 +530,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     return () => {
       isActive = false
     }
-  }, [location.pathname, navigate, selectedJob?.id, triggerToast])
+  }, [location.pathname, location.search, navigate, selectedJob?.id, triggerToast])
 
   const updateJobDetailTab = (tab: JobDetailTab) => {
     setJobDetailTab(tab)
@@ -757,15 +613,6 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     if (isActionLocked || isClosedJobStatus(selectedJob?.status) || criteriaForms.length >= maxCriteriaCount) return
 
     setCriteriaForms((currentForms) => [...currentForms, createEmptyCriterionRow()])
-  }
-  const setCriterionLengthError = (clientId: string, field: 'name' | 'description') => {
-    setCriteriaFieldErrors((currentErrors) => ({
-      ...currentErrors,
-      [clientId]: {
-        ...(currentErrors[clientId] || {}),
-        [field]: criteriaLengthExceededMessage,
-      },
-    }))
   }
   const updateCriterionForm = (clientId: string, field: keyof Pick<EditableCriterion, 'name' | 'description' | 'category' | 'weight'>, value: string) => {
     if (isActionLocked || isClosedJobStatus(selectedJob?.status)) return
@@ -964,13 +811,18 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }
   const generateAiJobContent = () => {
     if (isActionLocked) return
-    const nextErrors = getAiJobValidationErrors(jobForm, salaryInputValues)
+    const payload = withDefaultApplicationDeadline(jobForm)
+    const nextErrors = getAiJobValidationErrors(payload, salaryInputValues)
 
     if (Object.keys(nextErrors).length > 0) {
       setJobFieldErrors(nextErrors)
       return
     }
 
+    if (payload.applicationDeadline !== jobForm.applicationDeadline) {
+      setJobForm(payload)
+      setDeadlineInputValue(formatDeadlineDisplay(payload.applicationDeadline))
+    }
     setJobFieldErrors({})
   }
   const getInputClassName = (hasError?: boolean) => (hasError ? styles.jobInputError : undefined)
@@ -1174,19 +1026,24 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   }
   const saveJob = async (payload: JobPostingPayload = jobForm, options: { allowDuplicateTitle?: boolean } = {}) => {
     if (isActionLocked || isSavingJob) return
-    const nextErrors = getJobValidationErrors(payload, salaryInputValues)
+    const payloadWithDeadline = withDefaultApplicationDeadline(payload)
+    const nextErrors = getJobValidationErrors(payloadWithDeadline, salaryInputValues)
 
     if (Object.keys(nextErrors).length > 0) {
       setJobFieldErrors(nextErrors)
       return
     }
 
-    if (!options.allowDuplicateTitle && hasDuplicateJobTitle(payload, jobs, selectedJob?.id)) {
+    if (!options.allowDuplicateTitle && hasDuplicateJobTitle(payloadWithDeadline, jobs, selectedJob?.id)) {
       setJobFieldErrors({})
-      setPendingDuplicateTitlePayload(payload)
+      setPendingDuplicateTitlePayload(payloadWithDeadline)
       return
     }
 
+    if (payloadWithDeadline.applicationDeadline !== payload.applicationDeadline) {
+      setJobForm(payloadWithDeadline)
+      setDeadlineInputValue(formatDeadlineDisplay(payloadWithDeadline.applicationDeadline))
+    }
     setJobFieldErrors({})
     setPendingDuplicateTitlePayload(null)
     setIsSavingJob(true)
@@ -1194,9 +1051,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
     try {
       if (isEditingJob) {
-        await hrApi.updateJobPosting(selectedJob.id, payload)
+        await hrApi.updateJobPosting(selectedJob.id, payloadWithDeadline)
       } else {
-        await hrApi.createJobPosting(payload)
+        await hrApi.createJobPosting(payloadWithDeadline)
       }
       returnToJobsListAfterSave()
       triggerToast?.(isEditingJob ? 'Job posting updated successfully.' : 'Job posting created successfully.', 'success')
@@ -1233,22 +1090,25 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       : selectedJobIsDraft
         ? { label: '', value: 'NOT YET PUBLISH', helper: '' }
         : { label: 'Days Open', value: String(getDaysOpen(selectedJob.createdAt)), helper: daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left` }
-    const revisionDate = formatJobDate(selectedJob.createdAt)
+    const formatRevisionMeta = (label: string, value?: string) => {
+      const dateTime = formatJobDateTimeInVietnam(value || selectedJob.createdAt)
+      return `${label} • ${dateTime.replace(/, ([^,]+)$/, ' • $1')}`
+    }
     const revisionHistoryItems = [
       {
         icon: <RevisionHistoryOpenIcon />,
         title: 'Open Job Posting',
-        meta: `${selectedJob.title || 'Job'} • ${revisionDate} • 11:00 AM`,
+        meta: formatRevisionMeta(selectedJob.title || 'Job', selectedJob.openedAt || selectedJob.publishedAt || selectedJob.updatedAt),
       },
       {
         icon: <RevisionHistoryUpdateIcon />,
         title: 'Update Job Posting',
-        meta: `${selectedJob.department || 'HR'} • ${revisionDate} • 09:00 AM`,
+        meta: formatRevisionMeta(selectedJob.department || 'HR', selectedJob.updatedAt),
       },
       {
         icon: <RevisionHistoryCreateIcon />,
         title: `Create Job Posting: "${selectedJob.title}"`,
-        meta: `${selectedJob.department || 'HR'} • ${revisionDate} • 02:15 PM`,
+        meta: formatRevisionMeta(selectedJob.department || 'HR', selectedJob.createdAt),
       },
     ]
 
@@ -1305,7 +1165,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                     <strong>Salary Range</strong>
                     <span>
                       {selectedJob.salaryMin || selectedJob.salaryMax
-                        ? `${formatCurrencyInput(String(selectedJob.salaryMin || 0))} - ${formatCurrencyInput(String(selectedJob.salaryMax || 0))}`
+                        ? `$${formatCurrencyInput(String(selectedJob.salaryMin || 0))} - $${formatCurrencyInput(String(selectedJob.salaryMax || 0))}`
                         : 'N/A'}
                     </span>
                   </div>
@@ -1765,28 +1625,6 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       <div className={styles.jobsHeader}>
         <h1>Job Postings</h1>
         <div className={styles.jobPostingHeaderActions}>
-          <section className={styles.jobPostingUsageCard} aria-label="Job posting quota usage">
-            <div>
-              <strong>Job Posting</strong>
-              <span>
-                {hasJobPostingQuotaLimit
-                  ? `${jobPostingQuotaUsed}/${jobPostingQuotaLimit}`
-                  : isJobPostingQuotaUnlimited
-                    ? `${jobPostingQuotaUsed}/Unlimited`
-                    : `${jobPostingQuotaUsed}/-`}
-              </span>
-            </div>
-            <div className={styles.jobPostingUsageTrack}>
-              <span style={{ width: `${jobPostingQuotaPercent}%` }}></span>
-            </div>
-            <small>
-              {hasJobPostingQuotaLimit
-                ? `${jobPostingQuotaRemaining} post${jobPostingQuotaRemaining === 1 ? '' : 's'} remaining`
-                : isJobPostingQuotaUnlimited
-                  ? 'Unlimited posts remaining'
-                  : 'No quota limit configured'}
-            </small>
-          </section>
           <button type="button" disabled={isActionLocked} onClick={openCreateJob}>Create New Job Posting</button>
         </div>
       </div>
@@ -1899,7 +1737,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Previous page" disabled={safeJobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
               {jobPageItems.map((item, index) => (
                 item === 'ellipsis' ? (
-                  <span className="pagination-ellipsis" key={`job-ellipsis-${index}`}>...</span>
+                  <span className={styles.paginationEllipsis} key={`job-ellipsis-${index}`}>...</span>
                 ) : (
                   <button type="button" className={item === safeJobPage ? styles.activePage : ''} onClick={() => setJobPage(item)} key={item}>{item}</button>
                 )

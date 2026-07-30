@@ -70,6 +70,9 @@ export type JobPosting = {
   status: string
   applicantCount: number
   createdAt?: string
+  updatedAt?: string
+  publishedAt?: string
+  openedAt?: string
 }
 
 export type JobPostingPayload = {

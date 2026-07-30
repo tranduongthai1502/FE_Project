@@ -4,7 +4,6 @@ import {
   buildAxiosErrorInfo,
   buildSuccessFalseErrorInfo,
   createAppError,
-  getHttpStatusFallbackMessage,
 } from './axiosErrorHandler'
 
 let refreshTokenRequest: Promise<string> | null = null
@@ -116,12 +115,6 @@ export function setupAxiosInterceptors(axiosClient: AxiosInstance, refreshClient
     async (error) => {
       const errorInfo = buildAxiosErrorInfo(error)
       const originalRequest = error.config
-
-      if (errorInfo.status === 403 && !isAuthEndpoint(originalRequest?.url || '')) {
-        clearAuthStorage()
-        notifyAuthExpired(errorInfo.message || getHttpStatusFallbackMessage(403))
-        return Promise.reject(createAppError(errorInfo))
-      }
 
       if (errorInfo.status === 401 && originalRequest && !originalRequest._retry && !errorInfo.hasBackendMessage && !isAuthEndpoint(originalRequest.url || '') && getStoredToken('refresh_token')) {
         originalRequest._retry = true

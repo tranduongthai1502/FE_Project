@@ -1,6 +1,13 @@
 import type { CSSProperties } from 'react'
 
-export function Toast({ isVisible, isFadingOut, message, type = 'success' }) {
+type ToastProps = {
+  isVisible: boolean
+  isFadingOut: boolean
+  message: string
+  type?: 'success' | 'error'
+}
+
+export function Toast({ isVisible, isFadingOut, message, type = 'success' }: ToastProps) {
   if (!isVisible) return null
 
   const isError = type === 'error'
