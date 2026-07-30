@@ -1250,8 +1250,10 @@
   display: grid;
   place-items: center;
   margin: 30px auto 14px;
-  border: 8px solid #d93408;
   border-radius: 50%;
+  background:
+    radial-gradient(circle, #fff 0 58%, transparent 59% 100%),
+    conic-gradient(#d93408 var(--quota-percent, 0%), #eef2f8 0);
 }
 
 .quota-panel-unlimited .role-panel-head small {
@@ -1267,7 +1269,9 @@
   width: 112px;
   height: 112px;
   margin: 20px auto 14px;
-  border-width: 10px;
+  background:
+    radial-gradient(circle, #fff 0 58%, transparent 59% 100%),
+    conic-gradient(#d93408 100%, #eef2f8 0);
 }
 
 .quota-panel-unlimited .quota-ring strong {

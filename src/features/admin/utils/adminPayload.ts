@@ -8,6 +8,16 @@ function normalizeResourceStatus(status?: string) {
   return normalizedStatus
 }
 
+function normalizeFeatureStatus(status?: string) {
+  const normalizedStatus = String(status || '').trim().toUpperCase()
+
+  if (normalizedStatus === 'INACTIVE' || normalizedStatus === 'DISABLED' || normalizedStatus === 'FALSE') {
+    return 'INACTIVE'
+  }
+
+  return 'ACTIVE'
+}
+
 export function buildPlanPayload(payload: CreatePlanPayload & { status?: string }) {
   const price = Number(payload.price)
   const maxStaffAccount = payload.maxStaffAccount === null ? null : Number(payload.maxStaffAccount)
@@ -36,7 +46,7 @@ export function buildPlanPayload(payload: CreatePlanPayload & { status?: string 
     "activeJobPostingUnlimited": Boolean(payload.activeJobPostingUnlimited),
     "features": payload.features.map((feature) => ({
       "key": String(feature.key),
-      "status": String(feature.status || 'ACTIVE').toUpperCase() === 'DISABLED' ? 'INACTIVE' : 'ACTIVE',
+      "status": normalizeFeatureStatus(feature.status),
     })),
     "status": normalizeResourceStatus(payload.status),
   }

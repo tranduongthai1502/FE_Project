@@ -6,11 +6,11 @@ import {
   buildPlanListParams,
   buildTopTierPlanParams,
   formatStatNumber,
-  getDerivedJobUsage,
   getHighestPricedActivePlan,
   getPlanFeatureState,
   getSubscriptionPlanFieldErrors,
   getSubscriptionPlanUsagePercent,
+  getTenantJobUsage,
   hasDuplicatePlanName,
   hasFeatureChanges,
   isActiveSubscriptionPlan,
@@ -1285,11 +1285,11 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                     <span>Status</span>
                   </div>
 
-                  {matchingTenants.map((tenant, index) => {
+                  {matchingTenants.map((tenant) => {
                     const staffUnlimited = tenant.userQuotaUnlimited || selectedPlan.staffAccountUnlimited
                     const staffLimit = tenant.userQuotaLimit || selectedPlan.maxStaffAccount || 0
                     const staffPercent = staffUnlimited ? 0 : getSubscriptionPlanUsagePercent(tenant.userQuotaUsed, staffLimit)
-                    const jobUsage = getDerivedJobUsage(index, selectedPlan)
+                    const jobUsage = getTenantJobUsage(tenant, selectedPlan)
                     const status = tenant.status.toLowerCase()
                     const statusLabel = status.includes('expir') ? 'Expiring' : status === 'active' ? 'Active' : 'Inactive'
                     const statusClassName = statusLabel.toLowerCase()

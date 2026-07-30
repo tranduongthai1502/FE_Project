@@ -1,5 +1,5 @@
 import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
-import type { AdminListParams, SubscriptionPlan } from '@/services/api/api.types'
+import type { AdminListParams, SubscriptionPlan, Tenant } from '@/services/api/api.types'
 import {
   getBackendErrorMessage,
   getErrorCode,
@@ -187,13 +187,19 @@ export function getHighestPricedActivePlan(plans: SubscriptionPlan[]) {
   ), null)
 }
 
-export function getDerivedJobUsage(index: number, plan: SubscriptionPlan) {
-  const isUnlimited = plan.activeJobPostingUnlimited
-  const limit = isUnlimited ? 0 : Math.max(1, plan.maxActiveJobPosting)
-  const progressLimit = isUnlimited ? 50 : limit
-  const usageRatios = [0.24, 0.96, 0.16, 0.64, 0.42, 0.78]
-  const used = Math.max(1, Math.round(progressLimit * usageRatios[index % usageRatios.length]))
-  return { used, limit, isUnlimited, percent: isUnlimited ? 100 : getSubscriptionPlanUsagePercent(used, limit) }
+export function getTenantJobUsage(tenant: Tenant, plan: SubscriptionPlan) {
+  const isUnlimited = tenant.activeJobPostingUnlimited || plan.activeJobPostingUnlimited
+  const tenantLimit = tenant.activeJobPostingLimit ?? 0
+  const planLimit = plan.maxActiveJobPosting ?? 0
+  const limit = isUnlimited ? 0 : Math.max(1, tenantLimit || planLimit)
+  const used = Math.max(0, tenant.activeJobPostingUsed ?? 0)
+
+  return {
+    used,
+    limit,
+    isUnlimited,
+    percent: isUnlimited ? 100 : getSubscriptionPlanUsagePercent(used, limit),
+  }
 }
 
 export function getPlanFeatureState(plan?: SubscriptionPlan) {
