@@ -88,6 +88,10 @@ export function setupAxiosInterceptors(axiosClient: AxiosInstance, refreshClient
 
   axiosClient.interceptors.response.use(
     (response) => {
+      if (response.config.responseType === 'blob') {
+        return response
+      }
+
       const responseData = response.data
 
       if (responseData && typeof responseData === 'object') {
