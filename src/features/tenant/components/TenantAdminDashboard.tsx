@@ -15,7 +15,7 @@ import { ConfirmActionModal } from '@/components/common/ConfirmActionModal'
 import { getErrorMessage as getAdminErrorMessage, inactiveUserActionMessage, isInactiveUserActionError } from '@/services/error/errorMessages'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { shouldToastHttpError } from '@/utils/httpStatusManager'
-import { getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
+import { getCompactPageItems, getListPageCount, getListTotalElements, getPaginationMeta } from '@/utils/pagination'
 import { normalizeTenantAdminUser } from '@/services/api/apiMappers'
 import { getStoredRequirePasswordChange } from '@/services/api/authStorage'
 import {
@@ -32,6 +32,45 @@ const passwordChangeRequiredMessage = 'Please change your password before using 
 const vietnamTimeZone = 'Asia/Ho_Chi_Minh'
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
 const ACTIVITY_LOG_PAGE_SIZE = 5
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function getDefaultActivityDateRange() {
+  const endDate = new Date()
+  const startDate = new Date(endDate)
+  startDate.setDate(endDate.getDate() - 30)
+
+  return {
+    startDate: formatDateInputValue(startDate),
+    endDate: formatDateInputValue(endDate),
+  }
+}
+
+function getDownloadFilename(contentDisposition: unknown, fallbackFilename: string) {
+  const header = String(contentDisposition || '')
+  const utf8FilenameMatch = header.match(/filename\*=UTF-8''([^;]+)/i)
+  const filenameMatch = header.match(/filename="?([^";]+)"?/i)
+  const filename = utf8FilenameMatch?.[1] || filenameMatch?.[1]
+
+  return filename ? decodeURIComponent(filename) : fallbackFilename
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
 
 type StaffAccountLimit = {
   used?: number
@@ -459,22 +498,6 @@ function ActivityLogIcon({ eventType, index }: { eventType?: string; index: numb
   )
 }
 
-function getActivityLogPageItems(currentPage: number, pageCount: number): Array<number | 'ellipsis'> {
-  if (pageCount <= 5) {
-    return Array.from({ length: pageCount }, (_, index) => index + 1)
-  }
-
-  if (currentPage <= 3) {
-    return [1, 2, 3, 'ellipsis', pageCount]
-  }
-
-  if (currentPage >= pageCount - 2) {
-    return [1, 'ellipsis', pageCount - 2, pageCount - 1, pageCount]
-  }
-
-  return [1, 'ellipsis', currentPage, 'ellipsis', pageCount]
-}
-
 function StaffManagementView({
   staffList,
   isLoading,
@@ -532,7 +555,7 @@ function StaffManagementView({
     }
   }, [currentPage, error, isLoading, onPageChange, staffList.length])
 
-  const formatDate = (dateStr?: string, fallback = 'Oct 12, 2023') => {
+  const formatDate = (dateStr?: string, fallback = '-') => {
     if (!dateStr) return fallback
     try {
       const date = new Date(dateStr)
@@ -1455,9 +1478,11 @@ function StaffActivityLogView({
   startDateFilter,
   endDateFilter,
   isClearingActivityLogs,
+  isExportingActivityLogs,
   onHome,
   onStaffManagement,
   onBack,
+  onExport,
   onPageChange,
   onEventTypeFilterChange,
   onStartDateFilterChange,
@@ -1474,9 +1499,11 @@ function StaffActivityLogView({
   startDateFilter: string
   endDateFilter: string
   isClearingActivityLogs: boolean
+  isExportingActivityLogs: boolean
   onHome: () => void
   onStaffManagement: () => void
   onBack: () => void
+  onExport: () => void
   onPageChange: (page: number) => void
   onEventTypeFilterChange: (value: string) => void
   onStartDateFilterChange: (value: string) => void
@@ -1486,7 +1513,7 @@ function StaffActivityLogView({
   const totalElements = getListTotalElements(activityLogs, activityLogs.length)
   const displayStart = totalElements === 0 ? 0 : ((currentPage - 1) * ACTIVITY_LOG_PAGE_SIZE) + 1
   const displayEnd = displayStart === 0 ? 0 : Math.min(totalElements, displayStart + activityLogs.length - 1)
-  const pageItems = getActivityLogPageItems(currentPage, pageCount)
+  const pageItems = getCompactPageItems(currentPage, pageCount)
   const shouldShowActivityTable = isLoadingActivities || Boolean(activityError) || activityLogs.length > 0
   const startDateInputRef = useRef<HTMLInputElement>(null)
   const endDateInputRef = useRef<HTMLInputElement>(null)
@@ -1544,8 +1571,8 @@ function StaffActivityLogView({
 
     return `${dateLabel}, ${timeLabel}`
   }
-  const startDateLabel = formatDate(startDateFilter, 'Oct 12, 2025')
-  const endDateLabel = formatDate(endDateFilter, 'Oct 19, 2025')
+  const startDateLabel = formatDate(startDateFilter)
+  const endDateLabel = formatDate(endDateFilter)
 
   return (
     <div className="role-content staff-log-content">
@@ -1564,7 +1591,9 @@ function StaffActivityLogView({
           <h1>Staff Activity Log</h1>
           <p><i className="fa-regular fa-clock"></i> Real-time auditing and security trail for tenant administrators.</p>
         </div>
-        <button type="button" className="staff-log-export-btn">Export to Excel</button>
+        <button type="button" className="staff-log-export-btn" disabled={isExportingActivityLogs} onClick={onExport}>
+          {isExportingActivityLogs ? 'Exporting...' : 'Export to Excel'}
+        </button>
       </header>
 
       <section className="staff-log-subject">
@@ -1722,6 +1751,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       ...current,
       [view]: current[view] + 1,
     }))
+    setRefreshKey((current) => current + 1)
   }
   const navItems = buildNavigation(tenantNav, activeView, reloadViewFromSidebar).map((item) => (
     isPasswordChangeRequired && item.label !== 'Settings'
@@ -1827,10 +1857,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
   const [activityLogPage, setActivityLogPage] = useState(1)
   const [activityLogPageCount, setActivityLogPageCount] = useState(1)
   const [activityEventTypeFilter, setActivityEventTypeFilter] = useState('')
-  const [activityStartDateFilter, setActivityStartDateFilter] = useState('')
-  const [activityEndDateFilter, setActivityEndDateFilter] = useState('')
+  const [activityStartDateFilter, setActivityStartDateFilter] = useState(() => getDefaultActivityDateRange().startDate)
+  const [activityEndDateFilter, setActivityEndDateFilter] = useState(() => getDefaultActivityDateRange().endDate)
   const [isLoadingActivities, setIsLoadingActivities] = useState(false)
   const [isClearingActivityLogs, setIsClearingActivityLogs] = useState(false)
+  const [isExportingActivityLogs, setIsExportingActivityLogs] = useState(false)
   const [activityError, setActivityError] = useState('')
   
   // Modals & Save states
@@ -2018,6 +2049,9 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     : staffAccountLimit.limit || tenantDetail?.userQuotaLimit || tenantPlan?.maxStaffAccount || 0
   const staffQuotaSummary = isStaffQuotaUnlimited ? 'Unlimited Seats' : `${staffAccountCount} / ${maxStaffQuota} Seats`
   const staffQuotaRingLabel = isStaffQuotaUnlimited ? String(staffAccountCount) : `${staffAccountCount}/${maxStaffQuota}`
+  const staffQuotaPercent = isStaffQuotaUnlimited
+    ? 100
+    : Math.min(100, Math.max(0, Math.round((staffAccountCount / Math.max(maxStaffQuota, 1)) * 100)))
   const remainingStaffSeats = Math.max(0, maxStaffQuota - staffAccountCount)
   const staffQuotaDescription = isStaffQuotaUnlimited
     ? 'Your plan includes unlimited staff seats.'
@@ -2183,9 +2217,10 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     try {
       await tenantAdminApi.deleteStaffActivityLogs(selectedStaff.id)
       triggerToast?.('Activity logs cleared successfully.', 'success')
+      const defaultActivityDateRange = getDefaultActivityDateRange()
       setActivityEventTypeFilter('')
-      setActivityStartDateFilter('')
-      setActivityEndDateFilter('')
+      setActivityStartDateFilter(defaultActivityDateRange.startDate)
+      setActivityEndDateFilter(defaultActivityDateRange.endDate)
       setActivityLogPage(1)
       setActivityLogs([])
       setRecentActivities([])
@@ -2197,6 +2232,27 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
       }
     } finally {
       setIsClearingActivityLogs(false)
+    }
+  }
+
+  const handleExportActivityLogs = async () => {
+    if (!selectedStaff?.id) return
+
+    setIsExportingActivityLogs(true)
+    try {
+      const response = await tenantAdminApi.exportStaffActivityLogs(selectedStaff.id)
+      const filename = getDownloadFilename(
+        response.headers?.['content-disposition'],
+        `staff-activity-log-${selectedStaff.employeeCode || selectedStaff.id}.xlsx`,
+      )
+      downloadBlob(response.data, filename)
+      triggerToast?.('Activity logs exported successfully.', 'success')
+    } catch (error) {
+      if (shouldToastHttpError(error)) {
+        handleActionError(error, 'Failed to export activity logs.')
+      }
+    } finally {
+      setIsExportingActivityLogs(false)
     }
   }
 
@@ -2338,9 +2394,11 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           startDateFilter={activityStartDateFilter}
           endDateFilter={activityEndDateFilter}
           isClearingActivityLogs={isClearingActivityLogs}
+          isExportingActivityLogs={isExportingActivityLogs}
           onHome={() => changeView('dashboard')}
           onStaffManagement={() => changeView('staffManagement')}
           onBack={() => changeView('staffDetail', selectedStaff.id)}
+          onExport={handleExportActivityLogs}
           onPageChange={setActivityLogPage}
           onEventTypeFilterChange={(value) => {
             setActivityEventTypeFilter(value)
@@ -2444,7 +2502,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             <div className="tenant-dashboard-top-side">
               <section className={`role-panel quota-panel ${isStaffQuotaUnlimited ? 'quota-panel-unlimited' : ''}`}>
                 <div className="role-panel-head"><h2>Staff Quota</h2><small>{staffQuotaSummary}</small></div>
-                <div className="quota-ring"><strong>{staffQuotaRingLabel}</strong><span>Used</span></div>
+                <div className="quota-ring" style={{ '--quota-percent': `${staffQuotaPercent}%` } as React.CSSProperties}><strong>{staffQuotaRingLabel}</strong><span>Used</span></div>
                 <p>{staffQuotaDescription}</p>
               </section>
             </div>

@@ -4,8 +4,9 @@ import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
 import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRichTextEditor'
 import type { RoleHomeView } from '@/app/routes/route.types'
-import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload } from '@/services/api/api.types'
+import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, Tenant } from '@/services/api/api.types'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
+import { tenantAdminApi } from '@/features/tenant/services/tenantAdminApi'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/utils/pagination'
@@ -46,8 +47,10 @@ import {
   hasDuplicateJobTitle,
   isClosedJobStatus,
   isDraftJobStatus,
+  isJobPostingLimitReachedError,
   isJobTitleAlreadyExistsError,
   isOpenJobStatus,
+  jobPostingLimitReachedMessage,
   jobTitleMaxLength,
   mapCriteriaResponseToRow,
   maxCriteriaCount,
@@ -81,6 +84,92 @@ function formatDeadlineDisplay(value?: string) {
   if (!dateValue) return ''
   const [year, month, day] = dateValue.split('-')
   return year && month && day ? `${day}/${month}/${year}` : ''
+}
+
+function readStoredUserInfo(): Record<string, any> | null {
+  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
+  if (!rawUser) return null
+
+  try {
+    const parsed = JSON.parse(rawUser)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function getStoredTenantId() {
+  const user = readStoredUserInfo()
+  if (!user) return ''
+
+  const tenant =
+    user.tenant ||
+    user.tenantInfo ||
+    user.company ||
+    user.workspace ||
+    {}
+  const tenantId =
+    user.tenantId ||
+    user.tenant_id ||
+    user.companyId ||
+    user.company_id ||
+    user.workspaceId ||
+    user.workspace_id ||
+    tenant.id ||
+    tenant.tenantId ||
+    tenant.tenant_id ||
+    tenant.uuid
+
+  return tenantId ? String(tenantId) : ''
+}
+
+function getQuotaSources(...sources: Array<Record<string, any> | null | undefined>) {
+  return sources.flatMap((source) => {
+    if (!source || typeof source !== 'object') return []
+
+    return [
+      source,
+      source.data,
+      source.user,
+      source.userInfo,
+      source.account,
+      source.profile,
+      source.tenant,
+      source.tenantDetail,
+      source.tenantInfo,
+      source.company,
+      source.organization,
+      source.subscription,
+      source.subscriptionPlan,
+      source.subscriptionPlanDetail,
+      source.plan,
+      source.currentPlan,
+    ].filter((item): item is Record<string, any> => Boolean(item && typeof item === 'object'))
+  })
+}
+
+function readNumberFromSources(sources: Array<Record<string, any>>, keys: string[]) {
+  for (const source of sources) {
+    for (const key of keys) {
+      const value = Number(source[key])
+      if (Number.isFinite(value)) return value
+    }
+  }
+
+  return undefined
+}
+
+function readBooleanFromSources(sources: Array<Record<string, any>>, keys: string[]) {
+  for (const source of sources) {
+    for (const key of keys) {
+      const value = source[key]
+      if (typeof value === 'boolean') return value
+      const normalized = String(value ?? '').trim().toLowerCase()
+      if (['true', '1', 'yes', 'y', 'unlimited'].includes(normalized)) return true
+    }
+  }
+
+  return false
 }
 
 function formatLocationDisplay(locationType?: string, location?: string) {
@@ -305,6 +394,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('')
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [jobStats, setJobStats] = useState<DashboardStatsJobPostingResponse | null>(null)
+  const [tenantId] = useState(() => getStoredTenantId())
+  const [tenantDetail, setTenantDetail] = useState<Tenant | null>(null)
   const [isLoadingJobs, setIsLoadingJobs] = useState(false)
   const [jobListError, setJobListError] = useState('')
   const [jobPage, setJobPage] = useState(1)
@@ -334,6 +425,75 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
   const [pendingCriteriaCancelAction, setPendingCriteriaCancelAction] = useState<(() => void) | null>(null)
   const activeJobCount = jobStats?.totalActivePostings ?? jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
+  const jobQuotaSources = getQuotaSources(tenantDetail as Record<string, any> | null, jobStats as Record<string, any> | null, readStoredUserInfo())
+  const jobPostingQuotaUsed = readNumberFromSources(jobQuotaSources, [
+    'activeJobPostingUsed',
+    'active_job_posting_used',
+    'activeJobPostingsUsed',
+    'active_job_postings_used',
+    'jobPostingUsed',
+    'job_posting_used',
+    'jobPostingsUsed',
+    'job_postings_used',
+    'usedActiveJobPosting',
+    'used_active_job_posting',
+    'usedActiveJobPostings',
+    'used_active_job_postings',
+    'activeJobPostingCount',
+    'active_job_posting_count',
+    'activeJobPostingsCount',
+    'active_job_postings_count',
+    'totalActiveJobPostings',
+    'total_active_job_postings',
+    'totalActivePostings',
+    'total_active_postings',
+    'activeJobCount',
+    'active_job_count',
+    'activeJobs',
+    'active_jobs',
+    'jobCount',
+    'job_count',
+  ]) ?? activeJobCount
+  const rawJobPostingQuotaLimit = readNumberFromSources(jobQuotaSources, [
+    'activeJobPostingLimit',
+    'active_job_posting_limit',
+    'activeJobPostingsLimit',
+    'active_job_postings_limit',
+    'activeJobLimit',
+    'active_job_limit',
+    'activeJobsLimit',
+    'active_jobs_limit',
+    'maxActiveJobPosting',
+    'max_active_job_posting',
+    'maxActiveJobPostings',
+    'max_active_job_postings',
+    'jobPostingLimit',
+    'job_posting_limit',
+    'jobPostingsLimit',
+    'job_postings_limit',
+  ])
+  const isJobPostingQuotaUnlimited = readBooleanFromSources(jobQuotaSources, [
+    'activeJobPostingUnlimited',
+    'active_job_posting_unlimited',
+    'activeJobPostingsUnlimited',
+    'active_job_postings_unlimited',
+    'jobPostingUnlimited',
+    'job_posting_unlimited',
+    'jobPostingsUnlimited',
+    'job_postings_unlimited',
+  ])
+  const jobPostingQuotaLimit = !isJobPostingQuotaUnlimited && (!Number.isFinite(rawJobPostingQuotaLimit) || Number(rawJobPostingQuotaLimit) <= 0) && jobPostingQuotaUsed > 0
+    ? jobPostingQuotaUsed
+    : rawJobPostingQuotaLimit
+  const hasJobPostingQuotaLimit = !isJobPostingQuotaUnlimited && Number.isFinite(jobPostingQuotaLimit) && Number(jobPostingQuotaLimit) > 0
+  const jobPostingQuotaPercent = hasJobPostingQuotaLimit
+    ? Math.min(100, Math.max(0, (jobPostingQuotaUsed / Number(jobPostingQuotaLimit)) * 100))
+    : isJobPostingQuotaUnlimited
+      ? 100
+      : 0
+  const jobPostingQuotaRemaining = hasJobPostingQuotaLimit
+    ? Math.max(0, Number(jobPostingQuotaLimit) - jobPostingQuotaUsed)
+    : null
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
   const jobTotalElements = getListTotalElements(jobs, jobs.length)
@@ -410,6 +570,27 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       isActive = false
     }
   }, [employmentTypeFilter, jobListReloadKey, jobPage, jobView, searchQuery, statusFilter])
+
+  useEffect(() => {
+    if (!tenantId) {
+      setTenantDetail(null)
+      return
+    }
+
+    let isActive = true
+
+    tenantAdminApi.getTenantById(tenantId)
+      .then((tenant) => {
+        if (isActive) setTenantDetail(tenant)
+      })
+      .catch(() => {
+        if (isActive) setTenantDetail(null)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [jobListReloadKey, tenantId])
 
   useEffect(() => {
     const refreshView = window.sessionStorage.getItem(jobFormRefreshViewKey)
@@ -1009,9 +1190,9 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobFieldErrors({})
     setPendingDuplicateTitlePayload(null)
     setIsSavingJob(true)
-    try {
-      const isEditingJob = jobView === 'edit' && selectedJob
+    const isEditingJob = jobView === 'edit' && selectedJob
 
+    try {
       if (isEditingJob) {
         await hrApi.updateJobPosting(selectedJob.id, payload)
       } else {
@@ -1024,6 +1205,8 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
       if (isJobTitleAlreadyExistsError(error)) {
         setPendingDuplicateTitlePayload(payload)
+      } else if (!isEditingJob && isJobPostingLimitReachedError(error)) {
+        triggerToast?.(jobPostingLimitReachedMessage, 'error')
       } else if (Object.keys(apiFieldErrors).length > 0) {
         setJobFieldErrors(apiFieldErrors)
         triggerToast?.('Please check the highlighted fields.', 'error')
@@ -1581,7 +1764,31 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
 
       <div className={styles.jobsHeader}>
         <h1>Job Postings</h1>
-        <button type="button" disabled={isActionLocked} onClick={openCreateJob}>Create New Job Posting</button>
+        <div className={styles.jobPostingHeaderActions}>
+          <section className={styles.jobPostingUsageCard} aria-label="Job posting quota usage">
+            <div>
+              <strong>Job Posting</strong>
+              <span>
+                {hasJobPostingQuotaLimit
+                  ? `${jobPostingQuotaUsed}/${jobPostingQuotaLimit}`
+                  : isJobPostingQuotaUnlimited
+                    ? `${jobPostingQuotaUsed}/Unlimited`
+                    : `${jobPostingQuotaUsed}/-`}
+              </span>
+            </div>
+            <div className={styles.jobPostingUsageTrack}>
+              <span style={{ width: `${jobPostingQuotaPercent}%` }}></span>
+            </div>
+            <small>
+              {hasJobPostingQuotaLimit
+                ? `${jobPostingQuotaRemaining} post${jobPostingQuotaRemaining === 1 ? '' : 's'} remaining`
+                : isJobPostingQuotaUnlimited
+                  ? 'Unlimited posts remaining'
+                  : 'No quota limit configured'}
+            </small>
+          </section>
+          <button type="button" disabled={isActionLocked} onClick={openCreateJob}>Create New Job Posting</button>
+        </div>
       </div>
 
       <div className={styles.jobsMetrics}>

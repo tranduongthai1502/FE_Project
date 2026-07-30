@@ -223,6 +223,9 @@ export type DashboardStatsJobPostingResponse = {
   totalActivePostings?: number
   totalApplicants?: number
   postingsExpiringSoon?: number
+  activeJobPostingUsed?: number
+  activeJobPostingLimit?: number
+  activeJobPostingUnlimited?: boolean
 }
 
 export type TenantAdminUser = {

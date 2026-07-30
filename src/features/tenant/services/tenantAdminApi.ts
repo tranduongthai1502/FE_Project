@@ -139,6 +139,12 @@ export const tenantAdminApi = {
     return axiosClient.delete(`/api/activity-log/staff/${encodeURIComponent(id)}`)
   },
 
+  async exportStaffActivityLogs(id: string) {
+    return axiosClient.get(`/api/activity-log/staff/${encodeURIComponent(id)}/export`, {
+      responseType: 'blob',
+    })
+  },
+
   async getUserById(id: string) {
     const response = await axiosClient.get(`/api/user/${encodeURIComponent(id)}`)
     const user = normalizeTenantAdminUser(getUserDetailPayload(response))
