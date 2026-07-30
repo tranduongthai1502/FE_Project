@@ -267,4 +267,4 @@ export type JobListFilters = {
 
 export type JobListRequest = ListRequest<JobListFilters | null>
 
-export type Ad
+export type AdminListParams<Filters extends object | null = Record<string, unknown>> = Partial<ListRequest<Filters>>
