@@ -5,7 +5,7 @@ import { stripCurrencyGrouping } from '@/utils/currencyFormat'
 import { getRichTextPlainText } from './hrRichTextUtils'
 
 export type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
-export type JobConfirmAction = 'close' | 'open' | 'deleteDraft' | null
+export type JobConfirmAction = 'close' | 'open' | 'delete' | null
 export type JobDetailTab = 'overview' | 'criteria'
 export type EditableCriterion = {
   clientId: string
@@ -123,7 +123,7 @@ export function getJobActionConfirmMessage(action: Exclude<JobConfirmAction, nul
     return 'Are you sure you want to close this job posting? No new applications will be accepted.'
   }
 
-  if (action === 'deleteDraft') {
+  if (action === 'delete') {
     return 'Are you sure you want to permanently delete this job posting? This action cannot be undone.'
   }
 
