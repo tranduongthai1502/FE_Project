@@ -1,5 +1,5 @@
 import type { AxiosInstance } from 'axios'
-import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage } from './authStorage'
+import { AUTH_EXPIRED_EVENT_NAME, clearAuthStorage, getStoredAuthRole } from './authStorage'
 import {
   buildAxiosErrorInfo,
   buildSuccessFalseErrorInfo,
@@ -10,6 +10,10 @@ let refreshTokenRequest: Promise<string> | null = null
 
 function getStoredToken(key: 'access_token' | 'refresh_token') {
   return localStorage.getItem(key) || sessionStorage.getItem(key)
+}
+
+function hasStoredToken() {
+  return Boolean(getStoredToken('access_token') || getStoredToken('refresh_token'))
 }
 
 function getAuthStorage() {
@@ -69,6 +73,69 @@ function getRefreshTokenRequest(refreshClient: AxiosInstance) {
 
 function isAuthEndpoint(url = '') {
   return /^\/?api\/auth\//.test(url)
+}
+
+function normalizeRole(value: unknown) {
+  return String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_').replace(/^role_/, '')
+}
+
+function getStoredUserRoles() {
+  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
+  if (!rawUser) return []
+
+  try {
+    const user = JSON.parse(rawUser)
+    const roleValues = [
+      user?.role,
+      user?.roleName,
+      user?.role_name,
+      user?.userRole,
+      user?.user_role,
+      user?.type,
+      ...(Array.isArray(user?.roles) ? user.roles : []),
+      ...(Array.isArray(user?.userRoles) ? user.userRoles : []),
+      ...(Array.isArray(user?.authorities) ? user.authorities : []),
+    ]
+
+    return roleValues.flatMap((role) => String(role ?? '').split(/[,;/|]+/)).map(normalizeRole).filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function isStaffAccountSession() {
+  const storedRole = getStoredAuthRole()
+  const userRoles = getStoredUserRoles()
+
+  return (
+    storedRole === 'hr' ||
+    storedRole === 'interviewer' ||
+    userRoles.includes('hr') ||
+    userRoles.includes('interviewer') ||
+    userRoles.includes('tenant_hr') ||
+    userRoles.includes('tenant_interviewer')
+  )
+}
+
+function isStaffManagementContext(url = '') {
+  const pathname = window.location.pathname
+
+  return (
+    pathname.startsWith('/tenant-admin/staff-management') ||
+    /^\/?api\/user\/staff(?:\/|$)/.test(url) ||
+    /^\/?api\/activity-log\/staff(?:\/|$)/.test(url)
+  )
+}
+
+function shouldLogoutOnForbidden(url = '') {
+  const pathname = window.location.pathname
+
+  return (
+    isStaffAccountSession() ||
+    pathname.startsWith('/hr') ||
+    pathname.startsWith('/interviewer') ||
+    isStaffManagementContext(url)
+  )
 }
 
 export function setupAxiosInterceptors(axiosClient: AxiosInstance, refreshClient: AxiosInstance) {
@@ -132,6 +199,11 @@ export function setupAxiosInterceptors(axiosClient: AxiosInstance, refreshClient
 
         clearAuthStorage()
         notifyAuthExpired()
+      }
+
+      if (errorInfo.status === 403 && originalRequest && !isAuthEndpoint(originalRequest.url || '') && hasStoredToken() && shouldLogoutOnForbidden(originalRequest.url || '')) {
+        clearAuthStorage()
+        notifyAuthExpired('Your account no longer has permission to access this page. Please log in again.')
       }
 
       return Promise.reject(createAppError(errorInfo))
