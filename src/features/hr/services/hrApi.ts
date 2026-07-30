@@ -159,11 +159,18 @@ export const hrApi = {
 
   async getJobPostingById(id: string) {
     const response = await axiosClient.get(`/api/job-posting/${encodeURIComponent(id)}`)
-    const job = normalizeJobPosting(getResponsePayload(response))
+    const payload = getResponsePayload(response)
+    const job = normalizeJobPosting(payload)
 
     if (!job) {
       throw new Error('Job posting not found')
     }
+
+    console.log('[hrApi.getJobPostingById] raw BE payload', payload)
+    console.log('[hrApi.getJobPostingById] normalized revision history', {
+      count: job.revisionHistory?.length || 0,
+      items: job.revisionHistory || [],
+    })
 
     return job
   },
