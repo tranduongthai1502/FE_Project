@@ -1220,6 +1220,12 @@
   line-height: 1;
 }
 
+.revisionHistoryIcon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
 .revisionHistoryText {
   min-width: 0;
   padding-bottom: 15px;
