@@ -73,6 +73,14 @@ export type JobPosting = {
   updatedAt?: string
   publishedAt?: string
   openedAt?: string
+  revisionHistory?: JobRevisionHistory[]
+}
+
+export type JobRevisionHistory = {
+  id?: string
+  action: string
+  actorName?: string
+  createdAt?: string
 }
 
 export type JobPostingPayload = {

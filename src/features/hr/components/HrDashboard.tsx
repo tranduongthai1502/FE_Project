@@ -4,7 +4,7 @@ import { buildNavigation } from '@/components/common/navigation'
 import { hrNav } from './hrNavigation'
 import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRichTextEditor'
 import type { RoleHomeView } from '@/app/routes/route.types'
-import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload } from '@/services/api/api.types'
+import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, JobRevisionHistory } from '@/services/api/api.types'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../services/hrApi'
 import { isStoredCurrentUserInactive } from '@/features/auth/utils/authAccess'
 import { getErrorMessage as getAdminErrorMessage } from '@/services/error/errorMessages'
@@ -224,6 +224,44 @@ function RevisionHistoryCreateIcon() {
       <path d="M15.75 5.25H12.75V2.25H11.25V5.25H8.25V6.75H11.25V9.75H12.75V6.75H15.75V5.25Z" fill="#0B1C30" fillOpacity="0.7" />
     </svg>
   )
+}
+
+function getRevisionHistoryIcon(action: string) {
+  const normalizedAction = action.trim().toLowerCase()
+
+  if (normalizedAction.includes('close')) return <CloseJobIcon />
+  if (normalizedAction.includes('open')) return <RevisionHistoryOpenIcon />
+  if (normalizedAction.includes('update') || normalizedAction.includes('edit')) return <RevisionHistoryUpdateIcon />
+  if (normalizedAction.includes('create')) return <RevisionHistoryCreateIcon />
+
+  return <RevisionHistoryUpdateIcon />
+}
+
+function formatRevisionTitle(action: string, jobTitle: string) {
+  const normalizedAction = action.trim()
+  const lowerAction = normalizedAction.toLowerCase()
+
+  if (lowerAction.includes('create') && jobTitle && !lowerAction.includes(jobTitle.toLowerCase())) {
+    return `${normalizedAction}: "${jobTitle}"`
+  }
+
+  return normalizedAction || 'Update Job Posting'
+}
+
+function formatRevisionMeta(actorName?: string, createdAt?: string) {
+  const actorLabel = String(actorName || 'Unknown').trim().toUpperCase()
+  const dateTime = formatJobDateTimeInVietnam(createdAt).replace(/, ([^,]+)$/, ' • $1')
+
+  return `${actorLabel} • ${dateTime}`
+}
+
+function buildRevisionHistoryItems(history: JobRevisionHistory[] | undefined, jobTitle: string) {
+  return (history || []).slice(0, 4).map((item, index) => ({
+    id: item.id || `${item.action}-${item.createdAt || index}`,
+    icon: getRevisionHistoryIcon(item.action),
+    title: formatRevisionTitle(item.action, jobTitle),
+    meta: formatRevisionMeta(item.actorName, item.createdAt),
+  }))
 }
 
 function CriteriaAiSuggestIcon() {
@@ -1090,27 +1128,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
       : selectedJobIsDraft
         ? { label: '', value: 'NOT YET PUBLISH', helper: '' }
         : { label: 'Days Open', value: String(getDaysOpen(selectedJob.createdAt)), helper: daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left` }
-    const formatRevisionMeta = (label: string, value?: string) => {
-      const dateTime = formatJobDateTimeInVietnam(value || selectedJob.createdAt)
-      return `${label} • ${dateTime.replace(/, ([^,]+)$/, ' • $1')}`
-    }
-    const revisionHistoryItems = [
-      {
-        icon: <RevisionHistoryOpenIcon />,
-        title: 'Open Job Posting',
-        meta: formatRevisionMeta(selectedJob.title || 'Job', selectedJob.openedAt || selectedJob.publishedAt || selectedJob.updatedAt),
-      },
-      {
-        icon: <RevisionHistoryUpdateIcon />,
-        title: 'Update Job Posting',
-        meta: formatRevisionMeta(selectedJob.department || 'HR', selectedJob.updatedAt),
-      },
-      {
-        icon: <RevisionHistoryCreateIcon />,
-        title: `Create Job Posting: "${selectedJob.title}"`,
-        meta: formatRevisionMeta(selectedJob.department || 'HR', selectedJob.createdAt),
-      },
-    ]
+    const revisionHistoryItems = buildRevisionHistoryItems(selectedJob.revisionHistory, selectedJob.title)
 
     return (
       <div className={`role-content ${styles.jobsContent}`}>
@@ -1211,15 +1229,19 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               <section className={styles.revisionHistoryCard}>
                 <h3>Revision History</h3>
                 <div className={styles.revisionHistoryList}>
-                  {revisionHistoryItems.map((item, index) => (
-                    <div className={styles.revisionHistoryItem} key={`${item.title}-${index}`}>
-                      <span className={styles.revisionHistoryIcon}>{item.icon}</span>
-                      <div className={styles.revisionHistoryText}>
-                        <strong>{item.title}</strong>
-                        <small>{item.meta}</small>
+                  {revisionHistoryItems.length > 0 ? (
+                    revisionHistoryItems.map((item) => (
+                      <div className={styles.revisionHistoryItem} key={item.id}>
+                        <span className={styles.revisionHistoryIcon}>{item.icon}</span>
+                        <div className={styles.revisionHistoryText}>
+                          <strong>{item.title}</strong>
+                          <small>{item.meta}</small>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <small>No revision history yet.</small>
+                  )}
                 </div>
               </section>
             </aside>
