@@ -223,6 +223,9 @@ export type DashboardStatsJobPostingResponse = {
   totalActivePostings?: number
   totalApplicants?: number
   postingsExpiringSoon?: number
+  activeJobPostingUsed?: number
+  activeJobPostingLimit?: number
+  activeJobPostingUnlimited?: boolean
 }
 
 export type TenantAdminUser = {
@@ -264,4 +267,4 @@ export type JobListFilters = {
 
 export type JobListRequest = ListRequest<JobListFilters | null>
 
-export type AdminListParams<Filters extends object | null = Record<string, unknown>> = Partial<ListRequest<Filters>>
+export type Ad
