@@ -88,7 +88,7 @@ export function DashboardShell({
 }) {
   const user = useMemo(() => getStoredUser(), [])
   const displayName = getDisplayName(user)
-  const displayNamePreview = truncateDisplayName(displayName)
+  const displayNamePreview = truncateDisplayName(formatDisplayName(displayName))
   const displayRole = getDisplayRole(user, subtitle)
   const userInitials = getUserInitials(displayName)
   const [isSidebarVisible, setIsSidebarVisible] = useState(getInitialSidebarVisibility)

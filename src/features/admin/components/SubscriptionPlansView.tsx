@@ -1063,27 +1063,12 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const topTierFallback = getHighestPricedActivePlan(plans)
   const topTier = topTierPlan || topTierFallback
   const planStatsActivePlans = planStats.activePlans ?? activePlansCount
-  const planStatsTotalPlans = planStats.totalPlans ?? getListTotalElements(plans, plans.length)
-  const planStatsActivePlansTrendLabel = planStats.activePlansTrend !== undefined
-    ? `${formatStatNumber(planStats.activePlansTrend)} active plans trend`
-    : `${planStatsTotalPlans} total plans`
   const planStatsTopTierName = planStats.topTierName || topTier?.name || '-'
-  const planStatsTopTierStaffLabel = planStats.topTierSubscribers !== undefined
-    ? `${formatStatNumber(planStats.topTierSubscribers)} subscribers`
-    : (topTier?.staffAccountUnlimited ?? planStats.topTierStaffAccountUnlimited)
-    ? 'Unlimited'
-    : `${topTier?.maxStaffAccount ?? planStats.topTierMaxStaffAccount ?? 0} staff`
   const planStatsMonthlyRevenueLabel = `$${(planStats.monthlyActivePlanRevenue ?? 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
-  const planStatsMonthlyTrendLabel = planStats.monthlyRevenueTrendPercent !== undefined
-    ? `${planStats.monthlyRevenueTrendPercent >= 0 ? '+' : ''}${formatStatNumber(planStats.monthlyRevenueTrendPercent)}% from last month`
-    : '-'
   const planStatsRenewalRateLabel = planStats.renewalRate !== undefined ? `${formatStatNumber(planStats.renewalRate)}%` : '-'
-  const planStatsRenewalTrendLabel = planStats.renewalRateTrendPercent !== undefined
-    ? `${planStats.renewalRateTrendPercent >= 0 ? '+' : ''}${formatStatNumber(planStats.renewalRateTrendPercent)}% vs target`
-    : '-'
   const sortedPlans = sortSubscriptionPlans(plans, planSort)
   const safePlanPage = planPage
   const pagedPlans = sortedPlans

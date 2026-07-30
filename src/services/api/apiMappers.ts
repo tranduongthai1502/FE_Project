@@ -97,6 +97,15 @@ export function normalizeJobPosting(job: any): JobPosting | null {
     status: String(job?.status || job?.jobStatus || job?.job_status || 'DRAFT'),
     applicantCount: Number(job?.applicantCount ?? job?.applicantsCount ?? job?.noOfApplicants ?? job?.numberOfApplicants ?? job?.totalApplicants ?? 0) || 0,
     createdAt: job?.createdAt || job?.createdDate || job?.created_at ? String(job?.createdAt || job?.createdDate || job?.created_at) : undefined,
+    updatedAt: job?.updatedAt || job?.updatedDate || job?.updated_at || job?.modifiedAt || job?.modified_at
+      ? String(job?.updatedAt || job?.updatedDate || job?.updated_at || job?.modifiedAt || job?.modified_at)
+      : undefined,
+    publishedAt: job?.publishedAt || job?.publishedDate || job?.published_at || job?.openedAt || job?.opened_at
+      ? String(job?.publishedAt || job?.publishedDate || job?.published_at || job?.openedAt || job?.opened_at)
+      : undefined,
+    openedAt: job?.openedAt || job?.opened_at || job?.openAt || job?.open_at
+      ? String(job?.openedAt || job?.opened_at || job?.openAt || job?.open_at)
+      : undefined,
   }
 }
 

@@ -379,18 +379,6 @@ function loadTenantWorkspaceData(tenantId: string, staffPage: number, staffListF
   return request
 }
 
-function formatDashboardDate(value?: string) {
-  if (!value || value === '-') return '-'
-  const parsed = Date.parse(value)
-  if (Number.isNaN(parsed)) return value
-
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  }).format(new Date(parsed))
-}
-
 function formatActivityDateTime(value?: string) {
   if (!value) return '-'
 
@@ -568,21 +556,6 @@ function StaffManagementView({
     } catch {
       return dateStr
     }
-  }
-
-  const formatRelativeTime = (dateStr?: string) => {
-    if (!dateStr) return '-'
-    const date = new Date(dateStr)
-    if (Number.isNaN(date.getTime())) return dateStr
-
-    const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
-    if (diffMinutes < 60) return `${diffMinutes || 1} minute${diffMinutes === 1 ? '' : 's'} ago`
-
-    const diffHours = Math.round(diffMinutes / 60)
-    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
-
-    const diffDays = Math.round(diffHours / 24)
-    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
   }
 
   const quotaPercent = Math.min(100, Math.round((staffAccountCount / Math.max(maxStaffQuota, 1)) * 100))
