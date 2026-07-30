@@ -188,14 +188,39 @@ export function getCriteriaSnapshot(rows: EditableCriterion[]) {
 
 export function formatJobDate(value?: string) {
   if (!value) return '-'
-  const date = new Date(value)
+  const date = parseBackendDateTime(value)
   if (Number.isNaN(date.getTime())) return value
 
   return date.toLocaleDateString('en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
     month: 'short',
     day: '2-digit',
     year: 'numeric',
   })
+}
+
+export function formatJobDateTimeInVietnam(value?: string) {
+  if (!value) return '-'
+  const date = parseBackendDateTime(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+function parseBackendDateTime(value: string) {
+  const trimmed = value.trim()
+  const hasTime = /[tT]\d{2}:\d{2}/.test(trimmed)
+  const hasTimezone = /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)
+
+  return new Date(hasTime && !hasTimezone ? `${trimmed}Z` : trimmed)
 }
 
 export function formatJobStatus(value: string) {
@@ -271,9 +296,7 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
     nextErrors.salaryMax = salaryOrderMessage
   }
 
-  if (!payload.applicationDeadline.trim()) {
-    nextErrors.applicationDeadline = deadlineRequiredMessage
-  } else {
+  if (payload.applicationDeadline.trim()) {
     const deadline = new Date(payload.applicationDeadline)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -312,9 +335,7 @@ export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInput
     nextErrors.salaryMax = salaryOrderMessage
   }
 
-  if (!payload.applicationDeadline.trim()) {
-    nextErrors.applicationDeadline = deadlineRequiredMessage
-  } else {
+  if (payload.applicationDeadline.trim()) {
     const deadline = new Date(payload.applicationDeadline)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
