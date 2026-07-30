@@ -55,6 +55,10 @@ export function useAuthSession(
         : 'Your session has expired. Please log in again.'
 
       clearAuthStorage()
+      setSessionState({
+        currentRole: null,
+        requirePasswordChange: false,
+      })
       navigate('/login', { replace: true })
       triggerToast(message, 'error')
     }

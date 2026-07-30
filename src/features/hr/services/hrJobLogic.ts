@@ -28,6 +28,7 @@ export const salaryOrderMessage = validationErrorMessages.salaryOrderInvalid
 export const salaryPositiveMessage = 'Salary must be a positive number.'
 export const deadlineRequiredMessage = 'Please select application deadline.'
 export const deadlineFutureMessage = 'Application deadline must be today or a future date.'
+export const jobPostingLimitReachedMessage = 'You have reached your post limit.'
 export const jobTitleMaxLength = 100
 export const jobTitleLengthMessage = `Job title must be ${jobTitleMaxLength} characters or less.`
 export const criteriaCategories = ['Technical Skills', 'Experience', 'Education', 'Soft Skills', 'Culture Fit']
@@ -358,6 +359,46 @@ export function isJobTitleAlreadyExistsError(error: unknown) {
   ]
 
   return candidates.some((value) => String(value || '').trim().toLowerCase() === 'job_title_already_exists')
+}
+
+export function isJobPostingLimitReachedError(error: unknown) {
+  const payload = getApiErrorPayload(error)
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  const candidates = [
+    data?.code,
+    data?.error,
+    data?.message,
+    data?.backendMessage,
+    data?.data?.code,
+    data?.data?.error,
+    data?.data?.message,
+    (error as { backendMessage?: unknown } | null)?.backendMessage,
+    (error as { code?: unknown } | null)?.code,
+    (error as { message?: unknown } | null)?.message,
+  ]
+  const normalizedText = candidates
+    .map((value) => String(value || '').trim().toLowerCase().replace(/[_-]+/g, ' '))
+    .filter(Boolean)
+    .join(' ')
+
+  return Boolean(
+    normalizedText.includes('post limit') ||
+    normalizedText.includes('posting limit') ||
+    normalizedText.includes('job posting limit') ||
+    normalizedText.includes('job post limit') ||
+    normalizedText.includes('active posting limit') ||
+    normalizedText.includes('active postings limit') ||
+    normalizedText.includes('active job limit') ||
+    normalizedText.includes('active job posting limit') ||
+    normalizedText.includes('max active job posting') ||
+    normalizedText.includes('maximum active job posting') ||
+    normalizedText.includes('quota reached') ||
+    normalizedText.includes('limit reached') ||
+    normalizedText.includes('reached limit') ||
+    normalizedText.includes('exceed limit') ||
+    normalizedText.includes('exceeded limit') ||
+    normalizedText.includes('quota exceeded')
+  )
 }
 
 function getApiErrorPayload(error: unknown): any {
