@@ -1,4 +1,4 @@
-import type { StoredCandidateUser } from '../domain/candidate.types'
+import type { StoredCandidateUser } from '../../domain/candidate.types'
 import { getUserDisplayName, getUserInitials } from '../../application/candidateUser'
 
 export function UserAvatar({ user, className }: { user: StoredCandidateUser | null; className: string }) {

@@ -5,7 +5,7 @@ import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 
 import { applications, candidateNavItems } from '../../domain/candidateData'
 import { useCandidatePanel } from '../../application/useCandidatePanel'
-import type { CandidatePortalPageProps, StoredCandidateUser } from '../domain/candidate.types'
+import type { CandidatePortalPageProps, StoredCandidateUser } from '../../domain/candidate.types'
 import { getStoredUser, getUserDisplayName, getUserSubtitle } from '../../application/candidateUser'
 import { CandidateLogoutModal } from './CandidateLogoutModal'
 import { UserAvatar } from './UserAvatar'
