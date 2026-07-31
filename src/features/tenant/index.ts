@@ -1,1 +1,1 @@
-export { TenantAdminDashboard } from './components/TenantAdminDashboard'
+export { TenantAdminDashboard } from './presentation/components/TenantAdminDashboard'

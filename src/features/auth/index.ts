@@ -1,15 +1,17 @@
-export { ChangePasswordView, CandidateChangePasswordView } from '@/components/common/ChangePasswordView'
-export { LoginFeature } from './components/LoginFeature'
-export { SignupFeature } from './components/SignupFeature'
-export { ForgotPasswordForm } from './components/ForgotPasswordForm'
-export { OtpForm } from './components/OtpForm'
-export { ResetPasswordForm } from './components/ResetPasswordForm'
+export { ChangePasswordView, CandidateChangePasswordView } from '@/core/components/common/ChangePasswordView'
+export { LoginFeature } from './presentation/components/LoginFeature'
+export { SignupFeature } from './presentation/components/SignupFeature'
+export { ForgotPasswordForm } from './presentation/components/ForgotPasswordForm'
+export { OtpForm } from './presentation/components/OtpForm'
+export { ResetPasswordForm } from './presentation/components/ResetPasswordForm'
+export { ProtectedRoute } from './presentation/components/ProtectedRoute'
+export { RoleGuard } from './presentation/components/RoleGuard'
 
-export { authApi } from '@/services/api/authApi'
+export { authApi } from '@/core/api/authApi'
 
-export { useAuthSession } from './hooks/useAuthSession'
+export { useAuthSession } from './application/useAuthSession'
 
-export { getPasswordStrength } from '@/utils/passwordStrength'
+export { getPasswordStrength } from '@/core/utils/passwordStrength'
 export {
   authErrorMessages,
   backendAuthErrorMessages,
@@ -21,7 +23,7 @@ export {
   isIncorrectPasswordError,
   isSystemApiError,
   isWorkspaceSuspendedError,
-} from './errors'
+} from './application'
 export {
   validateConfirmPassword,
   validateEmail,
@@ -30,15 +32,16 @@ export {
   validatePassword,
   validatePhone,
   validateRequired,
-} from './utils/validation'
+} from './application/validation'
 
-export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '@/services/api/api.types'
-export type { AppRole } from './utils/authRole'
-export { getPageForUserRole, unsupportedRoleMessage } from './utils/authRole'
+export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '@/core/api/api.types'
+export type { AppRole } from './domain/role.types'
+export type { AuthUser } from './domain/user.types'
+export { getPageForUserRole, unsupportedRoleMessage } from './application/authRole'
 export {
   AUTH_EXPIRED_EVENT_NAME,
   AUTH_PAGE_STORAGE_KEY,
   clearAuthStorage,
   getStoredAuthRole,
   saveAuthRole,
-} from '@/services/api/authStorage'
+} from '@/core/api/authStorage'

@@ -1,5 +1,5 @@
-export { SuperAdminDashboard } from './components/SuperAdminDashboard'
-export { adminApi } from './services/adminApi'
+export { SuperAdminDashboard } from './presentation/components/SuperAdminDashboard'
+export { adminApi } from './infrastructure/adminApi'
 export type {
   CreatePlanPayload,
   CreateTenantPayload,
@@ -7,4 +7,4 @@ export type {
   Tenant,
   UpdatePlanPayload,
   UpdateTenantPayload,
-} from '@/services/api/api.types'
+} from '@/core/api/api.types'
