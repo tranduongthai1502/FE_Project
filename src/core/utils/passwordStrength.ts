@@ -12,6 +12,14 @@ export type PasswordStrength = {
 }
 
 export type AdminPasswordStrength = Omit<PasswordStrength, 'progressWidth'>
+export type PasswordRequirementKey = keyof PasswordStrength['requirements']
+
+export const passwordRequirementLabels: Record<PasswordRequirementKey, string> = {
+  length: 'At least 8 characters',
+  case: 'Uppercase and lowercase letters',
+  number: 'At least 1 number',
+  special: 'At least 1 symbol',
+}
 
 export function getPasswordStrength(password: string): PasswordStrength {
   const requirements = {
@@ -53,4 +61,12 @@ export function getAdminPasswordStrength(password: string): AdminPasswordStrengt
   }
 
   return { requirements, score, strengthLabel, strengthClass }
+}
+
+export function getMissingPasswordRequirementLabels(password: string) {
+  const { requirements } = getPasswordStrength(password)
+
+  return (Object.entries(requirements) as Array<[PasswordRequirementKey, boolean]>)
+    .filter(([, isMet]) => !isMet)
+    .map(([requirement]) => passwordRequirementLabels[requirement])
 }

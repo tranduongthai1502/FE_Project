@@ -1,1 +1,1 @@
-export { authErrorMessages, backendAuthErrorMessages } from '@/core/errors/authErrorMessages'
+export { authErrorMessages, backendAuthErrorMessages } from '@/core/utils/errors/authErrorMessages'

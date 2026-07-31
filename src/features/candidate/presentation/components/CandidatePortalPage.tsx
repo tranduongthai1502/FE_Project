@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ChangePasswordView } from '@/core/components/common/ChangePasswordView'
+import { ChangePasswordView } from '@/core/components/ChangePasswordView'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 
 import { applications, candidateNavItems } from '../../domain/candidateData'

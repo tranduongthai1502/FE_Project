@@ -1,9 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { passwordRequirementLabels } from '@/core/utils/passwordRequirements'
 import { authApi } from '@/core/api/authApi'
-import { getPasswordStrength } from '@/core/utils/passwordStrength'
+import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
 import { getAppErrorMessage, getErrorCode } from '@/core/utils/errorManager'
-import { authErrorMessages } from '@/core/errors/authErrorMessages'
+import { authErrorMessages } from '@/core/utils/errors/authErrorMessages'
 import { FIELD_LENGTH_LIMITS, isPasswordLengthValid } from '@/core/api/axiosErrorHandler'
 import { clearAuthStorage, clearRequirePasswordChange } from '@/core/api/authStorage'
 
@@ -33,13 +32,7 @@ export function ChangePasswordView({
   const [showBackConfirm, setShowBackConfirm] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const strength = getPasswordStrength(newPassword)
-  const passwordRequirements = Object.entries(strength.requirements) as Array<[
-    keyof typeof strength.requirements,
-    boolean,
-  ]>
-  const missingRequirements = passwordRequirements
-    .filter(([, isMet]) => !isMet)
-    .map(([requirement]) => passwordRequirementLabels[requirement])
+  const missingRequirements = getMissingPasswordRequirementLabels(newPassword)
   const visibleStrengthClass = newPassword ? strength.strengthClass : ''
   const visibleStrengthLabel = newPassword ? strength.strengthLabel : 'Not entered'
 
@@ -277,12 +270,7 @@ export function ChangePasswordView({
                   onChange={(event) => {
                     const nextPassword = event.target.value
                     const nextStrength = getPasswordStrength(nextPassword)
-                    const nextMissingRequirements = (Object.entries(nextStrength.requirements) as Array<[
-                      keyof typeof nextStrength.requirements,
-                      boolean,
-                    ]>)
-                      .filter(([, isMet]) => !isMet)
-                      .map(([requirement]) => passwordRequirementLabels[requirement])
+                    const nextMissingRequirements = getMissingPasswordRequirementLabels(nextPassword)
 
                     setNewPassword(nextPassword)
                     if (!nextPassword) {

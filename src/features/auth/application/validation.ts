@@ -6,4 +6,4 @@ export {
   validatePassword,
   validatePhone,
   validateRequired,
-} from '@/core/errors/inputErrorHandler'
+} from '@/core/utils/errors/inputErrorHandler'

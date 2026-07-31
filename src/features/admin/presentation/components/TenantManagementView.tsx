@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../infrastructure/adminApi'
 import {
@@ -27,13 +28,13 @@ import {
   getUsagePercent,
 } from '../../application/tenantDisplayUtils'
 import { getSuperAdminViewPath, getTenantCreatePath, getTenantDetailIdFromUrl, getTenantDetailPath, isTenantCreateUrl } from '@/features/admin/domain/superAdminRouteHelpers'
-import { ConfirmActionModal } from '@/core/components/common/ConfirmActionModal'
+import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 import { CreateTenantPage, type CreateTenantFieldErrors } from './CreateTenantPage'
-import { Breadcrumb } from '@/core/components/common/Breadcrumb'
-import { SearchInput } from '@/core/components/common/SearchInput'
-import { ScrollableSelect } from '@/core/components/common/ScrollableSelect'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
+import { SearchInput } from '@/core/components/SearchInput'
+import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import styles from './TenantManagementView.module.css'
-import { getErrorMessage as getAdminErrorMessage } from '@/core/errors/errorMessages'
+import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { formatCurrencyInput } from '@/core/utils/currencyFormat'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
@@ -47,6 +48,7 @@ export function TenantManagementView({
 }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [activeView, setActiveView] = useState<'list' | 'detail'>(() => (
     getTenantDetailIdFromUrl(location.pathname) ? 'detail' : 'list'
   ))
@@ -77,101 +79,77 @@ export function TenantManagementView({
   const [tenantSearchQuery, setTenantSearchQuery] = useState('')
   const [tenantPage, setTenantPage] = useState(1)
   const [tenantPageCount, setTenantPageCount] = useState(1)
-  const [refreshTenantsKey, setRefreshTenantsKey] = useState(0)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [pendingTenantPlanId, setPendingTenantPlanId] = useState('')
   const [tenantForm, setTenantForm] = useState<CreateTenantForm>(emptyTenantForm)
 
+  const tenantListParams = useMemo(
+    () => buildTenantListParams(tenantStatusFilter, tenantPlanFilter, tenantSearchQuery, tenantPage),
+    [tenantPage, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter],
+  )
+  const shouldLoadPlans = activeView === 'list' || activeView === 'detail' || isCreateModalOpen
+
+  const tenantsQuery = useQuery({
+    queryKey: ['admin', 'tenants', tenantListParams],
+    queryFn: () => adminApi.getTenants(tenantListParams),
+  })
+  const tenantStatsQuery = useQuery({
+    queryKey: ['admin', 'tenant-dashboard-stats'],
+    queryFn: adminApi.getTenantDashboardStats,
+  })
+  const plansQuery = useQuery({
+    queryKey: ['admin', 'subscription-plans', { page: 1, size: PLAN_FILTER_LIST_SIZE }],
+    queryFn: () => adminApi.getSubscriptionPlans({ page: 1, size: PLAN_FILTER_LIST_SIZE }),
+    enabled: shouldLoadPlans,
+  })
+  const tenantDetailQuery = useQuery({
+    queryKey: ['admin', 'tenant-detail', selectedTenantId],
+    queryFn: () => adminApi.getTenantById(selectedTenantId || ''),
+    enabled: activeView === 'detail' && Boolean(selectedTenantId),
+  })
+  const tenantAdminUserQuery = useQuery({
+    queryKey: ['admin', 'tenant-admin-user', tenantDetailQuery.data?.adminUserId],
+    queryFn: () => adminApi.getUserById(tenantDetailQuery.data?.adminUserId || ''),
+    enabled: Boolean(tenantDetailQuery.data?.adminUserId),
+  })
+  const invalidateTenantQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'tenants'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'tenant-dashboard-stats'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'tenant-detail'] })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'tenant-admin-user'] })
+  }
+
   useEffect(() => {
-    let isActive = true
-    setIsLoadingTenants(true)
-    setTenantListError('')
-
-    const listParams = buildTenantListParams(tenantStatusFilter, tenantPlanFilter, tenantSearchQuery, tenantPage)
-
-    adminApi.getTenants(listParams)
-      .then((items) => {
-        if (isActive) {
-          setTenants(items)
-          setTenantPageCount(getListPageCount(items, tenantPage, ADMIN_LIST_PAGE_SIZE))
-        }
-      })
-      .catch((error) => {
-        if (isActive) {
-          setTenantListError(getAdminErrorMessage(error, 'Failed to load tenants.'))
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoadingTenants(false)
-        }
-      })
-
-    return () => {
-      isActive = false
+    setIsLoadingTenants(tenantsQuery.isLoading || tenantsQuery.isFetching)
+    if (tenantsQuery.data) {
+      setTenants(tenantsQuery.data)
+      setTenantPageCount(getListPageCount(tenantsQuery.data, tenantPage, ADMIN_LIST_PAGE_SIZE))
     }
-  }, [refreshTenantsKey, tenantPage, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
+    setTenantListError(tenantsQuery.error ? getAdminErrorMessage(tenantsQuery.error, 'Failed to load tenants.') : '')
+  }, [tenantPage, tenantsQuery.data, tenantsQuery.error, tenantsQuery.isFetching, tenantsQuery.isLoading])
 
   useEffect(() => {
-    let isActive = true
-    setIsLoadingTenantStats(true)
+    setIsLoadingTenantStats(tenantStatsQuery.isLoading || tenantStatsQuery.isFetching)
+    setTenantStats(tenantStatsQuery.data ?? null)
+  }, [tenantStatsQuery.data, tenantStatsQuery.isFetching, tenantStatsQuery.isLoading])
 
-    adminApi.getTenantDashboardStats()
-      .then((stats) => {
-        if (isActive) {
-          setTenantStats(stats)
-        }
-      })
-      .catch(() => {
-        if (isActive) {
-          setTenantStats(null)
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoadingTenantStats(false)
-        }
-      })
-
-    return () => {
-      isActive = false
+  useEffect(() => {
+    setIsLoadingPlans(plansQuery.isLoading || plansQuery.isFetching)
+    if (plansQuery.data) {
+      setSubscriptionPlans(plansQuery.data)
+      if (isCreateModalOpen && plansQuery.data.length === 0) {
+        setTenantError('No subscription plans found.')
+      }
     }
-  }, [refreshTenantsKey])
-
-  useEffect(() => {
-    const shouldLoadPlans = activeView === 'list' || activeView === 'detail' || isCreateModalOpen
-    if (!shouldLoadPlans || subscriptionPlans.length > 0) return
-
-    let isActive = true
-    setIsLoadingPlans(true)
-    if (isCreateModalOpen) setTenantError('')
-
-    adminApi.getSubscriptionPlans({ page: 1, size: PLAN_FILTER_LIST_SIZE })
-      .then((plans) => {
-        if (!isActive) return
-        setSubscriptionPlans(plans)
-        if (isCreateModalOpen && plans.length === 0) {
-          setTenantError('No subscription plans found.')
-        }
-      })
-      .catch((error) => {
-        if (!isActive) return
-        if (isCreateModalOpen) {
-          setTenantError(getAdminErrorMessage(error, 'Failed to load subscription plans.'))
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoadingPlans(false)
-        }
-      })
-
-    return () => {
-      isActive = false
+    if (isCreateModalOpen && plansQuery.error) {
+      setTenantError(getAdminErrorMessage(plansQuery.error, 'Failed to load subscription plans.'))
     }
-  }, [activeView, isCreateModalOpen, subscriptionPlans.length])
+  }, [isCreateModalOpen, plansQuery.data, plansQuery.error, plansQuery.isFetching, plansQuery.isLoading])
 
   useEffect(() => {
+    const isLoadingDetail = tenantDetailQuery.isLoading || tenantDetailQuery.isFetching || tenantAdminUserQuery.isLoading || tenantAdminUserQuery.isFetching
+    setIsLoadingTenantDetail(isLoadingDetail)
+
     if (activeView !== 'detail' || !selectedTenantId) {
       setTenantDetail(null)
       setTenantAdminUser(null)
@@ -179,55 +157,34 @@ export function TenantManagementView({
       return
     }
 
-    let isActive = true
-    setIsLoadingTenantDetail(true)
-    setTenantDetailError('')
-    setTenantAdminUser(null)
+    if (tenantDetailQuery.data) {
+      setTenantDetail(tenantDetailQuery.data)
+      setTenants((current) => {
+        const existingIndex = current.findIndex((item) => item.id === tenantDetailQuery.data.id)
+        if (existingIndex === -1) return [tenantDetailQuery.data, ...current]
 
-    const fetchTenantDetail = async () => {
-      try {
-        const tenant = await adminApi.getTenantById(selectedTenantId)
-        if (!isActive) return
-
-        setTenantDetail(tenant)
-        setTenants((current) => {
-          const existingIndex = current.findIndex((item) => item.id === tenant.id)
-          if (existingIndex === -1) return [tenant, ...current]
-
-          const next = [...current]
-          next[existingIndex] = tenant
-          return next
-        })
-
-        if (!tenant.adminUserId) return
-
-        try {
-          const user = await adminApi.getUserById(tenant.adminUserId)
-          if (isActive) {
-            setTenantAdminUser(user)
-          }
-        } catch {
-          if (isActive) {
-            setTenantAdminUser(null)
-          }
-        }
-      } catch (error) {
-        if (isActive) {
-          setTenantDetailError(getAdminErrorMessage(error, 'Failed to load tenant details.'))
-        }
-      } finally {
-        if (isActive) {
-          setIsLoadingTenantDetail(false)
-        }
-      }
+        const next = [...current]
+        next[existingIndex] = tenantDetailQuery.data
+        return next
+      })
+      setTenantDetailError('')
     }
 
-    fetchTenantDetail()
-
-    return () => {
-      isActive = false
+    setTenantAdminUser(tenantAdminUserQuery.data ?? null)
+    if (tenantDetailQuery.error) {
+      setTenantDetailError(getAdminErrorMessage(tenantDetailQuery.error, 'Failed to load tenant details.'))
     }
-  }, [activeView, selectedTenantId])
+  }, [
+    activeView,
+    selectedTenantId,
+    tenantAdminUserQuery.data,
+    tenantAdminUserQuery.isFetching,
+    tenantAdminUserQuery.isLoading,
+    tenantDetailQuery.data,
+    tenantDetailQuery.error,
+    tenantDetailQuery.isFetching,
+    tenantDetailQuery.isLoading,
+  ])
 
   useEffect(() => {
     const tenantId = getTenantDetailIdFromUrl(location.pathname)
@@ -356,7 +313,7 @@ export function TenantManagementView({
       setTenantSearchQuery('')
       setTenantPage(1)
       navigate(getSuperAdminViewPath('tenantManagement'))
-      setRefreshTenantsKey((value) => value + 1)
+      invalidateTenantQueries()
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
       const message = getAdminErrorMessage(error, 'Error system. Please try again.')
@@ -525,7 +482,7 @@ export function TenantManagementView({
       setTenantDetail((tenant) => tenant?.id === deleteTenantTarget.id ? null : tenant)
       closeTenantDetail()
       setDeleteTenantTarget(null)
-      setRefreshTenantsKey((value) => value + 1)
+      invalidateTenantQueries()
       triggerToast?.('Tenant permanently deleted.', 'success')
     } catch {
       setTenantListError('Error system. Please try again.')
@@ -573,7 +530,7 @@ export function TenantManagementView({
       )))
       setTenantAdminUser((user) => user ? { ...user, status: nextStatus, activatedAt } : user)
       setIsStatusConfirmOpen(false)
-      setRefreshTenantsKey((value) => value + 1)
+      invalidateTenantQueries()
       triggerToast?.(`Tenant ${nextStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, 'success')
     } catch (error) {
       setTenantListError(getAdminErrorMessage(error, 'Failed to update tenant status.'))
@@ -647,7 +604,7 @@ export function TenantManagementView({
         tenant.id === selectedTenant.id ? nextTenant : tenant
       )))
       setIsPlanConfirmOpen(false)
-      setRefreshTenantsKey((value) => value + 1)
+      invalidateTenantQueries()
       triggerToast?.('Subscription plan updated successfully.', 'success')
     } catch (error) {
       setTenantListError(getAdminErrorMessage(error, 'Failed to update subscription plan.'))

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { AuthLayout } from '@/core/components/layout/AuthLayout'
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '@/core/components/icons/Icons'
+import { AuthLayout } from './AuthLayout'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '@/core/components/Icons'
 import {
   validateConfirmPassword,
   validateFullName,
@@ -8,7 +8,7 @@ import {
   validatePassword,
   validatePhone,
 } from '../../application/validation'
-import { getPasswordStrength } from '@/core/utils/passwordStrength'
+import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
 import { authApi } from '@/core/api/authApi'
 import { getAppErrorMessage } from '@/core/utils/errorManager'
 import { shouldToastHttpError } from '@/core/utils/httpStatusManager'
@@ -202,7 +202,11 @@ export function SignupFeature({ onGoToSignin, triggerToast }: SignupFeatureProps
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={handleInput(setPassword, (value) => {
-                  if (passwordError) setPasswordError(validatePassword(value))
+                  if (passwordError) {
+                    setPasswordError(getMissingPasswordRequirementLabels(value).length > 0
+                      ? validatePassword(value)
+                      : '')
+                  }
                   if (confirmPasswordError) {
                     setConfirmPasswordError(validateConfirmPassword(confirmPassword, value))
                   }

@@ -1,4 +1,4 @@
-import { getAppErrorMessage, getErrorCode, getErrorRawMessage } from '@/core/utils/errorManager'
+import { getAppErrorMessage, getErrorCode, getErrorRawMessage } from '@/core/api/axiosErrorHandler'
 
 export const inactiveUserActionMessage = 'You do not have permission to perform this action.'
 

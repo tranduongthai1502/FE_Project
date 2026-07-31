@@ -1,6 +1,6 @@
 import type { JobCriteriaResponse, JobPosting, JobPostingPayload } from '@/core/api/api.types'
 import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/core/api/axiosErrorHandler'
-import { getErrorMessage as getAdminErrorMessage } from '@/core/errors/errorMessages'
+import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { stripCurrencyGrouping } from '@/core/utils/currencyFormat'
 import { getRichTextPlainText } from './hrRichTextUtils'
 

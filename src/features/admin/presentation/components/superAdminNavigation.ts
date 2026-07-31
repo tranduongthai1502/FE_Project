@@ -1,4 +1,4 @@
-import type { NavigationConfigItem } from '@/core/components/common/navigation'
+import type { NavigationConfigItem } from '@/core/components/navigation'
 import type { SuperAdminView } from '@/features/admin/presentation/pages/superAdmin.types'
 
 export const superNav: Array<NavigationConfigItem<SuperAdminView>> = [

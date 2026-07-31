@@ -2,7 +2,7 @@ import {
   isInputErrorCode,
   isInputErrorMessage,
   validationErrorMessages,
-} from '../errors/inputErrorHandler'
+} from '../utils/errors/inputErrorHandler'
 
 export {
   FIELD_LENGTH_LIMITS,
@@ -25,7 +25,7 @@ export {
   validateRequiredShortDescription,
   validateStaffEmail,
   validationErrorMessages,
-} from '../errors/inputErrorHandler'
+} from '../utils/errors/inputErrorHandler'
 
 export type HttpStatusToastOptions = {
   enabled?: boolean

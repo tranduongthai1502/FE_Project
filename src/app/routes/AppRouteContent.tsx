@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Toast } from '@/core/components/common/Toast'
+import { Toast } from '@/core/components/Toast'
 import { useToast } from '@/core/hooks/useToast'
 import { useAuthSession } from '@/features/auth'
 import { RoleGuard } from '@/features/auth/presentation/components/RoleGuard'

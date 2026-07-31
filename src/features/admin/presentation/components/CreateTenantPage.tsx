@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react'
 import type { CreateTenantForm, SubscriptionPlan } from '@/core/api/api.types'
-import { Breadcrumb } from '@/core/components/common/Breadcrumb'
-import { ScrollableSelect } from '@/core/components/common/ScrollableSelect'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
+import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { formatCurrencyInput } from '@/core/utils/currencyFormat'
 import { validationErrorMessages } from '@/core/api/axiosErrorHandler'
 

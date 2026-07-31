@@ -7,12 +7,12 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { AuthLayout } from '@/core/components/layout/AuthLayout'
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/core/components/icons/Icons'
+import { AuthLayout } from './AuthLayout'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/core/components/Icons'
 import { ForgotPasswordForm } from './ForgotPasswordForm'
 import { OtpForm } from './OtpForm'
 import { ResetPasswordForm } from './ResetPasswordForm'
-import { getPasswordStrength } from '@/core/utils/passwordStrength'
+import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
 import { validateEmail, validateRequired } from '../../application/validation'
 import { authApi } from '@/core/api/authApi'
 import { getAppErrorMessage, getErrorCode } from '@/core/utils/errorManager'
@@ -611,7 +611,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     if (!newPassword) {
       setNewPasswordError(authErrorMessages.newPasswordRequired)
       hasError = true
-    } else if (strength.score < 4) {
+    } else if (getMissingPasswordRequirementLabels(newPassword).length > 0) {
       setNewPasswordError(authErrorMessages.passwordComplexity)
       hasError = true
     }

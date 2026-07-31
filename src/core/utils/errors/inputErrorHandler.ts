@@ -1,3 +1,5 @@
+import { getMissingPasswordRequirementLabels } from '@/core/utils/passwordStrength'
+
 export const FIELD_LENGTH_LIMITS = {
   defaultText: 100,
   phone: 10,
@@ -214,7 +216,7 @@ export function validatePassword(value: string) {
     return validationErrorMessages.passwordLength
   }
 
-  if (!/[A-Za-z]/.test(value) || !/\d/.test(value) || !/[^\p{L}\p{N}\s]/u.test(value)) {
+  if (getMissingPasswordRequirementLabels(value).length > 0) {
     return validationErrorMessages.passwordComplexity
   }
 

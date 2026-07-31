@@ -1,4 +1,4 @@
-export { ChangePasswordView, CandidateChangePasswordView } from '@/core/components/common/ChangePasswordView'
+export { ChangePasswordView, CandidateChangePasswordView } from '@/core/components/ChangePasswordView'
 export { LoginFeature } from './presentation/components/LoginFeature'
 export { SignupFeature } from './presentation/components/SignupFeature'
 export { ForgotPasswordForm } from './presentation/components/ForgotPasswordForm'

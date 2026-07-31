@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ConfirmActionModal } from '@/core/components/common/ConfirmActionModal'
+import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 
 type StoredUser = {
   full_name?: string | null

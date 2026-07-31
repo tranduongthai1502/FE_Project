@@ -1,4 +1,4 @@
-import type { NavigationConfigItem } from '@/core/components/common/navigation'
+import type { NavigationConfigItem } from '@/core/components/navigation'
 import type { InterviewerHomeView } from '@/features/interviewer/presentation/pages/interviewerHome.types'
 
 export const interviewerNav: Array<NavigationConfigItem<InterviewerHomeView>> = [

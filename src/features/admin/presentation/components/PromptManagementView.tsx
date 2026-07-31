@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getPromptCreatePath, getSuperAdminViewPath, isPromptCreateUrl } from '@/features/admin/domain/superAdminRouteHelpers'
-import { Breadcrumb } from '@/core/components/common/Breadcrumb'
-import { MetricCard } from '@/core/components/common/MetricCard'
-import { ScrollableSelect } from '@/core/components/common/ScrollableSelect'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
+import { MetricCard } from '@/core/components/MetricCard'
+import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 
 function CreatePromptView({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
