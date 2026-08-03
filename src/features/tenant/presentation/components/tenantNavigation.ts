@@ -1,4 +1,4 @@
-import type { NavigationConfigItem } from '@/core/components/navigation'
+import type { NavigationConfigItem } from '@/core/hooks/navigation'
 import type { TenantAdminView } from '@/features/tenant/presentation/pages/tenantAdmin.types'
 
 export const tenantNav: Array<NavigationConfigItem<TenantAdminView>> = [

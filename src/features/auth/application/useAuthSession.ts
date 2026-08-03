@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { flushSync } from 'react-dom'
 import type { NavigateFunction } from 'react-router-dom'
-import { authApi } from '@/core/api/authApi'
+import { authApi } from '@/features/auth/infrastructure/authApi'
 import { getPageForUserRole, unsupportedRoleMessage } from './authRole'
 import {
   AUTH_EXPIRED_EVENT_NAME,
   clearAuthStorage,
+  getStoredRefreshToken,
   getStoredRequirePasswordChange,
   getStoredAuthRole,
   hasStoredAuthToken,
   saveAuthRole,
-} from '@/core/api/authStorage'
+} from '../infrastructure/authStorageRepository'
 
 const pathByAuthRole = {
   candidate: '/candidate',
@@ -103,7 +104,7 @@ export function useAuthSession(
   }, [navigate, triggerToast])
 
   const handleLogout = useCallback(async () => {
-    const refreshToken = window.localStorage.getItem('refresh_token') || window.sessionStorage.getItem('refresh_token') || undefined
+    const refreshToken = getStoredRefreshToken()
 
     try {
       await authApi.logout(refreshToken)

@@ -7,4 +7,4 @@ export type {
   Tenant,
   UpdatePlanPayload,
   UpdateTenantPayload,
-} from '@/core/api/api.types'
+} from './domain/adminApi.types'

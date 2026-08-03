@@ -2,6 +2,8 @@ import axiosClient from '@/core/api/axiosClient'
 import { API_LIST_PAGE_SIZE } from '@/core/api/apiConstants'
 import type {
   AdminListParams,
+} from '@/core/api/api.types'
+import type {
   DashboardStatsJobPostingResponse,
   JobCriteriaPayload,
   JobCriteriaResponse,
@@ -9,13 +11,15 @@ import type {
   JobListRequest,
   JobPosting,
   JobPostingPayload,
-} from '@/core/api/api.types'
+} from '@/features/hr/domain/hrApi.types'
 import { attachPaginationMeta } from '@/core/utils/pagination'
 import {
-  getJobPostingList,
   getResponsePayload,
-  normalizeJobPosting,
 } from '@/core/api/apiMappers'
+import {
+  getJobPostingList,
+  normalizeJobPosting,
+} from './hrMappers'
 
 export const HR_LIST_PAGE_SIZE = API_LIST_PAGE_SIZE
 

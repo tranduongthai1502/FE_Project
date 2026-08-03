@@ -1,0 +1,68 @@
+export const planFeatureDefaults = [
+  {
+    key: 'aiJdGenerator',
+    code: 'AI_JD_GENERATOR',
+    icon: 'fa-briefcase-medical',
+    title: 'AI JD Generator',
+    description: 'Auto-generate job descriptions with AI.',
+    enabled: false,
+  },
+  {
+    key: 'aiCvParsing',
+    code: 'AI_CV_PARSING',
+    icon: 'fa-file-code',
+    title: 'AI CV Parsing',
+    description: 'Extract data from resumes automatically.',
+    enabled: false,
+  },
+  {
+    key: 'chatbotScreening',
+    code: 'CHATBOT_SCREENING',
+    icon: 'fa-message',
+    title: 'Chatbot Screening',
+    description: 'Interactive AI screening for candidates.',
+    enabled: false,
+  },
+  {
+    key: 'dssAnalytics',
+    code: 'DSS_ANALYTICS',
+    icon: 'fa-chart-simple',
+    title: 'DSS Analytics',
+    description: 'Advanced Decision Support System data.',
+    enabled: false,
+  },
+  {
+    key: 'prioritySupport',
+    code: 'PRIORITY_SUPPORT',
+    icon: 'fa-headset',
+    title: 'Priority Support',
+    description: '24/7 dedicated account manager.',
+    enabled: false,
+  },
+  {
+    key: 'customBranding',
+    code: 'CUSTOM_BRANDING',
+    icon: 'fa-window-maximize',
+    title: 'Custom Branding',
+    description: 'White-label options for dashboards.',
+    enabled: false,
+  },
+  {
+    key: 'apiAccess',
+    code: 'API_ACCESS',
+    icon: 'fa-arrows-spin',
+    title: 'API Access',
+    description: 'Full access to JobFusion endpoints.',
+    enabled: false,
+  },
+  {
+    key: 'multiRegionSupport',
+    code: 'MULTI_REGION_SUPPORT',
+    icon: 'fa-earth-americas',
+    title: 'Multi-Region Support',
+    description: 'Manage hiring across multiple countries.',
+    enabled: false,
+  },
+]
+
+export type PlanFeatureState = typeof planFeatureDefaults

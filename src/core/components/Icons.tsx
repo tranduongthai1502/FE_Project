@@ -57,12 +57,18 @@ export function PhoneIcon() {
 
 export function TrashIcon() {
   return (
-    <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9.25 4.75h5.5l.5 2h3.5" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M5.25 6.75h13.5" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M7.25 6.75l.8 11.25A1.75 1.75 0 009.8 19.63h4.4A1.75 1.75 0 0015.95 18l.8-11.25" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M10.25 10.25v5.75" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M13.75 10.25v5.75" />
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="#565E74" />
+    </svg>
+  )
+}
+
+export function EditIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.75 26.25H26.25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.5 7.5L22.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

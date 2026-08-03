@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Toast } from '@/core/components/Toast'
 import { useToast } from '@/core/hooks/useToast'
 import { useAuthSession } from '@/features/auth'
-import { RoleGuard } from '@/features/auth/presentation/components/RoleGuard'
+import { RoleGuard } from '@/features/auth/presentation/guards/RoleGuard'
 import { RouteConfig, type AppPage } from './RouteConfig'
 
 export function AppRouteContent() {

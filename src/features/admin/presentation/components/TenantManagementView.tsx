@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../infrastructure/adminApi'
@@ -16,7 +16,7 @@ import {
   tenantMatchesPlanFilter,
   type TenantStatusFilter,
 } from '../../infrastructure/tenantManagementService'
-import type { CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser, TenantDashboardStats } from '@/core/api/api.types'
+import type { CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser, TenantDashboardStats } from '@/features/admin/domain/adminApi.types'
 import { formatPlanDate } from '../../application/adminFormatters'
 import {
   addDaysToDate,
@@ -29,8 +29,10 @@ import {
 } from '../../application/tenantDisplayUtils'
 import { getSuperAdminViewPath, getTenantCreatePath, getTenantDetailIdFromUrl, getTenantDetailPath, isTenantCreateUrl } from '@/features/admin/domain/superAdminRouteHelpers'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
+import { EditIcon, TrashIcon } from '@/core/components/Icons'
 import { CreateTenantPage, type CreateTenantFieldErrors } from './CreateTenantPage'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
+import { ListTable } from '@/core/components/ListTable'
 import { SearchInput } from '@/core/components/SearchInput'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import styles from './TenantManagementView.module.css'
@@ -38,6 +40,7 @@ import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/err
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { formatCurrencyInput } from '@/core/utils/currencyFormat'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
+import { addRequiredFieldErrors, buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
 
 export function TenantManagementView({
   onHome,
@@ -74,14 +77,26 @@ export function TenantManagementView({
   const [tenantDetailError, setTenantDetailError] = useState('')
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [tenantStats, setTenantStats] = useState<TenantDashboardStats | null>(null)
-  const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>('all')
-  const [tenantPlanFilter, setTenantPlanFilter] = useState('')
-  const [tenantSearchQuery, setTenantSearchQuery] = useState('')
-  const [tenantPage, setTenantPage] = useState(1)
+  const initialTenantListSearchParams = new URLSearchParams(location.search)
+  const initialTenantStatus = initialTenantListSearchParams.get('status')?.toUpperCase()
+  const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>(
+    initialTenantStatus === 'ACTIVE'
+      ? 'active'
+      : initialTenantStatus === 'INACTIVE'
+        ? 'inactive'
+        : 'all',
+  )
+  const [tenantPlanFilter, setTenantPlanFilter] = useState(initialTenantListSearchParams.get('planId') || '')
+  const [tenantSearchQuery, setTenantSearchQuery] = useState(initialTenantListSearchParams.get('search') || '')
+  const [tenantPage, setTenantPage] = useState(() => {
+    const page = Number(initialTenantListSearchParams.get('page') || 1)
+    return Number.isFinite(page) ? Math.max(1, page) : 1
+  })
   const [tenantPageCount, setTenantPageCount] = useState(1)
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [pendingTenantPlanId, setPendingTenantPlanId] = useState('')
   const [tenantForm, setTenantForm] = useState<CreateTenantForm>(emptyTenantForm)
+  const didMountTenantListFilters = useRef(false)
 
   const tenantListParams = useMemo(
     () => buildTenantListParams(tenantStatusFilter, tenantPlanFilter, tenantSearchQuery, tenantPage),
@@ -197,7 +212,7 @@ export function TenantManagementView({
     field === 'domain' ? 50 : FIELD_LENGTH_LIMITS.defaultText
   )
   const getTenantFieldMaxLengthMessage = (field: keyof CreateTenantForm) => (
-    `${field === 'domain' ? 'Domain' : 'This field'} must be ${getTenantFieldMaxLength(field)} characters or less.`
+    buildMaxLengthMessage(field === 'domain' ? 'Domain' : 'This field', getTenantFieldMaxLength(field))
   )
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
     const maxLength = getTenantFieldMaxLength(field)
@@ -239,7 +254,7 @@ export function TenantManagementView({
     setIsCreateModalOpen(false)
     setIsCreateCancelConfirmOpen(false)
     resetCreateTenantForm()
-    navigate(getSuperAdminViewPath('tenantManagement'))
+    navigate(getSuperAdminViewPath('tenant-management'))
   }
 
   const goHomeFromCreateTenant = () => {
@@ -279,11 +294,12 @@ export function TenantManagementView({
     } else if (tenantHasCompanyName(tenants, tenantForm.companyName)) {
       nextFieldErrors.companyName = duplicateCompanyNameMessage
     }
-    if (!tenantForm.planId) nextFieldErrors.planId = requiredTenantFieldMessage
-    if (!tenantForm.domain.trim()) nextFieldErrors.domain = requiredTenantFieldMessage
-    if (!tenantForm.industry.trim()) nextFieldErrors.industry = requiredTenantFieldMessage
-    if (!tenantForm.region.trim()) nextFieldErrors.region = requiredTenantFieldMessage
-    if (!tenantForm.adminFullName.trim()) nextFieldErrors.adminFullName = requiredTenantFieldMessage
+    addRequiredFieldErrors(
+      tenantForm,
+      ['planId', 'domain', 'industry', 'region', 'adminFullName'],
+      nextFieldErrors,
+      requiredTenantFieldMessage,
+    )
     if (!tenantForm.adminEmail.trim()) {
       nextFieldErrors.adminEmail = requiredTenantFieldMessage
     } else if (!isValidTenantAdminEmail(tenantForm.adminEmail)) {
@@ -312,7 +328,7 @@ export function TenantManagementView({
       setTenantPlanFilter('')
       setTenantSearchQuery('')
       setTenantPage(1)
-      navigate(getSuperAdminViewPath('tenantManagement'))
+      navigate(getSuperAdminViewPath('tenant-management'))
       invalidateTenantQueries()
       triggerToast?.('Tenant create successfully. Activation email send to Tenant Admin', 'success')
     } catch (error) {
@@ -439,6 +455,30 @@ export function TenantManagementView({
   const tenantPageItems = getCompactPageItems(currentTenantPage, tenantPageCount)
 
   useEffect(() => {
+    if (activeView !== 'list' || isCreateModalOpen) return
+
+    const searchParams = new URLSearchParams()
+    if (tenantStatusFilter === 'active') searchParams.set('status', 'ACTIVE')
+    if (tenantStatusFilter === 'inactive') searchParams.set('status', 'INACTIVE')
+    if (tenantSearchQuery.trim()) searchParams.set('search', tenantSearchQuery.trim())
+    if (tenantPlanFilter.trim()) searchParams.set('planId', tenantPlanFilter.trim())
+    if (tenantPage > 1) searchParams.set('page', String(tenantPage))
+
+    const nextSearch = searchParams.toString()
+    const nextPath = `${getSuperAdminViewPath('tenant-management')}${nextSearch ? `?${nextSearch}` : ''}`
+    const currentPath = `${location.pathname}${location.search}`
+
+    if (currentPath !== nextPath) {
+      navigate(nextPath, { replace: true })
+    }
+  }, [activeView, isCreateModalOpen, location.pathname, location.search, navigate, tenantPage, tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
+
+  useEffect(() => {
+    if (!didMountTenantListFilters.current) {
+      didMountTenantListFilters.current = true
+      return
+    }
+
     setTenantPage(1)
   }, [tenantPlanFilter, tenantSearchQuery, tenantStatusFilter])
 
@@ -463,7 +503,7 @@ export function TenantManagementView({
   const closeTenantDetail = () => {
     setSelectedTenantId('')
     setActiveView('list')
-    navigate(getSuperAdminViewPath('tenantManagement'))
+    navigate(getSuperAdminViewPath('tenant-management'))
   }
   const isTenantActive = (tenant: Tenant) => getTenantStatusMeta(tenant.status).className === 'active'
   const requestDeleteTenant = (tenant: Tenant) => {
@@ -504,7 +544,6 @@ export function TenantManagementView({
 
     const selectedPlan = getTenantPlan(currentTenant)
     const currentTenantStatus = getTenantStatusMeta(currentTenant.status)
-    if (currentTenantStatus.className === 'pending') return
 
     const nextStatus = currentTenantStatus.isActive ? 'INACTIVE' : 'ACTIVE'
     const planId = currentTenant.subscriptionPlanId || selectedPlan?.id || ''
@@ -700,12 +739,9 @@ export function TenantManagementView({
     const tenantAdminStatus = selectedTenant?.status || tenantAdminUser?.status || '-'
     const tenantAdminStatusMeta = getTenantStatusMeta(tenantAdminStatus)
     const tenantAdminActivatedDate = formatPlanDate(tenantAdminUser?.activatedAt || tenantAdminUser?.createdAt || '') || tenantAdminUser?.activatedAt || tenantAdminUser?.createdAt || tenantCreatedDate
-    const canUpdateTenantStatus = tenantStatus.className !== 'pending'
     const statusActionLabel = isActive
       ? 'Deactivate Tenant'
-      : tenantStatus.className === 'pending'
-        ? 'Pending Activation'
-        : 'Activate Tenant'
+      : 'Activate Tenant'
     const statusActionClassName = isActive ? 'status-deactivate' : 'status-activate'
     const statusActionMessage = isActive
       ? 'Are you sure you want to deactivate this tenant?'
@@ -749,8 +785,8 @@ export function TenantManagementView({
                 <button
                   type="button"
                   className={statusActionClassName}
-                  onClick={() => canUpdateTenantStatus && setIsStatusConfirmOpen(true)}
-                  disabled={!canUpdateTenantStatus || isUpdatingTenantStatus}
+                  onClick={() => setIsStatusConfirmOpen(true)}
+                  disabled={isUpdatingTenantStatus}
                 >
                   {statusActionLabel}
                 </button>
@@ -960,27 +996,27 @@ export function TenantManagementView({
         </article>
       </div>
 
-      <section className="tenant-list-table-card">
-        <div className="tenant-list-table-row tenant-list-table-head">
-          <span>Full Name</span>
-          <span>Subscription Plan</span>
-          <span>Price</span>
-          <span>Expiration Date</span>
-          <span>User Quota</span>
-          <span>Status</span>
-          <span>Actions</span>
-        </div>
-
-
-
-        {isLoadingTenants ? (
-          <div className="tenant-list-table-state">Loading tenants...</div>
-        ) : tenantListError ? (
-          <div className="tenant-list-table-state error">{tenantListError}</div>
-        ) : displayedTenants.length === 0 ? (
-          <div className="tenant-list-table-state">No tenants found.</div>
-        ) : (
-          paginatedTenants.map((tenant) => {
+      <ListTable
+        cardClassName="tenant-list-table-card"
+        rowClassName="tenant-list-table-row"
+        headClassName="tenant-list-table-head"
+        stateClassName="tenant-list-table-state"
+        columns={['Full Name', 'Subscription Plan', 'Price', 'Expiration Date', 'User Quota', 'Status', 'Actions']}
+        isLoading={isLoadingTenants}
+        error={tenantListError}
+        empty={displayedTenants.length === 0}
+        loadingMessage="Loading tenants..."
+        emptyMessage="No tenants found."
+        pagination={{
+          label: `Showing ${tenantDisplayStart}-${tenantDisplayEnd} of ${tenantTotalElements} Tenant${tenantTotalElements === 1 ? '' : 's'}`,
+          currentPage: currentTenantPage,
+          pageCount: tenantPageCount,
+          pageItems: tenantPageItems,
+          onPageChange: setTenantPage,
+          ellipsisKeyPrefix: 'tenant',
+        }}
+      >
+        {paginatedTenants.map((tenant) => {
             const status = getTenantStatusMeta(tenant.status)
             const tenantPlan = getTenantPlan(tenant)
             const hasUnlimitedQuota = tenant.userQuotaUnlimited || (tenantPlan ? tenantPlan.staffAccountUnlimited : tenant.userQuotaLimit <= 0)
@@ -1031,11 +1067,7 @@ export function TenantManagementView({
                       handleOpenTenantDetail()
                     }}
                   >
-                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <EditIcon />
                   </button>
                   <button
                     type="button"
@@ -1049,31 +1081,13 @@ export function TenantManagementView({
                       requestDeleteTenant(tenant)
                     }}
                   >
-                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="#565E74" />
-                    </svg>
+                    <TrashIcon />
                   </button>
                 </span>
               </div>
             )
-          })
-        )}
-
-        <footer>
-          <span>Showing {tenantDisplayStart}-{tenantDisplayEnd} of {tenantTotalElements} Tenant{tenantTotalElements === 1 ? '' : 's'}</span>
-          <div>
-            <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={currentTenantPage === 1} onClick={() => setTenantPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-            {tenantPageItems.map((item, index) => (
-              item === 'ellipsis' ? (
-                <span className="pagination-ellipsis" key={`tenant-ellipsis-${index}`}>...</span>
-              ) : (
-                <button type="button" className={item === currentTenantPage ? 'active' : ''} key={item} onClick={() => setTenantPage(item)}>{item}</button>
-              )
-            ))}
-            <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={currentTenantPage === tenantPageCount} onClick={() => setTenantPage((page) => Math.min(tenantPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
-          </div>
-        </footer>
-      </section>
+          })}
+      </ListTable>
 
       {deleteTenantTarget && (
         <ConfirmActionModal

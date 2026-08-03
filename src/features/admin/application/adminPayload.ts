@@ -1,4 +1,4 @@
-import type { CreatePlanPayload, CreateTenantPayload, UpdatePlanPayload, UpdateTenantPayload } from '@/core/api/api.types'
+import type { CreatePlanPayload, CreateTenantPayload, UpdatePlanPayload, UpdateTenantPayload } from '@/features/admin/domain/adminApi.types'
 
 function normalizeResourceStatus(status?: string) {
   const normalizedStatus = String(status || '').trim().toUpperCase()

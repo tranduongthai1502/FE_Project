@@ -3,7 +3,7 @@ import type { NavigateFunction } from 'react-router-dom'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LandingPage } from '@/features/landing'
 import { LoginFeature, SignupFeature, type AppRole } from '@/features/auth'
-import { RoleRoutes } from '@/features/auth/presentation/RoleRoutes'
+import { RoleRoutes } from './RoleRoutes'
 
 export type AppPage = AppRole
 

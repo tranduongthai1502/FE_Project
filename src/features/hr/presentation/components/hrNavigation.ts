@@ -1,4 +1,4 @@
-import type { NavigationConfigItem } from '@/core/components/navigation'
+import type { NavigationConfigItem } from '@/core/hooks/navigation'
 import type { RoleHomeView } from '@/features/hr/presentation/pages/roleHome.types'
 
 export const hrNav: Array<NavigationConfigItem<RoleHomeView>> = [

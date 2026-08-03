@@ -1,3 +1,5 @@
+import { buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
+
 const maxSingleFileSize = 5 * 1024 * 1024
 const maxTotalFileSize = 50 * 1024 * 1024
 const maxFileNameLength = 100
@@ -49,7 +51,7 @@ export async function validateRichTextAttachment(file: File, currentTotalSize: n
   const extension = getFileExtension(file.name)
 
   if (!file.name || file.name.length > maxFileNameLength) {
-    return { error: 'File name must be 100 characters or less.', nextTotalSize: currentTotalSize }
+    return { error: buildMaxLengthMessage('File name', maxFileNameLength), nextTotalSize: currentTotalSize }
   }
 
   if (file.size <= 0) {

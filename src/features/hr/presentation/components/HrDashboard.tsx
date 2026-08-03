@@ -1,22 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { buildNavigation } from '@/core/components/navigation'
+import { buildNavigation } from '@/core/hooks/navigation'
 import { hrNav } from './hrNavigation'
 import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRichTextEditor'
 import type { RoleHomeView } from '@/features/hr/presentation/pages/roleHome.types'
-import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, JobRevisionHistory } from '@/core/api/api.types'
+import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, JobRevisionHistory } from '@/features/hr/domain/hrApi.types'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../../infrastructure/hrApi'
 import { isStoredCurrentUserInactive } from '@/features/auth/application/authAccess'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { formatCurrencyInput, parseCurrencyInput } from '@/core/utils/currencyFormat'
 import { getActiveHrView, hrCreateJobPostingPath, hrGenerateJobAiPath, hrJobDetailPathPrefix, hrJobsPath, hrPathByView } from '@/features/hr/presentation/hrRoutePaths'
-import { AccountSettingsPanel } from '@/core/components/AccountSettingsPanel'
+import { AccountSettingsPanel, getStoredDashboardUser } from '@/features/auth'
 import { getStoredRequirePasswordChange } from '@/core/api/authStorage'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { SearchInput } from '@/core/components/SearchInput'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 import { DashboardShell } from '@/core/components/DashboardShell'
+import { ListTable } from '@/core/components/ListTable'
+import { EditIcon, TrashIcon } from '@/core/components/Icons'
 import styles from './HrDashboard.module.css'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 import {
@@ -190,14 +192,6 @@ function getCalendarDays(monthDate: Date) {
   })
 }
 
-function CriteriaTrashIcon() {
-  return (
-    <svg width="40" height="31" viewBox="0 0 40 31" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <path d="M12.5 24.25C12.5 24.913 12.7634 25.5489 13.2322 26.0178C13.7011 26.4866 14.337 26.75 15 26.75H25C25.663 26.75 26.2989 26.4866 26.7678 26.0178C27.2366 25.5489 27.5 24.913 27.5 24.25V9.25H12.5V24.25ZM15 11.75H25V24.25H15V11.75ZM24.375 5.5L23.125 4.25H16.875L15.625 5.5H11.25V8H28.75V5.5H24.375Z" fill="#565E74" />
-    </svg>
-  )
-}
-
 function RevisionHistoryOpenIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -286,16 +280,6 @@ function OpenJobIcon() {
   )
 }
 
-function EditJobIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3.75 26.25H26.25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M17.5 7.5L22.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function JobsEmptyLargeIcon() {
   return (
     <svg width="131" height="132" viewBox="0 0 131 132" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -372,14 +356,16 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const location = useLocation()
   const navigate = useNavigate()
   const deadlineInputRef = useRef<HTMLInputElement | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [employmentTypeFilter, setEmploymentTypeFilter] = useState('')
+  const initialJobListSearchParams = new URLSearchParams(location.search)
+  const initialJobPage = Number(initialJobListSearchParams.get('page') || 1)
+  const [searchQuery, setSearchQuery] = useState(initialJobListSearchParams.get('search') || '')
+  const [statusFilter, setStatusFilter] = useState(initialJobListSearchParams.get('status') || '')
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState(initialJobListSearchParams.get('employmentType') || '')
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [jobStats, setJobStats] = useState<DashboardStatsJobPostingResponse | null>(null)
   const [isLoadingJobs, setIsLoadingJobs] = useState(false)
   const [jobListError, setJobListError] = useState('')
-  const [jobPage, setJobPage] = useState(1)
+  const [jobPage, setJobPage] = useState(() => Number.isFinite(initialJobPage) ? Math.max(1, initialJobPage) : 1)
   const [jobPageCount, setJobPageCount] = useState(1)
   const [jobListReloadKey, setJobListReloadKey] = useState(0)
   const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai'>(() => getHrJobViewFromPath(location.pathname))
@@ -405,6 +391,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
   const [isLoadingCriteria, setIsLoadingCriteria] = useState(false)
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
   const [pendingCriteriaCancelAction, setPendingCriteriaCancelAction] = useState<(() => void) | null>(null)
+  const didMountJobListFilters = useRef(false)
   const activeJobCount = jobStats?.totalActivePostings ?? jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
@@ -425,6 +412,33 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     salaryInputValues.salaryMin.trim() !== '' ||
     salaryInputValues.salaryMax.trim() !== ''
   )
+
+  useEffect(() => {
+    if (jobView !== 'list') return
+
+    const searchParams = new URLSearchParams()
+    if (statusFilter) searchParams.set('status', statusFilter)
+    if (employmentTypeFilter) searchParams.set('employmentType', employmentTypeFilter)
+    if (searchQuery.trim()) searchParams.set('search', searchQuery.trim())
+    if (jobPage > 1) searchParams.set('page', String(jobPage))
+
+    const nextSearch = searchParams.toString()
+    const nextPath = `${hrJobsPath}${nextSearch ? `?${nextSearch}` : ''}`
+    const currentPath = `${location.pathname}${location.search}`
+
+    if (currentPath !== nextPath) {
+      navigate(nextPath, { replace: true })
+    }
+  }, [employmentTypeFilter, jobPage, jobView, location.pathname, location.search, navigate, searchQuery, statusFilter])
+
+  useEffect(() => {
+    if (!didMountJobListFilters.current) {
+      didMountJobListFilters.current = true
+      return
+    }
+
+    setJobPage(1)
+  }, [employmentTypeFilter, searchQuery, statusFilter])
 
   useEffect(() => {
     if (jobView !== 'list') return
@@ -1297,7 +1311,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                   </label>
                   <span className={styles.criteriaRowActions}>
                     <button type="button" className={styles.criteriaDeleteButton} disabled={isCriteriaReadOnly} onClick={() => removeDraftCriterion(form.clientId)} aria-label="Remove draft criterion">
-                      <CriteriaTrashIcon />
+                      <TrashIcon />
                     </button>
                   </span>
                 </div>
@@ -1706,23 +1720,31 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
         </label>
       </div>
 
-      {isLoadingJobs ? (
-        <div className={styles.jobsTableState}>Loading job postings...</div>
-      ) : jobListError ? (
-        <JobsEmptyState />
-      ) : jobs.length === 0 ? (
+      {jobListError ? (
         <JobsEmptyState />
       ) : (
-        <section className={styles.jobsTableCard}>
-          <div className={`${styles.jobsTableRow} ${styles.jobsTableHead}`}>
-            <span>Job Title</span>
-            <span>Department</span>
-            <span>Employment Type</span>
-            <span>Status</span>
-            <span>No. of Applicants</span>
-            <span>Date Created</span>
-            <span>Actions</span>
-          </div>
+        <ListTable
+          cardClassName={styles.jobsTableCard}
+          rowClassName={styles.jobsTableRow}
+          headClassName={styles.jobsTableHead}
+          stateClassName={styles.jobsTableState}
+          columns={['Job Title', 'Department', 'Employment Type', 'Status', 'No. of Applicants', 'Date Created', 'Actions']}
+          isLoading={isLoadingJobs}
+          empty={jobs.length === 0}
+          loadingMessage="Loading job postings..."
+          emptyMessage="No job postings found."
+          pagination={{
+            label: `Showing ${jobs.length} of ${jobTotalElements} entries`,
+            currentPage: safeJobPage,
+            pageCount: jobPageCount,
+            pageItems: jobPageItems,
+            onPageChange: setJobPage,
+            ellipsisKeyPrefix: 'job',
+            buttonClassName: styles.paginationIconButton,
+            activeButtonClassName: styles.activePage,
+            ellipsisClassName: styles.paginationEllipsis,
+          }}
+        >
           {jobs.map((job) => {
             const jobIsDraft = isDraftJobStatus(job.status)
             const jobIsClosed = isClosedJobStatus(job.status)
@@ -1739,7 +1761,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
                 <span>{job.applicantCount}</span>
                 <span>{formatJobDate(job.createdAt)}</span>
                 <div className={styles.jobsActions}>
-                  <button type="button" className="icon-tooltip" data-tooltip="Edit" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><EditJobIcon /></button>
+                  <button type="button" className="icon-tooltip" data-tooltip="Edit" aria-label={`Edit ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); openEditJob(job) }}><EditIcon /></button>
                   {(jobIsDraft || jobIsClosed) && (
                     <button type="button" className="icon-tooltip" data-tooltip="Open" aria-label={`Open ${job.title}`} disabled={isActionLocked} onClick={(event) => { event.stopPropagation(); requestJobAction('open', job) }}><OpenJobIcon /></button>
                   )}
@@ -1750,21 +1772,7 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
               </article>
             )
           })}
-          <footer>
-            <span>Showing {jobs.length} of {jobTotalElements} entries</span>
-            <div>
-              <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Previous page" disabled={safeJobPage === 1} onClick={() => setJobPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-              {jobPageItems.map((item, index) => (
-                item === 'ellipsis' ? (
-                  <span className={styles.paginationEllipsis} key={`job-ellipsis-${index}`}>...</span>
-                ) : (
-                  <button type="button" className={item === safeJobPage ? styles.activePage : ''} onClick={() => setJobPage(item)} key={item}>{item}</button>
-                )
-              ))}
-              <button type="button" className={`icon-tooltip ${styles.paginationIconButton}`} data-tooltip="Next page" disabled={safeJobPage === jobPageCount} onClick={() => setJobPage((page) => Math.min(jobPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
-            </div>
-          </footer>
-        </section>
+        </ListTable>
       )}
       {jobConfirmAction && jobConfirmTarget && (
         <ConfirmActionModal
@@ -1785,6 +1793,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
   const location = useLocation()
   const navigate = useNavigate()
   const [isPasswordChangeRequired] = useState(() => getStoredRequirePasswordChange())
+  const [user] = useState(() => getStoredDashboardUser())
   const [activeView, setActiveView] = useState<RoleHomeView>(() => (
     getStoredRequirePasswordChange() ? 'settings' : getActiveHrView(location.pathname)
   ))
@@ -1849,7 +1858,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
   }, [isPasswordChangeRequired, location.pathname, navigate])
 
   return (
-    <DashboardShell navItems={navItems} subtitle="HR" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
+    <DashboardShell navItems={navItems} subtitle="HR" user={user} onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       <Routes>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
         <Route

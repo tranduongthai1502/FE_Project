@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { buildNavigation } from '@/core/components/navigation'
+import { buildNavigation } from '@/core/hooks/navigation'
 import { interviewerNav } from './interviewerNavigation'
 import type { InterviewerHomeView } from '@/features/interviewer/presentation/pages/interviewerHome.types'
 import { isStoredCurrentUserInactive } from '@/features/auth/application/authAccess'
 import { getActiveInterviewerView, interviewerPathByView } from '@/features/interviewer/presentation/interviewerRoutePaths'
-import { AccountSettingsPanel } from '@/core/components/AccountSettingsPanel'
+import { AccountSettingsPanel, getStoredDashboardUser } from '@/features/auth'
 import { DashboardShell } from '@/core/components/DashboardShell'
 import { getStoredRequirePasswordChange } from '@/core/api/authStorage'
 import styles from './InterviewerDashboard.module.css'
@@ -15,6 +15,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   const location = useLocation()
   const navigate = useNavigate()
   const [isPasswordChangeRequired] = useState(() => getStoredRequirePasswordChange())
+  const [user] = useState(() => getStoredDashboardUser())
   const [activeView, setActiveView] = useState<InterviewerHomeView>(() => (
     getStoredRequirePasswordChange() ? 'settings' : getActiveInterviewerView(location.pathname)
   ))
@@ -75,7 +76,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   }, [isPasswordChangeRequired, location.pathname, navigate])
 
   return (
-    <DashboardShell navItems={navItems} subtitle="Interviewer" onLogout={onLogout} onChangePassword={() => selectView('settings')}>
+    <DashboardShell navItems={navItems} subtitle="Interviewer" user={user} onLogout={onLogout} onChangePassword={() => selectView('settings')}>
       <Routes>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
         <Route

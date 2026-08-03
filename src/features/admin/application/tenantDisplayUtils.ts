@@ -1,35 +1,14 @@
 import { formatPlanDate } from './adminFormatters'
 
 export function getTenantStatusMeta(statusValue: string) {
-  const normalized = statusValue.trim().toLowerCase()
-  const isActive = normalized === 'active' || normalized === 'activated' || normalized === 'enabled'
-  const isPending = normalized === 'pending' || normalized === 'invited' || normalized === 'waiting_activation'
-  const isInactive =
-    normalized === 'inactive' ||
-    normalized === 'in_active' ||
-    normalized === 'not_active' ||
-    normalized === 'not active' ||
-    normalized === 'disabled' ||
-    normalized === 'deactivated' ||
-    normalized === 'suspended'
+  const normalized = statusValue.trim().toUpperCase()
+  const isActive = normalized === 'ACTIVE'
 
   if (isActive) {
     return { className: 'active', label: 'Active', isActive: true }
   }
 
-  if (isPending) {
-    return { className: 'pending', label: 'Pending', isActive: false }
-  }
-
-  if (isInactive) {
-    return { className: 'inactive', label: 'Inactive', isActive: false }
-  }
-
-  return {
-    className: 'inactive',
-    label: statusValue ? statusValue.trim() : 'Inactive',
-    isActive: false,
-  }
+  return { className: 'inactive', label: 'Inactive', isActive: false }
 }
 
 export function formatTenantDate(value?: string) {

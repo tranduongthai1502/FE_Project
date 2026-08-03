@@ -1,6 +1,7 @@
-import type { JobCriteriaResponse, JobPosting, JobPostingPayload } from '@/core/api/api.types'
+import type { JobCriteriaResponse, JobPosting, JobPostingPayload } from '@/features/hr/domain/hrApi.types'
 import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/core/api/axiosErrorHandler'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
+import { buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
 import { stripCurrencyGrouping } from '@/core/utils/currencyFormat'
 import { getRichTextPlainText } from './hrRichTextUtils'
 
@@ -30,7 +31,7 @@ export const deadlineRequiredMessage = 'Please select application deadline.'
 export const deadlineFutureMessage = 'Application deadline must be today or a future date.'
 export const jobPostingLimitReachedMessage = 'You have reached your post limit.'
 export const jobTitleMaxLength = 100
-export const jobTitleLengthMessage = `Job title must be ${jobTitleMaxLength} characters or less.`
+export const jobTitleLengthMessage = buildMaxLengthMessage('Job title', jobTitleMaxLength)
 export const criteriaCategories = ['Technical Skills', 'Experience', 'Education', 'Soft Skills', 'Culture Fit']
 export const criteriaNameLimit = 100
 export const criteriaDescriptionLimit = 500
@@ -282,10 +283,10 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
   if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
   if (!getRichTextPlainText(payload.description)) nextErrors.description = requiredJobFieldMessage
   if (!getRichTextPlainText(payload.requirements)) nextErrors.requirements = requiredJobFieldMessage
-  if (getRichTextPlainText(payload.description).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.description = `Description must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
-  if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = `Requirements must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
+  if (getRichTextPlainText(payload.description).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.description = buildMaxLengthMessage('Description', FIELD_LENGTH_LIMITS.jobDescription)
+  if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = buildMaxLengthMessage('Requirements', FIELD_LENGTH_LIMITS.jobDescription)
   const benefitsText = getRichTextPlainText(payload.benefits)
-  if (benefitsText && benefitsText.length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.benefits = `Benefits must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
+  if (benefitsText && benefitsText.length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.benefits = buildMaxLengthMessage('Benefits', FIELD_LENGTH_LIMITS.jobDescription)
 
   if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
   if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
@@ -324,7 +325,7 @@ export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInput
   if (!payload.locationType.trim()) nextErrors.locationType = requiredJobFieldMessage
   if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
   if (!getRichTextPlainText(payload.requirements)) nextErrors.requirements = requiredJobFieldMessage
-  if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = `Key skills must be ${FIELD_LENGTH_LIMITS.jobDescription} characters or less.`
+  if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = buildMaxLengthMessage('Key skills', FIELD_LENGTH_LIMITS.jobDescription)
 
   if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
   if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage

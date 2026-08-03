@@ -1,11 +1,7 @@
-import {
-  getBackendErrorMessage,
-  getErrorCode,
-  getErrorRawMessage,
-  validateEmail,
-  validationErrorMessages,
-} from '@/core/api/axiosErrorHandler'
-import type { AdminListParams, CreateTenantForm, SubscriptionPlan, Tenant } from '@/core/api/api.types'
+import { validateEmail, validationErrorMessages } from '@/core/api/axiosErrorHandler'
+import { mapErrorTextToFieldErrors } from '@/core/utils/errors/fieldErrorUtils'
+import type { AdminListParams } from '@/core/api/api.types'
+import type { CreateTenantForm, SubscriptionPlan, Tenant } from '@/features/admin/domain/adminApi.types'
 import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
 import type { CreateTenantFieldErrors } from '../presentation/components/CreateTenantPage'
 
@@ -92,29 +88,9 @@ export function buildTenantListParams(
 }
 
 export function getCreateTenantFieldErrors(error: unknown, message: string): CreateTenantFieldErrors {
-  const rawErrorText = [
-    getErrorCode(error),
-    getBackendErrorMessage(error),
-    getErrorRawMessage(error),
-    message,
-  ].join(' ').toLowerCase()
-
-  if (rawErrorText.includes('email')) {
-    return { adminEmail: validationErrorMessages.emailAlreadyRegistered }
-  }
-
-  if (rawErrorText.includes('domain')) {
-    return { domain: 'Domain already exists. Please use another domain.' }
-  }
-
-  if (
-    rawErrorText.includes('company') ||
-    rawErrorText.includes('tenant') ||
-    rawErrorText.includes('name_already_exists') ||
-    rawErrorText.includes('duplicate_name')
-  ) {
-    return { companyName: duplicateCompanyNameMessage }
-  }
-
-  return {}
+  return mapErrorTextToFieldErrors<keyof CreateTenantFieldErrors>(error, message, [
+    { field: 'adminEmail', message: validationErrorMessages.emailAlreadyRegistered, keywords: ['email'] },
+    { field: 'domain', message: 'Domain already exists. Please use another domain.', keywords: ['domain'] },
+    { field: 'companyName', message: duplicateCompanyNameMessage, keywords: ['company', 'tenant', 'name_already_exists', 'duplicate_name'] },
+  ])
 }

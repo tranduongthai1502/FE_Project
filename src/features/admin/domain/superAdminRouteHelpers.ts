@@ -1,22 +1,16 @@
-import type { SuperAdminView } from '@/features/admin/presentation/pages/superAdmin.types'
+export type SuperAdminView = 'dashboard' | 'tenant-management' | 'subscription-plans' | 'prompt-management' | 'settings'
 
-export const superAdminViewSlugs: Record<SuperAdminView, string> = {
-  dashboard: 'dashboard',
-  tenantManagement: 'tenant-management',
-  subscriptionPlans: 'subscription-plans',
-  promptManagement: 'prompt-management',
-  settings: 'settings',
-}
+const superAdminViews: SuperAdminView[] = ['dashboard', 'tenant-management', 'subscription-plans', 'prompt-management', 'settings']
 
 export function getInitialSuperAdminView(pathname: string): SuperAdminView {
   const slug = pathname.replace(/^\/super-admin\/?/, '') || 'dashboard'
-  const match = Object.entries(superAdminViewSlugs).find(([, value]) => slug === value || slug.startsWith(`${value}/`))
+  const match = superAdminViews.find((view) => slug === view || slug.startsWith(`${view}/`))
 
-  return (match?.[0] as SuperAdminView | undefined) || 'dashboard'
+  return match || 'dashboard'
 }
 
 export function getSuperAdminViewPath(view: SuperAdminView) {
-  return `/super-admin/${superAdminViewSlugs[view]}`
+  return `/super-admin/${view}`
 }
 
 export function getTenantDetailIdFromUrl(pathname: string) {

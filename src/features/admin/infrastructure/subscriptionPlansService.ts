@@ -1,82 +1,13 @@
 import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
-import type { AdminListParams, SubscriptionPlan, Tenant } from '@/core/api/api.types'
+import type { AdminListParams } from '@/core/api/api.types'
+import type { SubscriptionPlan, Tenant } from '@/features/admin/domain/adminApi.types'
 import {
-  getBackendErrorMessage,
-  getErrorCode,
-  getErrorRawMessage,
   validationErrorMessages,
 } from '@/core/api/axiosErrorHandler'
+import { mapErrorTextToFieldErrors } from '@/core/utils/errors/fieldErrorUtils'
+import { planFeatureDefaults, type PlanFeatureState } from '../domain/subscriptionPlanFeatures'
 
 export const TOP_TIER_PLAN_LIST_SIZE = 1000
-
-export const planFeatureDefaults = [
-  {
-    key: 'aiJdGenerator',
-    code: 'AI_JD_GENERATOR',
-    icon: 'fa-briefcase-medical',
-    title: 'AI JD Generator',
-    description: 'Auto-generate job descriptions with AI.',
-    enabled: false,
-  },
-  {
-    key: 'aiCvParsing',
-    code: 'AI_CV_PARSING',
-    icon: 'fa-file-code',
-    title: 'AI CV Parsing',
-    description: 'Extract data from resumes automatically.',
-    enabled: false,
-  },
-  {
-    key: 'chatbotScreening',
-    code: 'CHATBOT_SCREENING',
-    icon: 'fa-message',
-    title: 'Chatbot Screening',
-    description: 'Interactive AI screening for candidates.',
-    enabled: false,
-  },
-  {
-    key: 'dssAnalytics',
-    code: 'DSS_ANALYTICS',
-    icon: 'fa-chart-simple',
-    title: 'DSS Analytics',
-    description: 'Advanced Decision Support System data.',
-    enabled: false,
-  },
-  {
-    key: 'prioritySupport',
-    code: 'PRIORITY_SUPPORT',
-    icon: 'fa-headset',
-    title: 'Priority Support',
-    description: '24/7 dedicated account manager.',
-    enabled: false,
-  },
-  {
-    key: 'customBranding',
-    code: 'CUSTOM_BRANDING',
-    icon: 'fa-window-maximize',
-    title: 'Custom Branding',
-    description: 'White-label options for dashboards.',
-    enabled: false,
-  },
-  {
-    key: 'apiAccess',
-    code: 'API_ACCESS',
-    icon: 'fa-arrows-spin',
-    title: 'API Access',
-    description: 'Full access to JobFusion endpoints.',
-    enabled: false,
-  },
-  {
-    key: 'multiRegionSupport',
-    code: 'MULTI_REGION_SUPPORT',
-    icon: 'fa-earth-americas',
-    title: 'Multi-Region Support',
-    description: 'Manage hiring across multiple countries.',
-    enabled: false,
-  },
-]
-
-export type PlanFeatureState = typeof planFeatureDefaults
 
 export type CreatePlanFieldErrors = Partial<Record<
   'planName' | 'description' | 'monthlyPrice' | 'maxStaffAccount' | 'maxActiveJobPosting',
@@ -218,21 +149,11 @@ export function getPlanFeatureState(plan?: SubscriptionPlan) {
 }
 
 export function getSubscriptionPlanFieldErrors(error: unknown, message: string): CreatePlanFieldErrors {
-  const rawErrorText = [
-    getErrorCode(error),
-    getBackendErrorMessage(error),
-    getErrorRawMessage(error),
-    message,
-  ].join(' ').toLowerCase()
-
-  if (
-    rawErrorText.includes('plan') ||
-    rawErrorText.includes('name') ||
-    rawErrorText.includes('duplicate') ||
-    rawErrorText.includes('already exist')
-  ) {
-    return { planName: validationErrorMessages.duplicatePlanName }
-  }
-
-  return {}
+  return mapErrorTextToFieldErrors<keyof CreatePlanFieldErrors>(error, message, [
+    {
+      field: 'planName',
+      message: validationErrorMessages.duplicatePlanName,
+      keywords: ['plan', 'name', 'duplicate', 'already exist'],
+    },
+  ])
 }

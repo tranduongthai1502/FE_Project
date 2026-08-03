@@ -2,27 +2,31 @@ import axiosClient from '@/core/api/axiosClient'
 import { API_LIST_PAGE_SIZE } from '@/core/api/apiConstants'
 import type {
   AdminListParams,
+  PlanListRequest,
+  TenantListRequest,
+} from '@/core/api/api.types'
+import type {
   CreatePlanPayload,
   CreateTenantPayload,
   PlanDashboardStats,
-  PlanListRequest,
   SubscriptionPlan,
   Tenant,
   TenantDashboardStats,
   UpdatePlanPayload,
-  TenantListRequest,
   UpdateTenantPayload,
-} from '@/core/api/api.types'
+} from '../domain/adminApi.types'
 import { attachPaginationMeta } from '@/core/utils/pagination'
 import {
   getResponsePayload,
   getUserDetailPayload,
+} from '@/core/api/apiMappers'
+import {
   getSubscriptionPlanList,
   getTenantList,
-  normalizeTenantAdminUser,
   normalizeSubscriptionPlan,
   normalizeTenant,
-} from '@/core/api/apiMappers'
+  normalizeTenantAdminUser,
+} from './adminMappers'
 import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../application/adminPayload'
 
 export const ADMIN_LIST_PAGE_SIZE = API_LIST_PAGE_SIZE

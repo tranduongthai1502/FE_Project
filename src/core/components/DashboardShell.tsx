@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 
-type StoredUser = {
+export type DashboardShellUser = {
   full_name?: string | null
   fullName?: string | null
   name?: string | null
@@ -15,18 +15,7 @@ type StoredUser = {
   type?: string | null
 }
 
-function getStoredUser(): StoredUser | null {
-  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
-  if (!rawUser) return null
-
-  try {
-    return JSON.parse(rawUser)
-  } catch {
-    return null
-  }
-}
-
-function getDisplayName(user: StoredUser | null) {
+function getDisplayName(user: DashboardShellUser | null | undefined) {
   return user?.full_name || user?.fullName || user?.name || user?.email || 'Alex Thompson'
 }
 
@@ -46,7 +35,7 @@ function formatRoleLabel(role: string) {
     .join(' ')
 }
 
-function getDisplayRole(user: StoredUser | null, fallback: string) {
+function getDisplayRole(user: DashboardShellUser | null | undefined, fallback: string) {
   const role = user?.roleName || user?.role_name || user?.role || user?.userRole || user?.user_role || user?.type
 
   return role ? formatRoleLabel(role) : fallback
@@ -71,6 +60,7 @@ export function DashboardShell({
   children,
   navItems,
   subtitle,
+  user,
   onLogout,
   onChangePassword,
   showWorkspaceSwitcher = false,
@@ -80,13 +70,13 @@ export function DashboardShell({
   children: ReactNode
   navItems: Array<{ icon: string; label: string; active?: boolean; onClick?: () => void }>
   subtitle: string
+  user?: DashboardShellUser | null
   onLogout: () => void
   onChangePassword?: () => void
   showWorkspaceSwitcher?: boolean
   onWorkspaceSwitch?: () => void
   className?: string
 }) {
-  const user = useMemo(() => getStoredUser(), [])
   const displayName = getDisplayName(user)
   const displayNamePreview = truncateDisplayName(formatDisplayName(displayName))
   const displayRole = getDisplayRole(user, subtitle)

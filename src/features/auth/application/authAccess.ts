@@ -1,13 +1,8 @@
-export function getStoredCurrentUserStatus() {
-  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
-  if (!rawUser) return ''
+import { getStoredUserInfo } from '../infrastructure/authStorageRepository'
 
-  try {
-    const user = JSON.parse(rawUser)
-    return String(user?.status || user?.accountStatus || user?.userStatus || user?.state || '')
-  } catch {
-    return ''
-  }
+export function getStoredCurrentUserStatus() {
+  const user = getStoredUserInfo()
+  return String(user?.status || user?.accountStatus || user?.userStatus || user?.state || '')
 }
 
 export function isInactiveCurrentUserStatus(value: string) {

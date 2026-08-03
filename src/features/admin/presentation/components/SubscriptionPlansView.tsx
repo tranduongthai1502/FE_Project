@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../infrastructure/adminApi'
-import type { CreatePlanPayload, PlanDashboardStats, SubscriptionPlan, Tenant, UpdatePlanPayload } from '@/core/api/api.types'
+import type { CreatePlanPayload, PlanDashboardStats, SubscriptionPlan, Tenant, UpdatePlanPayload } from '@/features/admin/domain/adminApi.types'
 import {
   buildPlanListParams,
   buildTopTierPlanParams,
@@ -14,16 +14,18 @@ import {
   hasDuplicatePlanName,
   hasFeatureChanges,
   isActiveSubscriptionPlan,
-  planFeatureDefaults,
   sortSubscriptionPlans,
   type CreatePlanFieldErrors,
   type PlanSortOption,
 } from '../../infrastructure/subscriptionPlansService'
+import { planFeatureDefaults } from '../../domain/subscriptionPlanFeatures'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { formatFeatureLabel, formatPlanDate } from '../../application/adminFormatters'
 import { getSubscriptionPlanCreatePath, getSubscriptionPlanDetailPath, getSubscriptionPlanEditPath, getSubscriptionPlanIdFromUrl, getSuperAdminViewPath, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl } from '@/features/admin/domain/superAdminRouteHelpers'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
+import { EditIcon, TrashIcon } from '@/core/components/Icons'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
+import { ListTable } from '@/core/components/ListTable'
 import { MetricCard } from '@/core/components/MetricCard'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
@@ -36,6 +38,7 @@ import {
   validateRequiredShortDescription,
   validationErrorMessages,
 } from '@/core/api/axiosErrorHandler'
+import { buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
 
 const planNumberFieldMaxLength = 50
 const planDescriptionMaxLength = 500
@@ -46,7 +49,7 @@ const billingCycleOptions = [
 ]
 
 function getPlanMaxLengthMessage(label: string, maxLength: number) {
-  return `${label} must be ${maxLength} characters or less.`
+  return buildMaxLengthMessage(label, maxLength)
 }
 
 function isPlanMaxLengthError(message?: string) {
@@ -841,6 +844,13 @@ function EditPlanDetailView({
 export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const initialPlanListSearchParams = new URLSearchParams(location.search)
+  const initialPlanPage = Number(initialPlanListSearchParams.get('page') || 1)
+  const initialSubscriberPage = Number(initialPlanListSearchParams.get('subscriberPage') || 1)
+  const initialPlanSort = initialPlanListSearchParams.get('sort')
+  const isInitialPlanSort = (value: string | null): value is PlanSortOption => (
+    value === 'price-asc' || value === 'price-desc' || value === 'newest' || value === 'oldest'
+  )
   const [activeView, setActiveView] = useState<'list' | 'create' | 'detail' | 'edit'>(() => (
     isSubscriptionPlanCreateUrl(location.pathname)
       ? 'create'
@@ -862,12 +872,43 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const [isDeletingPlan, setIsDeletingPlan] = useState(false)
   const [planTenantCounts, setPlanTenantCounts] = useState<Record<string, number>>({})
   const [refreshPlansKey, setRefreshPlansKey] = useState(0)
-  const [planPage, setPlanPage] = useState(1)
+  const [planPage, setPlanPage] = useState(() => Number.isFinite(initialPlanPage) ? Math.max(1, initialPlanPage) : 1)
   const [planPageCount, setPlanPageCount] = useState(1)
-  const [planSort, setPlanSort] = useState<PlanSortOption>('newest')
-  const [subscriberPage, setSubscriberPage] = useState(1)
+  const [planSort, setPlanSort] = useState<PlanSortOption>(isInitialPlanSort(initialPlanSort) ? initialPlanSort : 'newest')
+  const [subscriberPage, setSubscriberPage] = useState(() => Number.isFinite(initialSubscriberPage) ? Math.max(1, initialSubscriberPage) : 1)
   const [subscriberPageCount, setSubscriberPageCount] = useState(1)
   const [subscriberTotalCount, setSubscriberTotalCount] = useState(0)
+
+  useEffect(() => {
+    if (activeView !== 'list') return
+
+    const searchParams = new URLSearchParams()
+    if (planSort !== 'newest') searchParams.set('sort', planSort)
+    if (planPage > 1) searchParams.set('page', String(planPage))
+
+    const nextSearch = searchParams.toString()
+    const nextPath = `${getSuperAdminViewPath('subscription-plans')}${nextSearch ? `?${nextSearch}` : ''}`
+    const currentPath = `${location.pathname}${location.search}`
+
+    if (currentPath !== nextPath) {
+      navigate(nextPath, { replace: true })
+    }
+  }, [activeView, location.pathname, location.search, navigate, planPage, planSort])
+
+  useEffect(() => {
+    if (activeView !== 'detail' || !selectedPlanId) return
+
+    const searchParams = new URLSearchParams()
+    if (subscriberPage > 1) searchParams.set('subscriberPage', String(subscriberPage))
+
+    const nextSearch = searchParams.toString()
+    const nextPath = `${getSubscriptionPlanDetailPath(selectedPlanId)}${nextSearch ? `?${nextSearch}` : ''}`
+    const currentPath = `${location.pathname}${location.search}`
+
+    if (currentPath !== nextPath) {
+      navigate(nextPath, { replace: true })
+    }
+  }, [activeView, location.pathname, location.search, navigate, selectedPlanId, subscriberPage])
 
   useEffect(() => {
     if (activeView !== 'list') return
@@ -1085,20 +1126,20 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   const handlePlanCreated = () => {
     setActiveView('list')
     setSelectedPlanId('')
-    navigate(getSuperAdminViewPath('subscriptionPlans'))
+    navigate(getSuperAdminViewPath('subscription-plans'))
     setRefreshPlansKey((value) => value + 1)
   }
 
   const closePlanDetail = () => {
     setSelectedPlanId('')
     setActiveView('list')
-    navigate(getSuperAdminViewPath('subscriptionPlans'))
+    navigate(getSuperAdminViewPath('subscription-plans'))
   }
 
   const openPlanList = () => {
     setSelectedPlanId('')
     setActiveView('list')
-    navigate(getSuperAdminViewPath('subscriptionPlans'))
+    navigate(getSuperAdminViewPath('subscription-plans'))
   }
 
   const openPlanCreate = () => {
@@ -1158,7 +1199,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
   if (activeView === 'create') {
     return <CreatePlanView onBack={() => {
       setActiveView('list')
-      navigate(getSuperAdminViewPath('subscriptionPlans'))
+      navigate(getSuperAdminViewPath('subscription-plans'))
     }} onHome={onHome} onCreated={handlePlanCreated} existingPlans={plans} triggerToast={triggerToast} />
   }
 
@@ -1422,46 +1463,50 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
         />
       </div>
 
-      <section className="subscription-table-card">
-        <div className="subscription-table-toolbar">
-          <label>
-            <i className="fa-solid fa-arrow-up-wide-short"></i>
-            <span>Sort by</span>
-            <ScrollableSelect
-              className="subscription-sort-select"
-              ariaLabel="Sort subscription plans"
-              value={planSort}
-              options={[
-                { value: 'price-asc', label: 'Price: Low to High' },
-                { value: 'price-desc', label: 'Price: High to Low' },
-                { value: 'newest', label: 'Time: Newest First' },
-                { value: 'oldest', label: 'Time: Oldest First' },
-              ]}
-              onChange={(nextValue) => {
-                setPlanSort(nextValue as PlanSortOption)
-                setPlanPage(1)
-              }}
-            />
-          </label>
-        </div>
-
-        <div className="subscription-table-row subscription-table-head">
-          <span>Plan Name</span>
-          <span>Price</span>
-          <span>Max Staff Accounts</span>
-          <span>Max Job Postings</span>
-          <span>Status</span>
-          <span>Actions</span>
-        </div>
-
-        {isLoadingPlans ? (
-          <div className="subscription-table-state">Loading subscription plans...</div>
-        ) : planListError ? (
-          <div className="subscription-table-state error">{planListError}</div>
-        ) : plans.length === 0 ? (
-          <div className="subscription-table-state">No subscription plans found.</div>
-        ) : (
-          <div className="subscription-table-body">
+      <ListTable
+        cardClassName="subscription-table-card"
+        rowClassName="subscription-table-row"
+        headClassName="subscription-table-head"
+        stateClassName="subscription-table-state"
+        bodyClassName="subscription-table-body"
+        columns={['Plan Name', 'Price', 'Max Staff Accounts', 'Max Job Postings', 'Status', 'Actions']}
+        toolbar={(
+          <div className="subscription-table-toolbar">
+            <label>
+              <i className="fa-solid fa-arrow-up-wide-short"></i>
+              <span>Sort by</span>
+              <ScrollableSelect
+                className="subscription-sort-select"
+                ariaLabel="Sort subscription plans"
+                value={planSort}
+                options={[
+                  { value: 'price-asc', label: 'Price: Low to High' },
+                  { value: 'price-desc', label: 'Price: High to Low' },
+                  { value: 'newest', label: 'Time: Newest First' },
+                  { value: 'oldest', label: 'Time: Oldest First' },
+                ]}
+                onChange={(nextValue) => {
+                  setPlanSort(nextValue as PlanSortOption)
+                  setPlanPage(1)
+                }}
+              />
+            </label>
+          </div>
+        )}
+        isLoading={isLoadingPlans}
+        error={planListError}
+        empty={plans.length === 0}
+        loadingMessage="Loading subscription plans..."
+        emptyMessage="No subscription plans found."
+        pagination={{
+          label: `Showing ${visiblePlanStart}-${visiblePlanEnd} of ${planTotalElements} Plan${planTotalElements === 1 ? '' : 's'}`,
+          currentPage: safePlanPage,
+          pageCount: planPageCount,
+          pageItems: planPageItems,
+          onPageChange: setPlanPage,
+          ellipsisKeyPrefix: 'plan',
+        }}
+      >
             {pagedPlans.map((plan) => {
               const isActive = plan.status.toLowerCase() === 'active'
               const tenantCount = planTenantCounts[plan.id] ?? 0
@@ -1499,11 +1544,7 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                         openPlanEdit(plan.id)
                       }}
                     >
-                      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <EditIcon />
                     </button>
                     <button
                       type="button"
@@ -1517,39 +1558,13 @@ export function SubscriptionPlansView({ onHome, triggerToast }: { onHome: () => 
                         requestDeletePlan(plan)
                       }}
                     >
-                      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M7.5 23.75C7.5 24.413 7.76339 25.0489 8.23223 25.5178C8.70107 25.9866 9.33696 26.25 10 26.25H20C20.663 26.25 21.2989 25.9866 21.7678 25.5178C22.2366 25.0489 22.5 24.413 22.5 23.75V8.75H7.5V23.75ZM10 11.25H20V23.75H10V11.25ZM19.375 5L18.125 3.75H11.875L10.625 5H6.25V7.5H23.75V5H19.375Z" fill="#565E74" />
-                      </svg>
+                      <TrashIcon />
                     </button>
                   </span>
                 </div>
               )
             })}
-          </div>
-        )}
-
-        <footer>
-          <span>Showing {visiblePlanStart}-{visiblePlanEnd} of {planTotalElements} Plan{planTotalElements === 1 ? '' : 's'}</span>
-          <div>
-              <button type="button" className="icon-tooltip" data-tooltip="Previous page" disabled={safePlanPage === 1} onClick={() => setPlanPage((page) => Math.max(1, page - 1))}><i className="fa-solid fa-chevron-left"></i></button>
-            {planPageItems.map((item, index) => (
-              item === 'ellipsis' ? (
-                <span className="pagination-ellipsis" key={`plan-ellipsis-${index}`}>...</span>
-              ) : (
-                <button
-                  type="button"
-                  className={safePlanPage === item ? 'active' : ''}
-                  key={item}
-                  onClick={() => setPlanPage(item)}
-                >
-                  {item}
-                </button>
-              )
-            ))}
-            <button type="button" className="icon-tooltip" data-tooltip="Next page" disabled={safePlanPage === planPageCount} onClick={() => setPlanPage((page) => Math.min(planPageCount, page + 1))}><i className="fa-solid fa-chevron-right"></i></button>
-          </div>
-        </footer>
-      </section>
+      </ListTable>
 
       {deletePlanTarget && (
         <ConfirmActionModal

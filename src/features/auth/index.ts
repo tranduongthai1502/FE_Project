@@ -1,47 +1,9 @@
-export { ChangePasswordView, CandidateChangePasswordView } from '@/core/components/ChangePasswordView'
-export { LoginFeature } from './presentation/components/LoginFeature'
-export { SignupFeature } from './presentation/components/SignupFeature'
-export { ForgotPasswordForm } from './presentation/components/ForgotPasswordForm'
-export { OtpForm } from './presentation/components/OtpForm'
-export { ResetPasswordForm } from './presentation/components/ResetPasswordForm'
-export { ProtectedRoute } from './presentation/components/ProtectedRoute'
-export { RoleGuard } from './presentation/components/RoleGuard'
-
-export { authApi } from '@/core/api/authApi'
-
+export { AccountSettingsPanel } from './presentation/components/AccountSettingsPanel'
+export { LoginFeature } from './presentation/pages/LoginFeature'
+export { SignupFeature } from './presentation/pages/SignupFeature'
 export { useAuthSession } from './application/useAuthSession'
+export { getStoredDashboardUser, type DashboardUser } from './application'
 
-export { getPasswordStrength } from '@/core/utils/passwordStrength'
-export {
-  authErrorMessages,
-  backendAuthErrorMessages,
-  getLoginFailureMessage,
-  getOtpErrorMessage,
-  isAccountDeactivatedError,
-  isAccountNotFoundError,
-  isExpiredOtpError,
-  isIncorrectPasswordError,
-  isSystemApiError,
-  isWorkspaceSuspendedError,
-} from './application'
-export {
-  validateConfirmPassword,
-  validateEmail,
-  validateFullName,
-  validateGmail,
-  validatePassword,
-  validatePhone,
-  validateRequired,
-} from './application/validation'
-
-export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '@/core/api/api.types'
+export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from './domain/auth.types'
 export type { AppRole } from './domain/role.types'
 export type { AuthUser } from './domain/user.types'
-export { getPageForUserRole, unsupportedRoleMessage } from './application/authRole'
-export {
-  AUTH_EXPIRED_EVENT_NAME,
-  AUTH_PAGE_STORAGE_KEY,
-  clearAuthStorage,
-  getStoredAuthRole,
-  saveAuthRole,
-} from '@/core/api/authStorage'

@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import type { CreateTenantForm, SubscriptionPlan } from '@/core/api/api.types'
+import type { CreateTenantForm, SubscriptionPlan } from '@/features/admin/domain/adminApi.types'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { formatCurrencyInput } from '@/core/utils/currencyFormat'

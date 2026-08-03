@@ -5,6 +5,7 @@ import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { MetricCard } from '@/core/components/MetricCard'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
+import { EditIcon } from '@/core/components/Icons'
 
 function CreatePromptView({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
   const [internalName, setInternalName] = useState('xinquiU9')
@@ -137,7 +138,7 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
 
   const closePromptCreate = () => {
     setActiveView('list')
-    navigate(getSuperAdminViewPath('promptManagement'))
+    navigate(getSuperAdminViewPath('prompt-management'))
   }
 
   if (activeView === 'create') {
@@ -199,11 +200,7 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
             <span>{date}</span>
             <em className={status === 'Active' ? 'active' : 'inactive'}>{status}</em>
             <button type="button" className="icon-tooltip" aria-label={`Edit ${name}`} data-tooltip="Edit">
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M8.75 21.25V16.25L21.25 3.75L26.25 8.75L13.75 21.25H8.75Z" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M3.75 26.25H26.25" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M17.5 7.5L22.5 12.5" stroke="#565E74" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <EditIcon />
             </button>
           </div>
         ))}

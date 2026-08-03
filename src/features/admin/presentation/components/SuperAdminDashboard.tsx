@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { buildNavigation } from '@/core/components/navigation'
+import { useQuery } from '@tanstack/react-query'
+import { buildNavigation } from '@/core/hooks/navigation'
 import { adminApi } from '../../infrastructure/adminApi'
-import type { SuperAdminView } from '@/features/admin/presentation/pages/superAdmin.types'
-import type { SubscriptionPlan, Tenant } from '@/core/api/api.types'
+import type { Tenant } from '@/features/admin/domain/adminApi.types'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
-import { getInitialSuperAdminView, getSuperAdminViewPath, getTenantCreatePath, getTenantDetailPath } from '@/features/admin/domain/superAdminRouteHelpers'
-import { AccountSettingsPanel } from '@/core/components/AccountSettingsPanel'
+import { getInitialSuperAdminView, getSuperAdminViewPath, getTenantCreatePath, getTenantDetailPath, type SuperAdminView } from '@/features/admin/domain/superAdminRouteHelpers'
+import { AccountSettingsPanel, getStoredDashboardUser } from '@/features/auth'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { DashboardShell } from '@/core/components/DashboardShell'
 import { MetricCard } from '@/core/components/MetricCard'
@@ -19,50 +19,34 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
   const location = useLocation()
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState<SuperAdminView>(() => getInitialSuperAdminView(location.pathname))
-  const [dashboardTenants, setDashboardTenants] = useState<Tenant[]>([])
-  const [dashboardPlans, setDashboardPlans] = useState<SubscriptionPlan[]>([])
-  const [isDashboardLoading, setIsDashboardLoading] = useState(false)
-  const [dashboardError, setDashboardError] = useState('')
+  const [user] = useState(() => getStoredDashboardUser())
   const [viewResetKeys, setViewResetKeys] = useState<Record<SuperAdminView, number>>({
     dashboard: 0,
-    tenantManagement: 0,
-    subscriptionPlans: 0,
-    promptManagement: 0,
+    'tenant-management': 0,
+    'subscription-plans': 0,
+    'prompt-management': 0,
     settings: 0,
   })
+  const dashboardQuery = useQuery({
+    queryKey: ['super-admin', 'dashboard'],
+    queryFn: async () => {
+      const [tenants, plans] = await Promise.all([
+        adminApi.getTenants(),
+        adminApi.getSubscriptionPlans(),
+      ])
+
+      return { tenants, plans }
+    },
+    enabled: activeView === 'dashboard',
+  })
+  const dashboardTenants = dashboardQuery.data?.tenants ?? []
+  const dashboardPlans = dashboardQuery.data?.plans ?? []
+  const isDashboardLoading = dashboardQuery.isLoading || dashboardQuery.isFetching
+  const dashboardError = dashboardQuery.error
 
   useEffect(() => {
     setActiveView(getInitialSuperAdminView(location.pathname))
   }, [location.pathname])
-
-  useEffect(() => {
-    if (activeView !== 'dashboard') return
-
-    let isActive = true
-    setIsDashboardLoading(true)
-    setDashboardError('')
-
-    Promise.all([adminApi.getTenants(), adminApi.getSubscriptionPlans()])
-      .then(([tenants, plans]) => {
-        if (!isActive) return
-        setDashboardTenants(tenants)
-        setDashboardPlans(plans)
-      })
-      .catch((error) => {
-        if (isActive) {
-          setDashboardError(getAdminErrorMessage(error, 'Failed to load dashboard.'))
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsDashboardLoading(false)
-        }
-      })
-
-    return () => {
-      isActive = false
-    }
-  }, [activeView])
 
   const selectView = (view: SuperAdminView) => {
     setActiveView(view)
@@ -77,11 +61,11 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
     }))
   }
   const openTenantCreate = () => {
-    setActiveView('tenantManagement')
+    setActiveView('tenant-management')
     navigate(getTenantCreatePath())
   }
   const openTenantDetail = (tenantId: string) => {
-    setActiveView('tenantManagement')
+    setActiveView('tenant-management')
     navigate(getTenantDetailPath(tenantId))
   }
   const navItems = buildNavigation(superNav, activeView, resetToViewRoot)
@@ -136,7 +120,9 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
   ] as Array<[string, number]>
   const maxTenantPlanCount = Math.max(1, ...tenantPlanDisplayRows.map(([, count]) => count))
   const platformStaffAccounts = dashboardTenants.reduce((total, tenant) => total + tenant.userQuotaUsed, 0)
-  const dashboardErrorMessage = dashboardError ? 'Unable to load platform data. Please try again later.' : ''
+  const dashboardErrorMessage = dashboardError
+    ? getAdminErrorMessage(dashboardError, 'Unable to load platform data. Please try again later.')
+    : ''
   const recentTenants = dashboardTenants.length > 0 ? dashboardTenants.slice(0, 5) : [
     { id: 'velocity-ai', name: 'Velocity AI', subscriptionPlan: 'Enterprise', status: 'Active', createdAt: 'Jul 03, 2026' },
     { id: 'quantum-recruits', name: 'Quantro Recruits', subscriptionPlan: 'Pro Plan', status: 'Active', createdAt: 'Jun 29, 2026' },
@@ -158,16 +144,17 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
     <DashboardShell
       navItems={navItems}
       subtitle="Super Admin"
+      user={user}
       onLogout={onLogout}
       onChangePassword={() => selectView('settings')}
       className="super-admin-shell"
     >
-      {activeView === 'tenantManagement' ? (
-        <TenantManagementView key={viewResetKeys.tenantManagement} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
-      ) : activeView === 'subscriptionPlans' ? (
-        <SubscriptionPlansView key={viewResetKeys.subscriptionPlans} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
-      ) : activeView === 'promptManagement' ? (
-        <PromptManagementView key={viewResetKeys.promptManagement} onHome={() => selectView('dashboard')} />
+      {activeView === 'tenant-management' ? (
+        <TenantManagementView key={viewResetKeys['tenant-management']} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
+      ) : activeView === 'subscription-plans' ? (
+        <SubscriptionPlansView key={viewResetKeys['subscription-plans']} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />
+      ) : activeView === 'prompt-management' ? (
+        <PromptManagementView key={viewResetKeys['prompt-management']} onHome={() => selectView('dashboard')} />
       ) : activeView === 'settings' ? (
         <AccountSettingsPanel key={viewResetKeys.settings} onBack={() => selectView('dashboard')} triggerToast={triggerToast} />
       ) : (
@@ -188,7 +175,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
         <div className="super-dashboard-container">
           <div className="super-dashboard-row">
             <section className="role-panel tenant-table super-tenant-table">
-              <div className="role-panel-head"><h2>Recent Tenants</h2><button type="button" onClick={() => selectView('tenantManagement')}>View All</button></div>
+              <div className="role-panel-head"><h2>Recent Tenants</h2><button type="button" onClick={() => selectView('tenant-management')}>View All</button></div>
               {isDashboardLoading ? (
                 <p>Loading tenants...</p>
               ) : (
@@ -225,9 +212,9 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
               )}
               <div className="quick-actions">
                 <h3>Quick Actions</h3>
-                <button type="button" onClick={() => selectView('subscriptionPlans')}><i className="fa-solid fa-briefcase"></i>Manage Subscriptions</button>
+                <button type="button" onClick={() => selectView('subscription-plans')}><i className="fa-solid fa-briefcase"></i>Manage Subscriptions</button>
                 <button type="button" onClick={openTenantCreate}><i className="fa-solid fa-building-circle-check"></i>Create New Tenant</button>
-                <button type="button" onClick={() => selectView('promptManagement')}><i className="fa-solid fa-wand-magic-sparkles"></i>Edit System Prompts</button>
+                <button type="button" onClick={() => selectView('prompt-management')}><i className="fa-solid fa-wand-magic-sparkles"></i>Edit System Prompts</button>
               </div>
             </section>
           </div>
@@ -249,7 +236,7 @@ export function SuperAdminDashboard({ onLogout, triggerToast }: { onLogout: () =
                   <small>{prompt.updated}</small>
                 </div>
                 <span className={prompt.status === 'Optimal' ? 'optimal' : 'stale'}>{prompt.status}</span>
-                <button type="button" onClick={() => selectView('promptManagement')}>{prompt.action}</button>
+                <button type="button" onClick={() => selectView('prompt-management')}>{prompt.action}</button>
               </article>
             ))}
             </section>
