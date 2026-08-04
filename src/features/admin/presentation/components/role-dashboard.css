@@ -140,6 +140,7 @@
 .role-sidebar-trigger .material-symbols-outlined {
   width: 20px;
   height: 20px;
+  margin: 0 !important;
   display: block;
   overflow: hidden;
   font-family: 'Material Symbols Outlined';
@@ -540,6 +541,7 @@
 .super-admin-shell .role-sidebar-trigger .material-symbols-outlined {
   width: 20px;
   height: 20px;
+  margin: 0 !important;
   color: currentColor;
   font-size: 20px;
   -webkit-text-fill-color: currentColor;

@@ -144,13 +144,24 @@
 
 - Chuẩn hóa format key/object properties (loại bỏ double quote dư thừa quanh key).
 - Chuẩn hóa khoảng trắng, import statement & linter style trong `src/features/admin/infrastructure/adminApi.ts` và các file liên quan.
-- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 27/27 tests), `npm run build` (Pass 966ms).
+- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 32/32 tests), `npm run build` (Pass 1.14s).
+
+### Playwright E2E Test Suite Creation
+
+- Cấu hình [playwright.config.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/playwright.config.ts) trỏ đến `test/e2e/`, tự động kích hoạt `npm run dev` webServer.
+- Tạo bộ kiểm thử E2E Playwright trong thư mục `test/e2e/`:
+  - [landing.spec.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/test/e2e/landing.spec.ts): Kiểm thử giao diện Landing Page và điều hướng sang Login/Signup.
+  - [auth.spec.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/test/e2e/auth.spec.ts): Kiểm thử form Đăng nhập, nhập dữ liệu email/password và chuyển đổi trang.
+  - [admin.spec.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/test/e2e/admin.spec.ts): Kiểm thử điều hướng Super Admin Dashboard & Tenant Management.
+- Bổ sung lệnh script `"test:e2e": "playwright test"` trong `package.json`.
+- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 32/32 tests), `npm run build` (Pass 1.01s).
 
 ### Import Consistency Audit - Feature `src/features/admin`
 
 - Kiểm tra toàn bộ đường dẫn import trong `src/features/admin/`:
   - Đồng nhất sử dụng relative import cho các module nội bộ cùng feature (`../../domain/...`).
   - Loại bỏ hoàn toàn các import dư thừa hoặc khai báo unused imports (`npx oxlint --deny=no-unused-vars` - 0 error).
+
 ### TypeScript Type Fix - `tenantFormValidation.ts`
 
 - Cập nhật `CreateTenantPayload` và `Tenant` trong [adminApi.types.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/admin/domain/adminApi.types.ts) bổ sung các trường tùy chọn `name`, `companyName`, `subscriptionPlanId`, `subscriptionPlan`.

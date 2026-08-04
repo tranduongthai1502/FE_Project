@@ -70,6 +70,7 @@
 .candidate-sidebar-trigger .material-symbols-outlined {
   width: 20px;
   height: 20px;
+  margin: 0 !important;
   display: block;
   overflow: hidden;
   font-family: 'Material Symbols Outlined';
