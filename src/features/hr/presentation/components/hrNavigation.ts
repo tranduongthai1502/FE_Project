@@ -4,7 +4,7 @@ import type { RoleHomeView } from '@/features/hr/domain/roleHome.types'
 export const hrNav: Array<NavigationConfigItem<RoleHomeView>> = [
   { icon: 'fa-table-cells-large', label: 'Dashboard', view: 'dashboard' },
   { icon: 'fa-briefcase', label: 'Jobs', view: 'jobs' },
-  { icon: 'fa-users', label: 'Candidates' },
+  { icon: 'fa-users', label: 'Candidates', view: 'candidates' },
   { icon: 'fa-envelope', label: 'Email Management' },
   { icon: 'fa-calendar-check', label: 'Interviews' },
   { icon: 'fa-chart-simple', label: 'Analytics' },

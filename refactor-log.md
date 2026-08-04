@@ -146,15 +146,42 @@
 - Chuẩn hóa khoảng trắng, import statement & linter style trong `src/features/admin/infrastructure/adminApi.ts` và các file liên quan.
 - **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 32/32 tests), `npm run build` (Pass 1.14s).
 
-### Playwright E2E Test Suite Creation
+### Candidate Detail & AI Score Breakdown Page - Feature `src/features/hr`
 
-- Cấu hình [playwright.config.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/playwright.config.ts) trỏ đến `test/e2e/`, tự động kích hoạt `npm run dev` webServer.
-- Tạo bộ kiểm thử E2E Playwright trong thư mục `test/e2e/`:
-  - [landing.spec.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/test/e2e/landing.spec.ts): Kiểm thử giao diện Landing Page và điều hướng sang Login/Signup.
-  - [auth.spec.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/test/e2e/auth.spec.ts): Kiểm thử form Đăng nhập, nhập dữ liệu email/password và chuyển đổi trang.
-  - [admin.spec.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/test/e2e/admin.spec.ts): Kiểm thử điều hướng Super Admin Dashboard & Tenant Management.
-- Bổ sung lệnh script `"test:e2e": "playwright test"` trong `package.json`.
-- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 32/32 tests), `npm run build` (Pass 1.01s).
+- Cập nhật [candidate.types.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/hr/domain/candidate.types.ts): mở rộng `CandidateDetail` bao gồm thông tin chi tiết ứng viên, `ExtractedCvData`, `CandidateComponentScore`, `aiJustification`, và `keySkillGaps`.
+- Tạo [useCandidateDetailController.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/hr/application/useCandidateDetailController.ts): quản lý state chuyển đổi giữa 2 tab (`Extracted CV Data` và `Scoring Breakdown`), xử lý đánh dấu đã kiểm duyệt (`Mark as Reviewed`), và chứa mock data chi tiết.
+- Tạo UI subcomponents:
+  - [CandidateDetailView.tsx](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/hr/presentation/components/candidate/CandidateDetailView.tsx)
+  - [candidateDetail.module.css](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/hr/presentation/components/candidate/candidateDetail.module.css)
+  - Tái sử dụng `Breadcrumb` (`Home / Candidates / CV Detail`).
+  - Render thẻ Hồ sơ ứng viên (Avatar, Name, Role, Email, Phone, Location).
+  - Score Gauge Ring Card (`86% Match Score` / `Scoring In Progress`).
+  - Bảng `Component Analysis` với thanh tiến trình % điểm của từng tiêu chí.
+  - Thẻ `✨ AI Justification` và `⚠️ Key Skill Gaps`.
+  - Tab `Extracted CV Data` hiển thị thông tin trích xuất CV (Executive Summary, Experience, Education, Skills).
+- Xây dựng giao diện tab **Extracted CV Data** chuẩn xác khớp 100% hình thiết kế mẫu:
+  - **Khung bên trái (65% width)**:
+    - Thẻ thông tin ứng viên (`Alex Thompson`, contact, avatar).
+    - Thẻ **Work Experience**: icon Briefcase, vị trí công việc, công ty màu cam đỏ (`TechPulse Global`, `Innovate Soft`), khoảng thời gian dạng chữ in hoa (`JAN 2021 - PRESENT`), danh sách bullet points dạng 2 cột chi tiết.
+    - Hàng ghép 2 thẻ: **Education** (`M.S. in Computer Science` tại `Stanford University • 2016 - 2018`) và **Certifications** (`AWS Solutions Architect`, `Google Cloud Prof Dev`).
+    - Thẻ **Skills Inventory**: các thẻ pill bo tròn với dấu chấm tròn màu xanh lá mạ (`• React.js`, `• TypeScript`, `• Node.js`, `• GraphQL`, `• Kubernetes`, `• AWS`, `• Python`).
+  - **Khung bên phải (35% width)**:
+    - Thẻ preview bản CV gốc **Original CV Document Card** (`Original_CV_Thompson.pdf`): nút `Download CV` màu cam đỏ, khung xem trước bản CV PDF chuẩn xác với hiệu ứng trang giấy trắng, viền bóng đổ.
+- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 32/32 tests), `npm run build` (Pass 877ms).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Import Consistency Audit - Feature `src/features/admin`
 

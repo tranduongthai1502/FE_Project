@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { buildNavigation } from '@/core/hooks/navigation'
 import { hrNav } from './hrNavigation'
+import { CandidateManagementView } from './candidate/CandidateManagementView'
+import { CandidateDetailView } from './candidate/CandidateDetailView'
 import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRichTextEditor'
 import type { RoleHomeView } from '@/features/hr/domain/roleHome.types'
 import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, JobRevisionHistory } from '@/features/hr/domain/hrApi.types'
@@ -1799,6 +1801,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
   const [viewResetKeys, setViewResetKeys] = useState<Record<RoleHomeView, number>>({
     dashboard: 0,
     jobs: 0,
+    candidates: 0,
     settings: 0,
   })
   const selectView = (view: RoleHomeView) => {
@@ -1872,6 +1875,8 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
           )}
         />
         <Route path="jobs" element={<HrJobsView key={viewResetKeys.jobs} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />} />
+        <Route path="candidates" element={<CandidateManagementView key={viewResetKeys.candidates} />} />
+        <Route path="candidates/:candidateId" element={<CandidateDetailView key={viewResetKeys.candidates} />} />
         <Route path="dashboard" element={(
       <div key={viewResetKeys.dashboard} className={`role-content ${styles.content}`}>
         <div className={`role-title-row ${styles.title}`}>

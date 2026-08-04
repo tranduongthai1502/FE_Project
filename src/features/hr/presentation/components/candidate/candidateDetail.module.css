@@ -1,0 +1,644 @@
+.detailContainer {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 32px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.leftNav {
+  display: grid;
+  gap: 12px;
+}
+
+.tabGroup {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.tabButton {
+  border: 0;
+  background: transparent;
+  padding: 8px 4px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.tabButtonActive {
+  color: #c72b08;
+}
+
+.tabButtonActive::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #c72b08;
+}
+
+.markReviewedBtn {
+  background: #c72b08;
+  color: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.markReviewedBtn:hover {
+  background: #a92406;
+}
+
+/* Profile Card */
+.profileCard {
+  background: #ffffff;
+  border: 1px solid #f0cfc6;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.avatarWrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f5f9;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: #475569;
+  font-size: 24px;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profileInfo {
+  display: grid;
+  gap: 4px;
+}
+
+.profileName {
+  font-size: 22px;
+  font-weight: 800;
+  color: #101c33;
+  margin: 0;
+}
+
+.profileRole {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c72b08;
+}
+
+.contactRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.contactItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Scoring Breakdown Grid */
+.topRowGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+
+.scoreCard {
+  background: #ffffff;
+  border: 1px solid #f0cfc6;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.scoreRingWrap {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+}
+
+.scoreRingSvg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.scoreRingBg {
+  stroke: #f1f5f9;
+  stroke-width: 7;
+}
+
+.scoreRingFill {
+  stroke: #c72b08;
+  stroke-width: 7;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 35;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.scoreRingText {
+  position: absolute;
+  font-size: 16px;
+  font-weight: 800;
+  color: #101c33;
+}
+
+.scoreStatusText {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+
+.panelBox {
+  background: #ffffff;
+  border: 1px solid #f0cfc6;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.panelTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #101c33;
+  margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleIconBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff2ee;
+  color: #c72b08;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.componentList {
+  display: grid;
+  gap: 18px;
+}
+
+.componentItem {
+  display: grid;
+  gap: 8px;
+}
+
+.componentHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.componentBarBg {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.componentBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #f97316 0%, #c72b08 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.componentDesc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.rightStack {
+  display: grid;
+  gap: 20px;
+}
+
+.insightList {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.insightItem {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.gapList {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.gapItem {
+  font-size: 13px;
+  color: #991b1b;
+  line-height: 1.5;
+}
+
+/* Extracted CV Layout Grid */
+.extractedLayoutGrid {
+  display: grid;
+  grid-template-columns: 1.65fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.extractedLeftStack {
+  display: grid;
+  gap: 20px;
+}
+
+/* Experience List */
+.experienceList {
+  display: grid;
+  gap: 20px;
+}
+
+.experienceItem {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.experienceItem:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.expHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.expHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.expIconCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.expTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #101c33;
+  margin: 0;
+}
+
+.expCompany {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c72b08;
+}
+
+.expDuration {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.expBulletsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+@media (max-width: 768px) {
+  .expBulletsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bulletItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bulletDot {
+  color: #c72b08;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Education & Certifications Row */
+.eduCertRowGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .eduCertRowGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eduList, .certList {
+  display: grid;
+  gap: 14px;
+}
+
+.eduItem, .certItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.eduIconCircle, .certIconCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff2ee;
+  color: #c72b08;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.eduDegree, .certTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #101c33;
+  margin: 0;
+}
+
+.eduInstYear {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c72b08;
+  margin-top: 2px;
+}
+
+.eduDesc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.certExp {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Skills Inventory */
+.skillsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skillPillTag {
+  background: #f0f4ff;
+  color: #2b3649;
+  border: 1px solid #dbe2f4;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skillDot {
+  color: #10b981;
+  font-weight: 800;
+}
+
+/* PDF Preview Card */
+.pdfPreviewCard {
+  background: #ffffff;
+  border: 1px solid #f0cfc6;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.pdfPreviewHeader {
+  padding: 16px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0cfc6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pdfFileNameWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #101c33;
+}
+
+.pdfFileNameWrap i {
+  color: #c72b08;
+  font-size: 16px;
+}
+
+.pdfDownloadBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #c72b08;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.pdfDownloadBtn:hover {
+  opacity: 0.8;
+}
+
+.pdfPreviewBody {
+  padding: 20px;
+  background: #f8fafc;
+  flex: 1;
+  min-height: 520px;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.pdfPaper {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.pdfPaperHeader {
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.pdfName {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 1px;
+  margin: 0 0 2px;
+}
+
+.pdfSubHeader {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 2px;
+}
+
+.pdfContact {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.pdfSection {
+  margin-bottom: 14px;
+}
+
+.pdfSectionHeader {
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 3px;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.pdfExpItem {
+  margin-bottom: 10px;
+}
+
+.pdfExpRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #1e293b;
+}
+
+.pdfRoleTitle {
+  font-size: 10px;
+  font-style: italic;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.pdfBulletList {
+  margin: 0;
+  padding-left: 14px;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+@media (max-width: 1100px) {
+  .extractedLayoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
