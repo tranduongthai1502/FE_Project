@@ -26,6 +26,8 @@ const workspaceSuspendedMessage = authErrorMessages.workspaceSuspended
 const expiredOtpMessage = authErrorMessages.expiredOtp
 const invalidOtpMessage = authErrorMessages.invalidOtp
 const resendOtpCountdownSeconds = 59
+const maxAuthFailedAttempts = 5
+const authLockoutSeconds = 60
 const passwordChangePathByLoginRole = {
   candidate: '/candidate/change-password',
   tenantAdmin: '/tenant-admin/settings',
@@ -205,6 +207,18 @@ function isIncorrectPasswordError(message = '', code = '') {
   )
 }
 
+function isPasswordAttemptFailure(message = '', code = '') {
+  const normalizedMessage = message.toLowerCase()
+
+  return (
+    isIncorrectPasswordError(message, code) ||
+    normalizedMessage.includes('invalid credentials') ||
+    normalizedMessage.includes('bad credentials') ||
+    normalizedMessage.includes('authentication failed') ||
+    normalizedMessage.includes('login failed')
+  )
+}
+
 function isAccountDeactivatedError(message = '', code = '') {
   const normalizedMessage = message.toLowerCase()
   const normalizedCode = code.toLowerCase()
@@ -250,6 +264,10 @@ function getLoginFailureMessage(error: unknown, fallbackMessage = incorrectPassw
   return message || fallbackMessage
 }
 
+function getLockoutMessage(label: string, seconds: number) {
+  return `Too many incorrect ${label} attempts. Please wait ${seconds}s before trying again.`
+}
+
 function isSystemApiError(error: any) {
   const status = Number(error?.status ?? 0)
   return status === 0 || status >= 500
@@ -275,6 +293,8 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
   const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
   const attemptedOtpCodesRef = useRef<Set<string>>(new Set())
   const expiredOtpCodesRef = useRef<Set<string>>(new Set())
+  const failedPasswordAttemptsRef = useRef(0)
+  const failedOtpAttemptsRef = useRef(0)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(Boolean(rememberedEmail))
@@ -291,9 +311,15 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
   const [passwordError, setPasswordError] = useState('')
   const [otpError, setOtpError] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [passwordLockCountdown, setPasswordLockCountdown] = useState(0)
+  const [otpLockCountdown, setOtpLockCountdown] = useState(0)
   const [newPasswordError, setNewPasswordError] = useState('')
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const strength = getPasswordStrength(newPassword)
+  const isPasswordLocked = passwordLockCountdown > 0
+  const isOtpLocked = otpLockCountdown > 0
+  const visiblePasswordError = isPasswordLocked ? getLockoutMessage('password', passwordLockCountdown) : passwordError
+  const visibleOtpError = isOtpLocked ? getLockoutMessage('OTP', otpLockCountdown) : otpError
 
   useEffect(() => {
     if (!showForgotPassword || forgotStep !== 'otp' || countdown <= 0) {
@@ -307,6 +333,68 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
     return () => window.clearTimeout(timer)
   }, [countdown, forgotStep, showForgotPassword])
 
+  useEffect(() => {
+    if (passwordLockCountdown <= 0) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      setPasswordLockCountdown((value) => {
+        const nextValue = Math.max(value - 1, 0)
+        if (nextValue === 0) {
+          failedPasswordAttemptsRef.current = 0
+          setPasswordError('')
+        }
+        return nextValue
+      })
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [passwordLockCountdown])
+
+  useEffect(() => {
+    if (otpLockCountdown <= 0) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      setOtpLockCountdown((value) => {
+        const nextValue = Math.max(value - 1, 0)
+        if (nextValue === 0) {
+          failedOtpAttemptsRef.current = 0
+          setOtpError('')
+        }
+        return nextValue
+      })
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [otpLockCountdown])
+
+  const registerPasswordFailure = (message = incorrectPasswordMessage) => {
+    failedPasswordAttemptsRef.current += 1
+
+    if (failedPasswordAttemptsRef.current >= maxAuthFailedAttempts) {
+      setPasswordLockCountdown(authLockoutSeconds)
+      setPasswordError('')
+      return
+    }
+
+    setPasswordError(message)
+  }
+
+  const registerOtpFailure = (message = invalidOtpMessage) => {
+    failedOtpAttemptsRef.current += 1
+
+    if (failedOtpAttemptsRef.current >= maxAuthFailedAttempts) {
+      setOtpLockCountdown(authLockoutSeconds)
+      setOtpError('')
+      return
+    }
+
+    setOtpError(message)
+  }
+
   const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextEmail = event.target.value
     setEmail(nextEmail)
@@ -317,7 +405,7 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
 
   const updatePassword = (nextPassword: string) => {
     setPassword(nextPassword)
-    if (passwordError) {
+    if (passwordError && !isPasswordLocked) {
       setPasswordError(validateRequired(nextPassword, validationErrorMessages.passwordRequired))
     }
   }
@@ -328,6 +416,10 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+
+    if (isPasswordLocked) {
+      return
+    }
 
     const nextEmailError = validateEmail(email)
     const nextPasswordError = validateRequired(password, validationErrorMessages.passwordRequired)
@@ -353,10 +445,13 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
       } else if (isAccountDeactivatedError(responseMessage, getErrorCode(response))) {
         setEmailError('')
         setPasswordError(accountDeactivatedMessage)
-      } else if (isIncorrectPasswordError(responseMessage, getErrorCode(response))) {
+      } else if (isPasswordAttemptFailure(responseMessage, getErrorCode(response))) {
         setEmailError('')
-        setPasswordError(incorrectPasswordMessage)
+        registerPasswordFailure()
       } else if (isLoginSuccessResponse(response)) {
+        failedPasswordAttemptsRef.current = 0
+        setPasswordLockCountdown(0)
+        setPasswordError('')
         const token = getAuthToken(payload)
         const refreshToken = getRefreshToken(payload)
         const user = getAuthUser(payload)
@@ -390,7 +485,12 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
         }
       } else {
         setEmailError('')
-        setPasswordError(getLoginFailureMessage(response))
+        const failureMessage = getLoginFailureMessage(response)
+        if (isPasswordAttemptFailure(response?.message || payload?.message || failureMessage, getErrorCode(response))) {
+          registerPasswordFailure(failureMessage)
+        } else {
+          setPasswordError(failureMessage)
+        }
       }
     } catch (error: any) {
       if (isSystemApiError(error)) {
@@ -400,7 +500,12 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
         setPasswordError(accountNotFoundMessage)
       } else {
         setEmailError('')
-        setPasswordError(getLoginFailureMessage(error))
+        const failureMessage = getLoginFailureMessage(error)
+        if (isPasswordAttemptFailure(error?.message || failureMessage, getErrorCode(error))) {
+          registerPasswordFailure(failureMessage)
+        } else {
+          setPasswordError(failureMessage)
+        }
       }
     } finally {
       setIsLoading(false)
@@ -454,6 +559,8 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
     setForgotStep('email')
     setForgotEmailError('')
     setOtpError('')
+    failedOtpAttemptsRef.current = 0
+    setOtpLockCountdown(0)
     setNewPasswordError('')
     setConfirmPasswordError('')
     setOtp(emptyOtp)
@@ -464,6 +571,8 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
   }
 
   const handleOtpChange = (element: HTMLInputElement, index: number) => {
+    if (isOtpLocked) return
+
     const value = element.value
     if (Number.isNaN(Number(value))) return
 
@@ -478,6 +587,8 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
   }
 
   const handleOtpKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (isOtpLocked) return
+
     if (event.key !== 'Backspace') return
 
     const nextOtp = [...otp]
@@ -493,6 +604,8 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
 
   const handleOtpPaste = (event: ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault()
+    if (isOtpLocked) return
+
     const pastedDigits = event.clipboardData.getData('text').trim().slice(0, 6)
     if (!/^\d+$/.test(pastedDigits)) return
 
@@ -508,6 +621,10 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
   const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    if (isOtpLocked) {
+      return
+    }
+
     const otpCode = otp.join('')
     if (otpCode.length < 6) {
       setOtpError(authErrorMessages.otpRequired)
@@ -515,7 +632,7 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
     }
 
     if (expiredOtpCodesRef.current.has(otpCode)) {
-      setOtpError(expiredOtpMessage)
+      registerOtpFailure(expiredOtpMessage)
       return
     }
 
@@ -524,15 +641,18 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
     try {
       const response: any = await authApi.verifyOtp(forgotEmail, otpCode)
       if (response && response.success) {
+        failedOtpAttemptsRef.current = 0
+        setOtpLockCountdown(0)
+        setOtpError('')
         setForgotStep('reset')
       } else {
-        setOtpError(getOtpErrorMessage(response?.message, expiredOtpCodesRef.current.has(otpCode)))
+        registerOtpFailure(getOtpErrorMessage(response?.message, expiredOtpCodesRef.current.has(otpCode)))
       }
     } catch (error: any) {
       if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        setOtpError(getOtpErrorMessage(error.message, expiredOtpCodesRef.current.has(otpCode)))
+        registerOtpFailure(getOtpErrorMessage(error.message, expiredOtpCodesRef.current.has(otpCode)))
       }
     } finally {
       setIsSendingCode(false)
@@ -558,6 +678,8 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
         }
         attemptedOtpCodesRef.current.forEach((code) => expiredOtpCodesRef.current.add(code))
         attemptedOtpCodesRef.current.clear()
+        failedOtpAttemptsRef.current = 0
+        setOtpLockCountdown(0)
         setOtp(emptyOtp)
         setOtpError('')
         startTimer()
@@ -622,52 +744,168 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
     }
   }
 
-  return {
-    confirmPassword,
-    confirmPasswordError,
-    countdown,
-    email,
-    emailError,
-    forgotEmail,
-    forgotEmailError,
-    forgotStep,
-    handleCloseForgotPassword,
-    handleEmailChange,
-    handleOtpChange,
-    handleOtpKeyDown,
-    handleOtpPaste,
-    handlePasswordChange,
-    handleResendCode,
-    handleResetPassword,
-    handleSendCode,
-    handleSubmit,
-    handleVerifyOtp,
-    isLoading,
-    isResendingCode,
-    isSendingCode,
-    keepLoggedIn,
-    newPassword,
-    newPasswordError,
-    otp,
-    otpError,
-    otpInputsRef,
-    password,
-    passwordError,
-    setConfirmPassword,
-    setConfirmPasswordError,
-    setForgotEmail,
-    setForgotEmailError,
-    setKeepLoggedIn,
-    setNewPassword,
-    setNewPasswordError,
-    setShowConfirmPassword,
-    setShowForgotPassword,
-    setShowNewPassword,
-    showConfirmPassword,
-    showForgotPassword,
-    showNewPassword,
-    showPassword,
-    setShowPassword,
-    strength,
-  }
+  return (
+    <AuthLayout>
+      <div className="form-shell">
+        <header className="form-header">
+          <h2>Welcome Back</h2>
+          <p>Enter your credentials to access your dashboard.</p>
+        </header>
+
+        <form className="login-form" onSubmit={handleSubmit} autoComplete="on" noValidate>
+          <div className="field-group">
+            <label htmlFor="email">Email Address</label>
+            <div className={`input-wrap ${emailError ? 'has-error' : ''}`}>
+              <MailIcon />
+              <input
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={handleEmailChange}
+                placeholder="name@company.com"
+                autoComplete="email"
+                aria-invalid={emailError ? 'true' : 'false'}
+                aria-describedby={emailError ? 'email-error' : undefined}
+                disabled={isPasswordLocked || isLoading}
+              />
+            </div>
+            {emailError && (
+              <span id="email-error" className="field-error">
+                {emailError}
+              </span>
+            )}
+          </div>
+
+          <div className="field-group password-group">
+            <div className="label-row">
+              <label htmlFor="password">Password</label>
+            </div>
+            <div className={`input-wrap ${visiblePasswordError ? 'has-error' : ''}`}>
+              <LockIcon />
+              <input
+                maxLength={FIELD_LENGTH_LIMITS.defaultText}
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder=".........."
+                autoComplete="current-password"
+                aria-invalid={visiblePasswordError ? 'true' : 'false'}
+                aria-describedby={visiblePasswordError ? 'password-error' : undefined}
+                disabled={isPasswordLocked || isLoading}
+              />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword((value) => !value)}
+                disabled={isPasswordLocked || isLoading}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
+            {visiblePasswordError && (
+              <span id="password-error" className="field-error">
+                {visiblePasswordError}
+              </span>
+            )}
+          </div>
+
+          <div className="login-options-row">
+            <label className="check-row" htmlFor="keep-logged-in">
+              <input
+                id="keep-logged-in"
+                name="keep-logged-in"
+                type="checkbox"
+                checked={keepLoggedIn}
+                onChange={(event) => setKeepLoggedIn(event.target.checked)}
+              />
+              <span>Keep me logged in</span>
+            </label>
+            <button type="button" className="text-link-button" onClick={() => setShowForgotPassword(true)}>
+              Forgot password?
+            </button>
+          </div>
+
+          <button type="submit" className="submit-button" disabled={isLoading || isPasswordLocked}>
+            {isPasswordLocked ? `Try again in ${passwordLockCountdown}s` : isLoading ? 'Logging in' : 'Login'}
+          </button>
+        </form>
+
+        <p className="signup-copy">
+          Don't have an account?
+          <button type="button" onClick={onGoToSignup}>
+            Sign up
+          </button>
+        </p>
+      </div>
+
+      {showForgotPassword && (
+        <div className="auth-modal-overlay" role="presentation">
+          <div
+            className={`forgot-password-modal forgot-password-modal-${forgotStep}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="forgot-title"
+          >
+            {forgotStep === 'email' && (
+              <ForgotPasswordForm
+                email={forgotEmail}
+                setEmail={setForgotEmail}
+                emailError={forgotEmailError}
+                setEmailError={setForgotEmailError}
+                isLoading={isSendingCode}
+                validateEmail={validateOptionalEmail}
+                handleSendCode={handleSendCode}
+                handleBackToLogin={handleCloseForgotPassword}
+              />
+            )}
+
+            {forgotStep === 'otp' && (
+              <OtpForm
+                otp={otp}
+                otpError={visibleOtpError}
+                otpInputsRef={otpInputsRef}
+                countdown={countdown}
+                isLoading={isSendingCode}
+                isLocked={isOtpLocked}
+                lockCountdown={otpLockCountdown}
+                handleOtpChange={handleOtpChange}
+                handleOtpKeyDown={handleOtpKeyDown}
+                handleOtpPaste={handleOtpPaste}
+                handleVerifyOtp={handleVerifyOtp}
+                handleBackToLogin={handleCloseForgotPassword}
+                handleResendCode={handleResendCode}
+                isResendingCode={isResendingCode}
+              />
+            )}
+
+            {forgotStep === 'reset' && (
+              <ResetPasswordForm
+                newPassword={newPassword}
+                setNewPassword={setNewPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                newPasswordError={newPasswordError}
+                setNewPasswordError={setNewPasswordError}
+                confirmPasswordError={confirmPasswordError}
+                setConfirmPasswordError={setConfirmPasswordError}
+                showNewPassword={showNewPassword}
+                setShowNewPassword={setShowNewPassword}
+                showConfirmPassword={showConfirmPassword}
+                setShowConfirmPassword={setShowConfirmPassword}
+                strength={strength}
+                isLoading={isSendingCode}
+                handleResetPassword={handleResetPassword}
+                handleBackToLogin={handleCloseForgotPassword}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </AuthLayout>
+  )
 }

@@ -2388,10 +2388,16 @@
 }
 
 .staff-field-error {
-  color: #f04438;
-  font-size: 10px;
-  font-weight: 700;
+  min-height: 16px;
+  display: block;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
+  text-transform: none;
+  visibility: visible;
 }
 
 .staff-role-option {
@@ -2699,18 +2705,30 @@
 
 .edit-staff-field .edit-staff-field-error {
   margin-top: 6px;
-  color: #f04438;
+  min-height: 16px;
+  display: block;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
-  font-weight: 700;
+  text-transform: none;
+  visibility: visible;
 }
 
 .edit-staff-role-error {
   display: block;
   margin-top: 8px;
-  color: #f04438;
-  font-size: 10px;
-  font-weight: 700;
+  min-height: 16px;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
+  text-transform: none;
+  visibility: visible;
 }
 
 .edit-staff-readonly-input {
@@ -4298,14 +4316,17 @@
 }
 
 .tenant-field-error {
-  height: 16px;
+  min-height: 16px;
+  display: block;
   color: #d82d21;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 16px;
+  letter-spacing: 0;
   overflow: hidden;
   text-align: right;
   text-overflow: ellipsis;
+  text-transform: none;
   white-space: nowrap;
   visibility: visible;
 }
@@ -5304,11 +5325,16 @@
 }
 
 .create-plan-field-error {
-  color: #dc2626;
+  min-height: 16px;
+  display: block;
+  color: #d82d21;
   font-size: 11px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
+  text-transform: none;
+  visibility: visible;
 }
 
 .description-field {

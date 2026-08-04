@@ -615,9 +615,16 @@
 }
 
 .candidate-password-error {
-  color: #dc2626;
-  font-size: 9px;
+  min-height: 16px;
+  display: block;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
+  text-transform: none;
+  visibility: visible;
 }
 
 .candidate-password-strength {
@@ -1817,7 +1824,7 @@
 
   .candidate-password-error {
     font-size: 11px;
-    text-align: left;
+    text-align: right;
   }
 
   .candidate-password-strength div:first-child {
