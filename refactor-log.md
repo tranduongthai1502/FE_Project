@@ -162,11 +162,11 @@
   - Đồng nhất sử dụng relative import cho các module nội bộ cùng feature (`../../domain/...`).
   - Loại bỏ hoàn toàn các import dư thừa hoặc khai báo unused imports (`npx oxlint --deny=no-unused-vars` - 0 error).
 
-### TypeScript Type Fix - `tenantFormValidation.ts`
+### TypeScript Type Fix - `useLoginFeature.ts`
 
-- Cập nhật `CreateTenantPayload` và `Tenant` trong [adminApi.types.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/admin/domain/adminApi.types.ts) bổ sung các trường tùy chọn `name`, `companyName`, `subscriptionPlanId`, `subscriptionPlan`.
-- Cập nhật [tenantFormValidation.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/admin/application/tenantFormValidation.ts) hỗ trợ kiểm tra linh hoạt tên tenant và gói cước.
-- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 27/27 tests), `npm run build` (Pass 910ms).
+- Khai báo tường minh kiểu `message: string` cho hàm `registerPasswordFailure` và `registerOtpFailure` trong [useLoginFeature.ts](file:///c:/Users/ADMIN/Desktop/intern/Intern_project/FE_Project/src/features/auth/application/useLoginFeature.ts), giải quyết triệt để 5 lỗi TS2345 (string literal type mismatch).
+- **Verification**: `npm run lint` (0 error, 0 warning), `npm run test` (Pass 32/32 tests), `npm run build` (Pass 963ms).
+
 
 ### Clean Architecture Refactor - Feature `src/features/hr`
 

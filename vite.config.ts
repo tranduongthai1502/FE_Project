@@ -9,6 +9,9 @@ const __dirname = dirname(__filename)
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    entries: ['index.html'],
+  },
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],
