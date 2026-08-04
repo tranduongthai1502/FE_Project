@@ -1,2 +1,2 @@
-export { CandidatePortalPage } from './components/CandidatePortalPage'
-export type { CandidatePanel, CandidatePortalPageProps, StoredCandidateUser } from './types/candidate.types'
+export { CandidatePortalPage } from './presentation/pages/CandidatePortalPage'
+export type { CandidatePortalPageProps } from './domain/candidate.types'

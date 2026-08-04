@@ -1,1 +1,1 @@
-export { InterviewerDashboard } from './components/InterviewerDashboard'
+export { InterviewerDashboard } from './presentation/components/InterviewerDashboard'

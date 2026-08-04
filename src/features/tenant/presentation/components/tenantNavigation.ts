@@ -1,0 +1,14 @@
+import type { NavigationConfigItem } from '@/core/hooks/navigation'
+import type { TenantAdminView } from '../../domain/tenantAdmin.types'
+
+export const tenantNav: Array<NavigationConfigItem<TenantAdminView>> = [
+  { icon: 'fa-table-cells-large', label: 'Dashboard', view: 'dashboard' },
+  {
+    icon: 'fa-users-gear',
+    label: 'Staff Management',
+    view: 'staffManagement',
+    activeWhen: ['staffManagement', 'staffCreate', 'staffEdit', 'staffDetail', 'staffActivityLog'],
+  },
+  { icon: 'fa-chart-line', label: 'Analytics' },
+  { icon: 'fa-gear', label: 'Settings', view: 'settings' },
+]

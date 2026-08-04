@@ -7,14 +7,6 @@ import { RoleRoutes } from './RoleRoutes'
 
 export type AppPage = AppRole
 
-export const pathByPage: Record<AppPage, string> = {
-  candidate: '/candidate',
-  tenantAdmin: '/tenant-admin',
-  superAdmin: '/super-admin/dashboard',
-  hr: '/hr',
-  interviewer: '/interviewer',
-}
-
 type RouteConfigProps = {
   defaultPath: string
   loginRedirect: string | null

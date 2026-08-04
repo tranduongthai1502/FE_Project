@@ -1,1 +1,1 @@
-export { HrDashboard } from './components/HrDashboard'
+export { HrDashboard } from './presentation/components/HrDashboard'
