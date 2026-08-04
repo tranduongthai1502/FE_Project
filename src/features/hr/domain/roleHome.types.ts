@@ -1,1 +1,1 @@
-export type RoleHomeView = 'dashboard' | 'jobs' | 'settings'
+export type RoleHomeView = 'dashboard' | 'jobs' | 'candidates' | 'settings'
