@@ -1,43 +1,6 @@
-import type { StaffMember, UserStatus } from '../domain/tenantApi.types'
-import { normalizeTenantAdminUser } from '../infrastructure/tenantMappers'
-
-export type StaffAccountLimit = {
-  used?: number
-  limit?: number
-  unlimited?: boolean
-}
-
-export function isInactiveTenantStatus(status?: string) {
-  const normalized = String(status || '').trim().toLowerCase()
-
-  return (
-    normalized === 'inactive' ||
-    normalized === 'in_active' ||
-    normalized === 'not_active' ||
-    normalized === 'not active' ||
-    normalized === 'disabled' ||
-    normalized === 'deactivated' ||
-    normalized === 'suspended'
-  )
-}
-
-export function normalizeUserStatus(value?: string): UserStatus | null {
-  const normalized = String(value || '').trim().toUpperCase()
-  if (normalized === 'ACTIVE' || normalized === 'ACTIVATED' || normalized === 'ENABLED') return 'ACTIVE'
-  if (
-    normalized === 'DISABLED' ||
-    normalized === 'INACTIVE' ||
-    normalized === 'IN_ACTIVE' ||
-    normalized === 'NOT_ACTIVE' ||
-    normalized === 'NOT ACTIVE' ||
-    normalized === 'DEACTIVATED' ||
-    normalized === 'SUSPENDED' ||
-    normalized === 'PENDING' ||
-    normalized === 'INVITED' ||
-    normalized === 'WAITING_ACTIVATION'
-  ) return 'DISABLED'
-  return null
-}
+import type { StaffAccountLimit, StaffMember } from '../domain/tenantApi.types'
+import { normalizeUserStatus } from '../domain/tenantStaffStatus'
+import { normalizeTenantAdminUser } from './tenantMappers'
 
 export function getStaffListItems(payload: any): any[] {
   if (Array.isArray(payload)) return payload

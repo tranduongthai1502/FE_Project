@@ -1,5 +1,4 @@
 export { SuperAdminDashboard } from './presentation/components/SuperAdminDashboard'
-export { adminApi } from './infrastructure/adminApi'
 export type {
   CreatePlanPayload,
   CreateTenantPayload,

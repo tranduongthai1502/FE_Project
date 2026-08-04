@@ -14,7 +14,7 @@ import { getAppErrorMessage, getErrorCode } from '@/core/utils/errorManager'
 import { authErrorMessages } from './authErrorMessages'
 import { saveAuthRole, saveLoginSession, saveRememberedEmail, saveRequirePasswordChange, getRememberedEmail } from '../infrastructure/authStorageRepository'
 import { getPageForUserRole } from './authRole'
-import { FIELD_LENGTH_LIMITS, validateOptionalEmail, validationErrorMessages } from '@/core/api/axiosErrorHandler'
+import { validateOptionalEmail, validationErrorMessages } from '@/core/api/axiosErrorHandler'
 
 const emptyOtp = ['', '', '', '', '', '']
 const accountNotFoundMessage = authErrorMessages.accountNotFound

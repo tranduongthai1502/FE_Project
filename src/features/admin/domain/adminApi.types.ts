@@ -1,9 +1,12 @@
 export type CreateTenantPayload = {
   companyName: string
+  name?: string
   domain: string
   industry: string
   region: string
   planId: string
+  subscriptionPlanId?: string
+  subscriptionPlan?: string
   adminFullName: string
   adminEmail: string
 }
@@ -20,6 +23,8 @@ export type CreatePlanPayload = {
   description: string
   billingCycle: string
   price: number
+  monthlyPrice?: number
+  yearlyPrice?: number
   maxStaffAccount: number | null
   staffAccountUnlimited: boolean
   maxActiveJobPosting: number | null
@@ -35,6 +40,7 @@ export type SubscriptionPlan = {
   name: string
   description: string
   monthlyPrice: number
+  yearlyPrice: number
   price?: number
   billingCycle?: string
   maxStaffAccount: number
@@ -45,11 +51,15 @@ export type SubscriptionPlan = {
   createdAt: string
   features: CreatePlanFeature[]
   priceLabel?: string
+  recommended?: boolean
+  active?: boolean
+  code?: string
 }
 
 export type Tenant = {
   id: string
   name: string
+  companyName?: string
   domain?: string
   industry?: string
   region?: string
@@ -73,6 +83,15 @@ export type Tenant = {
   adminUserId?: string
   adminFullName?: string
   adminEmail?: string
+}
+
+export type Prompt = {
+  id: string
+  name: string
+  description?: string
+  content: string
+  updatedAt?: string
+  status?: string
 }
 
 export type TenantDashboardStats = {
@@ -109,6 +128,7 @@ export type TenantAdminUser = {
   createdAt?: string
   activatedAt?: string
   lastLoginAt?: string
+  lastLoginId?: string
   lastLoginLocation?: string
   lastLoginIp?: string
 }

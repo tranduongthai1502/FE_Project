@@ -1,16 +1,21 @@
 import { AccountSettingsPanel } from '@/features/auth'
 import { DashboardShell } from '@/core/components/DashboardShell'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
-import { clearSelectedStaff, saveSelectedStaff } from './tenantStaffStorage'
+import { buildNavigation } from '@/core/hooks/navigation'
 import {
   CreateStaffAccountView,
   EditStaffAccountView,
   StaffActivityLogView,
   StaffDetailView,
   TenantAdminStaffManagement,
-} from '../presentation/pages/TenantAdminStaffManagement'
-import { TenantAdminHome } from '../presentation/pages/TenantAdminHome'
-import { useTenantAdminDashboardController } from './useTenantAdminDashboardController'
+} from './TenantAdminStaffManagement'
+import { tenantNav } from '../components/tenantNavigation'
+import { tenantAdminSessionStorage } from '../../infrastructure/tenantAdminSessionStorage'
+import { tenantFileDownloader } from '../../infrastructure/tenantFileDownloader'
+import { tenantAdminRepository } from '../../infrastructure/tenantAdminRepository'
+import { tenantStaffSelectionStorage } from '../../infrastructure/tenantStaffSelectionStorage'
+import { TenantAdminHome } from './TenantAdminHome'
+import { useTenantAdminDashboardController } from '../../application/useTenantAdminDashboardController'
 
 export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const {
@@ -44,8 +49,8 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     isSaving,
     isStaffQuotaUnlimited,
     loadStaffDetail,
+    handleSidebarViewChange,
     maxStaffQuota,
-    navItems,
     recentActivities,
     selectedStaff,
     selectedStaffMatchesDetailRoute,
@@ -78,7 +83,14 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     statusConfirmStaff,
     user,
     viewResetKeys,
-  } = useTenantAdminDashboardController({ triggerToast })
+  } = useTenantAdminDashboardController({
+    fileDownloader: tenantFileDownloader,
+    repository: tenantAdminRepository,
+    session: tenantAdminSessionStorage,
+    staffSelectionStore: tenantStaffSelectionStorage,
+    triggerToast,
+  })
+  const navItems = buildNavigation(tenantNav, activeView, handleSidebarViewChange)
 
   return (
     <DashboardShell navItems={navItems} subtitle="Tenant Admin" user={user} onLogout={onLogout} onChangePassword={() => changeView('settings')}>
@@ -207,14 +219,14 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
           staffAccountCount={staffAccountCount}
           onCreate={() => {
             if (!guardTenantActive()) return
-            clearSelectedStaff()
+            tenantStaffSelectionStorage.clearSelectedStaff()
             setSelectedStaff(null)
             setStaffFormFieldErrors({})
             changeView('staffCreate')
           }}
           onEdit={(staff) => {
             if (!guardTenantActive()) return
-            saveSelectedStaff(staff)
+            tenantStaffSelectionStorage.saveSelectedStaff(staff)
             setSelectedStaff(staff)
             setStaffFormFieldErrors({})
             changeView('staffEdit', staff.id)
@@ -224,7 +236,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
             setDeleteConfirmStaff(staff)
           }}
           onSelectStaff={(staff) => {
-            saveSelectedStaff(staff)
+            tenantStaffSelectionStorage.saveSelectedStaff(staff)
             setSelectedStaff(staff)
             loadStaffDetail(staff.id, staff)
             changeView('staffDetail', staff.id)

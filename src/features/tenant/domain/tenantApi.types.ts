@@ -80,6 +80,12 @@ export type StaffMember = {
   lastLoginIp?: string
 }
 
+export type StaffAccountLimit = {
+  used?: number
+  limit?: number
+  unlimited?: boolean
+}
+
 export type StaffPayload = {
   email: string
   fullName: string

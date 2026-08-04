@@ -1,4 +1,4 @@
-import type { TenantAdminView } from '@/features/tenant/presentation/pages/tenantAdmin.types'
+import type { TenantAdminView } from './tenantAdmin.types'
 
 export const tenantAdminViewSlugs: Record<TenantAdminView, string> = {
   dashboard: 'dashboard',

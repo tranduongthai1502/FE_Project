@@ -1,4 +1,4 @@
-import type { InterviewerHomeView } from './pages/interviewerHome.types'
+import type { InterviewerHomeView } from './interviewerHome.types'
 
 export const interviewerPathByView: Record<InterviewerHomeView, string> = {
   dashboard: '/interviewer/dashboard',

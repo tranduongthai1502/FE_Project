@@ -1,4 +1,4 @@
-import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
+import { getMissingPasswordRequirementLabels } from '@/core/utils/passwordStrength'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 import { authErrorMessages } from '@/core/utils/errors/authErrorMessages'
 import { useChangePasswordForm } from '../../application/useChangePasswordForm'
@@ -137,7 +137,6 @@ export function ChangePasswordView({
                   autoComplete="new-password"
                   onChange={(event) => {
                     const nextPassword = event.target.value
-                    const nextStrength = getPasswordStrength(nextPassword)
                     const nextMissingRequirements = getMissingPasswordRequirementLabels(nextPassword)
 
                     setNewPassword(nextPassword)

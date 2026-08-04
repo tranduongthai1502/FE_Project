@@ -1,9 +1,1 @@
-export type TenantAdminView =
-  | 'dashboard'
-  | 'jobs'
-  | 'settings'
-  | 'staffManagement'
-  | 'staffCreate'
-  | 'staffEdit'
-  | 'staffDetail'
-  | 'staffActivityLog'
+export type { TenantAdminView } from '../../domain/tenantAdmin.types'

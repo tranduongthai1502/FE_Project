@@ -1,12 +1,8 @@
-import { getListPageCount, getPaginationMeta } from '@/core/utils/pagination'
+import { getListPageCount } from '@/core/utils/pagination'
 import type { StaffMember, SubscriptionPlan, Tenant } from '../domain/tenantApi.types'
-import { TENANT_ADMIN_LIST_PAGE_SIZE, tenantAdminApi } from '../infrastructure/tenantAdminApi'
-import {
-  getStaffListItems,
-  normalizeStaffAccountLimit,
-  normalizeStaffMember,
-  type StaffAccountLimit,
-} from './tenantStaffNormalizers'
+import type { StaffAccountLimit } from '../domain/tenantApi.types'
+import { TENANT_STAFF_LIST_PAGE_SIZE } from '../domain/tenantPagination'
+import type { TenantAdminRepository } from './tenantAdminRepository'
 
 export type TenantWorkspaceData = {
   staffList: StaffMember[]
@@ -32,7 +28,12 @@ export function getTenantWorkspaceRequestKey(
   })
 }
 
-export function loadTenantWorkspaceData(tenantId: string, staffPage: number, staffListFilters: Record<string, unknown>) {
+export function loadTenantWorkspaceData(
+  repository: TenantAdminRepository,
+  tenantId: string,
+  staffPage: number,
+  staffListFilters: Record<string, unknown>,
+) {
   const shouldLoadTenantDetail = Boolean(tenantId)
   const requestKey = getTenantWorkspaceRequestKey(tenantId, staffPage, staffListFilters, shouldLoadTenantDetail)
   const cachedRequest = tenantWorkspaceRequestCache.get(requestKey)
@@ -42,27 +43,21 @@ export function loadTenantWorkspaceData(tenantId: string, staffPage: number, sta
   }
 
   const request = Promise.all([
-    tenantAdminApi.getStaffList({
+    repository.getStaffList({
       sortField: 'createdAt',
       filters: staffListFilters,
       sortBy: 'DESC',
       page: staffPage,
-      size: TENANT_ADMIN_LIST_PAGE_SIZE,
+      size: TENANT_STAFF_LIST_PAGE_SIZE,
     }),
-    tenantAdminApi.getStaffAccountLimit(),
-    shouldLoadTenantDetail ? tenantAdminApi.getTenantById(tenantId) : Promise.resolve(null),
+    repository.getStaffAccountLimit(),
+    shouldLoadTenantDetail ? repository.getTenantById(tenantId) : Promise.resolve(null),
   ])
-    .then(([staffResponse, staffLimitResponse, tenant]) => {
-      const payload = staffResponse?.data || staffResponse
-      const staffList = getStaffListItems(payload)
-        .map((staff) => normalizeStaffMember(staff))
-        .filter((staff): staff is StaffMember => Boolean(staff))
-      const listWithPagination = Object.assign([...staffList], { __pagination: getPaginationMeta(staffResponse) })
-
+    .then(([staffList, staffAccountLimit, tenant]) => {
       return {
-        staffList: listWithPagination,
-        staffPageCount: getListPageCount(listWithPagination, staffPage, TENANT_ADMIN_LIST_PAGE_SIZE),
-        staffAccountLimit: normalizeStaffAccountLimit(staffLimitResponse),
+        staffList,
+        staffPageCount: getListPageCount(staffList, staffPage, TENANT_STAFF_LIST_PAGE_SIZE),
+        staffAccountLimit,
         tenantDetail: tenant,
         tenantPlan: tenant?.subscriptionPlanDetail || null,
       }

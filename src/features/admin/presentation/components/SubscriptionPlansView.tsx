@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ADMIN_LIST_PAGE_SIZE, adminApi } from '../../infrastructure/adminApi'
-import type { CreatePlanPayload, PlanDashboardStats, SubscriptionPlan, Tenant, UpdatePlanPayload } from '@/features/admin/domain/adminApi.types'
+import type { CreatePlanPayload, PlanDashboardStats, SubscriptionPlan, Tenant, UpdatePlanPayload } from '../../domain/adminApi.types'
 import {
   buildPlanListParams,
   buildTopTierPlanParams,
@@ -21,7 +21,7 @@ import {
 import { planFeatureDefaults } from '../../domain/subscriptionPlanFeatures'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { formatFeatureLabel, formatPlanDate } from '../../application/adminFormatters'
-import { getSubscriptionPlanCreatePath, getSubscriptionPlanDetailPath, getSubscriptionPlanEditPath, getSubscriptionPlanIdFromUrl, getSuperAdminViewPath, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl } from '@/features/admin/domain/superAdminRouteHelpers'
+import { getSubscriptionPlanCreatePath, getSubscriptionPlanDetailPath, getSubscriptionPlanEditPath, getSubscriptionPlanIdFromUrl, getSuperAdminViewPath, isSubscriptionPlanCreateUrl, isSubscriptionPlanEditUrl } from '../../domain/superAdminRouteHelpers'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 import { EditIcon, TrashIcon } from '@/core/components/Icons'
 import { Breadcrumb } from '@/core/components/Breadcrumb'

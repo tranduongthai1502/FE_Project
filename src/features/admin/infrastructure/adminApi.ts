@@ -9,6 +9,7 @@ import type {
   CreatePlanPayload,
   CreateTenantPayload,
   PlanDashboardStats,
+  Prompt,
   SubscriptionPlan,
   Tenant,
   TenantDashboardStats,
@@ -127,14 +128,13 @@ export const adminApi = {
 
   async getTenants(params?: AdminListParams) {
     const request = buildListRequest({
-      "sortField": 'companyName',
-      "filters": {},
-      "sortBy": 'ASC',
-      "page": 1,
-      "size": ADMIN_LIST_PAGE_SIZE,
+      sortField: 'companyName',
+      filters: {},
+      sortBy: 'ASC',
+      page: 1,
+      size: ADMIN_LIST_PAGE_SIZE,
     }, params) satisfies TenantListRequest
 
-    console.log('[adminApi.getTenants] request payload', request)
     const response = await axiosClient.post('/api/tenant/list', request)
 
     return attachPaginationMeta(getTenantList(response)
@@ -155,19 +155,22 @@ export const adminApi = {
 
   async getSubscriptionPlans(params?: AdminListParams) {
     const request = buildListRequest({
-      "sortField": 'name',
-      "filters": {},
-      "sortBy": 'ASC',
-      "page": 1,
-      "size": ADMIN_LIST_PAGE_SIZE,
+      sortField: 'name',
+      filters: {},
+      sortBy: 'ASC',
+      page: 1,
+      size: ADMIN_LIST_PAGE_SIZE,
     }, params) satisfies PlanListRequest
 
-    console.log('[adminApi.getSubscriptionPlans] request payload', request)
     const response = await axiosClient.post('/api/plan/list', request)
 
     return attachPaginationMeta(getSubscriptionPlanList(response)
       .map((plan) => normalizeSubscriptionPlan(plan))
       .filter((plan): plan is SubscriptionPlan => Boolean(plan)), response)
+  },
+
+  async getSubscriptionPlanById(id: string) {
+    return this.getPlanById(id)
   },
 
   async getPlanById(id: string) {
@@ -183,19 +186,31 @@ export const adminApi = {
 
   async createTenant(payload: CreateTenantPayload) {
     const response = await axiosClient.post('/api/tenant', buildTenantCreatePayload(payload))
-    return normalizeTenant(getResponsePayload(response))
+    const normalized = normalizeTenant(getResponsePayload(response))
+    if (!normalized) throw new Error('Failed to create tenant')
+    return normalized
   },
 
   async updateTenant(tenantId: string, payload: UpdateTenantPayload) {
-    return axiosClient.put(`/api/tenant/${encodeURIComponent(tenantId)}`, buildTenantUpdatePayload(payload))
+    const response = await axiosClient.put(`/api/tenant/${encodeURIComponent(tenantId)}`, buildTenantUpdatePayload(payload))
+    const normalized = normalizeTenant(getResponsePayload(response))
+    if (!normalized) throw new Error('Failed to update tenant')
+    return normalized
   },
 
   async deleteTenant(tenantId: string) {
-    return axiosClient.delete(`/api/tenant/${encodeURIComponent(tenantId)}`)
+    await axiosClient.delete(`/api/tenant/${encodeURIComponent(tenantId)}`)
   },
 
   async createPlan(payload: CreatePlanPayload) {
-    return axiosClient.post('/api/plan', buildPlanPayload(payload))
+    const response = await axiosClient.post('/api/plan', buildPlanPayload(payload))
+    const normalized = normalizeSubscriptionPlan(getResponsePayload(response))
+    if (!normalized) throw new Error('Failed to create subscription plan')
+    return normalized
+  },
+
+  async createSubscriptionPlan(payload: CreatePlanPayload) {
+    return this.createPlan(payload)
   },
 
   async updatePlan(planId: string, payload: UpdatePlanPayload) {
@@ -203,11 +218,33 @@ export const adminApi = {
       throw new Error('Missing subscription plan id')
     }
 
-    return axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
+    const response = await axiosClient.put(`/api/plan/${encodeURIComponent(planId)}`, buildPlanUpdatePayload(payload))
+    const normalized = normalizeSubscriptionPlan(getResponsePayload(response))
+    if (!normalized) throw new Error('Failed to update subscription plan')
+    return normalized
+  },
+
+  async updateSubscriptionPlan(planId: string, payload: UpdatePlanPayload) {
+    return this.updatePlan(planId, payload)
   },
 
   async deletePlan(planId: string) {
-    return axiosClient.delete(`/api/plan/${encodeURIComponent(planId)}`)
+    await axiosClient.delete(`/api/plan/${encodeURIComponent(planId)}`)
+  },
+
+  async deleteSubscriptionPlan(planId: string) {
+    return this.deletePlan(planId)
+  },
+
+  async getPrompts() {
+    const response = await axiosClient.get('/api/prompts')
+    const payload = getResponsePayload(response)
+    return Array.isArray(payload) ? (payload as Prompt[]) : []
+  },
+
+  async updatePrompt(id: string, content: string) {
+    const response = await axiosClient.put(`/api/prompts/${encodeURIComponent(id)}`, { content })
+    return getResponsePayload(response) as Prompt
   },
 
   async getUserById(id: string) {
@@ -219,5 +256,5 @@ export const adminApi = {
     }
 
     return user
-  }
+  },
 }

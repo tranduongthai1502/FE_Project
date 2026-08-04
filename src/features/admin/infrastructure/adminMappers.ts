@@ -1,5 +1,4 @@
 import type { SubscriptionPlan, Tenant, TenantAdminUser } from '@/features/admin/domain/adminApi.types'
-import { getResponsePayload } from '@/core/api/apiMappers'
 
 export function getSubscriptionPlanList(payload: any): any[] {
   if (Array.isArray(payload)) return payload

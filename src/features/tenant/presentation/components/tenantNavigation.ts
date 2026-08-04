@@ -1,5 +1,5 @@
 import type { NavigationConfigItem } from '@/core/hooks/navigation'
-import type { TenantAdminView } from '@/features/tenant/presentation/pages/tenantAdmin.types'
+import type { TenantAdminView } from '../../domain/tenantAdmin.types'
 
 export const tenantNav: Array<NavigationConfigItem<TenantAdminView>> = [
   { icon: 'fa-table-cells-large', label: 'Dashboard', view: 'dashboard' },

@@ -1,5 +1,4 @@
 import axiosClient from '@/core/api/axiosClient'
-import { API_LIST_PAGE_SIZE } from '@/core/api/apiConstants'
 import type {
   AdminListParams,
 } from '@/core/api/api.types'
@@ -18,8 +17,9 @@ import {
   normalizeTenant,
   normalizeTenantAdminUser,
 } from './tenantMappers'
+import { TENANT_STAFF_LIST_PAGE_SIZE } from '../domain/tenantPagination'
 
-export const TENANT_ADMIN_LIST_PAGE_SIZE = API_LIST_PAGE_SIZE
+export const TENANT_ADMIN_LIST_PAGE_SIZE = TENANT_STAFF_LIST_PAGE_SIZE
 
 type StaffPayload = {
   email: string

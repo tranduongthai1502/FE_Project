@@ -2,7 +2,7 @@ export { AccountSettingsPanel } from './presentation/components/AccountSettingsP
 export { LoginFeature } from './presentation/pages/LoginFeature'
 export { SignupFeature } from './presentation/pages/SignupFeature'
 export { useAuthSession } from './application/useAuthSession'
-export { getStoredDashboardUser, type DashboardUser } from './application'
+export { getStoredDashboardUser, isStoredCurrentUserInactive, type DashboardUser } from './application'
 
 export type { ChangePasswordPayload, LoginPayload, RegisterPayload } from './domain/auth.types'
 export type { AppRole } from './domain/role.types'

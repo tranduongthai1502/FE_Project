@@ -1,5 +1,5 @@
 import type { NavigationConfigItem } from '@/core/hooks/navigation'
-import type { RoleHomeView } from '@/features/hr/presentation/pages/roleHome.types'
+import type { RoleHomeView } from '@/features/hr/domain/roleHome.types'
 
 export const hrNav: Array<NavigationConfigItem<RoleHomeView>> = [
   { icon: 'fa-table-cells-large', label: 'Dashboard', view: 'dashboard' },

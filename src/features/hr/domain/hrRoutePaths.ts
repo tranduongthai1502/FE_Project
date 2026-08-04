@@ -1,4 +1,4 @@
-import type { RoleHomeView } from './pages/roleHome.types'
+import type { RoleHomeView } from './roleHome.types'
 
 export const hrPathByView: Record<RoleHomeView, string> = {
   dashboard: '/hr/dashboard',

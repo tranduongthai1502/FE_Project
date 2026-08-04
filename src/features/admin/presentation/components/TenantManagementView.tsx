@@ -16,7 +16,7 @@ import {
   tenantMatchesPlanFilter,
   type TenantStatusFilter,
 } from '../../infrastructure/tenantManagementService'
-import type { CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser, TenantDashboardStats } from '@/features/admin/domain/adminApi.types'
+import type { CreateTenantForm, SubscriptionPlan, Tenant, TenantAdminUser, TenantDashboardStats } from '../../domain/adminApi.types'
 import { formatPlanDate } from '../../application/adminFormatters'
 import {
   addDaysToDate,
@@ -27,7 +27,7 @@ import {
   getTenantStatusMeta,
   getUsagePercent,
 } from '../../application/tenantDisplayUtils'
-import { getSuperAdminViewPath, getTenantCreatePath, getTenantDetailIdFromUrl, getTenantDetailPath, isTenantCreateUrl } from '@/features/admin/domain/superAdminRouteHelpers'
+import { getSuperAdminViewPath, getTenantCreatePath, getTenantDetailIdFromUrl, getTenantDetailPath, isTenantCreateUrl } from '../../domain/superAdminRouteHelpers'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 import { EditIcon, TrashIcon } from '@/core/components/Icons'
 import { CreateTenantPage, type CreateTenantFieldErrors } from './CreateTenantPage'

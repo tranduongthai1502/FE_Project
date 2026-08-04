@@ -1,0 +1,1 @@
+export const TENANT_STAFF_LIST_PAGE_SIZE = 5

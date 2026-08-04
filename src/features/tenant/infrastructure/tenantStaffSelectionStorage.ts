@@ -1,5 +1,6 @@
 import type { StaffMember } from '../domain/tenantApi.types'
-import { normalizeUserStatus } from './tenantStaffNormalizers'
+import { normalizeUserStatus } from '../domain/tenantStaffStatus'
+import type { TenantStaffSelectionStore } from '../application/tenantStaffSelectionStore'
 
 const selectedTenantStaffStorageKey = 'jobfusion_selected_tenant_staff'
 
@@ -65,4 +66,11 @@ export function saveSelectedStaff(staff: StaffMember) {
 
 export function clearSelectedStaff() {
   window.sessionStorage.removeItem(selectedTenantStaffStorageKey)
+}
+
+export const tenantStaffSelectionStorage: TenantStaffSelectionStore = {
+  getStoredTenantId,
+  getStoredSelectedStaff,
+  saveSelectedStaff,
+  clearSelectedStaff,
 }
