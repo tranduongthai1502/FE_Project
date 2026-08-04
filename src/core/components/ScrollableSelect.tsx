@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 export type ScrollableSelectOption = {
   value: string
   label: string
+  icon?: string
   disabled?: boolean
 }
 
@@ -10,6 +11,7 @@ export function ScrollableSelect({
   value,
   options,
   placeholder = 'Select',
+  icon,
   ariaLabel,
   disabled = false,
   invalid = false,
@@ -19,6 +21,7 @@ export function ScrollableSelect({
   value: string
   options: ScrollableSelectOption[]
   placeholder?: string
+  icon?: string
   ariaLabel?: string
   disabled?: boolean
   invalid?: boolean
@@ -30,6 +33,7 @@ export function ScrollableSelect({
   const [isOpen, setIsOpen] = useState(false)
   const selectedOption = options.find((option) => option.value === value)
   const selectedLabel = selectedOption?.label || placeholder
+  const activeIcon = icon || selectedOption?.icon
 
   useEffect(() => {
     if (!isOpen) return
@@ -77,6 +81,7 @@ export function ScrollableSelect({
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
       >
+        {activeIcon && <i className={`${activeIcon} scroll-select-prefix-icon`} aria-hidden="true"></i>}
         <span>{selectedLabel}</span>
         <i className="fa-solid fa-chevron-down" aria-hidden="true"></i>
       </button>
@@ -94,6 +99,7 @@ export function ScrollableSelect({
               onClick={() => selectValue(option.value, option.disabled)}
             >
               {option.value === value && <i className="fa-solid fa-check" aria-hidden="true"></i>}
+              {option.icon && <i className={`${option.icon} scroll-select-option-icon`} aria-hidden="true"></i>}
               <span>{option.label}</span>
             </button>
           ))}
