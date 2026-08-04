@@ -447,7 +447,7 @@ npm run preview
 - Khi them mapper response API, uu tien dat trong `src/services/api/apiMappers.ts`.
 - Khi them route helper, dat trong `src/app/routes`.
 - Khi tao component dung chung, dat trong `src/components/common` va dam bao khong import tu `features`.
-- Khi build refactor, chay `npm.cmd run build` de kiem tra import/type.
+- Khi build refactor, chay `npm.cmd run build` de kiem tra import/type..
 
 ## Tai khoan demo
 
