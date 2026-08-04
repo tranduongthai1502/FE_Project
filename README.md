@@ -36,12 +36,14 @@ FE_Project/
 +-- public/
 +-- src/
 |   +-- app/
-|   |   +-- routes/              # route config, route guard, route helper
+|   |   +-- routes/              # route config va route composition cap app
 |   +-- assets/                  # anh/static asset import trong app
-|   +-- components/
-|   |   +-- common/              # component dung chung, khong phu thuoc feature
-|   |   +-- icons/
-|   |   +-- layout/
+|   +-- core/
+|   |   +-- api/                 # axios client, interceptor, API type/mapper dung chung
+|   |   +-- components/          # UI component dung chung, khong phu thuoc feature
+|   |   +-- hooks/               # hook/helper dung chung
+|   |   +-- styles/              # global CSS imports
+|   |   +-- utils/               # helper thuan, khong phu thuoc React/feature
 |   +-- features/
 |   |   +-- admin/               # Super Admin feature
 |   |   +-- auth/                # login/signup/auth screens va auth-specific logic
@@ -50,12 +52,6 @@ FE_Project/
 |   |   +-- interviewer/         # Interviewer feature
 |   |   +-- landing/             # Landing page
 |   |   +-- tenant/              # Tenant Admin feature
-|   +-- hooks/                   # hook dung chung
-|   +-- services/
-|   |   +-- api/                 # axios, API types, API mappers, API constants
-|   |   +-- error/               # shared error messages/helpers
-|   +-- styles/                  # global CSS imports
-|   +-- utils/                   # helper thuan, khong phu thuoc React
 +-- test/                        # Vitest unit tests
 +-- index.html
 +-- package.json
@@ -69,19 +65,32 @@ Du an dang theo huong **Feature-based Architecture** ket hop voi cac quy tac **C
 Luon uu tien dependency mot chieu:
 
 ```text
-app/routes
-  -> features
-  -> components/common
-  -> services/api, services/error
-  -> utils
+app
+  -> features public API
+  -> core
+
+features/<feature>/presentation
+  -> features/<feature>/application
+  -> features/<feature>/domain
+  -> core
+
+features/<feature>/application
+  -> features/<feature>/domain
+  -> repository/storage/downloader ports
+  -> core utils
+
+features/<feature>/infrastructure
+  -> features/<feature>/domain
+  -> features/<feature>/application ports
+  -> core/api, core/utils
 ```
 
 Feature co the dung shared layer:
 
 ```text
-features/hr -> services/api, services/error, utils, app/routes
-features/tenant -> services/api, services/error, utils, app/routes
-features/admin -> services/api, services/error, utils, app/routes
+features/hr -> core/api, core/components, core/utils
+features/tenant -> core/api, core/components, core/utils
+features/admin -> core/api, core/components, core/utils
 ```
 
 Feature khong nen import logic noi bo cua feature khac.
@@ -95,51 +104,49 @@ import { getListPageCount } from '@/features/admin/utils/adminMappers'
 Dung:
 
 ```ts
-import { getListPageCount } from '@/utils/pagination'
+import { getListPageCount } from '@/core/utils/pagination'
 ```
 
 ## Vai tro tung layer
 
-### `src/app/routes`
+### `src/app`
 
-Chua route config, protected route va route helper.
+Chua bootstrap app, provider va route composition cap app.
 
 Vi du:
 
+- `App.tsx`
 - `RouteConfig.tsx`
 - `RoleRoutes.tsx`
-- `ProtectedRoute.tsx`
-- `roleRouteHelpers.ts`
-- `superAdminRouteHelpers.ts`
-- `tenantAdminRouteHelpers.ts`
-- `route.types.ts`
+- `AppRouteContent.tsx`
 
 Quy tac:
 
-- URL/path helper dat o `src/app/routes`.
-- Khong dat route helper trong feature rieng neu helper do duoc dung boi nhieu role.
+- App chi nen import feature qua public API `features/<feature>/index.ts`.
+- App co the ghep route, provider va guard cap ung dung.
 - Component feature khong tu update URL bang `window.history.pushState`; dung React Router.
 
-### `src/components/common`
+### `src/core`
 
-Chua UI component dung chung.
+Chua code dung chung khong thuoc rieng role nao.
 
 Vi du:
 
-- `Breadcrumb`
-- `SearchInput`
-- `MetricCard`
-- `DashboardShell`
-- `ConfirmActionModal`
-- `ScrollableSelect`
-- `AccountSettingsPanel`
-- `ChangePasswordView`
+- `core/api/axiosClient.ts`
+- `core/api/axiosInterceptors.ts`
+- `core/api/api.types.ts`
+- `core/components/Breadcrumb.tsx`
+- `core/components/DashboardShell.tsx`
+- `core/components/ListTable.tsx`
+- `core/utils/pagination.ts`
+- `core/utils/errorManager.ts`
 
 Quy tac:
 
-- Common component khong duoc import nguoc vao `features/*`.
-- Common component chi nen phu thuoc `services`, `utils`, hoac component common khac.
-- Neu component co nghiep vu rieng cua role, dat trong feature cua role do.
+- `core` khong import tu `features/*`.
+- `core/components` chi chua UI dung chung, khong chua nghiep vu cua role.
+- `core/api` chua axios client/interceptor va type/mapper API dung chung.
+- `core/utils` chua helper thuan, khong import React component, axios implementation hoac feature.
 
 Sai:
 
@@ -147,35 +154,38 @@ Sai:
 import { LoginFeature } from '@/features/auth'
 ```
 
-trong `src/components/common`.
+trong `src/core/components`.
 
 Dung:
 
 ```ts
-import { authApi } from '@/services/api/authApi'
-import { getPasswordStrength } from '@/utils/passwordStrength'
+import { getPasswordStrength } from '@/core/utils/passwordStrength'
 ```
 
 ### `src/features`
 
-Moi feature tu quan ly UI, service rieng, styles rieng va logic rieng cua feature do.
+Moi feature tu quan ly domain, application logic, infrastructure adapter, UI va style rieng cua feature do.
 
 Vi du:
 
 ```text
 features/hr/
-+-- components/
-+-- services/
++-- domain/
++-- application/
++-- infrastructure/
++-- presentation/
 
 features/tenant/
-+-- components/
-+-- services/
++-- domain/
++-- application/
++-- infrastructure/
++-- presentation/
 
 features/admin/
-+-- components/
-+-- services/
-+-- styles/
-+-- utils/
++-- domain/
++-- application/
++-- infrastructure/
++-- presentation/
 ```
 
 Quy tac:
@@ -183,72 +193,14 @@ Quy tac:
 - `features/admin` chi chua logic Super Admin.
 - `features/hr` khong import `features/admin`.
 - `features/tenant` khong import `features/admin`.
-- API rieng theo role dat trong feature service cua role:
-  - `features/admin/services/adminApi.ts`
-  - `features/hr/services/hrApi.ts`
-  - `features/tenant/services/tenantAdminApi.ts`
-- Logic dung chung thi dua ra `services`, `utils`, `components/common`, hoac `app/routes`.
-
-### `src/services/api`
-
-Chua API infrastructure va cac type/mapper lien quan den API.
-
-File chinh:
-
-- `axiosClient.ts`
-- `axiosInterceptors.ts`
-- `axiosErrorHandler.ts`
-- `authApi.ts`
-- `authStorage.ts`
-- `api.types.ts`
-- `apiMappers.ts`
-- `apiConstants.ts`
-
-Quy tac:
-
-- Payload/response/request type dung chung dat trong `api.types.ts`.
-- Mapper normalize response API dat trong `apiMappers.ts`.
-- Axios client/interceptor dat trong `services/api`.
-- Khong dat API type dung chung trong `features/admin`.
-
-Vi du payload dung chung:
-
-```ts
-import type { CreateTenantPayload, JobPostingPayload } from '@/services/api/api.types'
-```
-
-### `src/services/error`
-
-Chua error message/helper dung chung.
-
-File chinh:
-
-- `errorMessages.ts`
-- `authErrorMessages.ts`
-- `inputErrorHandler.ts`
-
-Quy tac:
-
-- Loi chung khong dat trong `features/admin`.
-- Feature co the import helper loi tu `services/error`.
-
-### `src/utils`
-
-Chua helper thuan, khong phu thuoc React.
-
-Vi du:
-
-- `pagination.ts`
-- `passwordStrength.ts`
-- `passwordRequirements.ts`
-- `errorManager.ts`
-- `httpStatusManager.ts`
-
-Quy tac:
-
-- Function format, normalize, calculate neu dung chung thi dua vao `utils`.
-- `utils` khong import React component.
-- `utils` khong import feature.
+- API rieng theo role dat trong `infrastructure` cua feature:
+  - `features/admin/infrastructure/adminApi.ts`
+  - `features/hr/infrastructure/hrApi.ts`
+  - `features/tenant/infrastructure/tenantAdminApi.ts`
+- Logic dieu phoi flow/state dat trong `application`.
+- Type/rule thuan dat trong `domain`.
+- UI dat trong `presentation`.
+- Logic dung chung thi dua ra `core`.
 
 ## Quy tac code theo Clean Architecture
 
@@ -265,60 +217,61 @@ import { normalizeTenantAdminUser } from '@/features/admin/utils/adminMappers'
 Dung:
 
 ```ts
-import { normalizeTenantAdminUser } from '@/services/api/apiMappers'
+import { normalizeTenantAdminUser } from '@/features/admin/infrastructure/adminMappers'
 ```
 
-2. Common khong phu thuoc feature
+2. `core` khong phu thuoc feature
 
-`src/components/common` khong import tu `src/features`.
+`src/core` khong import tu `src/features`.
 
-3. Payload va API response type dat trong `services/api`
+3. Payload va API response type dat dung layer
 
 Dung:
 
 ```ts
-import type { Tenant, SubscriptionPlan, AdminListParams } from '@/services/api/api.types'
+import type { AdminListParams } from '@/core/api/api.types'
+import type { Tenant, SubscriptionPlan } from '@/features/admin/domain/adminApi.types'
 ```
 
-4. Route helper dat trong `app/routes`
+4. Route helper dat dung ownership
+
+Route helper rieng role co the dat trong feature domain/presentation cua role do. Route composition cap app dat trong `src/app/routes`.
+
+```ts
+import { getSuperAdminViewPath } from '@/features/admin/domain/superAdminRouteHelpers'
+import { getTenantAdminViewPath } from '@/features/tenant/domain/tenantAdminRouteHelpers'
+```
+
+5. Pagination dung chung dat trong `core/utils/pagination`
 
 Dung:
 
 ```ts
-import { getSuperAdminViewPath } from '@/app/routes/superAdminRouteHelpers'
-import { getRoleHomeViewPath } from '@/app/routes/roleRouteHelpers'
+import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 ```
 
-5. Pagination dung chung dat trong `utils/pagination`
+6. API rieng cua role dat trong infrastructure cua role do
 
 Dung:
 
 ```ts
-import { getListPageCount, getListTotalElements } from '@/utils/pagination'
-```
-
-6. API rieng cua role dat trong feature service cua role do
-
-Dung:
-
-```ts
-import { hrApi } from '@/features/hr/services/hrApi'
-import { tenantAdminApi } from '@/features/tenant/services/tenantAdminApi'
-import { adminApi } from '@/features/admin/services/adminApi'
+import { hrApi } from '@/features/hr/infrastructure/hrApi'
+import { tenantAdminApi } from '@/features/tenant/infrastructure/tenantAdminApi'
+import { adminApi } from '@/features/admin/infrastructure/adminApi'
 ```
 
 7. Component khong nen chua helper logic lon
 
 Neu helper la validate/filter/build params/sort/normalize:
 
-- Dung rieng trong feature: dua vao `features/<feature>/services` hoac `features/<feature>/utils`.
-- Dung chung: dua vao `services` hoac `utils`.
+- Dung rieng trong feature: dua vao `features/<feature>/application`, `domain` hoac `infrastructure` tuy trach nhiem.
+- Dung chung: dua vao `core`.
 
 8. CSS theo vi tri dung
 
-- CSS global/import chung: `src/styles`.
-- CSS rieng cua feature: `features/<feature>/styles`.
-- CSS module rieng component: co the dat trong `features/<feature>/styles` neu la style cua feature.
+- CSS global/import chung: `src/core/styles`.
+- CSS rieng cua feature: `features/<feature>/presentation` hoac file module gan component.
+- CSS module rieng component: dat gan component neu chi phuc vu component do.
 
 9. Khong de folder rong
 
@@ -329,9 +282,9 @@ Neu da chuyen het file, xoa folder rong de cau truc gon.
 Frontend dung:
 
 ```text
-src/services/api/axiosClient.ts
-src/services/api/axiosInterceptors.ts
-src/services/api/authStorage.ts
+src/core/api/axiosClient.ts
+src/core/api/axiosInterceptors.ts
+src/core/api/authStorage.ts
 ```
 
 Luon goi API qua `axiosClient` hoac service API da boc san.
@@ -443,11 +396,13 @@ npm run preview
 ## Ghi chu phat trien
 
 - Khi them role moi, tao feature rieng trong `src/features/<role>`.
-- Khi them API payload/response type, uu tien dat trong `src/services/api/api.types.ts`.
-- Khi them mapper response API, uu tien dat trong `src/services/api/apiMappers.ts`.
-- Khi them route helper, dat trong `src/app/routes`.
-- Khi tao component dung chung, dat trong `src/components/common` va dam bao khong import tu `features`.
-- Khi build refactor, chay `npm.cmd run build` de kiem tra import/type..
+- Khi them API payload/response type dung chung, uu tien dat trong `src/core/api/api.types.ts`.
+- Khi them API payload/response type rieng role, dat trong `src/features/<feature>/domain`.
+- Khi them mapper response API dung chung, dat trong `src/core/api/apiMappers.ts`.
+- Khi them mapper rieng role, dat trong `src/features/<feature>/infrastructure`.
+- Khi them route helper rieng role, dat trong feature so huu route do. Route composition cap app dat trong `src/app/routes`.
+- Khi tao component dung chung, dat trong `src/core/components` va dam bao khong import tu `features`.
+- Khi build refactor, chay `npm.cmd run build` de kiem tra import/type.
 
 ## Tai khoan demo
 

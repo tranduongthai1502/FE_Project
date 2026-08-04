@@ -5,11 +5,11 @@ import { CandidatePortalPage } from '@/features/candidate'
 import { HrDashboard } from '@/features/hr'
 import { InterviewerDashboard } from '@/features/interviewer'
 import { TenantAdminDashboard } from '@/features/tenant'
-import type { AppPage } from './RouteConfig'
+import type { AppRole } from '@/features/auth'
 
 type RoleRoutesProps = {
   onLogout: () => void
-  protect: (page: AppPage, element: ReactElement) => ReactElement
+  protect: (page: AppRole, element: ReactElement) => ReactElement
   triggerToast: (message: string, type?: 'success' | 'error') => void
 }
 
