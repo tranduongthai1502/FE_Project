@@ -244,12 +244,16 @@
 }
 
 .field-error {
+  min-height: 16px;
   display: block;
-  color: #ef4444;
+  color: #d82d21;
   font-size: 11px;
-  font-weight: 700;
-  line-height: 1.25;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
+  text-transform: none;
+  visibility: visible;
 }
 
 .field-success {
@@ -662,10 +666,16 @@
 }
 
 .forgot-password-modal .error-text {
-  color: #dc1010;
-  font-size: 14px;
-  line-height: 1.25;
+  min-height: 16px;
+  display: block;
+  color: #d82d21;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: right;
+  text-transform: none;
+  visibility: visible;
 }
 
 .forgot-password-modal .submit-btn {
@@ -842,7 +852,7 @@
   display: block;
   margin-top: 28px;
   text-align: right;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .forgot-password-modal .resend-text {
@@ -1010,7 +1020,7 @@
 .forgot-password-modal-reset .error-text {
   display: block;
   margin-top: -3px;
-  font-size: 10px;
+  font-size: 11px;
   text-align: right;
 }
 

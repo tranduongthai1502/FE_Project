@@ -32,6 +32,8 @@ const expiredOtpMessage = authErrorMessages.expiredOtp
 const invalidOtpMessage = authErrorMessages.invalidOtp
 const rememberedEmailStorageKey = 'jobfusion_remembered_email'
 const resendOtpCountdownSeconds = 59
+const maxAuthFailedAttempts = 5
+const authLockoutSeconds = 60
 const passwordChangePathByLoginRole = {
   candidate: '/candidate/change-password',
   tenantAdmin: '/tenant-admin/settings',
@@ -211,6 +213,18 @@ function isIncorrectPasswordError(message = '', code = '') {
   )
 }
 
+function isPasswordAttemptFailure(message = '', code = '') {
+  const normalizedMessage = message.toLowerCase()
+
+  return (
+    isIncorrectPasswordError(message, code) ||
+    normalizedMessage.includes('invalid credentials') ||
+    normalizedMessage.includes('bad credentials') ||
+    normalizedMessage.includes('authentication failed') ||
+    normalizedMessage.includes('login failed')
+  )
+}
+
 function isAccountDeactivatedError(message = '', code = '') {
   const normalizedMessage = message.toLowerCase()
   const normalizedCode = code.toLowerCase()
@@ -256,6 +270,10 @@ function getLoginFailureMessage(error: unknown, fallbackMessage = incorrectPassw
   return message || fallbackMessage
 }
 
+function getLockoutMessage(label: string, seconds: number) {
+  return `Too many incorrect ${label} attempts. Please wait ${seconds}s before trying again.`
+}
+
 function isSystemApiError(error: any) {
   const status = Number(error?.status ?? 0)
   return status === 0 || status >= 500
@@ -281,6 +299,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   const otpInputsRef = useRef<Array<HTMLInputElement | null>>([])
   const attemptedOtpCodesRef = useRef<Set<string>>(new Set())
   const expiredOtpCodesRef = useRef<Set<string>>(new Set())
+  const failedPasswordAttemptsRef = useRef(0)
+  const failedOtpAttemptsRef = useRef(0)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(Boolean(rememberedEmail))
@@ -297,9 +317,15 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   const [passwordError, setPasswordError] = useState('')
   const [otpError, setOtpError] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [passwordLockCountdown, setPasswordLockCountdown] = useState(0)
+  const [otpLockCountdown, setOtpLockCountdown] = useState(0)
   const [newPasswordError, setNewPasswordError] = useState('')
   const [confirmPasswordError, setConfirmPasswordError] = useState('')
   const strength = getPasswordStrength(newPassword)
+  const isPasswordLocked = passwordLockCountdown > 0
+  const isOtpLocked = otpLockCountdown > 0
+  const visiblePasswordError = isPasswordLocked ? getLockoutMessage('password', passwordLockCountdown) : passwordError
+  const visibleOtpError = isOtpLocked ? getLockoutMessage('OTP', otpLockCountdown) : otpError
 
   useEffect(() => {
     if (!showForgotPassword || forgotStep !== 'otp' || countdown <= 0) {
@@ -313,6 +339,68 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     return () => window.clearTimeout(timer)
   }, [countdown, forgotStep, showForgotPassword])
 
+  useEffect(() => {
+    if (passwordLockCountdown <= 0) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      setPasswordLockCountdown((value) => {
+        const nextValue = Math.max(value - 1, 0)
+        if (nextValue === 0) {
+          failedPasswordAttemptsRef.current = 0
+          setPasswordError('')
+        }
+        return nextValue
+      })
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [passwordLockCountdown])
+
+  useEffect(() => {
+    if (otpLockCountdown <= 0) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      setOtpLockCountdown((value) => {
+        const nextValue = Math.max(value - 1, 0)
+        if (nextValue === 0) {
+          failedOtpAttemptsRef.current = 0
+          setOtpError('')
+        }
+        return nextValue
+      })
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [otpLockCountdown])
+
+  const registerPasswordFailure = (message = incorrectPasswordMessage) => {
+    failedPasswordAttemptsRef.current += 1
+
+    if (failedPasswordAttemptsRef.current >= maxAuthFailedAttempts) {
+      setPasswordLockCountdown(authLockoutSeconds)
+      setPasswordError('')
+      return
+    }
+
+    setPasswordError(message)
+  }
+
+  const registerOtpFailure = (message = invalidOtpMessage) => {
+    failedOtpAttemptsRef.current += 1
+
+    if (failedOtpAttemptsRef.current >= maxAuthFailedAttempts) {
+      setOtpLockCountdown(authLockoutSeconds)
+      setOtpError('')
+      return
+    }
+
+    setOtpError(message)
+  }
+
   const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextEmail = event.target.value
     setEmail(nextEmail)
@@ -323,7 +411,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
 
   const updatePassword = (nextPassword: string) => {
     setPassword(nextPassword)
-    if (passwordError) {
+    if (passwordError && !isPasswordLocked) {
       setPasswordError(validateRequired(nextPassword, validationErrorMessages.passwordRequired))
     }
   }
@@ -334,6 +422,10 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+
+    if (isPasswordLocked) {
+      return
+    }
 
     const nextEmailError = validateEmail(email)
     const nextPasswordError = validateRequired(password, validationErrorMessages.passwordRequired)
@@ -359,10 +451,13 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
       } else if (isAccountDeactivatedError(responseMessage, getErrorCode(response))) {
         setEmailError('')
         setPasswordError(accountDeactivatedMessage)
-      } else if (isIncorrectPasswordError(responseMessage, getErrorCode(response))) {
+      } else if (isPasswordAttemptFailure(responseMessage, getErrorCode(response))) {
         setEmailError('')
-        setPasswordError(incorrectPasswordMessage)
+        registerPasswordFailure()
       } else if (isLoginSuccessResponse(response)) {
+        failedPasswordAttemptsRef.current = 0
+        setPasswordLockCountdown(0)
+        setPasswordError('')
         const token = getAuthToken(payload)
         const refreshToken = getRefreshToken(payload)
         const user = getAuthUser(payload)
@@ -414,7 +509,12 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         }
       } else {
         setEmailError('')
-        setPasswordError(getLoginFailureMessage(response))
+        const failureMessage = getLoginFailureMessage(response)
+        if (isPasswordAttemptFailure(response?.message || payload?.message || failureMessage, getErrorCode(response))) {
+          registerPasswordFailure(failureMessage)
+        } else {
+          setPasswordError(failureMessage)
+        }
       }
     } catch (error: any) {
       if (isSystemApiError(error)) {
@@ -424,7 +524,12 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         setPasswordError(accountNotFoundMessage)
       } else {
         setEmailError('')
-        setPasswordError(getLoginFailureMessage(error))
+        const failureMessage = getLoginFailureMessage(error)
+        if (isPasswordAttemptFailure(error?.message || failureMessage, getErrorCode(error))) {
+          registerPasswordFailure(failureMessage)
+        } else {
+          setPasswordError(failureMessage)
+        }
       }
     } finally {
       setIsLoading(false)
@@ -478,6 +583,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     setForgotStep('email')
     setForgotEmailError('')
     setOtpError('')
+    failedOtpAttemptsRef.current = 0
+    setOtpLockCountdown(0)
     setNewPasswordError('')
     setConfirmPasswordError('')
     setOtp(emptyOtp)
@@ -488,6 +595,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   }
 
   const handleOtpChange = (element: HTMLInputElement, index: number) => {
+    if (isOtpLocked) return
+
     const value = element.value
     if (Number.isNaN(Number(value))) return
 
@@ -502,6 +611,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   }
 
   const handleOtpKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (isOtpLocked) return
+
     if (event.key !== 'Backspace') return
 
     const nextOtp = [...otp]
@@ -517,6 +628,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
 
   const handleOtpPaste = (event: ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault()
+    if (isOtpLocked) return
+
     const pastedDigits = event.clipboardData.getData('text').trim().slice(0, 6)
     if (!/^\d+$/.test(pastedDigits)) return
 
@@ -532,6 +645,10 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
   const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    if (isOtpLocked) {
+      return
+    }
+
     const otpCode = otp.join('')
     if (otpCode.length < 6) {
       setOtpError(authErrorMessages.otpRequired)
@@ -539,7 +656,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     }
 
     if (expiredOtpCodesRef.current.has(otpCode)) {
-      setOtpError(expiredOtpMessage)
+      registerOtpFailure(expiredOtpMessage)
       return
     }
 
@@ -548,15 +665,18 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     try {
       const response: any = await authApi.verifyOtp(forgotEmail, otpCode)
       if (response && response.success) {
+        failedOtpAttemptsRef.current = 0
+        setOtpLockCountdown(0)
+        setOtpError('')
         setForgotStep('reset')
       } else {
-        setOtpError(getOtpErrorMessage(response?.message, expiredOtpCodesRef.current.has(otpCode)))
+        registerOtpFailure(getOtpErrorMessage(response?.message, expiredOtpCodesRef.current.has(otpCode)))
       }
     } catch (error: any) {
       if (isSystemApiError(error)) {
         triggerToast?.(systemErrorMessage, 'error')
       } else {
-        setOtpError(getOtpErrorMessage(error.message, expiredOtpCodesRef.current.has(otpCode)))
+        registerOtpFailure(getOtpErrorMessage(error.message, expiredOtpCodesRef.current.has(otpCode)))
       }
     } finally {
       setIsSendingCode(false)
@@ -582,6 +702,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
         }
         attemptedOtpCodesRef.current.forEach((code) => expiredOtpCodesRef.current.add(code))
         attemptedOtpCodesRef.current.clear()
+        failedOtpAttemptsRef.current = 0
+        setOtpLockCountdown(0)
         setOtp(emptyOtp)
         setOtpError('')
         startTimer()
@@ -670,6 +792,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
                 autoComplete="email"
                 aria-invalid={emailError ? 'true' : 'false'}
                 aria-describedby={emailError ? 'email-error' : undefined}
+                disabled={isPasswordLocked || isLoading}
               />
             </div>
             {emailError && (
@@ -683,7 +806,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             <div className="label-row">
               <label htmlFor="password">Password</label>
             </div>
-            <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
+            <div className={`input-wrap ${visiblePasswordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
                 maxLength={FIELD_LENGTH_LIMITS.defaultText}
@@ -694,21 +817,23 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
                 onChange={handlePasswordChange}
                 placeholder=".........."
                 autoComplete="current-password"
-                aria-invalid={passwordError ? 'true' : 'false'}
-                aria-describedby={passwordError ? 'password-error' : undefined}
+                aria-invalid={visiblePasswordError ? 'true' : 'false'}
+                aria-describedby={visiblePasswordError ? 'password-error' : undefined}
+                disabled={isPasswordLocked || isLoading}
               />
               <button
                 type="button"
                 className="icon-button"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowPassword((value) => !value)}
+                disabled={isPasswordLocked || isLoading}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
-            {passwordError && (
+            {visiblePasswordError && (
               <span id="password-error" className="field-error">
-                {passwordError}
+                {visiblePasswordError}
               </span>
             )}
           </div>
@@ -729,8 +854,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             </button>
           </div>
 
-          <button type="submit" className="submit-button" disabled={isLoading}>
-            {isLoading ? 'Logging in' : 'Login'}
+          <button type="submit" className="submit-button" disabled={isLoading || isPasswordLocked}>
+            {isPasswordLocked ? `Try again in ${passwordLockCountdown}s` : isLoading ? 'Logging in' : 'Login'}
           </button>
         </form>
 
@@ -766,10 +891,12 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             {forgotStep === 'otp' && (
               <OtpForm
                 otp={otp}
-                otpError={otpError}
+                otpError={visibleOtpError}
                 otpInputsRef={otpInputsRef}
                 countdown={countdown}
                 isLoading={isSendingCode}
+                isLocked={isOtpLocked}
+                lockCountdown={otpLockCountdown}
                 handleOtpChange={handleOtpChange}
                 handleOtpKeyDown={handleOtpKeyDown}
                 handleOtpPaste={handleOtpPaste}

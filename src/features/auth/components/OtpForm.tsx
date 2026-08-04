@@ -12,6 +12,8 @@ type OtpFormProps = {
   otpInputsRef: MutableRefObject<Array<HTMLInputElement | null>>
   countdown: number
   isLoading: boolean
+  isLocked: boolean
+  lockCountdown: number
   handleOtpChange: (element: HTMLInputElement, index: number) => void
   handleOtpKeyDown: (event: KeyboardEvent<HTMLInputElement>, index: number) => void
   handleOtpPaste: (event: ClipboardEvent<HTMLDivElement>) => void
@@ -27,6 +29,8 @@ export function OtpForm({
   otpInputsRef,
   countdown,
   isLoading,
+  isLocked,
+  lockCountdown,
   handleOtpChange,
   handleOtpKeyDown,
   handleOtpPaste,
@@ -64,7 +68,7 @@ export function OtpForm({
               }}
               onChange={(e) => handleOtpChange(e.target, idx)}
               onKeyDown={(e) => handleOtpKeyDown(e, idx)}
-              disabled={isLoading}
+              disabled={isLoading || isLocked}
               inputMode="numeric"
               pattern="[0-9]*"
             />
@@ -77,12 +81,14 @@ export function OtpForm({
         )}
       </div>
 
-      <button type="submit" className="submit-btn" disabled={isLoading}>
+      <button type="submit" className="submit-btn" disabled={isLoading || isLocked}>
         {isLoading ? (
           <>
             <div className="spinner" aria-hidden="true" />
             <span>Verifying...</span>
           </>
+        ) : isLocked ? (
+          <span>Try again in {lockCountdown}s</span>
         ) : (
           <span>Verify OTP</span>
         )}
@@ -93,7 +99,7 @@ export function OtpForm({
         <button 
           type="button" 
           className="resend-link"
-          disabled={countdown > 0 || isLoading || isResendingCode}
+          disabled={countdown > 0 || isLoading || isResendingCode || isLocked}
           onClick={handleResendCode}
         >
           {isResendingCode ? 'Resending...' : `Resend Code ${countdown > 0 ? `(${countdown}s)` : ''}`}
