@@ -1874,7 +1874,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
             />
           )}
         />
-        <Route path="jobs" element={<HrJobsView key={viewResetKeys.jobs} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />} />
+        <Route path="jobs/*" element={<HrJobsView key={viewResetKeys.jobs} isActionLocked={isActionLocked} onHome={() => selectView('dashboard')} triggerToast={triggerToast} />} />
         <Route path="candidates" element={<CandidateManagementView key={viewResetKeys.candidates} />} />
         <Route path="candidates/:candidateId" element={<CandidateDetailView key={viewResetKeys.candidates} />} />
         <Route path="dashboard" element={(
