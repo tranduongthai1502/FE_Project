@@ -13,5 +13,17 @@ export {
 
 export { useCandidateListController } from './application/useCandidateListController'
 export { useCandidateDetailController } from './application/useCandidateDetailController'
+export { hrQueryKeys } from './application/hrQueryKeys'
+export {
+  useJobPostings,
+  useJobPostingDetail,
+  useJobPostingStats,
+  useJobCriteria,
+  useCreateJobPosting,
+  useUpdateJobPosting,
+  useDeleteJobPosting,
+  useSaveJobCriteria,
+} from './application/useHrQueries'
 
 export type { Candidate, CandidateDetail, CandidateStage, CandidateDashboardStats } from './domain/candidate.types'
+

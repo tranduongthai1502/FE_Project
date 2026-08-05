@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { useJobPostings, useJobPostingStats } from '../../application/useHrQueries'
 import { buildNavigation } from '@/core/hooks/navigation'
 import { hrNav } from './hrNavigation'
 import { CandidateManagementView } from './candidate/CandidateManagementView'
@@ -8,6 +9,7 @@ import { JobRichTextEditor, RequirementsDisplay, RichTextDisplay } from './HrRic
 import type { RoleHomeView } from '@/features/hr/domain/roleHome.types'
 import type { DashboardStatsJobPostingResponse, JobCriteriaResponse, JobListFilters, JobPosting, JobPostingPayload, JobRevisionHistory } from '@/features/hr/domain/hrApi.types'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../../infrastructure/hrApi'
+
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { formatCurrencyInput, parseCurrencyInput } from '@/core/utils/currencyFormat'
@@ -441,62 +443,46 @@ function HrJobsView({ isActionLocked, onHome, triggerToast }: { isActionLocked: 
     setJobPage(1)
   }, [employmentTypeFilter, searchQuery, statusFilter])
 
-  useEffect(() => {
-    if (jobView !== 'list') return
-
-    let isActive = true
-    hrApi.getJobPostingStats()
-      .then((statsData) => {
-        if (isActive && statsData) {
-          setJobStats(statsData)
-        }
-      })
-      .catch(() => {})
-
-    return () => {
-      isActive = false
-    }
-  }, [jobView, jobListReloadKey])
-
-  useEffect(() => {
-    if (jobView !== 'list') return
-
-    let isActive = true
+  const jobListFilters = useMemo<JobListFilters>(() => {
     const filters: JobListFilters = {}
     const search = searchQuery.trim()
-
     if (search) filters.title = search
     if (employmentTypeFilter) filters.employmentType = employmentTypeFilter
     if (statusFilter) filters.status = statusFilter
+    return filters
+  }, [searchQuery, employmentTypeFilter, statusFilter])
 
-    setIsLoadingJobs(true)
-    setJobListError('')
+  const jobListParams = useMemo(() => ({
+    sortField: 'createdAt',
+    filters: jobListFilters,
+    sortBy: 'DESC',
+    page: jobPage,
+    size: HR_LIST_PAGE_SIZE,
+  }), [jobListFilters, jobPage])
 
-    hrApi.getJobPostings({
-      sortField: 'createdAt',
-      filters,
-      sortBy: 'DESC',
-      page: jobPage,
-      size: HR_LIST_PAGE_SIZE,
-    })
-      .then((items) => {
-        if (!isActive) return
-        setJobs(items)
-        setJobPageCount(getListPageCount(items, jobPage, HR_LIST_PAGE_SIZE))
-      })
-      .catch((error) => {
-        if (!isActive) return
-        setJobs([])
-        setJobListError(getAdminErrorMessage(error, 'Failed to load job postings.'))
-      })
-      .finally(() => {
-        if (isActive) setIsLoadingJobs(false)
-      })
+  const jobPostingsQuery = useJobPostings(jobListParams)
+  const jobStatsQuery = useJobPostingStats()
 
-    return () => {
-      isActive = false
+  useEffect(() => {
+    if (jobStatsQuery.data) {
+      setJobStats(jobStatsQuery.data)
     }
-  }, [employmentTypeFilter, jobListReloadKey, jobPage, jobView, searchQuery, statusFilter])
+  }, [jobStatsQuery.data])
+
+  useEffect(() => {
+    if (jobView !== 'list') return
+
+    setIsLoadingJobs(jobPostingsQuery.isLoading)
+    if (jobPostingsQuery.isError) {
+      setJobs([])
+      setJobListError(getAdminErrorMessage(jobPostingsQuery.error, 'Failed to load job postings.'))
+    } else if (jobPostingsQuery.data) {
+      setJobs(jobPostingsQuery.data)
+      setJobPageCount(getListPageCount(jobPostingsQuery.data, jobPage, HR_LIST_PAGE_SIZE))
+      setJobListError('')
+    }
+  }, [jobPostingsQuery.data, jobPostingsQuery.isLoading, jobPostingsQuery.isError, jobPostingsQuery.error, jobPage, jobView])
+
 
   useEffect(() => {
     const refreshView = window.sessionStorage.getItem(jobFormRefreshViewKey)

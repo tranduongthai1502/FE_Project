@@ -18,31 +18,60 @@ export class HrRepositoryImpl implements HrRepository {
   }
 
   async createJobPosting(payload: JobPostingPayload): Promise<JobPosting> {
-    return hrApi.createJobPosting(payload)
+    const job = await hrApi.createJobPosting(payload)
+    if (!job) {
+      throw new Error('Failed to create job posting')
+    }
+    return job
   }
 
   async updateJobPosting(id: string, payload: JobPostingPayload): Promise<JobPosting> {
-    return hrApi.updateJobPosting(id, payload)
+    const job = await hrApi.updateJobPosting(id, payload)
+    if (!job) {
+      throw new Error('Failed to update job posting')
+    }
+    return job
   }
 
   async deleteJobPosting(id: string): Promise<void> {
-    return hrApi.deleteJobPosting(id)
+    await hrApi.deleteJobPosting(id)
   }
 
   async updateJobPostingStatus(id: string, status: string): Promise<JobPosting> {
-    return hrApi.updateJobPostingStatus(id, status)
+    const currentJob = await hrApi.getJobPostingById(id)
+    const payload: JobPostingPayload = {
+      title: currentJob.title,
+      department: currentJob.department,
+      level: currentJob.level || '',
+      employmentType: currentJob.employmentType,
+      locationType: currentJob.locationType || 'OFFICE',
+      location: currentJob.location || '',
+      applicationDeadline: currentJob.applicationDeadline || '',
+      description: currentJob.description || '',
+      requirements: currentJob.requirements || '',
+      benefits: currentJob.benefits || '',
+      salaryMin: currentJob.salaryMin || 0,
+      salaryMax: currentJob.salaryMax || 0,
+      status,
+    }
+    const job = await hrApi.updateJobPosting(id, payload)
+    if (!job) {
+      throw new Error('Failed to update job posting status')
+    }
+    return job
   }
 
   async getJobCriteria(jobId: string): Promise<JobCriteriaResponse[]> {
-    return hrApi.getJobCriteria(jobId)
+    return hrApi.getJobCriteriaByJobId(jobId)
   }
 
   async updateJobCriteria(jobId: string, criteria: JobCriteriaPayload[]): Promise<JobCriteriaResponse[]> {
-    return hrApi.updateJobCriteria(jobId, criteria)
+    return hrApi.createJobCriteria(criteria)
   }
 
   async getJobRevisionHistory(jobId: string): Promise<JobRevisionHistoryItem[]> {
-    return hrApi.getJobRevisionHistory(jobId)
+    const job = await hrApi.getJobPostingById(jobId)
+    return job.revisionHistory || []
   }
 }
 
