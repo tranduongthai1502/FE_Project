@@ -1,7 +1,7 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { EditorContent, useEditor, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import styles from './HrDashboard.module.css'
+import styles from '../pages/HrDashboard.module.css'
 import { getRichTextPlainText } from '../../infrastructure/hrRichTextUtils'
 
 function RichTextToolbar({ editor, onCommandRun }: { editor: Editor | null; onCommandRun: () => void }) {

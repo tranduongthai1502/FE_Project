@@ -5,7 +5,7 @@ import type {
   JobListFilters,
   JobPostingPayload,
 } from '@/features/hr/domain/hrApi.types'
-import { hrApi } from '../infrastructure/hrApi'
+import { hrApi } from '../../infrastructure/hrApi'
 import { hrQueryKeys } from './hrQueryKeys'
 
 export function useJobPostings(params?: AdminListParams<JobListFilters>) {

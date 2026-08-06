@@ -1,5 +1,5 @@
-export { HrDashboard } from './presentation/components/HrDashboard'
-export { CandidateManagementView } from './presentation/components/candidate/CandidateManagementView'
+export { HrDashboard } from './presentation/pages/HrDashboard'
+export { CandidateManagementView } from './presentation/pages/CandidateManagementView'
 export { CandidateDetailView } from './presentation/components/candidate/CandidateDetailView'
 
 export {
@@ -11,10 +11,13 @@ export {
   getActiveHrView,
 } from './domain/hrRoutePaths'
 
-export { useCandidateListController } from './application/useCandidateListController'
-export { useCandidateDetailController } from './application/useCandidateDetailController'
-export { hrQueryKeys } from './application/hrQueryKeys'
 export {
+  useCandidateListController,
+  useCandidateDetailController,
+  useHrDashboardController,
+  useHrJobsController,
+  useHrJobCriteriaController,
+  hrQueryKeys,
   useJobPostings,
   useJobPostingDetail,
   useJobPostingStats,
@@ -23,7 +26,6 @@ export {
   useUpdateJobPosting,
   useDeleteJobPosting,
   useSaveJobCriteria,
-} from './application/useHrQueries'
+} from './application'
 
 export type { Candidate, CandidateDetail, CandidateStage, CandidateDashboardStats } from './domain/candidate.types'
-
