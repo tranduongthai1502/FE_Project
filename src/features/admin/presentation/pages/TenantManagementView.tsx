@@ -93,25 +93,29 @@ export function TenantManagementView({
       <div className="tenant-management-metrics">
         <MetricCard
           className="tenant-management-metric-card"
-          icon="fa-arrow-trend-up"
+          iconClassName="metric-icon-success"
+          iconElement={<svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1.4 12L0 10.6L7.4 3.15L11.4 7.15L16.6 2H14V0H20V6H18V3.4L11.4 10L7.4 6L1.4 12Z" fill="#16A34A" /></svg>}
           label="Monthly Active Plan Revenue"
           value={(ctrl.metricsAreLoading || ctrl.tenantStatsAreLoading) ? '...' : `$${ctrl.tenantStatsTotalRevenue.toLocaleString()}`}
         />
         <MetricCard
           className="tenant-management-metric-card"
-          icon="fa-table-cells-large"
+          iconClassName="metric-icon-primary"
+          iconElement={<svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 18V0H10V4H20V18H0ZM2 16H4V14H2V16ZM2 12H4V10H2V12ZM2 8H4V6H2V8ZM2 4H4V2H2V4ZM6 16H8V14H6V16ZM6 12H8V10H6V12ZM6 8H8V6H6V8ZM6 4H8V2H6V4ZM10 16H18V6H10V8H12V10H10V12H12V14H10V16ZM14 10V8H16V10H14ZM14 14V12H16V14H14Z" fill="#2563EB" /></svg>}
           label="Active Tenants"
           value={ctrl.tenantStatsAreLoading ? '...' : String(ctrl.tenantStatsActiveCount)}
         />
         <MetricCard
           className="tenant-management-metric-card"
-          icon="fa-circle-notch"
+          iconClassName="metric-icon-warning"
+          iconElement={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 19.95C8.61667 19.95 7.31667 19.6875 6.1 19.1625C4.88333 18.6375 3.825 17.9208 2.925 17.0125C2.025 16.1042 1.3125 15.0417 0.7875 13.825C0.2625 12.6083 0 11.3167 0 9.95C0 7.33333 0.866667 5.08333 2.6 3.2C4.33333 1.31667 6.46667 0.25 9 0V3C7.28333 3.23333 5.85417 4.00417 4.7125 5.3125C3.57083 6.62083 3 8.16667 3 9.95C3 11.8833 3.68333 13.5333 5.05 14.9C6.41667 16.2667 8.06667 16.95 10 16.95C11.1 16.95 12.1292 16.7167 13.0875 16.25C14.0458 15.7833 14.85 15.15 15.5 14.35L18.1 15.85C17.2 17.1 16.0417 18.0958 14.625 18.8375C13.2083 19.5792 11.6667 19.95 10 19.95ZM19.15 14L16.55 12.5C16.7 12.1 16.8125 11.6875 16.8875 11.2625C16.9625 10.8375 17 10.4 17 9.95C17 8.16667 16.4292 6.62083 15.2875 5.3125C14.1458 4.00417 12.7167 3.23333 11 3V0C13.5333 0.25 15.6667 1.31667 17.4 3.2C19.1333 5.08333 20 7.33333 20 9.95C20 10.6833 19.9333 11.3917 19.8 12.075C19.6667 12.7583 19.45 13.4 19.15 14Z" fill="#EA580C" /></svg>}
           label="Average Usage"
           value={ctrl.tenantStatsAreLoading ? '...' : formatDashboardPercent(ctrl.tenantStatsAverageUsage)}
         />
         <MetricCard
           className="tenant-management-metric-card"
-          icon="fa-triangle-exclamation"
+          iconClassName="metric-icon-danger"
+          iconElement={<svg width="22" height="19" viewBox="0 0 22 19" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 19L11 0L22 19H0ZM3.45 17H18.55L11 4L3.45 17ZM11 16C11.2833 16 11.5208 15.9042 11.7125 15.7125C11.9042 15.5208 12 15.2833 12 15C12 14.7167 11.9042 14.4792 11.7125 14.2875C11.5208 14.0958 11.2833 14 11 14C10.7167 14 10.4792 14.0958 10.2875 14.2875C10.0958 14.4792 10 14.7167 10 15C10 15.2833 10.0958 15.5208 10.2875 15.7125C10.4792 15.9042 10.7167 16 11 16ZM10 13H12V8H10V13Z" fill="#DC2626" /></svg>}
           label="Churn Rate"
           value={ctrl.tenantStatsAreLoading ? '...' : formatDashboardPercent(ctrl.tenantStatsChurnRate)}
         />

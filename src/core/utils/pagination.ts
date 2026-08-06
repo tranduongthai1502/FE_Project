@@ -20,7 +20,18 @@ export function getPaginationMeta(payload: any): PaginationMeta {
 
   for (const candidate of candidates) {
     const totalPages = Number(candidate.totalPages ?? candidate.total_pages ?? candidate.pageCount ?? candidate.totalPage)
-    const totalElements = Number(candidate.totalElements ?? candidate.total_elements ?? candidate.totalItems ?? candidate.total)
+    const totalElements = Number(
+      candidate.totalElements ??
+      candidate.total_elements ??
+      candidate.totalItems ??
+      candidate.total_items ??
+      candidate.totalRecords ??
+      candidate.total_records ??
+      candidate.totalCount ??
+      candidate.total_count ??
+      candidate.count ??
+      candidate.total,
+    )
     const last = typeof candidate.last === 'boolean' ? candidate.last : undefined
     const first = typeof candidate.first === 'boolean' ? candidate.first : undefined
 
