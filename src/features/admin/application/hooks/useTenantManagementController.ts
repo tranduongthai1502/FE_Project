@@ -461,8 +461,8 @@ export function useTenantManagementController({
   const tenantStats = tenantStatsQuery.data
   const tenantStatsTotalRevenue = tenantStats?.totalRevenue ?? 0
   const tenantStatsActiveCount = tenantStats?.activeTenants ?? fetchedTenants.filter((tenant) => isTenantActive(tenant)).length
-  const tenantStatsAverageUsage = tenantStats?.averageResourceUsagePercent ?? 0
-  const tenantStatsChurnRate = tenantStats?.churnRatePercent ?? 0
+  const tenantStatsAverageUsage = tenantStats?.averageUsage ?? 0
+  const tenantStatsChurnRate = tenantStats?.churnRate ?? 0
 
   const isHighestPricedPlan = (tenant: Tenant, tenantPlan?: SubscriptionPlan | null) => {
     const planName = tenantPlan?.name || tenant.subscriptionPlan
