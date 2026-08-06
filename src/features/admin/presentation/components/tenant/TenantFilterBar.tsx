@@ -1,6 +1,6 @@
 import { SearchInput } from '@/core/components/SearchInput'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
-import type { SubscriptionPlan } from '../../domain/adminApi.types'
+import type { SubscriptionPlan } from '@/features/admin/domain/adminApi.types'
 
 export type TenantStatusFilter = 'all' | 'active' | 'inactive'
 

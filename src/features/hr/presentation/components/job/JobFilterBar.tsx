@@ -29,8 +29,9 @@ export function JobFilterBar({
       <div className="filter-inputs">
         <SearchInput
           value={searchQuery}
-          onChange={onSearchChange}
+          onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search job title, department..."
+          ariaLabel="Search job postings"
         />
         <ScrollableSelect
           value={statusFilter}

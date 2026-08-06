@@ -69,6 +69,8 @@ export type CandidateFilterValues = {
 
 export type CandidateDashboardStats = {
   totalCandidates: number
-  aiMatches: number
+  aiMatches?: number
+  newThisWeek: number
+  avgMatchScore: number
   pendingReview: number
 }

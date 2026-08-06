@@ -5,8 +5,8 @@ import { SearchInput } from '@/core/components/SearchInput'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { ListTable } from '@/core/components/ListTable'
 import { getCompactPageItems } from '@/core/utils/pagination'
-import { getHrCandidateDetailPath } from '../../../domain/hrRoutePaths'
-import { useCandidateListController } from '../../../application/useCandidateListController'
+import { getHrCandidateDetailPath } from '../../domain/hrRoutePaths'
+import { useCandidateListController } from '../../application/hooks/useCandidateListController'
 import styles from './candidate.module.css'
 
 export function CandidateManagementView() {
@@ -83,8 +83,9 @@ export function CandidateManagementView() {
         <div className={styles.searchInputWrap}>
           <SearchInput
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search job title, or department or..."
+            ariaLabel="Search candidates"
           />
         </div>
 

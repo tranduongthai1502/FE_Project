@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { Candidate, CandidateDashboardStats } from '../domain/candidate.types'
+import type { Candidate, CandidateDashboardStats } from '../../domain/candidate.types'
 
 export const initialCandidateStats: CandidateDashboardStats = {
   totalCandidates: 1248,

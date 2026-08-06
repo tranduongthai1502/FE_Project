@@ -28,7 +28,7 @@ import {
   normalizeTenant,
   normalizeTenantAdminUser,
 } from './adminMappers'
-import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../application/adminPayload'
+import { buildPlanPayload, buildPlanUpdatePayload, buildTenantCreatePayload, buildTenantUpdatePayload } from '../application/helpers/adminPayload'
 
 export const ADMIN_LIST_PAGE_SIZE = API_LIST_PAGE_SIZE
 

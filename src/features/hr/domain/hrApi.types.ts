@@ -28,6 +28,9 @@ export type JobRevisionHistory = {
   createdAt?: string
 }
 
+export type JobRevisionHistoryItem = JobRevisionHistory
+
+
 export type JobPostingPayload = {
   title: string
   department: string
