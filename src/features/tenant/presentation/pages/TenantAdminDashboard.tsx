@@ -54,6 +54,7 @@ export function TenantAdminDashboard({ onLogout, triggerToast }: { onLogout: () 
     recentActivities,
     selectedStaff,
     selectedStaffMatchesDetailRoute,
+    setActivityStartDateFilter,
     setActivityEndDateFilter,
     setActivityEventTypeFilter,
     setActivityLogPage,

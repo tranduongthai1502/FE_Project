@@ -1,4 +1,4 @@
-export { SuperAdminDashboard } from './presentation/components/SuperAdminDashboard'
+export { SuperAdminDashboard } from './presentation/pages/SuperAdminDashboard'
 export type {
   CreatePlanPayload,
   CreateTenantPayload,

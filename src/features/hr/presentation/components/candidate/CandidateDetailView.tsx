@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { hrCandidatesPath } from '../../../domain/hrRoutePaths'
-import { useCandidateDetailController } from '../../../application/useCandidateDetailController'
+import { useCandidateDetailController } from '../../../application/hooks/useCandidateDetailController'
 import styles from './candidateDetail.module.css'
 
 export function CandidateDetailView() {

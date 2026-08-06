@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { CandidateDetail } from '../domain/candidate.types'
+import type { CandidateDetail } from '../../domain/candidate.types'
 import { mockCandidates } from './useCandidateListController'
 
 export const mockCandidateDetails: Record<string, CandidateDetail> = {
