@@ -91,11 +91,12 @@ export function useTenantManagementController({
   const updateTenantMutation = useUpdateTenant()
   const deleteTenantMutation = useDeleteTenant()
 
-  const listParams = useMemo(() => buildTenantListParams({
-    statusFilter: tenantStatusFilter,
-    planFilter: tenantPlanFilter,
-    page: tenantPage,
-  }), [tenantStatusFilter, tenantPlanFilter, tenantPage])
+  const listParams = useMemo(() => buildTenantListParams(
+    tenantStatusFilter,
+    tenantPlanFilter,
+    tenantSearchQuery,
+    tenantPage,
+  ), [tenantStatusFilter, tenantPlanFilter, tenantSearchQuery, tenantPage])
 
   const plansQuery = useAdminSubscriptionPlans({ size: PLAN_FILTER_LIST_SIZE })
   const tenantListQuery = useAdminTenants({ ...listParams, enabled: isListViewActive })
