@@ -493,8 +493,9 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
         }
       }
     } catch (error: any) {
+      const backendMessage = String(error?.backendMessage || error?.message || '').trim()
       if (isSystemApiError(error)) {
-        triggerToast?.(systemErrorMessage, 'error')
+        triggerToast?.(backendMessage || systemErrorMessage, 'error')
       } else if (isAccountNotFoundError(error.message)) {
         setEmailError('')
         setPasswordError(accountNotFoundMessage)
@@ -504,7 +505,7 @@ export function useLoginFeature({ onSignInSuccess, triggerToast }: UseLoginFeatu
         if (isPasswordAttemptFailure(error?.message || failureMessage, getErrorCode(error))) {
           registerPasswordFailure(failureMessage)
         } else {
-          setPasswordError(failureMessage)
+          setPasswordError(backendMessage || failureMessage)
         }
       }
     } finally {
