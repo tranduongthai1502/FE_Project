@@ -18,7 +18,6 @@ import {
   buildTenantListParams,
   duplicateCompanyNameMessage,
   emptyTenantForm,
-  getCreateTenantFieldErrors,
   invalidTenantEmailMessage,
   isValidTenantAdminEmail,
   normalizeFilterValue,
@@ -27,6 +26,7 @@ import {
   tenantMatchesPlanFilter,
   type TenantStatusFilter,
 } from '../../infrastructure/tenantManagementService'
+import { validateTenantForm } from '../helpers/tenantFormValidation'
 import type { CreateTenantForm, SubscriptionPlan, Tenant } from '../../domain/adminApi.types'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { formatPlanDate } from '../helpers/adminFormatters'
@@ -200,14 +200,22 @@ export function useTenantManagementController({
   }, [fetchedTenants, subscriptionPlansById, tenantPlanFilter, tenantSearchQuery])
 
   const tenantPageCount = useMemo(() => {
-    return getListPageCount(displayedTenants, tenantPage, ADMIN_LIST_PAGE_SIZE)
-  }, [displayedTenants, tenantPage])
+    const fallbackTotal = tenantStatsQuery.data?.totalTenants ?? fetchedTenants.length
+    const totalElements = getListTotalElements(fetchedTenants, fallbackTotal)
+    return Math.max(
+      getListPageCount(fetchedTenants, tenantPage, ADMIN_LIST_PAGE_SIZE),
+      Math.ceil(totalElements / ADMIN_LIST_PAGE_SIZE),
+    )
+  }, [fetchedTenants, tenantPage, tenantStatsQuery.data?.totalTenants])
 
   const paginatedTenants = displayedTenants
 
   const tenantTotalElements = useMemo(() => {
-    return getListTotalElements(displayedTenants, displayedTenants.length)
-  }, [displayedTenants])
+    return getListTotalElements(
+      fetchedTenants,
+      tenantStatsQuery.data?.totalTenants ?? fetchedTenants.length,
+    )
+  }, [fetchedTenants, tenantStatsQuery.data?.totalTenants])
 
   const tenantDisplayStart = displayedTenants.length === 0 ? 0 : (tenantPage - 1) * ADMIN_LIST_PAGE_SIZE + 1
   const tenantDisplayEnd = tenantDisplayStart === 0 ? 0 : Math.min(tenantTotalElements, tenantDisplayStart + paginatedTenants.length - 1)
@@ -331,9 +339,9 @@ export function useTenantManagementController({
   const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTenantError('')
-    const fieldErrors = getCreateTenantFieldErrors(tenantForm)
+    const fieldErrors = validateTenantForm(tenantForm)
 
-    if (!tenantHasCompanyName(tenantForm, existingCompanyNamesRef.current)) {
+    if (tenantHasCompanyName(fetchedTenants, tenantForm.companyName)) {
       fieldErrors.companyName = duplicateCompanyNameMessage
     }
 

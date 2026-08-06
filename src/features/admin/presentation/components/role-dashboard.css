@@ -3200,12 +3200,14 @@
 }
 
 .tenant-management-metric-card {
-  min-height: 76px;
+  min-height: 84px;
+  height: 84px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  align-items: stretch;
-  gap: 18px;
-  padding: 18px 24px 18px 28px;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  gap: 0 16px;
+  padding: 14px 20px;
   border: 1px solid #e3e8f2;
   border-radius: 8px;
   background: #ffffff;
@@ -3217,10 +3219,12 @@
 }
 
 .tenant-management-metric-card small {
+  grid-column: 1;
+  grid-row: 1;
   display: block;
-  margin-bottom: 7px;
+  margin: 0;
   color: #667085;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.12em;
   line-height: 1.2;
@@ -3228,22 +3232,26 @@
 }
 
 .tenant-management-metric-card strong {
+  grid-column: 1;
+  grid-row: 2;
   display: block;
   color: #101c33;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1;
 }
 
 .tenant-management-metric-card > span {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  justify-self: center;
+  justify-self: end;
   align-self: center;
   margin: 0;
   border-radius: 50%;
@@ -3260,6 +3268,14 @@
   line-height: 1;
   text-align: center;
   vertical-align: middle;
+}
+
+.tenant-management-metric-card > span svg[width='20'][height='12'],
+.tenant-management-metric-card > span svg[width='20'][height='18'],
+.tenant-management-metric-card > span svg[width='20'][height='20'],
+.tenant-management-metric-card > span svg[width='22'][height='19'] {
+  width: auto;
+  height: auto;
 }
 
 .tenant-management-metric-card > span .svg-inline--fa {
