@@ -3,7 +3,7 @@ import { mapErrorTextToFieldErrors } from '@/core/utils/errors/fieldErrorUtils'
 import type { AdminListParams } from '@/core/api/api.types'
 import type { CreateTenantForm, SubscriptionPlan, Tenant } from '@/features/admin/domain/adminApi.types'
 import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
-import type { CreateTenantFieldErrors } from '../presentation/components/CreateTenantPage'
+import type { CreateTenantFieldErrors } from '../presentation/components/tenant/CreateTenant'
 
 export type TenantStatusFilter = 'all' | 'active' | 'inactive'
 

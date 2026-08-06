@@ -1,5 +1,5 @@
-import type { JobPostingPayload } from '../domain/hrApi.types'
-import { isValidSalaryRange } from '../domain/jobPostingRules'
+import type { JobPostingPayload } from '../../domain/hrApi.types'
+import { isValidSalaryRange } from '../../domain/jobPostingRules'
 
 export type JobFormFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
 

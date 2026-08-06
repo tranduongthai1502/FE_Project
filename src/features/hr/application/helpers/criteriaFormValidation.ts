@@ -1,5 +1,5 @@
-import type { JobCriteriaPayload } from '../domain/hrApi.types'
-import { MAX_CRITERIA_COUNT } from '../domain/jobCriteriaRules'
+import type { JobCriteriaPayload } from '../../domain/hrApi.types'
+import { MAX_CRITERIA_COUNT } from '../../domain/jobCriteriaRules'
 
 export type CriteriaItemErrors = Partial<Record<keyof JobCriteriaPayload, string>>
 

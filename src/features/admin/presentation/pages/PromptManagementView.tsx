@@ -1,39 +1,21 @@
-import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { getPromptCreatePath, getSuperAdminViewPath, isPromptCreateUrl } from '@/features/admin/domain/superAdminRouteHelpers'
+import { usePromptManagementController, type PromptManagementController } from '@/features/admin/application/hooks/usePromptManagementController'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { MetricCard } from '@/core/components/MetricCard'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 import { EditIcon } from '@/core/components/Icons'
 
-function CreatePromptView({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
-  const [internalName, setInternalName] = useState('xinquiU9')
-  const [description, setDescription] = useState('')
-  const [model, setModel] = useState('Gemini 1.5 Pro')
-  const [maxTokens, setMaxTokens] = useState('1024')
-  const [instructions, setInstructions] = useState(`# System Persona
-You are a highly experienced
-Recruitment Consultant and Copywriter
-for JobFusion. Your goal is to produce
-job descriptions that are engaging,
-SEO-optimized, and free of bias.`)
-
-  const lineCount = Math.max(40, instructions.split('\n').length + 6)
-
+function CreatePromptView({ ctrl }: { ctrl: PromptManagementController }) {
   return (
     <form
       className="role-content create-prompt-content"
-      onSubmit={(event) => {
-        event.preventDefault()
-        onBack()
-      }}
+      onSubmit={ctrl.handleCreateSubmit}
     >
       <Breadcrumb
         className="create-plan-breadcrumb"
         items={[
-          { label: 'Home', onClick: onHome },
-          { label: 'Prompt Management', onClick: onBack },
+          { label: 'Home', onClick: ctrl.onHome },
+          { label: 'Prompt Management', onClick: ctrl.closePromptCreate },
           { label: 'Create New Prompt' },
         ]}
       />
@@ -44,11 +26,11 @@ SEO-optimized, and free of bias.`)
             <h2>General Settings</h2>
             <label>
               <span>Internal Name</span>
-              <input value={internalName} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => setInternalName(event.target.value)} placeholder="e.g., xinquiU9" required />
+              <input value={ctrl.internalName} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => ctrl.setInternalName(event.target.value)} placeholder="e.g., xinquiU9" required />
             </label>
             <label>
               <span>Description</span>
-              <textarea value={description} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the purpose of this prompt..." />
+              <textarea value={ctrl.description} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => ctrl.setDescription(event.target.value)} placeholder="Describe the purpose of this prompt..." />
             </label>
           </section>
 
@@ -58,18 +40,18 @@ SEO-optimized, and free of bias.`)
               <span>Primary Model</span>
               <ScrollableSelect
                 ariaLabel="Select primary model"
-                value={model}
+                value={ctrl.model}
                 options={[
                   { value: 'Gemini 1.5 Pro', label: 'Gemini 1.5 Pro' },
                   { value: 'GPT-4.1', label: 'GPT-4.1' },
                   { value: 'Claude 3.5 Sonnet', label: 'Claude 3.5 Sonnet' },
                 ]}
-                onChange={setModel}
+                onChange={ctrl.setModel}
               />
             </label>
             <label>
               <span>Max Output Tokens</span>
-              <input value={maxTokens} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => setMaxTokens(event.target.value)} inputMode="numeric" />
+              <input value={ctrl.maxTokens} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => ctrl.setMaxTokens(event.target.value)} inputMode="numeric" />
             </label>
           </section>
           <p className="create-prompt-deploy">Not yet deployed</p>
@@ -82,9 +64,9 @@ SEO-optimized, and free of bias.`)
           </header>
           <div className="prompt-code-editor">
             <ol aria-hidden="true">
-              {Array.from({ length: lineCount }, (_, index) => <li key={index}>{index + 1}</li>)}
+              {Array.from({ length: ctrl.lineCount }, (_, index) => <li key={index}>{index + 1}</li>)}
             </ol>
-            <textarea value={instructions} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => setInstructions(event.target.value)} spellCheck={false} />
+            <textarea value={ctrl.instructions} maxLength={FIELD_LENGTH_LIMITS.defaultText} onChange={(event) => ctrl.setInstructions(event.target.value)} spellCheck={false} />
           </div>
           <footer>
             <input placeholder="Typing..." maxLength={FIELD_LENGTH_LIMITS.defaultText}/>
@@ -106,7 +88,7 @@ SEO-optimized, and free of bias.`)
       </div>
 
       <footer className="create-prompt-actions">
-        <button type="button" onClick={onBack}>Cancel</button>
+        <button type="button" onClick={ctrl.closePromptCreate}>Cancel</button>
         <button type="submit">Save Changes</button>
       </footer>
     </form>
@@ -114,35 +96,10 @@ SEO-optimized, and free of bias.`)
 }
 
 export function PromptManagementView({ onHome }: { onHome?: () => void }) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [activeView, setActiveView] = useState<'list' | 'create'>(() => (
-    isPromptCreateUrl(location.pathname) ? 'create' : 'list'
-  ))
-  const prompts = [
-    ['JD Generator', 'Structural role description creator', 'Recruitment Module', 'Today, 09:42 AM', 'Active'],
-    ['AI CV Parsing', 'JSON extraction from PDF/Docx', 'Talent Module', 'Yesterday, 4:15 PM', 'Active'],
-    ['Chatbot Screening', 'Initial candidate engagement flow', 'Interview Module', '2 days ago', 'Inactive'],
-    ['DSS Analytics', 'Decision Support System Scoring', 'Analytics Module', '3 weeks ago', 'Active'],
-    ['Priority Support', 'Priority Support really joelman', 'Priority Module', '4 weeks ago', 'Active'],
-  ]
+  const ctrl = usePromptManagementController({ onHome })
 
-  useEffect(() => {
-    setActiveView(isPromptCreateUrl(location.pathname) ? 'create' : 'list')
-  }, [location.pathname])
-
-  const openPromptCreate = () => {
-    setActiveView('create')
-    navigate(getPromptCreatePath())
-  }
-
-  const closePromptCreate = () => {
-    setActiveView('list')
-    navigate(getSuperAdminViewPath('prompt-management'))
-  }
-
-  if (activeView === 'create') {
-    return <CreatePromptView onBack={closePromptCreate} onHome={onHome} />
+  if (ctrl.activeView === 'create') {
+    return <CreatePromptView ctrl={ctrl} />
   }
 
   return (
@@ -154,7 +111,7 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
           <h1>Prompt Management</h1>
           <p>Configure and optimize core AI instructions across the platform.</p>
         </div>
-        <button type="button" onClick={openPromptCreate}>Create New Prompt</button>
+        <button type="button" onClick={ctrl.openPromptCreate}>Create New Prompt</button>
       </div>
 
       <div className="role-metrics prompt-management-metrics">
@@ -190,7 +147,7 @@ export function PromptManagementView({ onHome }: { onHome?: () => void }) {
           <span>Status</span>
           <span>Actions</span>
         </div>
-        {prompts.map(([name, feature, module, date, status]) => (
+        {ctrl.prompts.map(([name, feature, module, date, status]) => (
           <div className="prompt-table-row" key={name}>
             <span className="table-name-tooltip" data-tooltip={name} title={name} tabIndex={0}>
               <strong>{name}</strong>

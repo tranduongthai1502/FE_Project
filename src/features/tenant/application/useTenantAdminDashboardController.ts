@@ -634,7 +634,7 @@ export function useTenantAdminDashboardController({
       setStaffAccountList((currentStaffList) => currentStaffList.map((currentStaff) => (
         currentStaff.id === staff.id ? { ...currentStaff, status: nextStatus } : currentStaff
       )))
-      
+
       setRefreshKey(prev => prev + 1)
     } catch (error) {
       if (isInactiveUserActionError(error) || shouldToastHttpError(error)) {
@@ -665,6 +665,7 @@ export function useTenantAdminDashboardController({
     handleExportActivityLogs,
     handleToggleStatus,
     handleUpdateStaffSubmit,
+    handleSidebarViewChange,
     isActionLocked,
     isClearingActivityLogs,
     isDeleting,
@@ -676,12 +677,10 @@ export function useTenantAdminDashboardController({
     isPasswordChangeRequired,
     isSaving,
     isStaffQuotaUnlimited,
-    loadStaffDetail,
-    maxStaffQuota,
-    handleSidebarViewChange,
     recentActivities,
     selectedStaff,
     selectedStaffMatchesDetailRoute,
+    setActivityStartDateFilter,
     setActivityEndDateFilter,
     setActivityEventTypeFilter,
     setActivityLogPage,
@@ -711,5 +710,7 @@ export function useTenantAdminDashboardController({
     statusConfirmStaff,
     user,
     viewResetKeys,
+    loadStaffDetail,
+    maxStaffQuota,
   }
 }

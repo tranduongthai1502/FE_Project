@@ -1,5 +1,5 @@
-import type { SubscriptionPlan } from '../../domain/adminApi.types'
-import { isEnterprisePlan, formatPlanPriceDisplay } from '../../domain/subscriptionPlanRules'
+import type { SubscriptionPlan } from '@/features/admin/domain/adminApi.types'
+import { isEnterprisePlan, formatPlanPriceDisplay } from '@/features/admin/domain/subscriptionPlanRules'
 
 export type PlanGridCardProps = {
   plan: SubscriptionPlan
