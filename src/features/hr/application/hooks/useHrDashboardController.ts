@@ -25,6 +25,7 @@ export function useHrDashboardController({
     dashboard: 0,
     jobs: 0,
     candidates: 0,
+    interviews: 0,
     settings: 0,
   })
 
