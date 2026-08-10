@@ -35,7 +35,7 @@ import { getInitialSuperAdminView, getSuperAdminViewPath, getTenantCreatePath, g
 import { isHighestPricedPlan as checkHighestPricedPlan } from '../../domain/superAdminMetrics'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { formatCurrencyInput } from '@/core/utils/currencyFormat'
-import { buildTenantCreatePayload } from '../helpers/adminPayload'
+import { buildTenantCreatePayload, buildTenantPlanPayload, buildTenantStatusPayload } from '../helpers/adminPayload'
 
 export function useTenantManagementController({
   onHome,
@@ -102,11 +102,12 @@ export function useTenantManagementController({
   const tenantListQuery = useAdminTenants({ ...listParams, enabled: isListViewActive })
   const tenantStatsQuery = useAdminTenantDashboardStats({ enabled: isListViewActive })
   const tenantDetailQuery = useAdminTenantDetail(selectedTenantId, { enabled: isDetailViewActive })
-  const tenantUserQuery = useAdminTenantUser(selectedTenantId, { enabled: isDetailViewActive })
 
   const subscriptionPlans = plansQuery.data ?? []
   const fetchedTenants = tenantListQuery.data ?? []
   const fetchedTenantDetail = tenantDetailQuery.data ?? null
+  const tenantAdminUserId = fetchedTenantDetail?.adminUserId ?? null
+  const tenantUserQuery = useAdminTenantUser(tenantAdminUserId, { enabled: isDetailViewActive && Boolean(tenantAdminUserId) })
   const fetchedTenantAdminUser = tenantUserQuery.data ?? null
 
   const isLoadingPlans = plansQuery.isLoading
@@ -371,7 +372,14 @@ export function useTenantManagementController({
     setIsUpdatingTenantStatus(true)
     setTenantDetailError('')
     try {
-      await updateTenantMutation.mutateAsync({ id: selectedTenant.id, payload: { status: nextStatus } })
+      await updateTenantMutation.mutateAsync({
+        id: selectedTenant.id,
+        payload: {
+          ...buildTenantStatusPayload(selectedTenant, nextStatus),
+          adminEmail: fetchedTenantAdminUser?.email || selectedTenant.adminEmail || '',
+          adminFullName: fetchedTenantAdminUser?.fullName || selectedTenant.adminFullName || '',
+        },
+      })
       setIsStatusConfirmOpen(false)
       triggerToast?.(`Tenant status changed to ${nextStatus.toLowerCase()}.`, 'success')
     } catch (error) {
@@ -387,7 +395,14 @@ export function useTenantManagementController({
     setIsUpdatingTenantPlan(true)
     setTenantDetailError('')
     try {
-      await updateTenantMutation.mutateAsync({ id: selectedTenant.id, payload: { planId: pendingTenantPlanId } })
+      await updateTenantMutation.mutateAsync({
+        id: selectedTenant.id,
+        payload: {
+          ...buildTenantPlanPayload(selectedTenant, pendingTenantPlanId),
+          adminEmail: fetchedTenantAdminUser?.email || selectedTenant.adminEmail || '',
+          adminFullName: fetchedTenantAdminUser?.fullName || selectedTenant.adminFullName || '',
+        },
+      })
       setIsPlanConfirmOpen(false)
       triggerToast?.('Tenant subscription plan updated successfully.', 'success')
     } catch (error) {
@@ -428,9 +443,9 @@ export function useTenantManagementController({
 
   const isTenantActive = (tenant?: Tenant | null) => (tenant?.status || '').toLowerCase() === 'active'
   const tenantStatus = getTenantStatusMeta(selectedTenant?.status)
-  const tenantAdminFullName = fetchedTenantAdminUser?.name || '-'
-  const tenantAdminEmail = fetchedTenantAdminUser?.email || selectedTenant?.email || '-'
-  const tenantAdminStatusMeta = getTenantStatusMeta(fetchedTenantAdminUser?.status || selectedTenant?.status)
+  const tenantAdminFullName = fetchedTenantAdminUser?.fullName || selectedTenant?.adminFullName || '-'
+  const tenantAdminEmail = fetchedTenantAdminUser?.email || selectedTenant?.adminEmail || '-'
+  const tenantAdminStatusMeta = getTenantStatusMeta(fetchedTenantAdminUser?.status || selectedTenant?.adminStatus || selectedTenant?.status)
   const tenantAdminActivatedDate = formatPlanDate(fetchedTenantAdminUser?.createdAt) || formatPlanDate(selectedTenant?.createdAt) || 'Oct 24, 2023'
 
   const tenantDomain = selectedTenant?.domain ? `${selectedTenant.domain}.jobfusion.ai` : '-'

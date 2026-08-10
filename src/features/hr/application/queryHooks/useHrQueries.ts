@@ -30,6 +30,13 @@ export function useJobPostingStats() {
   })
 }
 
+export function useJobPostingLimit() {
+  return useQuery({
+    queryKey: hrQueryKeys.jobPostingLimit(),
+    queryFn: () => hrApi.getJobPostingLimit(),
+  })
+}
+
 export function useJobCriteria(jobId: string, enabled = true) {
   return useQuery({
     queryKey: hrQueryKeys.criteria(jobId),
@@ -46,6 +53,7 @@ export function useCreateJobPosting() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hrQueryKeys.lists() })
       queryClient.invalidateQueries({ queryKey: hrQueryKeys.stats() })
+      queryClient.invalidateQueries({ queryKey: hrQueryKeys.jobPostingLimit() })
     },
   })
 }
@@ -59,6 +67,7 @@ export function useUpdateJobPosting() {
     onSuccess: (updatedJob) => {
       queryClient.invalidateQueries({ queryKey: hrQueryKeys.lists() })
       queryClient.invalidateQueries({ queryKey: hrQueryKeys.stats() })
+      queryClient.invalidateQueries({ queryKey: hrQueryKeys.jobPostingLimit() })
       if (updatedJob?.id) {
         queryClient.invalidateQueries({ queryKey: hrQueryKeys.detail(updatedJob.id) })
       }
@@ -74,6 +83,7 @@ export function useDeleteJobPosting() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hrQueryKeys.lists() })
       queryClient.invalidateQueries({ queryKey: hrQueryKeys.stats() })
+      queryClient.invalidateQueries({ queryKey: hrQueryKeys.jobPostingLimit() })
     },
   })
 }

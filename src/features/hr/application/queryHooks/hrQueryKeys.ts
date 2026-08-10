@@ -8,5 +8,6 @@ export const hrQueryKeys = {
   details: () => [...hrQueryKeys.all, 'job-posting'] as const,
   detail: (id: string) => [...hrQueryKeys.details(), id] as const,
   stats: () => [...hrQueryKeys.all, 'dashboard-stats'] as const,
+  jobPostingLimit: () => [...hrQueryKeys.all, 'job-posting-limit'] as const,
   criteria: (jobId: string) => [...hrQueryKeys.all, 'job-criteria', jobId] as const,
 }

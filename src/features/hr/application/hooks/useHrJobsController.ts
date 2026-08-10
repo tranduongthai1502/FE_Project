@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { HR_LIST_PAGE_SIZE, hrApi } from '../../infrastructure/hrApi'
-import { useJobPostings, useJobPostingStats } from '../queryHooks/useHrQueries'
-import type { DashboardStatsJobPostingResponse, JobListFilters, JobPosting } from '../../domain/hrApi.types'
+import { useJobPostings, useJobPostingLimit, useJobPostingStats } from '../queryHooks/useHrQueries'
+import type { DashboardStatsJobPostingResponse, JobListFilters, JobPosting, JobPostingLimitResponse } from '../../domain/hrApi.types'
 import type { JobConfirmAction, JobDetailTab } from '../../infrastructure/hrJobLogic'
 import {
   buildJobPayloadFromPosting,
@@ -38,6 +38,7 @@ export function useHrJobsController({
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState(initialJobListSearchParams.get('employmentType') || '')
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [jobStats, setJobStats] = useState<DashboardStatsJobPostingResponse | null>(null)
+  const [jobPostingLimit, setJobPostingLimit] = useState<JobPostingLimitResponse | null>(null)
   const [isLoadingJobs, setIsLoadingJobs] = useState(false)
   const [jobListError, setJobListError] = useState('')
   const [jobPage, setJobPage] = useState(() => Number.isFinite(initialJobPage) ? Math.max(1, initialJobPage) : 1)
@@ -57,6 +58,15 @@ export function useHrJobsController({
   const activeJobCount = jobStats?.totalActivePostings ?? jobs.filter((job) => job.status.toLowerCase() === 'open' || job.status.toLowerCase() === 'active').length
   const totalApplicantCount = jobStats?.totalApplicants ?? jobs.reduce((total, job) => total + job.applicantCount, 0)
   const expiringSoonCount = jobStats?.postingsExpiringSoon ?? jobs.filter((job) => job.status.toLowerCase() === 'pending_review' || job.status.toLowerCase() === 'pending review').length
+  const activeJobPostingUsed = jobPostingLimit?.activeJobPostingUsed ?? jobPostingLimit?.used ?? activeJobCount
+  const activeJobPostingLimit = jobPostingLimit?.activeJobPostingLimit ?? jobPostingLimit?.limit ?? 0
+  const activeJobPostingUnlimited = Boolean(jobPostingLimit?.activeJobPostingUnlimited ?? jobPostingLimit?.unlimited)
+  const activeJobPostingUsagePercent = activeJobPostingUnlimited || activeJobPostingLimit <= 0
+    ? 100
+    : Math.min(100, Math.round((activeJobPostingUsed / activeJobPostingLimit) * 100))
+  const activeJobPostingRemaining = activeJobPostingUnlimited
+    ? null
+    : Math.max(0, activeJobPostingLimit - activeJobPostingUsed)
 
   const jobTotalElements = getListTotalElements(jobs, jobs.length)
   const safeJobPage = Math.min(jobPage, jobPageCount)
@@ -108,12 +118,19 @@ export function useHrJobsController({
 
   const jobPostingsQuery = useJobPostings(jobListParams)
   const jobStatsQuery = useJobPostingStats()
+  const jobPostingLimitQuery = useJobPostingLimit()
 
   useEffect(() => {
     if (jobStatsQuery.data) {
       setJobStats(jobStatsQuery.data)
     }
   }, [jobStatsQuery.data])
+
+  useEffect(() => {
+    if (jobPostingLimitQuery.data) {
+      setJobPostingLimit(jobPostingLimitQuery.data)
+    }
+  }, [jobPostingLimitQuery.data])
 
   useEffect(() => {
     if (jobView !== 'list') return
@@ -297,6 +314,7 @@ export function useHrJobsController({
     jobs,
     setJobs,
     jobStats,
+    jobPostingLimit,
     isLoadingJobs,
     jobListError,
     jobPage,
@@ -318,6 +336,12 @@ export function useHrJobsController({
     activeJobCount,
     totalApplicantCount,
     expiringSoonCount,
+    activeJobPostingUsed,
+    activeJobPostingLimit,
+    activeJobPostingUnlimited,
+    activeJobPostingUsagePercent,
+    activeJobPostingRemaining,
+    isLoadingJobPostingLimit: jobPostingLimitQuery.isLoading,
     jobTotalElements,
     safeJobPage,
     jobPageItems,

@@ -1,4 +1,4 @@
-import type { CreatePlanForm, CreatePlanPayload, CreateTenantForm, CreateTenantPayload, SubscriptionPlan, UpdatePlanPayload, UpdateTenantPayload } from '../../domain/adminApi.types'
+import type { CreatePlanForm, CreatePlanPayload, CreateTenantForm, CreateTenantPayload, SubscriptionPlan, Tenant, UpdatePlanPayload, UpdateTenantPayload } from '../../domain/adminApi.types'
 import { parseCurrencyInput } from '@/core/utils/currencyFormat'
 
 export function buildTenantCreatePayload(form: CreateTenantForm): CreateTenantPayload {
@@ -13,12 +13,26 @@ export function buildTenantCreatePayload(form: CreateTenantForm): CreateTenantPa
   }
 }
 
-export function buildTenantStatusPayload(status: 'ACTIVE' | 'INACTIVE'): UpdateTenantPayload {
-  return { status }
+export function buildTenantUpdatePayloadFromTenant(tenant: Tenant, overrides: Partial<UpdateTenantPayload> = {}): UpdateTenantPayload {
+  return {
+    companyName: tenant.name,
+    domain: tenant.domain || '',
+    industry: tenant.industry || '',
+    region: tenant.region || '',
+    planId: tenant.subscriptionPlanId || '',
+    adminEmail: tenant.adminEmail || '',
+    adminFullName: tenant.adminFullName || '',
+    status: tenant.status,
+    ...overrides,
+  }
 }
 
-export function buildTenantPlanPayload(planId: string): UpdateTenantPayload {
-  return { planId }
+export function buildTenantStatusPayload(tenant: Tenant, status: 'ACTIVE' | 'INACTIVE'): UpdateTenantPayload {
+  return buildTenantUpdatePayloadFromTenant(tenant, { status })
+}
+
+export function buildTenantPlanPayload(tenant: Tenant, planId: string): UpdateTenantPayload {
+  return buildTenantUpdatePayloadFromTenant(tenant, { planId })
 }
 
 export function buildTenantUpdatePayload(payload: UpdateTenantPayload): UpdateTenantPayload {

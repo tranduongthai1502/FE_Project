@@ -36,11 +36,11 @@ export function useAdminTenantDetail(tenantId: string | null, options?: { enable
   })
 }
 
-export function useAdminTenantUser(tenantId: string | null, options?: { enabled?: boolean }) {
+export function useAdminTenantUser(adminUserId: string | null, options?: { enabled?: boolean }) {
   return useQuery({
-    queryKey: adminQueryKeys.tenantAdminUser(tenantId ?? ''),
-    queryFn: () => adminApi.getUserById(tenantId!),
-    enabled: Boolean(tenantId) && (options?.enabled ?? true),
+    queryKey: adminQueryKeys.tenantAdminUser(adminUserId ?? ''),
+    queryFn: () => adminApi.getUserById(adminUserId!),
+    enabled: Boolean(adminUserId) && (options?.enabled ?? true),
   })
 }
 
