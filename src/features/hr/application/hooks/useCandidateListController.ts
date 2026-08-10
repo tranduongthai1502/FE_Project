@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import type { Candidate, CandidateDashboardStats } from '../../domain/candidate.types'
+import { hrCandidateApplicationApi } from '../../infrastructure/hrCandidateApplicationApi'
 
 export const initialCandidateStats: CandidateDashboardStats = {
   totalCandidates: 1248,
@@ -66,28 +69,42 @@ export function useCandidateListController() {
   const [selectedAppliedDate, setSelectedAppliedDate] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
 
-  const filteredCandidates = useMemo(() => {
-    return mockCandidates.filter((candidate) => {
-      const q = searchQuery.trim().toLowerCase()
-      if (q && !candidate.name.toLowerCase().includes(q) && !candidate.targetJob.toLowerCase().includes(q)) {
-        return false
-      }
-      if (selectedJob !== 'all' && candidate.targetJob !== selectedJob) {
-        return false
-      }
-      if (selectedStatus !== 'all' && candidate.recruitmentStage !== selectedStatus) {
-        return false
-      }
-      return true
-    })
-  }, [searchQuery, selectedJob, selectedStatus])
+  const filters = useMemo(() => ({
+    ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+    ...(selectedJob !== 'all' ? { title: selectedJob } : {}),
+    ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
+  }), [searchQuery, selectedJob, selectedStatus])
 
-  const pageCount = 125 // Hardcoded matching mock design (125 pages total)
-  const totalElements = 1248
+  const candidateQuery = useQuery({
+    queryKey: ['hr', 'candidate-applications', { page: currentPage, filters, selectedAppliedDate, selectedMatchScore }],
+    queryFn: () => hrCandidateApplicationApi.getCandidateApplications({
+      page: currentPage,
+      size: CANDIDATE_PAGE_SIZE,
+      sortField: selectedAppliedDate === 'oldest' ? 'createdAt' : 'createdAt',
+      sortBy: selectedAppliedDate === 'oldest' ? 'ASC' : 'DESC',
+      filters,
+    }),
+  })
+
+  const candidates = candidateQuery.data ?? []
+
+  const pageCount = getListPageCount(candidates, currentPage, CANDIDATE_PAGE_SIZE)
+  const totalElements = getListTotalElements(candidates, candidates.length)
+  const avgMatchScore = candidates.length
+    ? Math.round(candidates.reduce((sum, candidate) => sum + candidate.matchScore, 0) / candidates.length)
+    : 0
+  const stats = {
+    totalCandidates: totalElements,
+    newThisWeek: 0,
+    avgMatchScore,
+    pendingReview: candidates.filter((candidate) => !candidate.reviewed).length,
+  }
 
   return {
-    stats: initialCandidateStats,
-    candidates: filteredCandidates,
+    stats,
+    candidates,
+    isLoading: candidateQuery.isLoading,
+    isError: candidateQuery.isError,
     searchQuery,
     setSearchQuery,
     selectedJob,

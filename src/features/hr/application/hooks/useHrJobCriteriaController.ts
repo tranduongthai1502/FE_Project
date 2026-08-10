@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { hrApi } from '../../infrastructure/hrApi'
-import type { JobCriteriaResponse, JobPosting, JobPostingPayload } from '../../domain/hrApi.types'
+import type { GenerateJobPostingAiResponse, JobCriteriaResponse, JobPosting, JobPostingPayload } from '../../domain/hrApi.types'
 import type {
   CriteriaFieldErrors,
   EditableCriterion,
@@ -30,7 +30,7 @@ import {
 } from '../../infrastructure/hrJobLogic'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { formatCurrencyInput, parseCurrencyInput } from '@/core/utils/currencyFormat'
-import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
+import { FIELD_LENGTH_LIMITS, getBackendErrorMessage } from '@/core/api/axiosErrorHandler'
 import {
   formatDeadlineDisplay,
   getCalendarMonth,
@@ -78,6 +78,9 @@ export function useHrJobCriteriaController({
   const [deadlineInputValue, setDeadlineInputValue] = useState('')
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
   const [pendingDuplicateTitlePayload, setPendingDuplicateTitlePayload] = useState<JobPostingPayload | null>(null)
+  const [aiGeneratedJob, setAiGeneratedJob] = useState<GenerateJobPostingAiResponse | null>(null)
+  const [isGeneratingAiJob, setIsGeneratingAiJob] = useState(false)
+  const [aiGenerateError, setAiGenerateError] = useState('')
 
   const isJobFormDirty = (
     jobForm.title.trim() !== '' ||
@@ -387,9 +390,69 @@ export function useHrJobCriteriaController({
     setJobForm((current) => ({ ...current, [field]: formattedValue === '' ? 0 : parseCurrencyInput(formattedValue) }))
   }
 
-  const generateAiJobContent = () => {
-    if (isActionLocked) return
-    const payload = withDefaultApplicationDeadline(jobForm)
+  const getSalaryRangeText = (payload: JobPostingPayload) => {
+    const minSalary = salaryInputValues.salaryMin.trim()
+    const maxSalary = salaryInputValues.salaryMax.trim()
+    if (minSalary && maxSalary) return `${minSalary} - ${maxSalary}`
+    if (payload.salaryMin > 0 && payload.salaryMax > 0) return `${payload.salaryMin} - ${payload.salaryMax}`
+    return ''
+  }
+
+  const getAiDraftJobPayload = (draft: GenerateJobPostingAiResponse): JobPostingPayload => ({
+    ...jobForm,
+    title: (draft.title || draft.jobTitle || jobForm.title).trim(),
+    department: (draft.department || jobForm.department).trim(),
+    employmentType: (draft.employmentType || jobForm.employmentType || 'FULL_TIME').trim(),
+    locationType: (draft.locationType || jobForm.locationType || 'OFFICE').trim(),
+    location: (draft.location || jobForm.location).trim(),
+    applicationDeadline: (draft.applicationDeadline || jobForm.applicationDeadline).trim(),
+    description: draft.description || draft.jobDescription || jobForm.description,
+    requirements: draft.requirements || (Array.isArray(draft.keySkills) ? draft.keySkills.join('\n') : draft.keySkills) || draft.additionalRequirements || jobForm.requirements,
+    benefits: draft.benefits || jobForm.benefits,
+    salaryMin: Number(draft.salaryMin ?? jobForm.salaryMin) || 0,
+    salaryMax: Number(draft.salaryMax ?? jobForm.salaryMax) || 0,
+    status: draft.status || jobForm.status || 'OPEN',
+  })
+
+  const applyAiGeneratedJob = () => {
+    if (!aiGeneratedJob) return
+    const nextPayload = getAiDraftJobPayload(aiGeneratedJob)
+    setJobForm(nextPayload)
+    setSalaryInputValues({
+      salaryMin: nextPayload.salaryMin ? formatCurrencyInput(String(nextPayload.salaryMin)) : '',
+      salaryMax: nextPayload.salaryMax ? formatCurrencyInput(String(nextPayload.salaryMax)) : '',
+    })
+    setDeadlineInputValue(formatDeadlineDisplay(nextPayload.applicationDeadline))
+    setJobFieldErrors({})
+  }
+
+  const discardAiGeneratedJob = () => {
+    setAiGeneratedJob(null)
+    setAiGenerateError('')
+  }
+
+  const copyAiGeneratedJob = async () => {
+    if (!aiGeneratedJob) return
+    const draft = getAiDraftJobPayload(aiGeneratedJob)
+    const text = [
+      draft.title,
+      draft.description,
+      draft.requirements,
+      draft.benefits,
+    ].map((item) => item?.trim()).filter(Boolean).join('\n\n')
+
+    await navigator.clipboard?.writeText(text)
+    triggerToast?.('AI content copied.', 'success')
+  }
+
+  const getJobToastErrorMessage = (error: unknown, fallbackMessage: string) => {
+    const backendMessage = getBackendErrorMessage(error).trim()
+    return backendMessage || getAdminErrorMessage(error, fallbackMessage)
+  }
+
+  const generateAiJobContent = async () => {
+    if (isActionLocked || isGeneratingAiJob) return
+    const payload = jobForm
     const nextErrors = getAiJobValidationErrors(payload, salaryInputValues)
 
     if (Object.keys(nextErrors).length > 0) {
@@ -397,11 +460,29 @@ export function useHrJobCriteriaController({
       return
     }
 
-    if (payload.applicationDeadline !== jobForm.applicationDeadline) {
-      setJobForm(payload)
-      setDeadlineInputValue(formatDeadlineDisplay(payload.applicationDeadline))
-    }
     setJobFieldErrors({})
+
+    setIsGeneratingAiJob(true)
+    setAiGenerateError('')
+    try {
+      const generatedJob = await hrApi.generateJobPostingAi({
+        jobTitle: payload.title.trim(),
+        department: payload.department.trim(),
+        location: payload.location.trim(),
+        locationType: payload.locationType.trim(),
+        salaryRange: getSalaryRangeText(payload),
+        keySkills: payload.requirements.split(/\r?\n|,/).map((skill) => skill.trim()).filter(Boolean),
+        additionalRequirements: payload.requirements.trim(),
+      })
+      setAiGeneratedJob(generatedJob)
+      triggerToast?.('AI job description generated successfully.', 'success')
+    } catch (error) {
+      const message = getJobToastErrorMessage(error, 'Failed to generate job description. Please try again.')
+      setAiGenerateError(message)
+      triggerToast?.(message, 'error')
+    } finally {
+      setIsGeneratingAiJob(false)
+    }
   }
 
   const toggleDeadlinePicker = () => {
@@ -497,9 +578,9 @@ export function useHrJobCriteriaController({
         triggerToast?.(jobPostingLimitReachedMessage, 'error')
       } else if (Object.keys(apiFieldErrors).length > 0) {
         setJobFieldErrors(apiFieldErrors)
-        triggerToast?.('Please check the highlighted fields.', 'error')
+        triggerToast?.(getJobToastErrorMessage(error, 'Please check the highlighted fields.'), 'error')
       } else {
-        triggerToast?.(getAdminErrorMessage(error, 'Error system. Please try again.'), 'error')
+        triggerToast?.(getJobToastErrorMessage(error, 'Error system. Please try again.'), 'error')
       }
     } finally {
       setIsSavingJob(false)
@@ -548,10 +629,16 @@ export function useHrJobCriteriaController({
     setIsCancelConfirmOpen,
     pendingDuplicateTitlePayload,
     setPendingDuplicateTitlePayload,
+    aiGeneratedJob,
+    isGeneratingAiJob,
+    aiGenerateError,
     isJobFormDirty,
     updateJobFormField,
     updateSalaryField,
     generateAiJobContent,
+    applyAiGeneratedJob,
+    discardAiGeneratedJob,
+    copyAiGeneratedJob,
     toggleDeadlinePicker,
     updateDeadlineInputValue,
     selectDeadlineDate,

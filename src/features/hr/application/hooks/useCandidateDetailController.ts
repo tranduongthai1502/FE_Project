@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CandidateDetail } from '../../domain/candidate.types'
 import { mockCandidates } from './useCandidateListController'
+import { hrCandidateApplicationApi } from '../../infrastructure/hrCandidateApplicationApi'
 
 export const mockCandidateDetails: Record<string, CandidateDetail> = {
   'cand-2': {
@@ -119,6 +121,7 @@ export type DetailTab = 'extracted' | 'scoring'
 export function useCandidateDetailController(candidateId?: string) {
   const [activeTab, setActiveTab] = useState<DetailTab>('extracted')
   const [candidateState, setCandidateState] = useState<Record<string, CandidateDetail>>({})
+  const queryClient = useQueryClient()
 
   const candidate = useMemo(() => {
     const id = candidateId || 'cand-2'
@@ -142,14 +145,22 @@ export function useCandidateDetailController(candidateId?: string) {
     } as CandidateDetail
   }, [candidateId, candidateState])
 
+  const markReviewedMutation = useMutation({
+    mutationFn: (id: string) => hrCandidateApplicationApi.markAsReviewed(id),
+    onSuccess: () => {
+      setCandidateState((prev) => ({
+        ...prev,
+        [candidate.id]: {
+          ...candidate,
+          reviewed: true,
+        },
+      }))
+      queryClient.invalidateQueries({ queryKey: ['hr', 'candidate-applications'] })
+    },
+  })
+
   const handleMarkAsReviewed = () => {
-    setCandidateState((prev) => ({
-      ...prev,
-      [candidate.id]: {
-        ...candidate,
-        reviewed: true,
-      },
-    }))
+    markReviewedMutation.mutate(candidate.id)
   }
 
   return {
@@ -157,5 +168,6 @@ export function useCandidateDetailController(candidateId?: string) {
     activeTab,
     setActiveTab,
     handleMarkAsReviewed,
+    isMarkingReviewed: markReviewedMutation.isPending,
   }
 }

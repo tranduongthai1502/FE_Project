@@ -68,6 +68,29 @@ export function JobsEmptyState() {
   )
 }
 
+function JobPostingQuotaBar({ jobsCtrl }: { jobsCtrl: any }) {
+  const isUnlimited = Boolean(jobsCtrl.activeJobPostingUnlimited)
+  const isLoadingLimit = Boolean(jobsCtrl.isLoadingJobPostingLimit)
+  const used = Number(jobsCtrl.activeJobPostingUsed || 0)
+  const limit = Number(jobsCtrl.activeJobPostingLimit || 0)
+  const percent = Number(jobsCtrl.activeJobPostingUsagePercent || 0)
+  const valueLabel = isUnlimited ? `${used}/Unlimited` : `${used}/${limit || 0}`
+  const remainingLabel = isUnlimited
+    ? 'Unlimited remaining'
+    : `${Number(jobsCtrl.activeJobPostingRemaining || 0)} slot remaining`
+
+  return (
+    <section className={styles.jobPostingQuotaBar} aria-label="Job posting quota">
+      <div>
+        <span>Job Posting</span>
+        <strong>{isLoadingLimit ? '...' : valueLabel}</strong>
+      </div>
+      <i aria-hidden="true"><b style={{ width: `${percent}%` }} /></i>
+      <small>{isLoadingLimit ? 'Loading quota...' : remainingLabel}</small>
+    </section>
+  )
+}
+
 export function JobListSection({
   isActionLocked,
   onHome,
@@ -84,6 +107,7 @@ export function JobListSection({
       <div className={styles.jobsHeader}>
         <h1>Job Postings</h1>
         <div className={styles.jobPostingHeaderActions}>
+          <JobPostingQuotaBar jobsCtrl={jobsCtrl} />
           <button type="button" disabled={isActionLocked} onClick={jobsCtrl.openCreateJob}>Create New Job Posting</button>
         </div>
       </div>

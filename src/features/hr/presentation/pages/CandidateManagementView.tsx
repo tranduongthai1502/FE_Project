@@ -28,6 +28,8 @@ export function CandidateManagementView() {
     setCurrentPage,
     pageCount,
     totalElements,
+    isLoading,
+    isError,
   } = useCandidateListController()
 
   const pageItems = getCompactPageItems(currentPage, pageCount)
@@ -151,10 +153,10 @@ export function CandidateManagementView() {
         headClassName="candidate-table-head"
         stateClassName="table-state"
         columns={columns}
-        isLoading={false}
-        empty={candidates.length === 0}
+        isLoading={isLoading}
+        empty={!isLoading && (isError || candidates.length === 0)}
         loadingMessage="Loading candidates..."
-        emptyMessage="No candidates found."
+        emptyMessage={isError ? 'Unable to load candidates.' : 'No candidates found.'}
         pagination={{
           label: `Showing ${candidates.length} of ${totalElements.toLocaleString()} candidates`,
           currentPage,

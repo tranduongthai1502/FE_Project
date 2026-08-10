@@ -37,7 +37,14 @@ export function JobFormSection({
           <h1>{jobsCtrl.jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting'}</h1>
           {jobsCtrl.jobView === 'edit' && <p>Manage and update the details of your active talent acquisition campaign.</p>}
         </div>
-        <button type="button" className={styles.aiJobButton} disabled={isActionLocked} onClick={jobsCtrl.openGenerateWithAi}>Generate with AI</button>
+        <button
+          type="button"
+          className={styles.aiJobButton}
+          disabled={isActionLocked}
+          onClick={jobsCtrl.openGenerateWithAi}
+        >
+          Generate with AI
+        </button>
       </div>
       <form className={styles.jobForm} onSubmit={(event) => { event.preventDefault(); criteriaCtrl.saveJob() }} noValidate>
         <div className={styles.jobFormMain}>

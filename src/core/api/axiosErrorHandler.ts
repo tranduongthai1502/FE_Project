@@ -269,6 +269,8 @@ export function getAppErrorMessage(error: unknown, fallbackMessage: string) {
     if (/^[a-z][a-z0-9_-]+$/i.test(backendMessage)) {
       return `${humanizeErrorCode(backendMessage)}.`
     }
+
+    return backendMessage
   }
 
   const rawMessage = getErrorRawMessage(error)
@@ -328,8 +330,8 @@ export function shouldToastHttpError(error: unknown, options?: HttpStatusToastOp
   if (options?.enabled === false) return false
   if (options?.enabled === true) return true
 
+  if (hasBackendErrorMessage(error)) return true
   if (isInputError(error)) return false
-  if (!hasBackendErrorMessage(error)) return true
 
   return shouldToastHttpStatus(getHttpStatus(error))
 }
