@@ -83,6 +83,7 @@ export type Tenant = {
   adminUserId?: string
   adminFullName?: string
   adminEmail?: string
+  adminStatus?: string
 }
 
 export type Prompt = {

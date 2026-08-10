@@ -499,6 +499,9 @@ export function normalizeTenant(tenant: any): Tenant | null {
     adminEmail: tenant?.adminEmail || tenant?.tenantAdminEmail || admin?.email
       ? String(tenant?.adminEmail || tenant?.tenantAdminEmail || admin?.email)
       : undefined,
+    adminStatus: tenant?.adminStatus || tenant?.tenantAdminStatus || admin?.status || admin?.accountStatus || admin?.userStatus
+      ? String(tenant?.adminStatus || tenant?.tenantAdminStatus || admin?.status || admin?.accountStatus || admin?.userStatus)
+      : undefined,
   }
 }
 

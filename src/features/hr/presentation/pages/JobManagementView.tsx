@@ -31,8 +31,8 @@ export function JobManagementView({
     triggerToast,
   })
 
-  const openCreateJobForm = () => {
-    criteriaCtrl.setDeadlineInputValue('')
+  const openCreateJobForm = (options: { preserveDraft?: boolean } = {}) => {
+    if (!options.preserveDraft) criteriaCtrl.setDeadlineInputValue('')
     jobsCtrl.setJobView('create')
     jobsCtrl.updateHrJobsPath(hrCreateJobPostingPath)
   }

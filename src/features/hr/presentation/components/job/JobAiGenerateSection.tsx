@@ -16,7 +16,7 @@ export function JobAiGenerateSection({
   onHome: () => void
   jobsCtrl: any
   criteriaCtrl: any
-  openCreateJobForm: () => void
+  openCreateJobForm: (options?: { preserveDraft?: boolean }) => void
 }) {
   return (
     <div className={`role-content ${styles.jobsContent}`}>
@@ -85,18 +85,54 @@ export function JobAiGenerateSection({
               <textarea className={criteriaCtrl.jobFieldErrors.requirements ? styles.jobInputError : undefined} value={criteriaCtrl.jobForm.requirements} maxLength={FIELD_LENGTH_LIMITS.jobDescription} onChange={(e) => criteriaCtrl.updateJobFormField('requirements', e.target.value)} placeholder="Add skill..." />
               <JobFieldError message={criteriaCtrl.jobFieldErrors.requirements} />
             </label>
-            <button type="button" disabled={isActionLocked} onClick={criteriaCtrl.generateAiJobContent}>Generate Content</button>
+            <button type="button" disabled={isActionLocked || criteriaCtrl.isGeneratingAiJob} onClick={criteriaCtrl.generateAiJobContent}>
+              {criteriaCtrl.isGeneratingAiJob ? 'Generating...' : 'Generate Content'}
+            </button>
           </section>
         </form>
 
         <aside className={styles.aiDraftPanel}>
           <header>
             <span>AI Content Draft</span>
-            <button type="button" aria-label="Copy AI content draft">
+            <button type="button" aria-label="Copy AI content draft" disabled={!criteriaCtrl.aiGeneratedJob || criteriaCtrl.isGeneratingAiJob} onClick={criteriaCtrl.copyAiGeneratedJob}>
               <i className="fa-regular fa-copy"></i>
             </button>
           </header>
-          <div className={styles.aiDraftBody}></div>
+          <div className={styles.aiDraftBody}>
+            {criteriaCtrl.isGeneratingAiJob ? (
+              <div className={styles.aiDraftLoading}>
+                <span aria-hidden="true"></span>
+                <strong>Generating job description...</strong>
+                <p>Please wait while AI prepares the draft from your job details.</p>
+              </div>
+            ) : criteriaCtrl.aiGeneratedJob ? (
+              <div className={styles.aiDraftContent}>
+                <h2>{criteriaCtrl.aiGeneratedJob.title || criteriaCtrl.aiGeneratedJob.jobTitle || criteriaCtrl.jobForm.title}</h2>
+                {(criteriaCtrl.aiGeneratedJob.description || criteriaCtrl.aiGeneratedJob.jobDescription) && (
+                  <section>
+                    <h3>Description</h3>
+                    <p>{criteriaCtrl.aiGeneratedJob.description || criteriaCtrl.aiGeneratedJob.jobDescription}</p>
+                  </section>
+                )}
+                {(criteriaCtrl.aiGeneratedJob.requirements || criteriaCtrl.aiGeneratedJob.keySkills || criteriaCtrl.aiGeneratedJob.additionalRequirements) && (
+                  <section>
+                    <h3>Requirements</h3>
+                    <p>{Array.isArray(criteriaCtrl.aiGeneratedJob.keySkills) ? criteriaCtrl.aiGeneratedJob.keySkills.join('\n') : (criteriaCtrl.aiGeneratedJob.requirements || criteriaCtrl.aiGeneratedJob.keySkills || criteriaCtrl.aiGeneratedJob.additionalRequirements)}</p>
+                  </section>
+                )}
+                {criteriaCtrl.aiGeneratedJob.benefits && (
+                  <section>
+                    <h3>Benefits</h3>
+                    <p>{criteriaCtrl.aiGeneratedJob.benefits}</p>
+                  </section>
+                )}
+              </div>
+            ) : (
+              <div className={styles.aiDraftEmpty}>
+                {criteriaCtrl.aiGenerateError || 'Your generated job description will appear here.'}
+              </div>
+            )}
+          </div>
           <footer>
             <div className={styles.aiTokenUsage}>
               <span>Token Usage</span>
@@ -104,10 +140,20 @@ export function JobAiGenerateSection({
               <div><span></span></div>
             </div>
             <div className={styles.aiDraftActions}>
-              <button type="button">Regenerate</button>
-              <button type="button">Discard Draft</button>
+              <button type="button" disabled={isActionLocked || criteriaCtrl.isGeneratingAiJob} onClick={criteriaCtrl.generateAiJobContent}>Regenerate</button>
+              <button type="button" disabled={!criteriaCtrl.aiGeneratedJob || criteriaCtrl.isGeneratingAiJob} onClick={criteriaCtrl.discardAiGeneratedJob}>Discard Draft</button>
             </div>
-            <button type="button" className={styles.aiApproveButton}>Approve &amp; Save Job</button>
+            <button
+              type="button"
+              className={styles.aiApproveButton}
+              disabled={!criteriaCtrl.aiGeneratedJob || criteriaCtrl.isGeneratingAiJob}
+              onClick={() => {
+                criteriaCtrl.applyAiGeneratedJob()
+                openCreateJobForm({ preserveDraft: true })
+              }}
+            >
+              Approve &amp; Continue
+            </button>
           </footer>
         </aside>
       </section>

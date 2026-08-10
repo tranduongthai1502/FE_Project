@@ -6,8 +6,8 @@ import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core
 import { authErrorMessages } from './authErrorMessages'
 import {
   validateConfirmPassword,
+  validateEmail,
   validateFullName,
-  validateGmail,
   validatePassword,
   validatePhone,
 } from './validation'
@@ -47,7 +47,7 @@ export function useSignupForm({ onGoToSignin, triggerToast }: UseSignupFormOptio
   })
 
   const updateEmail = handleInput(setEmail, (value) => {
-    if (emailError) setEmailError(validateGmail(value))
+    if (emailError) setEmailError(validateEmail(value))
   })
 
   const updatePhone = handleInput(setPhone, (value) => {
@@ -75,7 +75,7 @@ export function useSignupForm({ onGoToSignin, triggerToast }: UseSignupFormOptio
     event.preventDefault()
 
     const nextFullNameError = validateFullName(fullName)
-    const nextEmailError = validateGmail(email)
+    const nextEmailError = validateEmail(email)
     const nextPhoneError = validatePhone(phone)
     const nextPasswordError = validatePassword(password)
     const nextConfirmPasswordError = validateConfirmPassword(confirmPassword, password)
