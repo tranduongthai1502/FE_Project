@@ -3,6 +3,7 @@ import { AccountSettingsPanel } from '@/features/auth'
 import { DashboardShell } from '@/core/components/DashboardShell'
 import { CandidateDetailView } from '../components/candidate/CandidateDetailView'
 import { CandidateManagementView } from './CandidateManagementView'
+import { InterviewManagementView } from './InterviewManagementView'
 import { JobManagementView } from './JobManagementView'
 import { useHrDashboardController } from '@/features/hr/application/hooks/useHrDashboardController'
 import styles from './HrDashboard.module.css'
@@ -30,6 +31,7 @@ export function HrDashboard({ onLogout, triggerToast }: { onLogout: () => void; 
         <Route path="jobs/*" element={<JobManagementView key={dashCtrl.viewResetKeys.jobs} isActionLocked={dashCtrl.isActionLocked} onHome={() => dashCtrl.selectView('dashboard')} triggerToast={triggerToast} />} />
         <Route path="candidates" element={<CandidateManagementView key={dashCtrl.viewResetKeys.candidates} />} />
         <Route path="candidates/:candidateId" element={<CandidateDetailView key={dashCtrl.viewResetKeys.candidates} />} />
+        <Route path="interviews" element={<InterviewManagementView key={dashCtrl.viewResetKeys.interviews} />} />
         <Route path="dashboard" element={(
           <div key={dashCtrl.viewResetKeys.dashboard} className={`role-content ${styles.content}`}>
             <div className={`role-title-row ${styles.title}`}>
