@@ -3,6 +3,7 @@ import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { SearchInput } from '@/core/components/SearchInput'
 import { ListTable } from '@/core/components/ListTable'
 import { EditIcon, TrashIcon } from '@/core/components/Icons'
+import { getCompactPageItems } from '@/core/utils/pagination'
 import { formatStaffDate, getStaffRoleList } from '../../application/tenantStaffDisplay'
 import { useStaffManagementList } from '../../application/useStaffManagementList'
 export function StaffManagementView({
@@ -52,6 +53,7 @@ export function StaffManagementView({
 }) {
   const totalPages = pageCount
   const paginatedStaff = staffList
+  const pageItems = getCompactPageItems(currentPage, totalPages)
   const {
     displayEnd,
     displayStart,
@@ -153,7 +155,7 @@ export function StaffManagementView({
             label: `Showing ${displayStart}-${displayEnd} of ${totalElements} staff account${totalElements === 1 ? '' : 's'}`,
             currentPage,
             pageCount: totalPages,
-            pageItems: Array.from({ length: totalPages }, (_, i) => i + 1),
+            pageItems,
             onPageChange,
             ellipsisKeyPrefix: 'staff',
           }}
@@ -229,4 +231,3 @@ export function StaffManagementView({
     </div>
   )
 }
-

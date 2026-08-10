@@ -7652,7 +7652,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 28px;
+  padding: 10px 22px;
   background: #ffffff;
   border-top: 1px solid #f0d7d0;
   color: #667085;
@@ -7668,14 +7668,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border: 1px solid #f0d7d0;
   border-radius: 4px;
   background: #ffffff;
   color: #667085;
   font-weight: bold;
   cursor: pointer;
+  font-size: 11px;
 }
 
 .staff-list-table-card footer button.active {
