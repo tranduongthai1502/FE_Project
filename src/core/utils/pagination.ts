@@ -72,7 +72,9 @@ export function getListTotalElements(items: unknown[], fallbackTotal: number) {
 }
 
 export function getCompactPageItems(currentPage: number, pageCount: number): Array<number | 'ellipsis'> {
-  if (pageCount <= 7) {
+  // Keep the pagination compact once there are more than five pages. This
+  // also avoids rendering every page for the common six-page list case.
+  if (pageCount <= 5) {
     return Array.from({ length: pageCount }, (_, index) => index + 1)
   }
 

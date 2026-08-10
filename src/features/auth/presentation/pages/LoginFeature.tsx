@@ -37,16 +37,20 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
     handleSubmit,
     handleVerifyOtp,
     isLoading,
+    isOtpLocked,
+    isPasswordLocked,
     isResendingCode,
     isSendingCode,
     keepLoggedIn,
     newPassword,
     newPasswordError,
     otp,
-    otpError,
     otpInputsRef,
     password,
-    passwordError,
+    visibleOtpError,
+    visiblePasswordError,
+    otpLockCountdown,
+    passwordLockCountdown,
     setConfirmPassword,
     setConfirmPasswordError,
     setForgotEmail,
@@ -101,7 +105,7 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             <div className="label-row">
               <label htmlFor="password">Password</label>
             </div>
-            <div className={`input-wrap ${passwordError ? 'has-error' : ''}`}>
+            <div className={`input-wrap ${visiblePasswordError ? 'has-error' : ''}`}>
               <LockIcon />
               <input
                 maxLength={FIELD_LENGTH_LIMITS.defaultText}
@@ -112,8 +116,9 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
                 onChange={handlePasswordChange}
                 placeholder=".........."
                 autoComplete="current-password"
-                aria-invalid={passwordError ? 'true' : 'false'}
-                aria-describedby={passwordError ? 'password-error' : undefined}
+                disabled={isPasswordLocked}
+                aria-invalid={visiblePasswordError ? 'true' : 'false'}
+                aria-describedby={visiblePasswordError ? 'password-error' : undefined}
               />
               <button
                 type="button"
@@ -124,9 +129,9 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
-            {passwordError && (
+            {visiblePasswordError && (
               <span id="password-error" className="field-error">
-                {passwordError}
+                {visiblePasswordError}
               </span>
             )}
           </div>
@@ -147,8 +152,8 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             </button>
           </div>
 
-          <button type="submit" className="submit-button" disabled={isLoading}>
-            {isLoading ? 'Logging in' : 'Login'}
+          <button type="submit" className="submit-button" disabled={isLoading || isPasswordLocked}>
+            {isLoading ? 'Logging in' : isPasswordLocked ? `Try again in ${passwordLockCountdown}s` : 'Login'}
           </button>
         </form>
 
@@ -184,7 +189,9 @@ export function LoginFeature({ onGoToSignup, onSignInSuccess, triggerToast }: Lo
             {forgotStep === 'otp' && (
               <OtpForm
                 otp={otp}
-                otpError={otpError}
+                otpError={visibleOtpError}
+                isLocked={isOtpLocked}
+                lockCountdown={otpLockCountdown}
                 otpInputsRef={otpInputsRef}
                 countdown={countdown}
                 isLoading={isSendingCode}
