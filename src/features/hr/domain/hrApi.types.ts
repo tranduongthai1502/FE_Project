@@ -48,6 +48,23 @@ export type JobPostingPayload = {
   allowDuplicateTitle?: boolean
 }
 
+export type GenerateJobPostingAiRequest = {
+  jobTitle: string
+  department: string
+  location: string
+  locationType: string
+  salaryRange?: string
+  keySkills: string[]
+  additionalRequirements?: string
+}
+
+export type GenerateJobPostingAiResponse = Partial<JobPostingPayload> & {
+  jobTitle?: string
+  jobDescription?: string
+  keySkills?: string[] | string
+  additionalRequirements?: string
+}
+
 export type JobCriteriaPayload = {
   id?: string
   jobId?: string
@@ -79,6 +96,15 @@ export type DashboardStatsJobPostingResponse = {
   activeJobPostingUsed?: number
   activeJobPostingLimit?: number
   activeJobPostingUnlimited?: boolean
+}
+
+export type JobPostingLimitResponse = {
+  activeJobPostingUsed?: number
+  activeJobPostingLimit?: number
+  activeJobPostingUnlimited?: boolean
+  used?: number
+  limit?: number
+  unlimited?: boolean
 }
 
 export type JobListFilters = {

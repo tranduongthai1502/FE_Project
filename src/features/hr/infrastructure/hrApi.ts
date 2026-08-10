@@ -5,10 +5,13 @@ import type {
 } from '@/core/api/api.types'
 import type {
   DashboardStatsJobPostingResponse,
+  GenerateJobPostingAiRequest,
+  GenerateJobPostingAiResponse,
   JobCriteriaPayload,
   JobCriteriaResponse,
   JobListFilters,
   JobListRequest,
+  JobPostingLimitResponse,
   JobPosting,
   JobPostingPayload,
 } from '@/features/hr/domain/hrApi.types'
@@ -106,6 +109,64 @@ function buildBackendJobPostingPayload(payload: JobPostingPayload) {
   }
 }
 
+function pickAiPayload(payload: any): any {
+  if (!payload || typeof payload !== 'object') return payload
+  if (payload.data && typeof payload.data === 'object') return pickAiPayload(payload.data)
+  if (payload.result && typeof payload.result === 'object') return pickAiPayload(payload.result)
+  if (payload.jobPosting && typeof payload.jobPosting === 'object') return pickAiPayload(payload.jobPosting)
+  if (payload.jobDescription && typeof payload.jobDescription === 'object') return pickAiPayload(payload.jobDescription)
+  return payload
+}
+
+function toText(value: unknown): string {
+  if (Array.isArray(value)) return value.map((item) => String(item ?? '').trim()).filter(Boolean).join('\n')
+  return String(value ?? '').trim()
+}
+
+function normalizeGeneratedJobPosting(payload: any): GenerateJobPostingAiResponse {
+  const item = pickAiPayload(payload)
+  if (!item || typeof item !== 'object') return {}
+
+  return {
+    title: toText(item.title ?? item.jobTitle ?? item.job_title),
+    jobTitle: toText(item.jobTitle ?? item.job_title ?? item.title),
+    department: toText(item.department),
+    employmentType: toText(item.employmentType ?? item.employment_type),
+    locationType: toText(item.locationType ?? item.location_type),
+    location: toText(item.location),
+    applicationDeadline: toText(item.applicationDeadline ?? item.application_deadline ?? item.deadline),
+    description: toText(item.description ?? item.jobDescription ?? item.job_description ?? item.summary),
+    jobDescription: toText(item.jobDescription ?? item.job_description ?? item.description ?? item.summary),
+    requirements: toText(item.requirements ?? item.keySkills ?? item.key_skills ?? item.skills ?? item.additionalRequirements),
+    keySkills: Array.isArray(item.keySkills ?? item.key_skills ?? item.skills)
+      ? (item.keySkills ?? item.key_skills ?? item.skills).map((skill: unknown) => String(skill ?? '').trim()).filter(Boolean)
+      : toText(item.keySkills ?? item.key_skills ?? item.skills),
+    additionalRequirements: toText(item.additionalRequirements ?? item.additional_requirements),
+    benefits: toText(item.benefits),
+    salaryMin: item.salaryMin ?? item.salary_min ?? item.minSalary ?? item.min_salary,
+    salaryMax: item.salaryMax ?? item.salary_max ?? item.maxSalary ?? item.max_salary,
+    status: toText(item.status),
+  }
+}
+
+function normalizeJobPostingLimit(payload: any): JobPostingLimitResponse {
+  const item = payload?.data && typeof payload.data === 'object' ? payload.data : payload
+  if (!item || typeof item !== 'object') return {}
+
+  const used = Number(item.activeJobPostingUsed ?? item.activeJobPostingsUsed ?? item.currentActiveJobs ?? item.jobPostingUsed ?? item.used ?? item.current ?? item.count)
+  const limit = Number(item.activeJobPostingLimit ?? item.activeJobPostingsLimit ?? item.maxActiveJobs ?? item.jobPostingLimit ?? item.limit ?? item.max)
+  const unlimited = Boolean(item.activeJobPostingUnlimited ?? item.activeJobPostingsUnlimited ?? item.jobPostingUnlimited ?? item.unlimited)
+
+  return {
+    activeJobPostingUsed: Number.isFinite(used) ? used : undefined,
+    activeJobPostingLimit: Number.isFinite(limit) ? limit : undefined,
+    activeJobPostingUnlimited: unlimited,
+    used: Number.isFinite(used) ? used : undefined,
+    limit: Number.isFinite(limit) ? limit : undefined,
+    unlimited,
+  }
+}
+
 function getJobCriteriaList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.content)) return payload.content
@@ -161,6 +222,11 @@ export const hrApi = {
     return getResponsePayload(response)
   },
 
+  async getJobPostingLimit(): Promise<JobPostingLimitResponse> {
+    const response = await axiosClient.get('/api/job-posting/limit')
+    return normalizeJobPostingLimit(getResponsePayload(response))
+  },
+
   async getJobPostingById(id: string) {
     const response = await axiosClient.get(`/api/job-posting/${encodeURIComponent(id)}`)
     const payload = getResponsePayload(response)
@@ -200,6 +266,11 @@ export const hrApi = {
     if (excludeId) params.append('excludeId', excludeId)
     const response = await axiosClient.get(`/api/job-posting/check-title?${params.toString()}`)
     return getResponsePayload(response)
+  },
+
+  async generateJobPostingAi(payload: GenerateJobPostingAiRequest): Promise<GenerateJobPostingAiResponse> {
+    const response = await axiosClient.post('/api/job-posting/generate-jd', payload)
+    return normalizeGeneratedJobPosting(getResponsePayload(response))
   },
 
   async createJobCriteria(requests: JobCriteriaPayload[]): Promise<JobCriteriaResponse[]> {

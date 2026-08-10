@@ -7,7 +7,7 @@ import styles from './candidateDetail.module.css'
 export function CandidateDetailView() {
   const { candidateId } = useParams<{ candidateId?: string }>()
   const navigate = useNavigate()
-  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed } = useCandidateDetailController(candidateId)
+  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed } = useCandidateDetailController(candidateId)
 
   const componentAnalysis = candidate?.componentAnalysis || []
   const aiJustification = candidate?.aiJustification || []
@@ -44,8 +44,8 @@ export function CandidateDetailView() {
         </div>
 
         <div>
-          <button type="button" className={styles.markReviewedBtn} onClick={handleMarkAsReviewed}>
-            Mark as Reviewed
+          <button type="button" className={styles.markReviewedBtn} onClick={handleMarkAsReviewed} disabled={isMarkingReviewed || candidate?.reviewed}>
+            {isMarkingReviewed ? 'Marking...' : candidate?.reviewed ? 'Reviewed' : 'Mark as Reviewed'}
           </button>
         </div>
       </div>
