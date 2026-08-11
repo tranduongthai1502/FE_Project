@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
 import { truncateCandidateText } from '../../application/candidateText'
@@ -14,7 +15,21 @@ const requirements = [
   'PhD or Masters in CS, Math, or Physics preferred.',
 ]
 
-const benefits = ['Remote First', 'Equity Package', 'Premium Health']
+function stripParagraphTags(value?: string) {
+  return String(value || '')
+    .replace(/<\/?p[^>]*>/gi, '')
+    .trim()
+}
+
+function getBenefitItems(value?: string) {
+  const normalized = stripParagraphTags(value)
+  if (!normalized) return []
+
+  return normalized
+    .split(/\r?\n|<br\s*\/?>|[,;]+/gi)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
 
 export function CandidateJobDetailPage() {
   const navigate = useNavigate()
@@ -24,6 +39,8 @@ export function CandidateJobDetailPage() {
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || fallbackJob
   const displayCompanyName = company?.name || 'Selected Company'
+  const jobDescription = stripParagraphTags(job?.description)
+  const benefitItems = getBenefitItems(job?.benefits)
 
   useEffect(() => {
     if (!companyId || !jobId) return
@@ -36,18 +53,14 @@ export function CandidateJobDetailPage() {
 
   return (
     <section className="candidate-job-detail-page">
-      <nav className="candidate-breadcrumb" aria-label="Breadcrumb">
-        <button type="button" onClick={() => navigate('/candidate')}>
-          <i className="fa-solid fa-house"></i>
-          Home
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <button type="button" title={displayCompanyName} onClick={() => navigate(`/candidate/companies/${companyId}`)}>
-          {truncateCandidateText(displayCompanyName)}
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <strong>Job Detail</strong>
-      </nav>
+      <Breadcrumb
+        className="candidate-breadcrumb"
+        items={[
+          { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: truncateCandidateText(displayCompanyName), onClick: () => navigate(`/candidate/companies/${companyId}`) },
+          { label: 'Job Detail' },
+        ]}
+      />
 
       <h1>{job?.title || (jobQuery.isLoading ? 'Loading job detail...' : 'Job Detail')}</h1>
 
@@ -87,9 +100,7 @@ export function CandidateJobDetailPage() {
             <h2>Technical Overview</h2>
             <section>
               <h3>Job Description</h3>
-              <p>
-                {job.description || 'We are seeking a world-class Senior AI Engineer to spearhead our JobFusion Core R&D team. You will be responsible for architecting and deploying Large Language Models, RAGs, that power our intelligent talent-matching ecosystem. This role sits at the intersection of production-grade engineering and cutting-edge machine learning research.'}
-              </p>
+              <p>{jobDescription}</p>
             </section>
 
             <section>
@@ -106,9 +117,8 @@ export function CandidateJobDetailPage() {
 
             <section className="candidate-job-benefits">
               <h3>Company Benefits</h3>
-              <p>&quot;We invest in the people who build the future.&quot;</p>
               <div>
-                {benefits.map((item) => (
+                {benefitItems.map((item) => (
                   <span key={item}><i className="fa-solid fa-briefcase"></i>{item}</span>
                 ))}
               </div>

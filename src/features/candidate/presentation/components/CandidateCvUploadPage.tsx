@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
@@ -90,18 +91,14 @@ export function CandidateCvUploadPage() {
 
   return (
     <section className="candidate-cv-upload-page">
-      <nav className="candidate-breadcrumb" aria-label="Breadcrumb">
-        <button type="button" onClick={() => navigate('/candidate')}>
-          <i className="fa-solid fa-house"></i>
-          Home
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <button type="button" title={displayJobTitle} onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`)}>
-          {truncateCandidateText(displayJobTitle)}
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <strong>Upload CV</strong>
-      </nav>
+      <Breadcrumb
+        className="candidate-breadcrumb"
+        items={[
+          { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: truncateCandidateText(displayJobTitle), onClick: () => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`) },
+          { label: 'Upload CV' },
+        ]}
+      />
 
       <header className="candidate-cv-upload-header">
         <h1>Candidate Onboarding</h1>
@@ -126,7 +123,7 @@ export function CandidateCvUploadPage() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
           >
-            <span><i className="fa-solid fa-cloud-arrow-up"></i></span>
+            {!selectedFile && !isUploaded && <span><i className="fa-solid fa-cloud-arrow-up"></i></span>}
             <strong>{selectedFile ? selectedFile.name : 'Drag and drop your CV here, or click to browse'}</strong>
             <small>{selectedFile ? `${formatFileSize(selectedFile.size)} ready to upload` : 'Supported formats: PDF, DOC, DOCX. Maximum file size 5MB.'}</small>
             <button type="button" onClick={() => inputRef.current?.click()}>Browse Files</button>
@@ -135,10 +132,6 @@ export function CandidateCvUploadPage() {
           </div>
 
           <div className="candidate-cv-upload-actions">
-            <button type="button" onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`)}>
-              <i className="fa-solid fa-arrow-left"></i>
-              Back to List
-            </button>
             <button type="button" onClick={handleUpload} disabled={isUploading}>
               {isUploading ? 'Uploading...' : 'Upload CV'}
             </button>
