@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 
 import { candidateCompanies } from '../../domain/candidateData'
 import { useCandidateCompanyDetail, useCandidateCompanyJobs } from '../../application/useCandidateCompanies'
-import { truncateCandidateText } from '../../application/candidateText'
 
 function formatEmploymentType(value?: string) {
   return String(value || 'Full-time').replace(/_/g, '-').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase())
@@ -55,16 +55,14 @@ export function CandidateCompanyDetailPage() {
 
   return (
     <section className="candidate-company-detail-page">
-      <nav className="candidate-breadcrumb" aria-label="Breadcrumb">
-        <button type="button" onClick={() => navigate('/candidate')}>
-          <i className="fa-solid fa-house"></i>
-          Home
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <button type="button" onClick={() => navigate('/candidate/companies')}>Companies</button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <strong title={displayName}>{truncateCandidateText(displayName)}</strong>
-      </nav>
+      <Breadcrumb
+        className="candidate-breadcrumb"
+        items={[
+          { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: 'Companies', onClick: () => navigate('/candidate/companies') },
+          { label: displayName.length > 50 ? `${displayName.slice(0, 50)}...` : displayName },
+        ]}
+      />
 
       <header className="candidate-company-career-hero">
         <span>Join Our Team</span>

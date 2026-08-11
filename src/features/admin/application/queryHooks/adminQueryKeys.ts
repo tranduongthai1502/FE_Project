@@ -17,4 +17,14 @@ export const adminQueryKeys = {
   planDetail: (id: string) => [...adminQueryKeys.plans(), 'detail', id] as const,
 
   prompts: () => [...adminQueryKeys.all, 'prompts'] as const,
+
+
+
+  TENANT_LIST: 'TENANT_LIST',
 }
+
+
+
+
+
+

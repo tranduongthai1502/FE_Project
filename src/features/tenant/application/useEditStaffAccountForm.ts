@@ -1,4 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { FIELD_LENGTH_LIMITS, validationErrorMessages } from '@/core/api/axiosErrorHandler'
 import { buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
 import type { StaffMember, UserStatus } from '../domain/tenantApi.types'
@@ -34,22 +37,36 @@ export function useEditStaffAccountForm({
   staffList = [],
   staffMember,
 }: UseEditStaffAccountFormOptions) {
-  const [fullName, setFullName] = useState(staffMember.fullName)
-  const [fullNameError, setFullNameError] = useState('')
+  const editStaffForm = useForm<{ fullName: string }>({
+    resolver: zodResolver(z.object({
+      fullName: z.string().superRefine((value, context) => {
+        if (!value.trim()) context.addIssue({ code: 'custom', message: validationErrorMessages.staffFullNameRequired })
+        if (hasDuplicateStaffFullName(staffList, value, staffMember.id)) context.addIssue({ code: 'custom', message: validationErrorMessages.duplicateStaffFullName })
+      }),
+    })),
+    defaultValues: { fullName: staffMember.fullName },
+    mode: 'onSubmit',
+  })
+  const fullName = editStaffForm.watch('fullName')
+  const fullNameError = editStaffForm.formState.errors.fullName?.message || ''
   const [roleError, setRoleError] = useState('')
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() => getStaffRoles(staffMember))
   const staffFullNameMaxLength = FIELD_LENGTH_LIMITS.defaultText
 
   useEffect(() => {
-    if (serverFieldErrors.fullName) setFullNameError(serverFieldErrors.fullName)
+    if (serverFieldErrors.fullName) editStaffForm.setError('fullName', { type: 'server', message: serverFieldErrors.fullName })
     if (serverFieldErrors.role) setRoleError(serverFieldErrors.role)
-  }, [serverFieldErrors])
+  }, [editStaffForm, serverFieldErrors])
 
   const updateFullName = (value: string) => {
     const isOverMaxLength = value.length > staffFullNameMaxLength
-    setFullName(isOverMaxLength ? value.slice(0, staffFullNameMaxLength) : value)
-    setFullNameError(isOverMaxLength ? buildMaxLengthMessage('Full name', staffFullNameMaxLength) : '')
+    editStaffForm.setValue('fullName', isOverMaxLength ? value.slice(0, staffFullNameMaxLength) : value, { shouldDirty: true })
+    if (isOverMaxLength) {
+      editStaffForm.setError('fullName', { type: 'maxLength', message: buildMaxLengthMessage('Full name', staffFullNameMaxLength) })
+      return
+    }
+    editStaffForm.clearErrors('fullName')
   }
 
   const toggleRole = (role: string) => {
@@ -67,35 +84,26 @@ export function useEditStaffAccountForm({
     event.preventDefault()
     if (isActionLocked) return
 
-    if (!fullName.trim()) {
-      setFullNameError(validationErrorMessages.staffFullNameRequired)
-      return
-    }
-
-    if (hasDuplicateStaffFullName(staffList, fullName, staffMember.id)) {
-      setFullNameError(validationErrorMessages.duplicateStaffFullName)
-      return
-    }
-
     if (selectedRoles.length === 0) {
       setRoleError(validationErrorMessages.accountRoleRequired)
       return
     }
 
-    const rolePayload = selectedRoles.map((role) => (role === 'hr' ? 'HR' : 'Interviewer'))
+    void editStaffForm.handleSubmit((values) => {
+      const rolePayload = selectedRoles.map((role) => (role === 'hr' ? 'HR' : 'Interviewer'))
 
-    onConfirm({
-      fullName: fullName.trim(),
-      email: staffMember.email,
-      role: rolePayload,
-      status: staffMember.status,
-    })
+      onConfirm({
+        fullName: values.fullName.trim(),
+        email: staffMember.email,
+        role: rolePayload,
+        status: staffMember.status,
+      })
+    })()
   }
 
   const resetEditStaffForm = () => {
-    setFullName(staffMember.fullName)
+    editStaffForm.reset({ fullName: staffMember.fullName })
     setSelectedRoles(getStaffRoles(staffMember))
-    setFullNameError('')
     setRoleError('')
     setShowCancelConfirm(false)
   }
