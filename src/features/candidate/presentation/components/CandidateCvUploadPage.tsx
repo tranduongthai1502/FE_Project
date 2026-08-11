@@ -123,7 +123,7 @@ export function CandidateCvUploadPage() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
           >
-            <span><i className="fa-solid fa-cloud-arrow-up"></i></span>
+            {!selectedFile && !isUploaded && <span><i className="fa-solid fa-cloud-arrow-up"></i></span>}
             <strong>{selectedFile ? selectedFile.name : 'Drag and drop your CV here, or click to browse'}</strong>
             <small>{selectedFile ? `${formatFileSize(selectedFile.size)} ready to upload` : 'Supported formats: PDF, DOC, DOCX. Maximum file size 5MB.'}</small>
             <button type="button" onClick={() => inputRef.current?.click()}>Browse Files</button>

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { candidateCompanyApi, type CandidateCompanyListParams } from '../infrastructure/candidateCompanyApi'
+import { candidateJobPostingApi } from '../infrastructure/candidateJobPostingApi'
 import { candidateQueryKeys } from './candidateQueryKeys'
 import { hrApi } from '@/features/hr/infrastructure/hrApi'
 
@@ -35,7 +36,7 @@ export function useCandidateCompanyJobs(companyId: string | undefined, params?: 
 
   return useQuery({
     queryKey: candidateQueryKeys.companyJobs(companyId ?? '', requestParams),
-    queryFn: () => hrApi.getJobPostings(requestParams),
+    queryFn: () => candidateJobPostingApi.getCompanyJobs(requestParams),
     enabled: Boolean(companyId),
   })
 }

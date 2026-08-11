@@ -26,6 +26,11 @@ function formatDate(value?: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
+function formatApplicantCount(value?: number) {
+  if (!Number.isFinite(value)) return ''
+  return `${value} ${value === 1 ? 'applicant' : 'applicants'}`
+}
+
 export function CandidateCompanyDetailPage() {
   const navigate = useNavigate()
   const { companyId } = useParams<{ companyId?: string }>()
@@ -97,35 +102,35 @@ export function CandidateCompanyDetailPage() {
           <div className="candidate-company-list-state">No open positions found for this company.</div>
         )}
         {!jobsQuery.isLoading && !jobsQuery.error && jobs.length > 0 && <div className="candidate-company-job-grid">
-          {jobs.map((job) => (
-            <article
-              className="candidate-company-job-card"
-              key={job.id}
-              onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${job.id}`)}
-            >
-              <header>
-                <span className={job.employmentType === 'CONTRACT' ? 'contract' : ''}>
-                  <i className="fa-solid fa-circle"></i>
-                  {formatEmploymentType(job.employmentType)}
-                </span>
-                <button type="button" aria-label={`Open ${job.title}`}>
-                  <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                </button>
-              </header>
-              <h3>{job.title}</h3>
-              <strong>{job.department || 'General'}</strong>
-              <div className="candidate-company-job-meta">
-                <span><i className="fa-solid fa-layer-group"></i>{'level' in job && job.level ? job.level : 'Any level'}</span>
-                <span><i className="fa-solid fa-money-bill-wave"></i>{formatSalaryRange(job)}</span>
-                <span><i className="fa-solid fa-calendar-days"></i>{formatDate(job.applicationDeadline)}</span>
-                <span><i className="fa-solid fa-users"></i>{'applicantCount' in job ? `${job.applicantCount} applicants` : 'Open applications'}</span>
-              </div>
-              <footer>
-                <span><i className="fa-solid fa-location-dot"></i>{job.location || 'Remote'}</span>
-                <span><i className="fa-solid fa-building"></i>{'locationType' in job && job.locationType ? formatEmploymentType(job.locationType) : 'Flexible'}</span>
-              </footer>
-            </article>
-          ))}
+          {jobs.map((job) => {
+            const applicantLabel = formatApplicantCount(job.applicantCount)
+
+            return (
+              <article
+                className="candidate-company-job-card"
+                key={job.id}
+                onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${job.id}`)}
+              >
+                <header>
+                  <span className={job.employmentType === 'CONTRACT' ? 'contract' : ''}>
+                    <i className="fa-solid fa-circle"></i>
+                    {formatEmploymentType(job.employmentType)}
+                  </span>
+                </header>
+                <h3>{job.title}</h3>
+                <strong>{job.department || 'General'}</strong>
+                <div className="candidate-company-job-meta">
+                  <span><i className="fa-solid fa-money-bill-wave"></i>{formatSalaryRange(job)}</span>
+                  <span><i className="fa-solid fa-calendar-days"></i>{formatDate(job.applicationDeadline)}</span>
+                  {applicantLabel && <span><i className="fa-solid fa-users"></i>{applicantLabel}</span>}
+                </div>
+                <footer>
+                  <span><i className="fa-solid fa-location-dot"></i>{job.location || 'Remote'}</span>
+                  <span><i className="fa-solid fa-building"></i>{'locationType' in job && job.locationType ? formatEmploymentType(job.locationType) : 'Flexible'}</span>
+                </footer>
+              </article>
+            )
+          })}
         </div>}
         <footer className="candidate-company-job-footer">
           <span>Showing {firstJobItem} to {lastJobItem} of {totalJobs} positions</span>

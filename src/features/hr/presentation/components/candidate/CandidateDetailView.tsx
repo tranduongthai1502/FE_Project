@@ -7,7 +7,7 @@ import styles from './candidateDetail.module.css'
 export function CandidateDetailView() {
   const { candidateId } = useParams<{ candidateId?: string }>()
   const navigate = useNavigate()
-  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed } = useCandidateDetailController(candidateId)
+  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed, isLoadingResume, resumeError } = useCandidateDetailController(candidateId)
 
   const componentAnalysis = candidate?.componentAnalysis || []
   const aiJustification = candidate?.aiJustification || []
@@ -49,6 +49,9 @@ export function CandidateDetailView() {
           </button>
         </div>
       </div>
+
+      {isLoadingResume && <div className={styles.resumeStateMessage}>Loading extracted CV data...</div>}
+      {resumeError && <div className={`${styles.resumeStateMessage} ${styles.resumeStateError}`}>Unable to load the latest CV detail. Showing available data.</div>}
 
       {activeTab === 'scoring' ? (
         <>
@@ -97,7 +100,7 @@ export function CandidateDetailView() {
                 <span className={styles.scoreRingText}>{candidate?.matchScore || 0}%</span>
               </div>
               <span className={styles.scoreStatusText}>
-                {candidate?.scoringStatus === 'COMPLETED' ? 'Match Score' : 'Scoring In Progress'}
+                {candidate?.scoringStatus === 'COMPLETED' ? 'Overall Match' : 'Scoring In Progress'}
               </span>
             </div>
           </div>
@@ -106,11 +109,11 @@ export function CandidateDetailView() {
             <div className={styles.panelBox}>
               <h3 className={styles.panelTitle}>Component Analysis</h3>
               <div className={styles.componentList}>
-                {componentAnalysis.map((comp) => (
-                  <div key={comp.category} className={styles.componentItem}>
+                {componentAnalysis.map((comp, index) => (
+                  <div key={`${comp.category || 'component'}-${index}`} className={styles.componentItem}>
                     <div className={styles.componentHead}>
                       <span>{comp.category}</span>
-                      <span>{comp.score}% ({comp.weight}% Weight)</span>
+                      <span>{comp.weight === 10 ? `${Math.round(comp.score / 10)} / 10` : `${comp.score}% (${comp.weight}% Weight)`}</span>
                     </div>
                     <div className={styles.componentBarBg}>
                       <div className={styles.componentBarFill} style={{ width: `${comp.score}%` }} />
@@ -299,57 +302,20 @@ export function CandidateDetailView() {
             <div className={styles.pdfPreviewHeader}>
               <div className={styles.pdfFileNameWrap}>
                 <i className="fa-regular fa-file-pdf"></i>
-                <span>{extractedCv.cvFileName || 'Original_CV_Thompson.pdf'}</span>
+                <span>{extractedCv.cvFileName || ''}</span>
               </div>
-              <a href={extractedCv.cvDownloadUrl || '#'} className={styles.pdfDownloadBtn} download>
-                <i className="fa-solid fa-download"></i>
-                Download CV
-              </a>
+              {extractedCv.cvDownloadUrl && (
+                <a href={extractedCv.cvDownloadUrl} className={styles.pdfDownloadBtn} download>
+                  <i className="fa-solid fa-download"></i>
+                  Download CV
+                </a>
+              )}
             </div>
 
             <div className={styles.pdfPreviewBody}>
-              <div className={styles.pdfPaper}>
-                <div className={styles.pdfPaperHeader}>
-                  <h2 className={styles.pdfName}>{candidate?.name.toUpperCase()}</h2>
-                  <div className={styles.pdfSubHeader}>{candidate?.targetJob} | {candidate?.location}</div>
-                  <div className={styles.pdfContact}>{candidate?.email} | {candidate?.phone}</div>
-                </div>
-
-                <div className={styles.pdfSection}>
-                  <h4 className={styles.pdfSectionHeader}>EXPERIENCE</h4>
-                  {(extractedCv.experience || []).map((exp, idx) => (
-                    <div key={idx} className={styles.pdfExpItem}>
-                      <div className={styles.pdfExpRow}>
-                        <strong>{exp.company}</strong>
-                        <span>{exp.duration}</span>
-                      </div>
-                      <div className={styles.pdfRoleTitle}>{exp.title}</div>
-                      {exp.bullets ? (
-                        <ul className={styles.pdfBulletList}>
-                          {exp.bullets.map((b, bIdx) => (
-                            <li key={bIdx}>{b}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>{exp.description}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className={styles.pdfSection}>
-                  <h4 className={styles.pdfSectionHeader}>EDUCATION</h4>
-                  {(extractedCv.education || []).map((edu, idx) => (
-                    <div key={idx} className={styles.pdfEduItem}>
-                      <div className={styles.pdfExpRow}>
-                        <strong>{edu.institution}</strong>
-                        <span>{edu.year}</span>
-                      </div>
-                      <div>{edu.degree}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {extractedCv.cvDownloadUrl && (
+                <iframe className={styles.pdfFrame} src={extractedCv.cvDownloadUrl} title="Candidate CV" />
+              )}
             </div>
           </div>
         </div>

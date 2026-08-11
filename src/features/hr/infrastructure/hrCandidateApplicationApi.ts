@@ -30,11 +30,31 @@ function normalizeCandidateApplication(item: any): Candidate | null {
   const candidate = source?.candidate || source?.candidateInfo || source?.candidate_info || source?.user || {}
   const job = source?.jobPosting || source?.job || source?.job_posting || {}
   const id = source?.id || source?.applicationId || source?.application_id || source?.candidateApplicationId || source?.candidate_application_id
+  const candidateId =
+    source?.candidateId ||
+    source?.candidate_id ||
+    candidate?.id ||
+    candidate?.candidateId ||
+    candidate?.candidate_id ||
+    candidate?.userId ||
+    candidate?.user_id
+  const jobId =
+    source?.jobId ||
+    source?.job_id ||
+    source?.jobPostingId ||
+    source?.job_posting_id ||
+    job?.id ||
+    job?.jobId ||
+    job?.job_id ||
+    job?.jobPostingId ||
+    job?.job_posting_id
 
   if (!id) return null
 
   return {
     id: String(id),
+    candidateId: candidateId ? String(candidateId) : undefined,
+    jobId: jobId ? String(jobId) : undefined,
     name: String(
       candidate?.fullName ||
       candidate?.full_name ||
@@ -110,6 +130,13 @@ export const hrCandidateApplicationApi = {
 
   async markAsReviewed(id: string) {
     const response = await axiosClient.patch(`/api/candidate-application/${encodeURIComponent(id)}/review`)
+    return response.data
+  },
+
+  async getCandidateResumeByJobAndCandidate(jobId: string, candidateId: string) {
+    const response = await axiosClient.get(
+      `/api/candidate/resume/job/${encodeURIComponent(jobId)}/candidate/${encodeURIComponent(candidateId)}`,
+    )
     return response.data
   },
 }
