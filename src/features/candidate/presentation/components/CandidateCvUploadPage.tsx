@@ -97,8 +97,6 @@ export function CandidateCvUploadPage() {
         className="candidate-breadcrumb"
         items={[
           { label: 'Home', onClick: () => navigate('/candidate') },
-          { label: 'Companies', onClick: () => navigate('/candidate/companies') },
-          { label: truncateCandidateText(displayCompanyName), onClick: () => navigate(`/candidate/companies/${companyId}`) },
           { label: truncateCandidateText(displayJobTitle), onClick: () => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`) },
           { label: 'Upload CV' },
         ]}

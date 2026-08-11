@@ -44,7 +44,6 @@ export function CandidateJobDetailPage() {
   const displayCompanyName = company?.name || 'Selected Company'
   const jobDescription = stripParagraphTags(job?.description)
   const benefitItems = getBenefitItems(job?.benefits)
-  const hasExistingApplication = Boolean(job && 'flag' in job && job.flag)
 
   const handleApplicationAction = async () => {
     if (!companyId || !jobId) return

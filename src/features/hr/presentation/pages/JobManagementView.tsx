@@ -1,4 +1,5 @@
 import { hrCreateJobPostingPath, hrJobsPath } from '@/features/hr/domain/hrRoutePaths'
+import { getHrJobDetailPath } from '@/features/hr/application/helpers/hrDashboardHelpers'
 import { useHrJobCriteriaController } from '@/features/hr/application/hooks/useHrJobCriteriaController'
 import { useHrJobsController } from '@/features/hr/application/hooks/useHrJobsController'
 import { JobAiGenerateSection } from '../components/job/JobAiGenerateSection'
@@ -25,7 +26,27 @@ export function JobManagementView({
     jobDetailTab: jobsCtrl.jobDetailTab,
     jobs: jobsCtrl.jobs,
     isActionLocked,
-    onReturnToList: () => {
+    onReturnToList: (updatedJob) => {
+      if (jobsCtrl.jobView === 'edit' && jobsCtrl.selectedJob?.id) {
+        if (updatedJob) {
+          jobsCtrl.setSelectedJob(updatedJob)
+        }
+        jobsCtrl.setJobDetailTab('overview')
+        jobsCtrl.setJobView('detail')
+        jobsCtrl.updateHrJobsPath(getHrJobDetailPath(jobsCtrl.selectedJob.id))
+        return
+      }
+
+      if (updatedJob) {
+        jobsCtrl.setJobs((currentJobs: any[]) => [
+          updatedJob,
+          ...currentJobs.filter((job) => job.id !== updatedJob.id),
+        ])
+        void jobsCtrl.refreshJobs()
+        void jobsCtrl.refreshJobStats()
+        void jobsCtrl.refreshJobPostingLimit()
+      }
+
       jobsCtrl.setJobView('list')
       jobsCtrl.updateHrJobsPath(hrJobsPath)
     },

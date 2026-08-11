@@ -158,8 +158,6 @@ export function CandidateCvScorePage() {
         items={[
           { label: 'Home', onClick: () => navigate('/candidate') },
           { label: 'Companies', onClick: () => navigate('/candidate/companies') },
-          { label: truncateCandidateText(breadcrumbCompanyName), onClick: () => navigate(`/candidate/companies/${companyId}`) },
-          { label: truncateCandidateText(displayJobTitle), onClick: () => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`) },
           { label: 'View CV Score & Suggestions' },
         ]}
       />
@@ -212,11 +210,11 @@ export function CandidateCvScorePage() {
             <article className="candidate-ai-resume-insights">
               <h2><i className="fa-solid fa-wand-magic-sparkles"></i> AI Resume Insights</h2>
               {analysis?.cvImprovementSuggestions?.overallFeedback && <p>{analysis.cvImprovementSuggestions.overallFeedback}</p>}
-              {skillGaps.length > 0 && (
+              {skills.length > 0 && (
                 <section>
-                  <h3>Missing Keywords:</h3>
+                  <h3>Skills:</h3>
                   <div>
-                    {skillGaps.map((skill) => <span key={skill}>{skill}</span>)}
+                    {skills.map((skill) => <span key={skill}>{skill}</span>)}
                   </div>
                 </section>
               )}
@@ -239,6 +237,10 @@ export function CandidateCvScorePage() {
                   <strong>{score}%</strong>
                 </div>
               )}
+            </article>
+            <article className="candidate-submitted-documents">
+              <h2>Submitted Documents</h2>
+              {analysis?.fileName && <button type="button"><i className="fa-regular fa-file-pdf"></i>{analysis.fileName}<i className="fa-solid fa-download"></i></button>}
             </article>
           </aside>
         </div>

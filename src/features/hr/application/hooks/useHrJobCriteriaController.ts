@@ -58,7 +58,7 @@ export function useHrJobCriteriaController({
   jobDetailTab: JobDetailTab
   jobs: JobPosting[]
   isActionLocked: boolean
-  onReturnToList: () => void
+  onReturnToList: (updatedJob?: JobPosting) => void
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }) {
   // --- Evaluation Criteria State ---
@@ -547,7 +547,7 @@ export function useHrJobCriteriaController({
     setIsDeadlineCalendarOpen(false)
   }
 
-  const discardJobFormChanges = () => {
+  const discardJobFormChanges = (updatedJob?: JobPosting) => {
     window.sessionStorage.removeItem('jobfusion.hr.jobFormRefreshView')
     setIsCancelConfirmOpen(false)
     setJobFieldErrors({})
@@ -555,7 +555,7 @@ export function useHrJobCriteriaController({
     setDeadlineInputValue('')
     setSalaryInputValues({ salaryMin: '', salaryMax: '' })
     setJobForm(emptyJobForm)
-    onReturnToList()
+    onReturnToList(updatedJob)
   }
 
   const handleCancelJobForm = () => {
@@ -604,12 +604,17 @@ export function useHrJobCriteriaController({
     const isEditingJob = jobView === 'edit' && selectedJob
 
     try {
+      let savedJob: JobPosting | null = null
       if (isEditingJob) {
-        await hrApi.updateJobPosting(selectedJob.id, payloadWithDeadline)
+        savedJob = await hrApi.updateJobPosting(selectedJob.id, payloadWithDeadline)
       } else {
-        await hrApi.createJobPosting(payloadWithDeadline)
+        savedJob = await hrApi.createJobPosting(payloadWithDeadline)
       }
-      discardJobFormChanges()
+      discardJobFormChanges(
+        isEditingJob
+          ? savedJob || { ...selectedJob, ...payloadWithDeadline }
+          : savedJob || undefined,
+      )
       triggerToast?.(isEditingJob ? 'Job posting updated successfully.' : 'Job posting created successfully.', 'success')
     } catch (error) {
       const apiFieldErrors = getJobFieldErrorsFromApiError(error)

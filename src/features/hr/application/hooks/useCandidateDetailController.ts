@@ -162,12 +162,15 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
       weight: Number(item?.weight ?? item?.weightPercent ?? 0) || 0,
       analysis: toText(item?.analysis || item?.feedback || item?.reason),
     }))
-  const suggestionComponentAnalysis = suggestionItems.map((item) => ({
-    category: '',
-    score: Number(item?.score ?? 0) || 0,
-    weight: Number(item?.weight ?? item?.weightPercent ?? 0) || 0,
-    analysis: toText(item?.criterionName || item?.criterion_name),
-  }))
+  const suggestionComponentAnalysis = suggestionItems.map((item) => {
+    const scoreOutOfTen = Number(item?.score ?? 0) || 0
+    return {
+      category: '',
+      score: Math.max(0, Math.min(100, scoreOutOfTen * 10)),
+      weight: 10,
+      analysis: toText(item?.criterionName || item?.criterion_name),
+    }
+  })
   const aiJustification = asArray(resume?.aiJustification || resume?.ai_justification || suggestions?.strengths || (suggestions?.overallFeedback ? [suggestions.overallFeedback] : []))
     .map((item) => toText(item))
     .filter(Boolean)

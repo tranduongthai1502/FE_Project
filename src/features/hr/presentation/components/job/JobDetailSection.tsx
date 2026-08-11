@@ -104,7 +104,9 @@ export function JobDetailSection({
         <h1>{selectedJob.title} <em className={`${styles.jobStatusBadge} ${selectedJob.status.toLowerCase()}`}>{formatJobStatus(selectedJob.status)}</em></h1>
         {jobsCtrl.jobDetailTab === 'overview' && (
           <div>
-            <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.requestJobAction('delete', selectedJob)}>Delete</button>
+            {!selectedJobIsOpen && (
+              <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.requestJobAction('delete', selectedJob)}>Delete</button>
+            )}
             {(selectedJobIsDraft || selectedJobIsClosed) && (
               <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.requestJobAction('open', selectedJob)}>Open</button>
             )}
