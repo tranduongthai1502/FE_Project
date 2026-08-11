@@ -16,8 +16,10 @@ export const candidateApplicationApi = {
     return response.data
   },
 
-  async getResumeByJobId(jobId: string) {
-    const response = await axiosClient.get(`/api/candidate/resume/job/${encodeURIComponent(jobId)}`)
+  async getResumeByJobAndCandidate(jobId: string, candidateId: string) {
+    const response = await axiosClient.get(
+      `/api/candidate/resume/job/${encodeURIComponent(jobId)}/candidate/${encodeURIComponent(candidateId)}`,
+    )
     return response.data
   },
 }

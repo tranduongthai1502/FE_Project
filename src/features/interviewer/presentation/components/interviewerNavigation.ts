@@ -4,7 +4,7 @@ import type { InterviewerHomeView } from '@/features/interviewer/domain/intervie
 export const interviewerNav: Array<NavigationConfigItem<InterviewerHomeView>> = [
   { icon: 'fa-table-cells-large', label: 'Dashboard', view: 'dashboard' },
   { icon: 'fa-calendar-day', label: 'My Interviews' },
-  { icon: 'fa-users', label: 'Candidates' },
+  { icon: 'fa-users', label: 'Candidates', view: 'candidates' },
   { icon: 'fa-rectangle-list', label: 'Interview Detail' },
   { icon: 'fa-gear', label: 'Settings', view: 'settings' },
 ]

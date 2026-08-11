@@ -213,7 +213,7 @@
 
 :global(.candidate-table-row) {
   display: grid !important;
-  grid-template-columns: 1.8fr 1.8fr 1.2fr 1.4fr 1.2fr 0.8fr !important;
+  grid-template-columns: minmax(150px, 1.4fr) minmax(180px, 1.5fr) minmax(110px, 0.9fr) minmax(150px, 1.2fr) minmax(120px, 0.9fr) minmax(80px, 0.6fr) !important;
   align-items: center !important;
   gap: 16px !important;
   min-height: 64px !important;
@@ -224,6 +224,17 @@
   background-color: #ffffff !important;
   transition: background-color 0.15s ease !important;
   cursor: pointer !important;
+}
+
+:global(.candidate-table-row > *) {
+  min-width: 0 !important;
+}
+
+:global(.candidate-table-row > :nth-child(2)) {
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
 :global(.candidate-table-row:hover) {

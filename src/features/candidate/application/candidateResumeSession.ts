@@ -35,6 +35,18 @@ export function getSavedResumeCandidateId(jobId: string) {
     ''
 }
 
+export function getCurrentCandidateId() {
+  const rawUser = window.localStorage.getItem('user_info') || window.sessionStorage.getItem('user_info')
+  if (!rawUser) return ''
+
+  try {
+    const user = JSON.parse(rawUser)
+    return String(user?.candidateId || user?.candidate_id || user?.id || user?.userId || user?.user_id || '')
+  } catch {
+    return ''
+  }
+}
+
 export function getResumeUploadedKey(jobId: string) {
   return `${resumeUploadedPrefix}${jobId}`
 }

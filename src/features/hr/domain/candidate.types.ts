@@ -2,6 +2,8 @@ export type CandidateStage = 'Final Interview' | 'Technical Test' | 'Pass' | 'Hi
 
 export type Candidate = {
   id: string
+  candidateId?: string
+  jobId?: string
   name: string
   targetJob: string
   matchScore: number

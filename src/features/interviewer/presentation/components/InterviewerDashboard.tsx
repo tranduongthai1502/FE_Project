@@ -9,6 +9,7 @@ import { DashboardShell } from '@/core/components/DashboardShell'
 import { getStoredRequirePasswordChange } from '@/core/api/authStorage'
 import styles from './InterviewerDashboard.module.css'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
+import { InterviewerCandidatesPage } from './InterviewerCandidatesPage'
 
 export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () => void; triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const location = useLocation()
@@ -20,6 +21,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
   ))
   const [viewResetKeys, setViewResetKeys] = useState<Record<InterviewerHomeView, number>>({
     dashboard: 0,
+    candidates: 0,
     settings: 0,
   })
   const selectView = (view: InterviewerHomeView) => {
@@ -89,6 +91,7 @@ export function InterviewerDashboard({ onLogout, triggerToast }: { onLogout: () 
             />
           )}
         />
+        <Route path="candidates" element={<InterviewerCandidatesPage key={viewResetKeys.candidates} onHome={() => selectView('dashboard')} />} />
         <Route path="dashboard" element={(
       <div key={viewResetKeys.dashboard} className={`role-content ${styles.content}`}>
         <h1>Interviewer Dashboard</h1>
