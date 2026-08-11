@@ -31,6 +31,8 @@ export function CandidateCvUploadPage() {
   const [isUploaded, setIsUploaded] = useState(false)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || candidateCompanyJobs.find((item) => item.id === jobId)
+  const company = candidateCompanies.find((item) => item.id === companyId)
+  const displayCompanyName = company?.name || 'Company Detail'
   const displayJobTitle = job?.title || 'Job Detail'
 
   if (!companyId || !jobId) return <Navigate to="/candidate/companies" replace />
@@ -95,6 +97,8 @@ export function CandidateCvUploadPage() {
         className="candidate-breadcrumb"
         items={[
           { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: 'Companies', onClick: () => navigate('/candidate/companies') },
+          { label: truncateCandidateText(displayCompanyName), onClick: () => navigate(`/candidate/companies/${companyId}`) },
           { label: truncateCandidateText(displayJobTitle), onClick: () => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`) },
           { label: 'Upload CV' },
         ]}

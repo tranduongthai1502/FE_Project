@@ -109,18 +109,24 @@ export function CandidateDetailView() {
             <div className={styles.panelBox}>
               <h3 className={styles.panelTitle}>Component Analysis</h3>
               <div className={styles.componentList}>
-                {componentAnalysis.map((comp, index) => (
-                  <div key={`${comp.category || 'component'}-${index}`} className={styles.componentItem}>
-                    <div className={styles.componentHead}>
-                      <span>{comp.category}</span>
-                      <span>{comp.weight === 10 ? `${Math.round(comp.score / 10)} / 10` : `${comp.score}% (${comp.weight}% Weight)`}</span>
+                {componentAnalysis.map((comp, index) => {
+                  const score = Number(comp.score) || 0
+                  const weight = Number(comp.weight) || 0
+                  const barWidth = weight > 0 ? Math.max(0, Math.min(100, (score / weight) * 100)) : 0
+
+                  return (
+                    <div key={`${comp.category || comp.analysis || 'component'}-${index}`} className={styles.componentItem}>
+                      <div className={styles.componentHead}>
+                        <span>{comp.category}</span>
+                        <span>{weight > 0 ? `${score} / ${weight}` : `${score}`}</span>
+                      </div>
+                      <div className={styles.componentBarBg}>
+                        <div className={styles.componentBarFill} style={{ width: `${barWidth}%` }} />
+                      </div>
+                      <div className={styles.componentDesc}>{comp.analysis}</div>
                     </div>
-                    <div className={styles.componentBarBg}>
-                      <div className={styles.componentBarFill} style={{ width: `${comp.score}%` }} />
-                    </div>
-                    <div className={styles.componentDesc}>{comp.analysis}</div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 

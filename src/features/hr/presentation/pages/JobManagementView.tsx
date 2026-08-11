@@ -4,6 +4,7 @@ import { useHrJobsController } from '@/features/hr/application/hooks/useHrJobsCo
 import { JobAiGenerateSection } from '../components/job/JobAiGenerateSection'
 import { JobDetailSection } from '../components/job/JobDetailSection'
 import { JobFormSection } from '../components/job/JobFormSection'
+import { JobKanbanBoardSection } from '../components/job/JobKanbanBoardSection'
 import { JobListSection } from '../components/job/JobListSection'
 
 type ToastTrigger = (message: string, type?: 'success' | 'error') => void
@@ -44,6 +45,15 @@ export function JobManagementView({
         onHome={onHome}
         jobsCtrl={jobsCtrl}
         criteriaCtrl={criteriaCtrl}
+      />
+    )
+  }
+
+  if (jobsCtrl.jobView === 'kanban') {
+    return (
+      <JobKanbanBoardSection
+        onHome={onHome}
+        jobsCtrl={jobsCtrl}
       />
     )
   }

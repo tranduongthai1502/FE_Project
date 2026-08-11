@@ -111,6 +111,7 @@ export function JobDetailSection({
             {selectedJobIsOpen && (
               <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.requestJobAction('close', selectedJob)}>Close</button>
             )}
+            <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.openJobKanban(selectedJob)}>Kanban Board</button>
             <button type="button" disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.openEditJob(selectedJob)}>Edit</button>
           </div>
         )}
