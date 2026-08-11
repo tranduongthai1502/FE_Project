@@ -14,7 +14,7 @@ export function useAdminTenants(params: {
   const { sortField = 'companyName', filters = {}, sortBy = 'ASC', page = 1, size = ADMIN_LIST_PAGE_SIZE, enabled = true } = params
 
   return useQuery({
-    queryKey: adminQueryKeys.tenantList(filters, page, size, sortField, sortBy),
+    queryKey: [adminQueryKeys.TENANT_LIST, { filters, page, size, sortField, sortBy }],
     queryFn: () => adminApi.getTenants({ sortField, filters, sortBy, page, size }),
     enabled,
   })

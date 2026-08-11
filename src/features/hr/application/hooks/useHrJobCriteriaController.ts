@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { hrApi } from '../../infrastructure/hrApi'
 import type { GenerateJobPostingAiResponse, JobCriteriaResponse, JobPosting, JobPostingPayload } from '../../domain/hrApi.types'
 import type {
@@ -69,7 +72,33 @@ export function useHrJobCriteriaController({
   const [pendingCriteriaCancelAction, setPendingCriteriaCancelAction] = useState<(() => void) | null>(null)
 
   // --- Job Form State ---
-  const [jobForm, setJobForm] = useState<JobPostingPayload>(emptyJobForm)
+  const jobFormMethods = useForm<JobPostingPayload>({
+    resolver: zodResolver(z.object({
+      title: z.string(),
+      department: z.string(),
+      level: z.string(),
+      employmentType: z.string(),
+      locationType: z.string(),
+      location: z.string(),
+      applicationDeadline: z.string(),
+      description: z.string(),
+      requirements: z.string(),
+      benefits: z.string(),
+      salaryMin: z.number(),
+      salaryMax: z.number(),
+      status: z.string(),
+      allowDuplicateTitle: z.boolean().optional(),
+    })),
+    defaultValues: emptyJobForm,
+    mode: 'onSubmit',
+  })
+  const jobForm = jobFormMethods.watch()
+  const setJobForm = (nextValue: JobPostingPayload | ((current: JobPostingPayload) => JobPostingPayload)) => {
+    const nextForm = typeof nextValue === 'function'
+      ? nextValue(jobFormMethods.getValues())
+      : nextValue
+    jobFormMethods.reset(nextForm)
+  }
   const [salaryInputValues, setSalaryInputValues] = useState({ salaryMin: '', salaryMax: '' })
   const [jobFieldErrors, setJobFieldErrors] = useState<JobFieldErrors>({})
   const [isSavingJob, setIsSavingJob] = useState(false)
@@ -376,7 +405,8 @@ export function useHrJobCriteriaController({
       const { [field]: _removed, ...nextErrors } = current
       return nextErrors
     })
-    setJobForm((current) => ({ ...current, [field]: nextValue }))
+    jobFormMethods.setValue(field, nextValue, { shouldDirty: true })
+    jobFormMethods.clearErrors(field)
   }
 
   const updateSalaryField = (field: 'salaryMin' | 'salaryMax', value: string) => {
@@ -387,7 +417,8 @@ export function useHrJobCriteriaController({
     })
     const formattedValue = formatCurrencyInput(value)
     setSalaryInputValues((current) => ({ ...current, [field]: formattedValue }))
-    setJobForm((current) => ({ ...current, [field]: formattedValue === '' ? 0 : parseCurrencyInput(formattedValue) }))
+    jobFormMethods.setValue(field, formattedValue === '' ? 0 : parseCurrencyInput(formattedValue), { shouldDirty: true })
+    jobFormMethods.clearErrors(field)
   }
 
   const getSalaryRangeText = (payload: JobPostingPayload) => {
@@ -538,11 +569,22 @@ export function useHrJobCriteriaController({
 
   const saveJob = async (payload: JobPostingPayload = jobForm, options: { allowDuplicateTitle?: boolean } = {}) => {
     if (isActionLocked || isSavingJob) return
+    const resolverIsValid = await jobFormMethods.trigger()
+    if (!resolverIsValid) {
+      const resolverErrors = Object.fromEntries(
+        Object.entries(jobFormMethods.formState.errors).map(([field, error]) => [field, error?.message || '']),
+      ) as JobFieldErrors
+      setJobFieldErrors(resolverErrors)
+      return
+    }
     const payloadWithDeadline = withDefaultApplicationDeadline(payload)
     const nextErrors = getJobValidationErrors(payloadWithDeadline, salaryInputValues)
 
     if (Object.keys(nextErrors).length > 0) {
       setJobFieldErrors(nextErrors)
+      Object.entries(nextErrors).forEach(([field, message]) => {
+        if (message) jobFormMethods.setError(field as keyof JobPostingPayload, { type: 'validate', message })
+      })
       return
     }
 
@@ -578,6 +620,9 @@ export function useHrJobCriteriaController({
         triggerToast?.(jobPostingLimitReachedMessage, 'error')
       } else if (Object.keys(apiFieldErrors).length > 0) {
         setJobFieldErrors(apiFieldErrors)
+        Object.entries(apiFieldErrors).forEach(([field, message]) => {
+          if (message) jobFormMethods.setError(field as keyof JobPostingPayload, { type: 'server', message })
+        })
         triggerToast?.(getJobToastErrorMessage(error, 'Please check the highlighted fields.'), 'error')
       } else {
         triggerToast?.(getJobToastErrorMessage(error, 'Error system. Please try again.'), 'error')

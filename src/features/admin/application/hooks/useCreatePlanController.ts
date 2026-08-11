@@ -1,4 +1,7 @@
 import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { useCreatePlan } from '../queryHooks/useAdminQueries'
 import type { CreatePlanPayload, SubscriptionPlan } from '../../domain/adminApi.types'
 import {
@@ -46,6 +49,41 @@ export function useCreatePlanController({
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }) {
   const createPlanMutation = useCreatePlan()
+  const createPlanForm = useForm({
+    resolver: zodResolver(z.object({
+      planName: z.string().superRefine((value, context) => {
+        const message = validateRequiredPlanName(value, hasDuplicatePlanName(existingPlans, value))
+        if (message) context.addIssue({ code: 'custom', message })
+      }),
+      description: z.string().superRefine((value, context) => {
+        const message = validateRequiredShortDescription(value)
+        if (message) context.addIssue({ code: 'custom', message })
+      }),
+      monthlyPrice: z.string().superRefine((value, context) => {
+        const message = validateRequiredPrice(value)
+        if (message) context.addIssue({ code: 'custom', message })
+      }),
+      maxStaffAccount: z.string(),
+      maxActiveJobPosting: z.string(),
+      isStaffUnlimited: z.boolean(),
+      isJobsUnlimited: z.boolean(),
+    }).superRefine((values, context) => {
+      const staffLimitError = validatePositiveNumberOrUnlimited(values.maxStaffAccount, values.isStaffUnlimited)
+      if (staffLimitError) context.addIssue({ code: 'custom', path: ['maxStaffAccount'], message: staffLimitError })
+      const jobLimitError = validatePositiveNumberOrUnlimited(values.maxActiveJobPosting, values.isJobsUnlimited)
+      if (jobLimitError) context.addIssue({ code: 'custom', path: ['maxActiveJobPosting'], message: jobLimitError })
+    })),
+    defaultValues: {
+      planName: '',
+      description: '',
+      monthlyPrice: '',
+      maxStaffAccount: '',
+      maxActiveJobPosting: '',
+      isStaffUnlimited: false,
+      isJobsUnlimited: false,
+    },
+    mode: 'onSubmit',
+  })
 
   const [planName, setPlanName] = useState('')
   const [description, setDescription] = useState('')
@@ -61,6 +99,51 @@ export function useCreatePlanController({
   const [isSavingPlan, setIsSavingPlan] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
 
+  const syncPlanFormField = (field: 'planName' | 'description' | 'monthlyPrice' | 'maxStaffAccount' | 'maxActiveJobPosting', value: string) => {
+    createPlanForm.setValue(field, value, { shouldDirty: true })
+    createPlanForm.clearErrors(field)
+    setFieldErrors((current) => current[field] ? { ...current, [field]: '' } : current)
+  }
+
+  const updatePlanName = (value: string) => {
+    setPlanName(value)
+    syncPlanFormField('planName', value)
+  }
+
+  const updateDescription = (value: string) => {
+    setDescription(value)
+    syncPlanFormField('description', value)
+  }
+
+  const updateMonthlyPrice = (value: string) => {
+    setMonthlyPrice(value)
+    syncPlanFormField('monthlyPrice', value)
+  }
+
+  const updateMaxStaffAccount = (value: string) => {
+    setMaxStaffAccount(value)
+    syncPlanFormField('maxStaffAccount', value)
+  }
+
+  const updateMaxActiveJobPosting = (value: string) => {
+    setMaxActiveJobPosting(value)
+    syncPlanFormField('maxActiveJobPosting', value)
+  }
+
+  const updateStaffUnlimited = (value: boolean) => {
+    setIsStaffUnlimited(value)
+    createPlanForm.setValue('isStaffUnlimited', value, { shouldDirty: true })
+    createPlanForm.clearErrors('maxStaffAccount')
+    setFieldErrors((current) => current.maxStaffAccount ? { ...current, maxStaffAccount: '' } : current)
+  }
+
+  const updateJobsUnlimited = (value: boolean) => {
+    setIsJobsUnlimited(value)
+    createPlanForm.setValue('isJobsUnlimited', value, { shouldDirty: true })
+    createPlanForm.clearErrors('maxActiveJobPosting')
+    setFieldErrors((current) => current.maxActiveJobPosting ? { ...current, maxActiveJobPosting: '' } : current)
+  }
+
   const updateLimitedPlanField = (
     field: keyof CreatePlanFieldErrors,
     value: string,
@@ -72,6 +155,7 @@ export function useCreatePlanController({
     const isOverMaxLength = value.length > maxLength
     const nextValue = isOverMaxLength ? value.slice(0, maxLength) : value
     setter(formatter ? formatter(nextValue) : nextValue)
+    syncPlanFormField(field, formatter ? formatter(nextValue) : nextValue)
     setFieldErrors((current) => {
       if (isOverMaxLength) {
         return {
@@ -96,7 +180,6 @@ export function useCreatePlanController({
   const handleCreatePlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPlanError('')
-    const nextFieldErrors: CreatePlanFieldErrors = {}
     const planDetailsAreEmpty = !planName.trim() &&
       !description.trim() &&
       !monthlyPrice.trim() &&
@@ -116,23 +199,16 @@ export function useCreatePlanController({
       return
     }
 
-    const planNameError = validateRequiredPlanName(planName, hasDuplicatePlanName(existingPlans, planName))
-    if (planNameError) nextFieldErrors.planName = planNameError
-
-    const descriptionError = validateRequiredShortDescription(description)
-    if (descriptionError) nextFieldErrors.description = descriptionError
-
-    const monthlyPriceError = validateRequiredPrice(monthlyPrice)
-    if (monthlyPriceError) nextFieldErrors.monthlyPrice = monthlyPriceError
-
-    const staffLimitError = validatePositiveNumberOrUnlimited(maxStaffAccount, isStaffUnlimited)
-    if (staffLimitError) nextFieldErrors.maxStaffAccount = staffLimitError
-
-    const jobLimitError = validatePositiveNumberOrUnlimited(maxActiveJobPosting, isJobsUnlimited)
-    if (jobLimitError) nextFieldErrors.maxActiveJobPosting = jobLimitError
-
-    setFieldErrors(nextFieldErrors)
-    if (Object.keys(nextFieldErrors).length > 0) {
+    const isValid = await createPlanForm.trigger()
+    const resolverErrors: CreatePlanFieldErrors = {
+      planName: createPlanForm.getFieldState('planName').error?.message,
+      description: createPlanForm.getFieldState('description').error?.message,
+      monthlyPrice: createPlanForm.getFieldState('monthlyPrice').error?.message,
+      maxStaffAccount: createPlanForm.getFieldState('maxStaffAccount').error?.message,
+      maxActiveJobPosting: createPlanForm.getFieldState('maxActiveJobPosting').error?.message,
+    }
+    setFieldErrors(resolverErrors)
+    if (!isValid) {
       return
     }
 
@@ -203,22 +279,22 @@ export function useCreatePlanController({
     onBack,
     onHome,
     planName,
-    setPlanName,
+    setPlanName: updatePlanName,
     description,
-    setDescription,
+    setDescription: updateDescription,
     billingCycle,
     setBillingCycle,
     monthlyPrice,
-    setMonthlyPrice,
+    setMonthlyPrice: updateMonthlyPrice,
     maxStaffAccount,
-    setMaxStaffAccount,
+    setMaxStaffAccount: updateMaxStaffAccount,
     maxActiveJobPosting,
-    setMaxActiveJobPosting,
+    setMaxActiveJobPosting: updateMaxActiveJobPosting,
     features,
     isStaffUnlimited,
-    setIsStaffUnlimited,
+    setIsStaffUnlimited: updateStaffUnlimited,
     isJobsUnlimited,
-    setIsJobsUnlimited,
+    setIsJobsUnlimited: updateJobsUnlimited,
     planError,
     fieldErrors,
     setFieldErrors,

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
@@ -87,16 +88,14 @@ export function CandidateCvScorePage() {
 
   return (
     <section className="candidate-cv-score-page">
-      <nav className="candidate-breadcrumb" aria-label="Breadcrumb">
-        <button type="button" onClick={() => navigate('/candidate')}>
-          <i className="fa-solid fa-house"></i>
-          Home
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <button type="button" onClick={() => navigate('/candidate/companies')}>My Applications</button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <strong>View CV Score & Suggestions</strong>
-      </nav>
+      <Breadcrumb
+        className="candidate-breadcrumb"
+        items={[
+          { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: 'Companies', onClick: () => navigate('/candidate/companies') },
+          { label: 'View CV Score & Suggestions' },
+        ]}
+      />
 
       <header className="candidate-cv-score-title">
         <div>
