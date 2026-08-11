@@ -1367,11 +1367,17 @@
   border: 0;
   border-radius: 6px;
   background: #dc3709;
+  background-color: #dc3709;
   color: #fff;
   font: inherit;
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.candidate-cv-upload-actions button:last-child {
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .candidate-cv-dropzone em {
@@ -1404,6 +1410,14 @@
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.candidate-cv-upload-actions button:last-child {
+  background: #dc3709;
+  background-color: #dc3709;
+  color: #fff;
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .candidate-cv-upload-actions button:disabled {
@@ -1490,14 +1504,25 @@
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.candidate-cv-score-title > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .candidate-cv-score-title h1 {
   margin: 0;
+  max-width: 100%;
   color: #111827;
   font-size: 31px;
   line-height: 1.1;
   font-weight: 900;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .candidate-cv-score-title p {
@@ -1505,14 +1530,19 @@
   gap: 9px;
   align-items: center;
   flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
   margin: 8px 0 0;
   color: #667085;
   font-size: 12px;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .candidate-cv-score-title > div:last-child {
   display: flex;
+  flex: 0 0 auto;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CandidateDetail } from '../../domain/candidate.types'
 import { mockCandidates } from './useCandidateListController'
 import { hrCandidateApplicationApi } from '../../infrastructure/hrCandidateApplicationApi'
@@ -118,16 +118,113 @@ export const mockCandidateDetails: Record<string, CandidateDetail> = {
 
 export type DetailTab = 'extracted' | 'scoring'
 
+function getResumePayload(payload: any) {
+  return payload?.data?.data || payload?.data || payload?.result || payload?.resume || payload
+}
+
+function asArray(value: unknown): any[] {
+  return Array.isArray(value) ? value : []
+}
+
+function toText(value: unknown, fallback = '') {
+  return value === undefined || value === null ? fallback : String(value)
+}
+
+function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): CandidateDetail {
+  const resume = getResumePayload(payload)
+  const parsedData = resume?.parsedData || resume?.parsed_data || resume?.extractedCv || resume?.extracted_cv || {}
+  const profile = parsedData?.profile || parsedData?.personalInfo || parsedData?.personal_info || parsedData?.candidate || {}
+  const score = Number(resume?.matchingScore ?? resume?.candidateSelfScore ?? resume?.score ?? 0)
+  const suggestions = resume?.cvImprovementSuggestions || resume?.cv_improvement_suggestions || resume?.reasoning || {}
+  const suggestionItems = asArray(suggestions?.suggestions || resume?.skillGaps || resume?.skill_gaps)
+  const experience = asArray(parsedData?.experience || parsedData?.workExperience || parsedData?.work_experience).map((item) => ({
+    title: toText(item?.title || item?.position || item?.role),
+    company: toText(item?.company || item?.companyName || item?.company_name),
+    duration: toText(item?.duration || item?.period || item?.dateRange || item?.date_range),
+    description: toText(item?.description),
+    bullets: asArray(item?.bullets || item?.responsibilities || item?.achievements).map((bullet) => toText(bullet)).filter(Boolean),
+  }))
+  const education = asArray(parsedData?.education).map((item) => ({
+    degree: toText(item?.degree || item?.major),
+    institution: toText(item?.institution || item?.school || item?.university),
+    year: toText(item?.year || item?.graduationYear || item?.graduation_year || item?.duration || item?.dateRange || item?.date_range),
+    description: toText(item?.description),
+  }))
+  const certifications = asArray(parsedData?.certifications || parsedData?.certificates).map((item) => ({
+    title: toText(item?.title || item?.name),
+    exp: toText(item?.exp || item?.expiresAt || item?.expires_at || item?.year),
+  }))
+  const skills = asArray(parsedData?.skills).map((skill) => toText(skill)).filter(Boolean)
+  const componentAnalysis = asArray(resume?.componentAnalysis || resume?.component_analysis || resume?.scoringBreakdown || resume?.scoring_breakdown)
+    .map((item) => ({
+      category: toText(item?.category || item?.criterionName || item?.criterion_name),
+      score: Number(item?.score ?? item?.matchingScore ?? 0) || 0,
+      weight: Number(item?.weight ?? item?.weightPercent ?? 0) || 0,
+      analysis: toText(item?.analysis || item?.feedback || item?.reason),
+    }))
+  const suggestionComponentAnalysis = suggestionItems.map((item) => {
+    const scoreOutOfTen = Number(item?.score ?? 0) || 0
+    return {
+      category: '',
+      score: Math.max(0, Math.min(100, scoreOutOfTen * 10)),
+      weight: 10,
+      analysis: toText(item?.criterionName || item?.criterion_name),
+    }
+  })
+  const aiJustification = asArray(resume?.aiJustification || resume?.ai_justification || suggestions?.strengths || (suggestions?.overallFeedback ? [suggestions.overallFeedback] : []))
+    .map((item) => toText(item))
+    .filter(Boolean)
+  const keySkillGaps = suggestionItems
+    .map((item) => toText(item?.feedback || item?.criterionName || item?.criterion_name || item))
+    .filter(Boolean)
+
+  return {
+    ...base,
+    name: toText(profile?.fullName || profile?.full_name || profile?.name || parsedData?.fullName || parsedData?.full_name || resume?.candidateName || resume?.candidate_name),
+    email: toText(profile?.email || parsedData?.email || resume?.email),
+    phone: toText(profile?.phone || profile?.phoneNumber || profile?.phone_number || parsedData?.phone || resume?.phone),
+    location: toText(profile?.location || profile?.address || parsedData?.location || parsedData?.address || resume?.location),
+    targetJob: toText(resume?.jobTitle || resume?.job_title),
+    avatarUrl: '',
+    matchScore: Number.isFinite(score) ? Math.round(score) : 0,
+    scoringStatus: parsedData ? 'COMPLETED' : base.scoringStatus,
+    extractedCv: {
+      summary: toText(parsedData?.summary || parsedData?.professionalSummary || parsedData?.professional_summary),
+      cvFileName: toText(resume?.fileName || resume?.file_name || resume?.originalFileName || resume?.original_file_name),
+      cvDownloadUrl: toText(resume?.fileUrl || resume?.file_url || resume?.cvDownloadUrl || resume?.cv_download_url),
+      experience,
+      education,
+      certifications,
+      skills,
+    },
+    componentAnalysis: componentAnalysis.length ? componentAnalysis : suggestionComponentAnalysis,
+    aiJustification,
+    keySkillGaps,
+  }
+}
+
 export function useCandidateDetailController(candidateId?: string) {
   const [activeTab, setActiveTab] = useState<DetailTab>('extracted')
   const [candidateState, setCandidateState] = useState<Record<string, CandidateDetail>>({})
   const queryClient = useQueryClient()
 
-  const candidate = useMemo(() => {
+  const cachedCandidate = useMemo(() => {
+    const listQueries = queryClient.getQueriesData({ queryKey: ['hr', 'candidate-applications'] })
+
+    for (const [, data] of listQueries) {
+      const candidates = Array.isArray(data) ? data : []
+      const match = candidates.find((item: any) => item?.id === candidateId)
+      if (match) return match
+    }
+
+    return null
+  }, [candidateId, queryClient])
+
+  const baseCandidate = useMemo(() => {
     const id = candidateId || 'cand-2'
     if (candidateState[id]) return candidateState[id]
 
-    const baseCandidate = mockCandidates.find((c) => c.id === id) || mockCandidates[1]
+    const baseCandidate = cachedCandidate || mockCandidates.find((c) => c.id === id) || mockCandidates[1]
     const details = mockCandidateDetails[id] || mockCandidateDetails['cand-2']
 
     return {
@@ -143,7 +240,20 @@ export function useCandidateDetailController(candidateId?: string) {
       aiJustification: details?.aiJustification || mockCandidateDetails['cand-2'].aiJustification,
       keySkillGaps: details?.keySkillGaps || mockCandidateDetails['cand-2'].keySkillGaps,
     } as CandidateDetail
-  }, [candidateId, candidateState])
+  }, [cachedCandidate, candidateId, candidateState])
+
+  const resumeQuery = useQuery({
+    queryKey: ['hr', 'candidate-resume', baseCandidate.jobId, baseCandidate.candidateId],
+    enabled: Boolean(baseCandidate.jobId && baseCandidate.candidateId),
+    queryFn: () => hrCandidateApplicationApi.getCandidateResumeByJobAndCandidate(
+      baseCandidate.jobId || '',
+      baseCandidate.candidateId || '',
+    ),
+  })
+
+  const candidate = useMemo(() => (
+    resumeQuery.data ? mapResumeDetailToCandidateDetail(baseCandidate, resumeQuery.data) : baseCandidate
+  ), [baseCandidate, resumeQuery.data])
 
   const markReviewedMutation = useMutation({
     mutationFn: (id: string) => hrCandidateApplicationApi.markAsReviewed(id),
@@ -169,5 +279,7 @@ export function useCandidateDetailController(candidateId?: string) {
     setActiveTab,
     handleMarkAsReviewed,
     isMarkingReviewed: markReviewedMutation.isPending,
+    isLoadingResume: resumeQuery.isLoading || resumeQuery.isFetching,
+    resumeError: resumeQuery.error,
   }
 }

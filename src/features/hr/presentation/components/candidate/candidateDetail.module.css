@@ -66,6 +66,20 @@
   background: #a92406;
 }
 
+.resumeStateMessage {
+  padding: 10px 14px;
+  border: 1px solid #f0cfc6;
+  border-radius: 8px;
+  background: #fff7f4;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.resumeStateError {
+  color: #b42318;
+}
+
 /* Profile Card */
 .profileCard {
   background: #ffffff;
@@ -204,7 +218,7 @@
   background: #ffffff;
   border: 1px solid #f0cfc6;
   border-radius: 14px;
-  padding: 24px;
+  padding: 24px 30px;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
@@ -244,9 +258,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
   font-size: 14px;
   font-weight: 700;
   color: #1e293b;
+}
+
+.componentHead span:first-child {
+  min-width: 0;
+  max-width: min(70%, 520px);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.componentHead span:last-child {
+  flex: 0 0 auto;
+  max-width: 120px;
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .componentBarBg {
@@ -264,9 +295,12 @@
 }
 
 .componentDesc {
+  max-width: 100%;
   font-size: 13px;
   color: #64748b;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rightStack {
@@ -554,6 +588,14 @@
   display: flex;
   justify-content: center;
   overflow-y: auto;
+}
+
+.pdfFrame {
+  width: 100%;
+  min-height: 720px;
+  border: 0;
+  border-radius: 4px;
+  background: #ffffff;
 }
 
 .pdfPaper {

@@ -34,6 +34,7 @@ import { formatPlanDate } from '../helpers/adminFormatters'
 import { getRemainingLabel, getTenantStatusMeta } from '../helpers/tenantDisplayUtils'
 import { getInitialSuperAdminView, getSuperAdminViewPath, getTenantCreatePath, getTenantDetailIdFromUrl, getTenantDetailPath, isTenantCreateUrl } from '../../domain/superAdminRouteHelpers'
 import { isHighestPricedPlan as checkHighestPricedPlan } from '../../domain/superAdminMetrics'
+import { getDaysUntilExpiration } from '../../domain/tenantRules'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { formatCurrencyInput } from '@/core/utils/currencyFormat'
 import { buildTenantCreatePayload, buildTenantPlanPayload, buildTenantStatusPayload } from '../helpers/adminPayload'
@@ -205,11 +206,11 @@ export function useTenantManagementController({
       const normalizedQuery = normalizeFilterValue(tenantSearchQuery)
       if (normalizedQuery) {
         const matchesName = tenant.name.toLowerCase().includes(normalizedQuery)
-        const matchesEmail = (tenant.email || '').toLowerCase().includes(normalizedQuery)
+        const matchesEmail = (tenant.adminEmail || '').toLowerCase().includes(normalizedQuery)
         const matchesDomain = (tenant.domain || '').toLowerCase().includes(normalizedQuery)
         if (!matchesName && !matchesEmail && !matchesDomain) return false
       }
-      return tenantMatchesPlanFilter(tenant, tenantPlanFilter, subscriptionPlansById)
+      return tenantMatchesPlanFilter(tenant, tenantPlanFilter, subscriptionPlansById.get(tenantPlanFilter))
     })
   }, [fetchedTenants, subscriptionPlansById, tenantPlanFilter, tenantSearchQuery])
 
@@ -467,16 +468,17 @@ export function useTenantManagementController({
   const hasUnlimitedStaffQuota = selectedTenant?.userQuotaUnlimited || (activeSubscriptionPlan ? activeSubscriptionPlan.staffAccountUnlimited : staffLimit <= 0)
   const staffUsagePercent = staffLimit > 0 ? Math.min(100, Math.round((staffUsed / staffLimit) * 100)) : 0
 
-  const jobLimit = selectedTenant?.jobPostingQuotaLimit || activeSubscriptionPlan?.maxActiveJobPosting || 0
+  const jobLimit = selectedTenant?.activeJobPostingLimit || activeSubscriptionPlan?.maxActiveJobPosting || 0
   const activeJobPostingUsed = selectedTenant?.activeJobPostingUsed || 0
-  const hasUnlimitedJobQuota = selectedTenant?.jobPostingQuotaUnlimited || (activeSubscriptionPlan ? activeSubscriptionPlan.activeJobPostingUnlimited : jobLimit <= 0)
+  const hasUnlimitedJobQuota = selectedTenant?.activeJobPostingUnlimited || (activeSubscriptionPlan ? activeSubscriptionPlan.activeJobPostingUnlimited : jobLimit <= 0)
   const jobUsagePercent = jobLimit > 0 ? Math.min(100, Math.round((activeJobPostingUsed / jobLimit) * 100)) : 0
 
   const quotaLabel = hasUnlimitedStaffQuota ? 'Unlimited' : String(staffLimit)
   const monthlyBillingLabel = selectedTenant?.priceLabel || (activeSubscriptionPlan
     ? activeSubscriptionPlan.priceLabel || `$${formatCurrencyInput((activeSubscriptionPlan.price ?? activeSubscriptionPlan.monthlyPrice).toFixed(2))} /month`
     : '-')
-  const daysRemainingLabel = selectedTenant?.daysRemaining != null ? `${selectedTenant.daysRemaining} days` : '182 days'
+  const daysUntilExpiration = getDaysUntilExpiration(selectedTenant?.expirationDate)
+  const daysRemainingLabel = daysUntilExpiration !== null ? `${Math.max(0, Math.ceil(daysUntilExpiration))} days` : '182 days'
 
   const statusActionLabel = isTenantActive(selectedTenant) ? 'Deactivate' : 'Activate'
   const statusActionClassName = isTenantActive(selectedTenant) ? 'btn-tertiary' : 'btn-primary'

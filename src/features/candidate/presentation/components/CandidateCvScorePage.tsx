@@ -5,6 +5,7 @@ import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
 import { useCandidateJobDetail } from '../../application/useCandidateCompanies'
+import { getCurrentCandidateId, getSavedResumeCandidateId } from '../../application/candidateResumeSession'
 
 type ResumeAnalysis = {
   fileName?: string
@@ -13,7 +14,8 @@ type ResumeAnalysis = {
   candidateSelfScore?: number
   score?: number
   status?: string
-  skillGaps?: Array<{ criterionName?: string; feedback?: string; improvementSteps?: string[] }>
+  appliedAt?: string
+  createdAt?: string
   cvImprovementSuggestions?: {
     overallFeedback?: string
     suggestions?: Array<{ criterionName?: string; feedback?: string; improvementSteps?: string[] }>
@@ -24,8 +26,8 @@ type ResumeAnalysis = {
 }
 
 function getScore(data: ResumeAnalysis | null) {
-  const score = Number(data?.matchingScore ?? data?.candidateSelfScore ?? data?.score ?? 85)
-  return Number.isFinite(score) ? Math.round(score) : 85
+  const score = Number(data?.matchingScore ?? data?.candidateSelfScore ?? data?.score)
+  return Number.isFinite(score) ? Math.round(score) : undefined
 }
 
 function getResumePayload(payload: any): ResumeAnalysis {
@@ -34,6 +36,13 @@ function getResumePayload(payload: any): ResumeAnalysis {
 
 function isResumeParsed(data: ResumeAnalysis | null) {
   return Boolean(data?.parsedData)
+}
+
+function formatAppliedDate(value?: string) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
 export function CandidateCvScorePage() {
@@ -46,20 +55,28 @@ export function CandidateCvScorePage() {
   const fallbackJob = candidateCompanyJobs.find((item) => item.id === jobId)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || fallbackJob
-  const displayCompanyName = company?.name || 'Selected Company'
+  const displayCompanyName = company?.name || ''
   const score = getScore(analysis)
-  const suggestions = analysis?.skillGaps || analysis?.cvImprovementSuggestions?.suggestions || []
-  const skills = analysis?.parsedData?.skills?.slice(0, 4) || ['React', 'TypeScript', 'Front-end', 'CI/CD']
+  const suggestions = analysis?.cvImprovementSuggestions?.suggestions || []
+  const skills = analysis?.parsedData?.skills?.slice(0, 4) || []
+  const appliedDate = formatAppliedDate(analysis?.appliedAt || analysis?.createdAt)
 
   useEffect(() => {
     if (!jobId) return
+    const candidateId = getSavedResumeCandidateId(jobId) || getCurrentCandidateId()
+
+    if (!candidateId) {
+      setError('Unable to load CV score because candidate information is missing.')
+      setIsLoading(false)
+      return
+    }
 
     let isMounted = true
     let timeoutId: ReturnType<typeof window.setTimeout> | undefined
 
     const pollResume = async () => {
       try {
-        const data = getResumePayload(await candidateApplicationApi.getResumeByJobId(jobId))
+        const data = getResumePayload(await candidateApplicationApi.getResumeByJobAndCandidate(jobId, candidateId))
         if (!isMounted) return
         setAnalysis(data)
         setError('')
@@ -100,7 +117,11 @@ export function CandidateCvScorePage() {
       <header className="candidate-cv-score-title">
         <div>
           <h1>{job?.title || (jobQuery.isLoading ? 'Loading job detail...' : 'Job Detail')}</h1>
-          <p><i className="fa-solid fa-building"></i> {displayCompanyName} <i className="fa-solid fa-location-dot"></i> {job?.location || 'Remote'} <i className="fa-solid fa-calendar"></i> Applied: Oct 24, 2023</p>
+          <p>
+            {displayCompanyName && <><i className="fa-solid fa-building"></i> {displayCompanyName}</>}
+            {job?.location && <><i className="fa-solid fa-location-dot"></i> {job.location}</>}
+            {appliedDate && <><i className="fa-solid fa-calendar"></i> Applied: {appliedDate}</>}
+          </p>
         </div>
         <div>
           <button type="button" onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`)}>View Job Description</button>
@@ -128,25 +149,23 @@ export function CandidateCvScorePage() {
                 <strong>Interview</strong>
                 <strong>Offer</strong>
               </div>
-              <p><i className="fa-regular fa-clock"></i> Your application is currently being reviewed by the hiring team. We typically expect this phase to take 3-5 business days. You&apos;re doing great!</p>
             </article>
 
             <article className="candidate-ai-resume-insights">
               <h2><i className="fa-solid fa-wand-magic-sparkles"></i> AI Resume Insights</h2>
-              <p>Our intelligent system has analyzed your resume against the job description. Here are some constructive suggestions to help your profile stand out even more.</p>
-              <section>
-                <h3>Missing Keywords:</h3>
-                <div>
-                  {skills.map((skill) => <span key={skill}>{skill}</span>)}
-                </div>
-              </section>
+              {analysis?.cvImprovementSuggestions?.overallFeedback && <p>{analysis.cvImprovementSuggestions.overallFeedback}</p>}
+              {skills.length > 0 && (
+                <section>
+                  <h3>Skills:</h3>
+                  <div>
+                    {skills.map((skill) => <span key={skill}>{skill}</span>)}
+                  </div>
+                </section>
+              )}
               <div className="candidate-insight-grid">
-                {(suggestions.length ? suggestions.slice(0, 2) : [
-                  { criterionName: 'Impact Metrics', feedback: 'Quantify your impact in the experience section. Adding specific numbers gives your application stronger context.' },
-                  { criterionName: 'Design Systems', feedback: 'Consider elaborating on your specific role in building or maintaining the design system mentioned in your previous role.' },
-                ]).map((item) => (
+                {suggestions.map((item) => (
                   <section key={item.criterionName || item.feedback}>
-                    <h3><i className="fa-solid fa-sparkles"></i>{item.criterionName || 'Suggestion'}</h3>
+                    {item.criterionName && <h3><i className="fa-solid fa-sparkles"></i>{item.criterionName}</h3>}
                     <p>{item.feedback || item.improvementSteps?.join(' ')}</p>
                   </section>
                 ))}
@@ -158,15 +177,15 @@ export function CandidateCvScorePage() {
           <aside>
             <article className="candidate-fit-score">
               <h2>Fit Score</h2>
-              <div style={{ '--score': `${score * 3.6}deg` } as CSSProperties}>
-                <strong>{score}%</strong>
-              </div>
-              <p>Great match! Your skills in UX Research and Prototyping align perfectly with the core requirements.</p>
+              {score !== undefined && (
+                <div style={{ '--score': `${score * 3.6}deg` } as CSSProperties}>
+                  <strong>{score}%</strong>
+                </div>
+              )}
             </article>
             <article className="candidate-submitted-documents">
               <h2>Submitted Documents</h2>
-              <button type="button"><i className="fa-regular fa-file-pdf"></i>{analysis?.fileName || 'Resume_v4.pdf'}<i className="fa-solid fa-download"></i></button>
-              <button type="button"><i className="fa-solid fa-link"></i>Portfolio Link<i className="fa-solid fa-up-right-from-square"></i></button>
+              {analysis?.fileName && <button type="button"><i className="fa-regular fa-file-pdf"></i>{analysis.fileName}<i className="fa-solid fa-download"></i></button>}
             </article>
           </aside>
         </div>
