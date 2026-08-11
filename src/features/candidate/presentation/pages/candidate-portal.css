@@ -1553,8 +1553,8 @@
   padding: 0 16px;
   border: 1px solid #dc3709;
   border-radius: 6px;
-  background: #fff;
-  color: #dc3709;
+  background: #dc3709;
+  color: #fff;
   font: inherit;
   font-size: 12px;
   font-weight: 900;
@@ -1644,6 +1644,10 @@
   border-radius: 50%;
   background: #f3f6fb;
   color: #8a95a4;
+}
+
+.candidate-progress-line i {
+  margin: 0;
 }
 
 .candidate-progress-line .done,

@@ -3,6 +3,7 @@ import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { ConfirmActionModal } from '@/core/components/ConfirmActionModal'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 import { hrJobsPath } from '@/features/hr/domain/hrRoutePaths'
+import { getHrJobDetailPath } from '@/features/hr/application/helpers/hrDashboardHelpers'
 import { calendarWeekdays, getCalendarDays, getCalendarMonth, getLocalDateKey } from '@/features/hr/application/helpers/hrDashboardHelpers'
 import { duplicateJobTitleConfirmMessage, jobTitleMaxLength, requiredJobFieldMessage } from '@/features/hr/infrastructure/hrJobLogic'
 import styles from '@/features/hr/presentation/pages/HrDashboard.module.css'
@@ -31,7 +32,14 @@ export function JobFormSection({
 
   return (
     <div className={`role-content ${styles.jobsContent}`}>
-      <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Jobs', onClick: () => { jobsCtrl.setJobView('list'); jobsCtrl.updateHrJobsPath(hrJobsPath) } }, { label: jobsCtrl.jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting' }]} />
+      <Breadcrumb items={[
+        { label: 'Home', onClick: onHome },
+        { label: 'Jobs', onClick: () => { jobsCtrl.setJobView('list'); jobsCtrl.updateHrJobsPath(hrJobsPath) } },
+        ...(jobsCtrl.jobView === 'edit' && jobsCtrl.selectedJob?.id
+          ? [{ label: 'Job Details', onClick: () => { jobsCtrl.setJobView('detail'); jobsCtrl.updateHrJobsPath(getHrJobDetailPath(jobsCtrl.selectedJob.id)) } }]
+          : []),
+        { label: jobsCtrl.jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting' },
+      ]} />
       <div className={styles.jobsHeader}>
         <div>
           <h1>{jobsCtrl.jobView === 'edit' ? 'Edit Job Posting' : 'Create New Job Posting'}</h1>

@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 
+import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
 import { truncateCandidateText } from '../../application/candidateText'
 import { useCandidateJobDetail } from '../../application/useCandidateCompanies'
-import { hasUploadedResume } from '../../application/candidateResumeSession'
+import { getCurrentCandidateId, getSavedResumeCandidateId } from '../../application/candidateResumeSession'
 
 const requirements = [
   '5+ years of experience in ML or Backend systems.',
@@ -34,6 +35,8 @@ function getBenefitItems(value?: string) {
 export function CandidateJobDetailPage() {
   const navigate = useNavigate()
   const { companyId, jobId } = useParams<{ companyId?: string; jobId?: string }>()
+  const [viewApplicationError, setViewApplicationError] = useState('')
+  const [isLoadingApplication, setIsLoadingApplication] = useState(false)
   const company = candidateCompanies.find((item) => item.id === companyId)
   const fallbackJob = candidateCompanyJobs.find((item) => item.id === jobId)
   const jobQuery = useCandidateJobDetail(jobId)
@@ -42,12 +45,31 @@ export function CandidateJobDetailPage() {
   const jobDescription = stripParagraphTags(job?.description)
   const benefitItems = getBenefitItems(job?.benefits)
 
-  useEffect(() => {
+  const handleApplicationAction = async () => {
     if (!companyId || !jobId) return
-    if (hasUploadedResume(jobId)) {
-      navigate(`/candidate/companies/${companyId}/jobs/${jobId}/cv-score`, { replace: true })
+
+    if (!hasExistingApplication) {
+      navigate(`/candidate/companies/${companyId}/jobs/${jobId}/upload-cv`)
+      return
     }
-  }, [companyId, jobId, navigate])
+
+    const candidateId = getSavedResumeCandidateId(jobId) || getCurrentCandidateId()
+    if (!candidateId) {
+      setViewApplicationError('Unable to load your application because candidate information is missing.')
+      return
+    }
+
+    setIsLoadingApplication(true)
+    setViewApplicationError('')
+    try {
+      await candidateApplicationApi.getResumeByJobAndCandidate(jobId, candidateId)
+      navigate(`/candidate/companies/${companyId}/jobs/${jobId}/cv-score`)
+    } catch {
+      setViewApplicationError('Unable to load your application. Please try again later.')
+    } finally {
+      setIsLoadingApplication(false)
+    }
+  }
 
   if (!companyId || !jobId) return <Navigate to="/candidate/companies" replace />
 
@@ -57,6 +79,7 @@ export function CandidateJobDetailPage() {
         className="candidate-breadcrumb"
         items={[
           { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: 'Companies', onClick: () => navigate('/candidate/companies') },
           { label: truncateCandidateText(displayCompanyName), onClick: () => navigate(`/candidate/companies/${companyId}`) },
           { label: 'Job Detail' },
         ]}
@@ -129,7 +152,10 @@ export function CandidateJobDetailPage() {
         <aside className="candidate-application-status">
           <h2>Application Status</h2>
           <p>Review current pipeline or apply directly.</p>
-          <button type="button" onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}/upload-cv`)}>Apply Now</button>
+          <button type="button" disabled={isLoadingApplication} onClick={handleApplicationAction}>
+            {isLoadingApplication ? 'Loading...' : hasExistingApplication ? 'View Application' : 'Apply Now'}
+          </button>
+          {viewApplicationError && <small>{viewApplicationError}</small>}
         </aside>
       </div>}
     </section>

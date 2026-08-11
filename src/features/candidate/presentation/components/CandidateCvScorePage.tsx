@@ -1,11 +1,15 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
+import { truncateCandidateText } from '../../application/candidateText'
 import { useCandidateJobDetail } from '../../application/useCandidateCompanies'
-import { getCurrentCandidateId, getSavedResumeCandidateId } from '../../application/candidateResumeSession'
+import { markResumeUploaded, readCandidateIdFromPayload, saveResumeCandidateId, getCurrentCandidateId, getSavedResumeCandidateId } from '../../application/candidateResumeSession'
+
+const allowedCvExtensions = ['pdf', 'doc', 'docx']
+const maxCvFileSize = 5 * 1024 * 1024
 
 type ResumeAnalysis = {
   fileName?: string
@@ -19,7 +23,9 @@ type ResumeAnalysis = {
   cvImprovementSuggestions?: {
     overallFeedback?: string
     suggestions?: Array<{ criterionName?: string; feedback?: string; improvementSteps?: string[] }>
+    skillGaps?: string[]
   }
+  skillGaps?: string[]
   parsedData?: {
     skills?: string[]
   } | null
@@ -45,21 +51,63 @@ function formatAppliedDate(value?: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
+function getFileExtension(file: File) {
+  return file.name.split('.').pop()?.toLowerCase() || ''
+}
+
 export function CandidateCvScorePage() {
   const navigate = useNavigate()
   const { companyId, jobId } = useParams<{ companyId?: string; jobId?: string }>()
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isUploadingCv, setIsUploadingCv] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [error, setError] = useState('')
   const company = candidateCompanies.find((item) => item.id === companyId)
   const fallbackJob = candidateCompanyJobs.find((item) => item.id === jobId)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || fallbackJob
   const displayCompanyName = company?.name || ''
+  const breadcrumbCompanyName = displayCompanyName || 'Company Detail'
+  const displayJobTitle = job?.title || 'Job Detail'
   const score = getScore(analysis)
   const suggestions = analysis?.cvImprovementSuggestions?.suggestions || []
-  const skills = analysis?.parsedData?.skills?.slice(0, 4) || []
+  const skillGaps = analysis?.cvImprovementSuggestions?.skillGaps || analysis?.skillGaps || []
   const appliedDate = formatAppliedDate(analysis?.appliedAt || analysis?.createdAt)
+
+  const handleUpdateCvFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !jobId) return
+
+    const extension = getFileExtension(file)
+    if (!allowedCvExtensions.includes(extension)) {
+      setError('Please upload a PDF, DOC, or DOCX file.')
+      return
+    }
+
+    if (file.size > maxCvFileSize) {
+      setError('Maximum file size is 5MB.')
+      return
+    }
+
+    setIsUploadingCv(true)
+    setError('')
+    try {
+      const uploadResult = await candidateApplicationApi.uploadCvForJob(jobId, file)
+      const candidateId = readCandidateIdFromPayload(uploadResult)
+      if (candidateId) saveResumeCandidateId(jobId, candidateId)
+      markResumeUploaded(jobId)
+      setAnalysis(getResumePayload(uploadResult))
+      setIsLoading(true)
+      setReloadKey((key) => key + 1)
+    } catch {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setIsUploadingCv(false)
+    }
+  }
 
   useEffect(() => {
     if (!jobId) return
@@ -99,7 +147,7 @@ export function CandidateCvScorePage() {
       isMounted = false
       if (timeoutId) window.clearTimeout(timeoutId)
     }
-  }, [jobId])
+  }, [jobId, reloadKey])
 
   if (!companyId || !jobId) return <Navigate to="/candidate/companies" replace />
 
@@ -124,10 +172,18 @@ export function CandidateCvScorePage() {
           </p>
         </div>
         <div>
-          <button type="button" onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`)}>View Job Description</button>
-          <button type="button" onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}/upload-cv`)}>Update Application</button>
+          <button type="button" disabled={isUploadingCv} onClick={() => inputRef.current?.click()}>
+            {isUploadingCv ? 'Uploading...' : 'Update Application'}
+          </button>
         </div>
       </header>
+      <input
+        ref={inputRef}
+        className="candidate-cv-hidden-input"
+        type="file"
+        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={handleUpdateCvFile}
+      />
 
       {isLoading && <div className="candidate-cv-score-message">Loading CV analysis...</div>}
       {error && <div className="candidate-cv-score-message error">{error}</div>}
@@ -170,7 +226,6 @@ export function CandidateCvScorePage() {
                   </section>
                 ))}
               </div>
-              <button type="button" onClick={() => navigate(`/candidate/companies/${companyId}/jobs/${jobId}/upload-cv`)}>Update CV <i className="fa-solid fa-upload"></i></button>
             </article>
           </main>
 

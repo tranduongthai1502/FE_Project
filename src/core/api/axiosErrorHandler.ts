@@ -64,7 +64,7 @@ export const errorMessages: Record<string, string> = {
   access_denied: 'You do not have permission to perform this action.',
   user_account_is_not_active: 'Your account has been deactivated. Please contact your Tenant Admin for assistance.',
   inactive_user: 'Your account has been deactivated. Please contact your Tenant Admin for assistance.',
-  tenant_is_inactive: 'Your account has been deactivated. Please contact your Tenant Admin for assistance.',
+  tenant_is_inactive: "Your organization's workspace is currently suspended. Please contact your platform administrator.",
   account_deactivated: 'Your account has been deactivated. Please contact your Tenant Admin for assistance.',
   user_deactivated: 'Your account has been deactivated. Please contact your Tenant Admin for assistance.',
   account_deleted: 'Account not found. Please check your email.',

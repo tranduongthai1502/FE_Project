@@ -14,6 +14,7 @@ export type JobPosting = {
   salaryMax?: number
   status: string
   applicantCount: number
+  flag?: boolean
   createdAt?: string
   updatedAt?: string
   publishedAt?: string

@@ -7,6 +7,7 @@ import type { JobConfirmAction, JobDetailTab } from '../../infrastructure/hrJobL
 import {
   buildJobPayloadFromPosting,
   isDraftJobStatus,
+  isOpenJobStatus,
 } from '../../infrastructure/hrJobLogic'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
@@ -15,6 +16,7 @@ import {
   getHrJobDetailTabFromSearch,
   getHrJobEditPath,
   getHrJobIdFromPath,
+  getHrJobKanbanPath,
   getHrJobViewFromPath,
   getJobsEllipsisPageItems,
 } from '../helpers/hrDashboardHelpers'
@@ -45,7 +47,7 @@ export function useHrJobsController({
   const [jobPageCount, setJobPageCount] = useState(1)
   const [jobListReloadKey, setJobListReloadKey] = useState(0)
 
-  const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai'>(() => getHrJobViewFromPath(location.pathname))
+  const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai' | 'kanban'>(() => getHrJobViewFromPath(location.pathname))
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
   const [jobDetailTab, setJobDetailTab] = useState<JobDetailTab>(() => getHrJobDetailTabFromSearch(location.search))
 
@@ -214,6 +216,10 @@ export function useHrJobsController({
     setJobPage(1)
   }
 
+  const refreshJobs = () => jobPostingsQuery.refetch()
+  const refreshJobStats = () => jobStatsQuery.refetch()
+  const refreshJobPostingLimit = () => jobPostingLimitQuery.refetch()
+
   const openCreateJob = () => {
     window.sessionStorage.removeItem('jobfusion.hr.jobFormRefreshView')
     setSelectedJob(null)
@@ -244,8 +250,15 @@ export function useHrJobsController({
     updateHrJobsPath(getHrJobEditPath(job.id))
   }
 
+  const openJobKanban = (job: JobPosting) => {
+    setSelectedJob(job)
+    setJobView('kanban')
+    updateHrJobsPath(getHrJobKanbanPath(job.id))
+  }
+
   const requestJobAction = (action: Exclude<JobConfirmAction, null>, job: JobPosting) => {
     if (isActionLocked || isJobActionSubmitting) return
+    if (action === 'delete' && isOpenJobStatus(job.status)) return
     setJobConfirmAction(action)
     setJobConfirmTarget(job)
   }
@@ -352,10 +365,14 @@ export function useHrJobsController({
     updateJobSearchQuery,
     updateJobStatusFilter,
     updateJobEmploymentTypeFilter,
+    refreshJobs,
+    refreshJobStats,
+    refreshJobPostingLimit,
     openCreateJob,
     openGenerateWithAi,
     openJobDetail,
     openEditJob,
+    openJobKanban,
     requestJobAction,
     closeJobConfirm,
     confirmJobAction,

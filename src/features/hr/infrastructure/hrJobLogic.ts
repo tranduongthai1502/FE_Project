@@ -407,14 +407,17 @@ export function isJobTitleAlreadyExistsError(error: unknown) {
   const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
   const candidates = [
     data?.code,
+    data?.errorCode,
     data?.error,
     data?.message,
     data?.backendMessage,
     data?.data?.code,
+    data?.data?.errorCode,
     data?.data?.error,
     data?.data?.message,
     (error as { backendMessage?: unknown } | null)?.backendMessage,
     (error as { code?: unknown } | null)?.code,
+    (error as { errorCode?: unknown } | null)?.errorCode,
     (error as { message?: unknown } | null)?.message,
   ]
 
@@ -426,14 +429,17 @@ export function isJobPostingLimitReachedError(error: unknown) {
   const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload
   const candidates = [
     data?.code,
+    data?.errorCode,
     data?.error,
     data?.message,
     data?.backendMessage,
     data?.data?.code,
+    data?.data?.errorCode,
     data?.data?.error,
     data?.data?.message,
     (error as { backendMessage?: unknown } | null)?.backendMessage,
     (error as { code?: unknown } | null)?.code,
+    (error as { errorCode?: unknown } | null)?.errorCode,
     (error as { message?: unknown } | null)?.message,
   ]
   const normalizedText = candidates
@@ -452,6 +458,16 @@ export function isJobPostingLimitReachedError(error: unknown) {
     normalizedText.includes('active job posting limit') ||
     normalizedText.includes('max active job posting') ||
     normalizedText.includes('maximum active job posting') ||
+    normalizedText.includes('job posting limit reached') ||
+    normalizedText.includes('job posting limit exceeded') ||
+    normalizedText.includes('job postings limit reached') ||
+    normalizedText.includes('job postings limit exceeded') ||
+    normalizedText.includes('job quota reached') ||
+    normalizedText.includes('job quota exceeded') ||
+    normalizedText.includes('posting quota reached') ||
+    normalizedText.includes('posting quota exceeded') ||
+    normalizedText.includes('maximum number of job postings') ||
+    normalizedText.includes('cannot create more job') ||
     normalizedText.includes('quota reached') ||
     normalizedText.includes('limit reached') ||
     normalizedText.includes('reached limit') ||
