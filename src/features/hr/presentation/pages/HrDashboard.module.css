@@ -139,6 +139,243 @@
   color: #d93408;
 }
 
+.kanbanContent {
+  min-height: calc(100vh - 70px);
+  padding: 20px 24px 28px;
+  background: #f7f8fd;
+}
+
+.kanbanHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 22px 0 24px;
+}
+
+.kanbanHeader h1 {
+  max-width: 720px;
+  margin: 0;
+  color: #101c33;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.kanbanHeader > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kanbanHeader button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #efb7aa;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #101c33;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.kanbanHeader button:last-child {
+  border-color: #d93408;
+  background: #d93408;
+  color: #ffffff;
+}
+
+.kanbanBoard {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(170px, 1fr));
+  gap: 22px;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.kanbanColumn {
+  min-width: 170px;
+  display: grid;
+  gap: 10px;
+}
+
+.kanbanColumn > header {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 28px;
+  margin-left: 8px;
+}
+
+.kanbanColumn > header span {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 16px;
+  border-radius: 4px;
+  background: #dceaff;
+  color: #536680;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.kanbanColumn > header strong {
+  color: #101c33;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.kanbanColumn > div {
+  display: grid;
+  gap: 12px;
+}
+
+.kanbanCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 94px;
+  padding: 12px;
+  border: 1px solid #efb7aa;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 28, 51, 0.04);
+}
+
+.kanbanAvatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f7d7c6, #d8e7ff);
+  color: #101c33;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.kanbanCard h2 {
+  max-width: calc(100% - 42px);
+  margin: 2px 0 3px;
+  color: #101c33;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.kanbanCard p {
+  max-width: 100%;
+  margin: 0;
+  color: #536680;
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.kanbanCard em {
+  position: absolute;
+  top: 11px;
+  right: 27px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #13a264;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.kanbanCard b {
+  position: absolute;
+  top: 13px;
+  right: 11px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #efb7aa;
+  border-radius: 999px;
+}
+
+.kanbanChecked {
+  display: grid;
+  place-items: center;
+  border-color: #20b66a !important;
+  background: #20b66a;
+}
+
+.kanbanChecked::before {
+  content: "\2713";
+  color: #ffffff;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.kanbanCard footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  color: #101c33;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.kanbanCard footer small {
+  color: #536680;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.kanbanCard aside {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 2px 7px;
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid #dce4f2;
+  border-radius: 6px;
+  background: #eef4ff;
+  color: #d93408;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kanbanCard aside small {
+  grid-column: 2;
+  color: #536680;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.kanbanCardMuted {
+  border-style: dashed;
+  background: #fafafa;
+  opacity: 0.78;
+}
+
+.kanbanCardMuted .kanbanAvatar {
+  background: #e8eefc;
+  color: #8a95a6;
+}
+
+.kanbanCardMuted h2,
+.kanbanCardMuted p {
+  color: #8a95a6;
+}
+
 .activityPanel article:first-of-type > i {
   background: #d93408;
   color: #ffffff;
