@@ -20,6 +20,7 @@ export function normalizeJobPosting(job: any): JobPosting | null {
   const source = getJobPostingDetailSource(job)
   const id = source?.id || source?.jobId || source?.job_id || source?.uuid
   if (!id) return null
+  const flag = source?.flag ?? job?.flag ?? job?.data?.flag
 
   return {
     id: String(id),
@@ -39,6 +40,7 @@ export function normalizeJobPosting(job: any): JobPosting | null {
     salaryMax: source?.salaryMax ?? source?.salary_max ? Number(source?.salaryMax ?? source?.salary_max) : undefined,
     status: String(source?.status || source?.jobStatus || source?.job_status || 'DRAFT'),
     applicantCount: Number(source?.applicantCount ?? source?.applicantsCount ?? source?.noOfApplicants ?? source?.numberOfApplicants ?? source?.totalApplicants ?? 0) || 0,
+    flag: typeof flag === 'boolean' ? flag : undefined,
     createdAt: source?.createdAt || source?.createdDate || source?.created_at ? String(source?.createdAt || source?.createdDate || source?.created_at) : undefined,
     updatedAt: source?.updatedAt || source?.updatedDate || source?.updated_at || source?.modifiedAt || source?.modified_at
       ? String(source?.updatedAt || source?.updatedDate || source?.updated_at || source?.modifiedAt || source?.modified_at)
