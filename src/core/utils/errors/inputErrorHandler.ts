@@ -1,4 +1,5 @@
 import { getMissingPasswordRequirementLabels } from '@/core/utils/passwordStrength'
+import { z } from 'zod'
 
 export const FIELD_LENGTH_LIMITS = {
   defaultText: 100,
@@ -122,117 +123,107 @@ export function isPasswordLengthValid(value: string) {
   return value.length >= FIELD_LENGTH_LIMITS.passwordMin && value.length <= FIELD_LENGTH_LIMITS.passwordMax
 }
 
+function getZodErrorMessage(result: z.ZodSafeParseResult<unknown>) {
+  return result.success ? '' : result.error.issues[0]?.message || validationErrorMessages.systemError
+}
+
+const asciiEmailSchema = z
+  .string()
+  .trim()
+  .min(1, validationErrorMessages.emailRequired)
+  .max(FIELD_LENGTH_LIMITS.emailMax, validationErrorMessages.invalidEmail)
+  .regex(/^[\p{ASCII}]+$/u, validationErrorMessages.invalidEmail)
+  .superRefine((value, context) => {
+    const parts = value.split('@')
+    if (parts.length !== 2) {
+      context.addIssue({ code: 'custom', message: validationErrorMessages.invalidEmail })
+      return
+    }
+
+    const [localPart, domain] = parts
+    if (
+      !localPart ||
+      localPart.length > FIELD_LENGTH_LIMITS.emailLocalPartMax ||
+      !/^[A-Za-z0-9._%+-]+$/.test(localPart) ||
+      localPart.startsWith('.') ||
+      localPart.endsWith('.') ||
+      localPart.includes('..')
+    ) {
+      context.addIssue({ code: 'custom', message: validationErrorMessages.invalidEmail })
+      return
+    }
+
+    const domainLabels = domain.split('.')
+    const topLevelDomain = domainLabels.at(-1) ?? ''
+    const hasInvalidDomainLabel = domainLabels.some(
+      (label) =>
+        !label ||
+        label.length > FIELD_LENGTH_LIMITS.emailDomainLabelMax ||
+        !/^[A-Za-z0-9-]+$/.test(label) ||
+        label.startsWith('-') ||
+        label.endsWith('-'),
+    )
+
+    if (domainLabels.length < 2 || hasInvalidDomainLabel || !/^[A-Za-z]{2,}$/.test(topLevelDomain)) {
+      context.addIssue({ code: 'custom', message: validationErrorMessages.invalidEmail })
+    }
+  })
+
 export function validateEmail(value: string) {
-  const normalizedValue = value.trim()
-
-  if (!normalizedValue) {
-    return validationErrorMessages.emailRequired
-  }
-
-  if (
-    normalizedValue !== value ||
-    normalizedValue.length > FIELD_LENGTH_LIMITS.emailMax ||
-    !/^[\p{ASCII}]+$/u.test(normalizedValue)
-  ) {
-    return validationErrorMessages.invalidEmail
-  }
-
-  const parts = normalizedValue.split('@')
-  if (parts.length !== 2) return validationErrorMessages.invalidEmail
-
-  const [localPart, domain] = parts
-  if (
-    !localPart ||
-    localPart.length > FIELD_LENGTH_LIMITS.emailLocalPartMax ||
-    !/^[A-Za-z0-9._%+-]+$/.test(localPart) ||
-    localPart.startsWith('.') ||
-    localPart.endsWith('.') ||
-    localPart.includes('..')
-  ) {
-    return validationErrorMessages.invalidEmail
-  }
-
-  const domainLabels = domain.split('.')
-  const topLevelDomain = domainLabels.at(-1) ?? ''
-  const hasInvalidDomainLabel = domainLabels.some(
-    (label) =>
-      !label ||
-      label.length > FIELD_LENGTH_LIMITS.emailDomainLabelMax ||
-      !/^[A-Za-z0-9-]+$/.test(label) ||
-      label.startsWith('-') ||
-      label.endsWith('-'),
-  )
-
-  if (domainLabels.length < 2 || hasInvalidDomainLabel || !/^[A-Za-z]{2,}$/.test(topLevelDomain)) {
-    return validationErrorMessages.invalidEmail
-  }
-
-  return ''
+  if (value.trim() !== value) return validationErrorMessages.invalidEmail
+  return getZodErrorMessage(asciiEmailSchema.safeParse(value))
 }
 
 export function validateGmail(value: string) {
   const emailError = validateEmail(value)
   if (emailError) return value.trim() ? validationErrorMessages.invalidGmail : emailError
 
-  return value.trim().toLowerCase().endsWith('@gmail.com') ? '' : validationErrorMessages.invalidGmail
+  return getZodErrorMessage(
+    z.string().refine((email) => email.trim().toLowerCase().endsWith('@gmail.com'), validationErrorMessages.invalidGmail).safeParse(value),
+  )
 }
 
 export function validateRequired(value: string, message: string = validationErrorMessages.requiredField) {
-  return value.trim() ? '' : message
+  return getZodErrorMessage(z.string().trim().min(1, message).safeParse(value))
 }
 
 export function validateFullName(value: string) {
-  if (!value.trim()) {
-    return validationErrorMessages.fullNameRequired
-  }
-
-  if (/[^A-Za-z\s]/.test(value.trim())) {
-    return validationErrorMessages.fullNameSpecialCharacters
-  }
-
-  return ''
+  return getZodErrorMessage(
+    z
+      .string()
+      .trim()
+      .min(1, validationErrorMessages.fullNameRequired)
+      .regex(/^[A-Za-z\s]+$/, validationErrorMessages.fullNameSpecialCharacters)
+      .safeParse(value),
+  )
 }
 
 export function validatePhone(value: string) {
-  const normalizedValue = value.trim()
-
-  if (!normalizedValue) {
-    return validationErrorMessages.phoneRequired
-  }
-
-  if (!/^0\d{9}$/.test(normalizedValue)) {
-    return validationErrorMessages.invalidPhone
-  }
-
-  return ''
+  return getZodErrorMessage(
+    z.string().trim().min(1, validationErrorMessages.phoneRequired).regex(/^0\d{9}$/, validationErrorMessages.invalidPhone).safeParse(value),
+  )
 }
 
 export function validatePassword(value: string) {
-  if (!value) {
-    return validationErrorMessages.passwordRequired
-  }
-
-  if (!isPasswordLengthValid(value)) {
-    return validationErrorMessages.passwordLength
-  }
-
-  if (getMissingPasswordRequirementLabels(value).length > 0) {
-    return validationErrorMessages.passwordComplexity
-  }
-
-  return ''
+  return getZodErrorMessage(
+    z
+      .string()
+      .min(1, validationErrorMessages.passwordRequired)
+      .min(FIELD_LENGTH_LIMITS.passwordMin, validationErrorMessages.passwordLength)
+      .max(FIELD_LENGTH_LIMITS.passwordMax, validationErrorMessages.passwordLength)
+      .refine((password) => getMissingPasswordRequirementLabels(password).length === 0, validationErrorMessages.passwordComplexity)
+      .safeParse(value),
+  )
 }
 
 export function validateConfirmPassword(value: string, password: string) {
-  if (!value) {
-    return validationErrorMessages.confirmPasswordRequired
-  }
-
-  if (value !== password) {
-    return validationErrorMessages.passwordsDoNotMatch
-  }
-
-  return ''
+  return getZodErrorMessage(
+    z
+      .string()
+      .min(1, validationErrorMessages.confirmPasswordRequired)
+      .refine((confirmPassword) => confirmPassword === password, validationErrorMessages.passwordsDoNotMatch)
+      .safeParse(value),
+  )
 }
 
 export function validateOptionalEmail(value: string, emptyMessage = validationErrorMessages.forgotEmailRequired) {
@@ -244,12 +235,15 @@ export function validateStaffEmail(value: string, existingEmails: string[], isEd
   const emailError = validateEmail(value)
   if (emailError) return trimmedEmail ? validationErrorMessages.validEmailAddressRequired : validationErrorMessages.forgotEmailRequired
 
-  const isEmailRegistered = existingEmails.some((email) => email.trim().toLowerCase() === trimmedEmail.toLowerCase())
-  if (!isEdit && isEmailRegistered) {
-    return validationErrorMessages.emailAlreadyRegistered
-  }
-
-  return ''
+  return getZodErrorMessage(
+    z
+      .string()
+      .refine(
+        () => isEdit || !existingEmails.some((email) => email.trim().toLowerCase() === trimmedEmail.toLowerCase()),
+        validationErrorMessages.emailAlreadyRegistered,
+      )
+      .safeParse(trimmedEmail),
+  )
 }
 
 export function isValidPriceInput(value: string) {

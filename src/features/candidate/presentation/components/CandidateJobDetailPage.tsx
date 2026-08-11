@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
 import { truncateCandidateText } from '../../application/candidateText'
@@ -36,18 +37,14 @@ export function CandidateJobDetailPage() {
 
   return (
     <section className="candidate-job-detail-page">
-      <nav className="candidate-breadcrumb" aria-label="Breadcrumb">
-        <button type="button" onClick={() => navigate('/candidate')}>
-          <i className="fa-solid fa-house"></i>
-          Home
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <button type="button" title={displayCompanyName} onClick={() => navigate(`/candidate/companies/${companyId}`)}>
-          {truncateCandidateText(displayCompanyName)}
-        </button>
-        <i className="fa-solid fa-chevron-right"></i>
-        <strong>Job Detail</strong>
-      </nav>
+      <Breadcrumb
+        className="candidate-breadcrumb"
+        items={[
+          { label: 'Home', onClick: () => navigate('/candidate') },
+          { label: truncateCandidateText(displayCompanyName), onClick: () => navigate(`/candidate/companies/${companyId}`) },
+          { label: 'Job Detail' },
+        ]}
+      />
 
       <h1>{job?.title || (jobQuery.isLoading ? 'Loading job detail...' : 'Job Detail')}</h1>
 

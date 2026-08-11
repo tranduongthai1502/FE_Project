@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
+import { useForm, type FieldErrors } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ADMIN_LIST_PAGE_SIZE } from '../../infrastructure/adminApi'
 import {
@@ -21,12 +23,11 @@ import {
   invalidTenantEmailMessage,
   isValidTenantAdminEmail,
   normalizeFilterValue,
-  requiredTenantFieldMessage,
   tenantHasCompanyName,
   tenantMatchesPlanFilter,
   type TenantStatusFilter,
 } from '../../infrastructure/tenantManagementService'
-import { validateTenantForm } from '../helpers/tenantFormValidation'
+import { tenantFormSchema } from '../helpers/tenantFormValidation'
 import type { CreateTenantForm, SubscriptionPlan, Tenant } from '../../domain/adminApi.types'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { formatPlanDate } from '../helpers/adminFormatters'
@@ -65,13 +66,17 @@ export function useTenantManagementController({
         : 'list'
   ))
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(() => getTenantDetailIdFromUrl(location.pathname))
-  const [tenantForm, setTenantForm] = useState<CreateTenantForm>(emptyTenantForm)
+  const tenantCreateForm = useForm<CreateTenantForm>({
+    resolver: zodResolver(tenantFormSchema),
+    defaultValues: emptyTenantForm,
+    mode: 'onSubmit',
+  })
+  const tenantForm = tenantCreateForm.watch()
   const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>(isInitialTenantStatus(initialTenantStatusFilter) ? initialTenantStatusFilter : 'all')
   const [tenantPlanFilter, setTenantPlanFilter] = useState(() => initialTenantPlanFilter || '')
   const [tenantSearchQuery, setTenantSearchQuery] = useState(() => initialTenantSearchQuery)
   const [tenantPage, setTenantPage] = useState(() => Number.isFinite(initialTenantPage) ? Math.max(1, initialTenantPage) : 1)
   const [tenantError, setTenantError] = useState('')
-  const [tenantFieldErrors, setTenantFieldErrors] = useState<Partial<Record<keyof CreateTenantForm, string>>>({})
   const [isSubmittingTenant, setIsSubmittingTenant] = useState(false)
   const [isCreateCancelConfirmOpen, setIsCreateCancelConfirmOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(() => isTenantCreateUrl(location.pathname))
@@ -109,6 +114,14 @@ export function useTenantManagementController({
   const tenantAdminUserId = fetchedTenantDetail?.adminUserId ?? null
   const tenantUserQuery = useAdminTenantUser(tenantAdminUserId, { enabled: isDetailViewActive && Boolean(tenantAdminUserId) })
   const fetchedTenantAdminUser = tenantUserQuery.data ?? null
+  const tenantFieldErrors = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(tenantCreateForm.formState.errors).map(([field, error]) => [
+        field,
+        (error as FieldErrors<CreateTenantForm>[keyof CreateTenantForm])?.message || '',
+      ]),
+    ) as Partial<Record<keyof CreateTenantForm, string>>
+  }, [tenantCreateForm.formState.errors])
 
   const isLoadingPlans = plansQuery.isLoading
   const isLoadingTenants = tenantListQuery.isLoading || tenantListQuery.isFetching
@@ -248,19 +261,13 @@ export function useTenantManagementController({
   }, [pendingTenantPlanId, selectedTenant, subscriptionPlans])
 
   const updateTenantForm = (field: keyof CreateTenantForm, value: string) => {
-    setTenantForm((current) => ({ ...current, [field]: value }))
-    setTenantFieldErrors((current) => {
-      if (!current[field]) return current
-      const nextErrors = { ...current }
-      delete nextErrors[field]
-      return nextErrors
-    })
+    tenantCreateForm.setValue(field, value, { shouldDirty: true })
+    tenantCreateForm.clearErrors(field)
   }
 
   const resetCreateTenantFormState = () => {
-    setTenantForm(emptyTenantForm)
+    tenantCreateForm.reset(emptyTenantForm)
     setTenantError('')
-    setTenantFieldErrors({})
     setIsCreateCancelConfirmOpen(false)
   }
 
@@ -337,25 +344,25 @@ export function useTenantManagementController({
     setTenantPage(1)
   }
 
-  const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleCreateTenant = tenantCreateForm.handleSubmit(async (values) => {
     setTenantError('')
-    const fieldErrors = validateTenantForm(tenantForm)
+    let hasFieldError = false
 
-    if (tenantHasCompanyName(fetchedTenants, tenantForm.companyName)) {
-      fieldErrors.companyName = duplicateCompanyNameMessage
+    if (tenantHasCompanyName(fetchedTenants, values.companyName)) {
+      tenantCreateForm.setError('companyName', { type: 'validate', message: duplicateCompanyNameMessage })
+      hasFieldError = true
     }
 
-    if (!isValidTenantAdminEmail(tenantForm.adminEmail)) {
-      fieldErrors.adminEmail = invalidTenantEmailMessage
+    if (!isValidTenantAdminEmail(values.adminEmail)) {
+      tenantCreateForm.setError('adminEmail', { type: 'validate', message: invalidTenantEmailMessage })
+      hasFieldError = true
     }
 
-    setTenantFieldErrors(fieldErrors)
-    if (Object.keys(fieldErrors).length > 0) return
+    if (hasFieldError) return
 
     setIsSubmittingTenant(true)
     try {
-      await createTenantMutation.mutateAsync(buildTenantCreatePayload(tenantForm))
+      await createTenantMutation.mutateAsync(buildTenantCreatePayload(values))
       triggerToast?.('Tenant instance provisioned successfully.', 'success')
       resetCreateTenantPage()
     } catch (error) {
@@ -363,7 +370,7 @@ export function useTenantManagementController({
     } finally {
       setIsSubmittingTenant(false)
     }
-  }
+  })
 
   const confirmUpdateTenantStatus = async () => {
     if (!selectedTenant) return

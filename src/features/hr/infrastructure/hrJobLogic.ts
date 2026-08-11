@@ -4,6 +4,7 @@ import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/err
 import { buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
 import { stripCurrencyGrouping } from '@/core/utils/currencyFormat'
 import { getRichTextPlainText } from './hrRichTextUtils'
+import { z } from 'zod'
 
 export type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
 export type JobConfirmAction = 'close' | 'open' | 'delete' | null
@@ -263,90 +264,127 @@ export function hasDuplicateJobTitle(payload: JobPostingPayload, jobs: JobPostin
   ))
 }
 
-export function getJobValidationErrors(payload: JobPostingPayload, salaryInputValues: { salaryMin: string; salaryMax: string }) {
+function collectZodJobFieldErrors(result: z.ZodSafeParseResult<unknown>) {
   const nextErrors: JobFieldErrors = {}
-  const title = payload.title.trim()
+  if (result.success) return nextErrors
+
+  result.error.issues.forEach((issue) => {
+    const field = issue.path[0] as keyof JobPostingPayload | undefined
+    if (field && !nextErrors[field]) {
+      nextErrors[field] = issue.message
+    }
+  })
+
+  return nextErrors
+}
+
+export function getJobValidationErrors(payload: JobPostingPayload, salaryInputValues: { salaryMin: string; salaryMax: string }) {
   const requiresSalaryPair = ['FULL_TIME', 'PART_TIME'].includes(payload.employmentType)
   const minSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMin)
   const maxSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMax)
   const minSalaryEntered = minSalaryValue !== ''
   const maxSalaryEntered = maxSalaryValue !== ''
   const salaryNumberPattern = /^\d+(\.\d+)?$/
-  const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
-  const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
 
-  if (!title) nextErrors.title = requiredJobFieldMessage
-  if (title.length > jobTitleMaxLength) nextErrors.title = jobTitleLengthMessage
-  if (!payload.department.trim()) nextErrors.department = departmentRequiredMessage
-  if (!payload.employmentType.trim()) nextErrors.employmentType = employmentTypeRequiredMessage
-  if (!payload.locationType.trim()) nextErrors.locationType = requiredJobFieldMessage
-  if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
-  if (!getRichTextPlainText(payload.description)) nextErrors.description = requiredJobFieldMessage
-  if (!getRichTextPlainText(payload.requirements)) nextErrors.requirements = requiredJobFieldMessage
-  if (getRichTextPlainText(payload.description).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.description = buildMaxLengthMessage('Description', FIELD_LENGTH_LIMITS.jobDescription)
-  if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = buildMaxLengthMessage('Requirements', FIELD_LENGTH_LIMITS.jobDescription)
-  const benefitsText = getRichTextPlainText(payload.benefits)
-  if (benefitsText && benefitsText.length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.benefits = buildMaxLengthMessage('Benefits', FIELD_LENGTH_LIMITS.jobDescription)
+  const result = z
+    .object({
+      title: z.string().trim().min(1, requiredJobFieldMessage).max(jobTitleMaxLength, jobTitleLengthMessage),
+      department: z.string().trim().min(1, departmentRequiredMessage),
+      employmentType: z.string().trim().min(1, employmentTypeRequiredMessage),
+      locationType: z.string().trim().min(1, requiredJobFieldMessage),
+      location: z.string().trim().min(1, requiredJobFieldMessage),
+      description: z.string(),
+      requirements: z.string(),
+      benefits: z.string(),
+      salaryMin: z.number(),
+      salaryMax: z.number(),
+      applicationDeadline: z.string(),
+    })
+    .superRefine((job, context) => {
+      const descriptionText = getRichTextPlainText(job.description)
+      const requirementsText = getRichTextPlainText(job.requirements)
+      const benefitsText = getRichTextPlainText(job.benefits)
+      const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
+      const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
 
-  if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
-  if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
-  if (!minSalaryInvalid && !maxSalaryInvalid && requiresSalaryPair && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
-    nextErrors.salaryMax = salaryPairMessage
-  }
-  if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && payload.salaryMin > payload.salaryMax) {
-    nextErrors.salaryMax = salaryOrderMessage
-  }
+      if (!descriptionText) context.addIssue({ code: 'custom', path: ['description'], message: requiredJobFieldMessage })
+      if (!requirementsText) context.addIssue({ code: 'custom', path: ['requirements'], message: requiredJobFieldMessage })
+      if (descriptionText.length > FIELD_LENGTH_LIMITS.jobDescription) context.addIssue({ code: 'custom', path: ['description'], message: buildMaxLengthMessage('Description', FIELD_LENGTH_LIMITS.jobDescription) })
+      if (requirementsText.length > FIELD_LENGTH_LIMITS.jobDescription) context.addIssue({ code: 'custom', path: ['requirements'], message: buildMaxLengthMessage('Requirements', FIELD_LENGTH_LIMITS.jobDescription) })
+      if (benefitsText && benefitsText.length > FIELD_LENGTH_LIMITS.jobDescription) context.addIssue({ code: 'custom', path: ['benefits'], message: buildMaxLengthMessage('Benefits', FIELD_LENGTH_LIMITS.jobDescription) })
 
-  if (payload.applicationDeadline.trim()) {
-    const deadline = new Date(payload.applicationDeadline)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+      if (minSalaryInvalid || job.salaryMin < 0) context.addIssue({ code: 'custom', path: ['salaryMin'], message: salaryPositiveMessage })
+      if (maxSalaryInvalid || job.salaryMax < 0) context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryPositiveMessage })
+      if (!minSalaryInvalid && !maxSalaryInvalid && requiresSalaryPair && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
+        context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryPairMessage })
+      }
+      if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && job.salaryMin > job.salaryMax) {
+        context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryOrderMessage })
+      }
 
-    if (Number.isNaN(deadline.getTime()) || deadline < today) {
-      nextErrors.applicationDeadline = deadlineFutureMessage
-    }
-  }
+      if (job.applicationDeadline.trim()) {
+        const deadline = new Date(job.applicationDeadline)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
-  return nextErrors
+        if (Number.isNaN(deadline.getTime()) || deadline < today) {
+          context.addIssue({ code: 'custom', path: ['applicationDeadline'], message: deadlineFutureMessage })
+        }
+      }
+    })
+    .safeParse(payload)
+
+  return collectZodJobFieldErrors(result)
 }
 
 export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInputValues: { salaryMin: string; salaryMax: string }) {
-  const nextErrors: JobFieldErrors = {}
   const minSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMin)
   const maxSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMax)
   const minSalaryEntered = minSalaryValue !== ''
   const maxSalaryEntered = maxSalaryValue !== ''
   const salaryNumberPattern = /^\d+(\.\d+)?$/
-  const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
-  const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
 
-  if (!payload.title.trim()) nextErrors.title = requiredJobFieldMessage
-  if (!payload.department.trim()) nextErrors.department = departmentRequiredMessage
-  if (!payload.locationType.trim()) nextErrors.locationType = requiredJobFieldMessage
-  if (!payload.location.trim()) nextErrors.location = requiredJobFieldMessage
-  if (!getRichTextPlainText(payload.requirements)) nextErrors.requirements = requiredJobFieldMessage
-  if (getRichTextPlainText(payload.requirements).length > FIELD_LENGTH_LIMITS.jobDescription) nextErrors.requirements = buildMaxLengthMessage('Key skills', FIELD_LENGTH_LIMITS.jobDescription)
+  const result = z
+    .object({
+      title: z.string().trim().min(1, requiredJobFieldMessage),
+      department: z.string().trim().min(1, departmentRequiredMessage),
+      locationType: z.string().trim().min(1, requiredJobFieldMessage),
+      location: z.string().trim().min(1, requiredJobFieldMessage),
+      requirements: z.string(),
+      salaryMin: z.number(),
+      salaryMax: z.number(),
+      applicationDeadline: z.string(),
+    })
+    .superRefine((job, context) => {
+      const requirementsText = getRichTextPlainText(job.requirements)
+      const minSalaryInvalid = minSalaryEntered && !salaryNumberPattern.test(minSalaryValue)
+      const maxSalaryInvalid = maxSalaryEntered && !salaryNumberPattern.test(maxSalaryValue)
 
-  if (minSalaryInvalid || payload.salaryMin < 0) nextErrors.salaryMin = salaryPositiveMessage
-  if (maxSalaryInvalid || payload.salaryMax < 0) nextErrors.salaryMax = salaryPositiveMessage
-  if (!minSalaryInvalid && !maxSalaryInvalid && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
-    nextErrors.salaryMax = salaryPairMessage
-  }
-  if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && payload.salaryMin > payload.salaryMax) {
-    nextErrors.salaryMax = salaryOrderMessage
-  }
+      if (!requirementsText) context.addIssue({ code: 'custom', path: ['requirements'], message: requiredJobFieldMessage })
+      if (requirementsText.length > FIELD_LENGTH_LIMITS.jobDescription) context.addIssue({ code: 'custom', path: ['requirements'], message: buildMaxLengthMessage('Key skills', FIELD_LENGTH_LIMITS.jobDescription) })
 
-  if (payload.applicationDeadline.trim()) {
-    const deadline = new Date(payload.applicationDeadline)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+      if (minSalaryInvalid || job.salaryMin < 0) context.addIssue({ code: 'custom', path: ['salaryMin'], message: salaryPositiveMessage })
+      if (maxSalaryInvalid || job.salaryMax < 0) context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryPositiveMessage })
+      if (!minSalaryInvalid && !maxSalaryInvalid && ((minSalaryEntered && !maxSalaryEntered) || (!minSalaryEntered && maxSalaryEntered))) {
+        context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryPairMessage })
+      }
+      if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && job.salaryMin > job.salaryMax) {
+        context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryOrderMessage })
+      }
 
-    if (Number.isNaN(deadline.getTime()) || deadline < today) {
-      nextErrors.applicationDeadline = deadlineFutureMessage
-    }
-  }
+      if (job.applicationDeadline.trim()) {
+        const deadline = new Date(job.applicationDeadline)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
-  return nextErrors
+        if (Number.isNaN(deadline.getTime()) || deadline < today) {
+          context.addIssue({ code: 'custom', path: ['applicationDeadline'], message: deadlineFutureMessage })
+        }
+      }
+    })
+    .safeParse(payload)
+
+  return collectZodJobFieldErrors(result)
 }
 
 export function getJobFieldErrorsFromApiError(error: unknown) {

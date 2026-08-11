@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { getCompactPageItems, getListPageCount, getListTotalElements } from '@/core/utils/pagination'
 import { useCandidateCompanies } from '../../application/useCandidateCompanies'
 
@@ -31,6 +32,11 @@ export function CandidateCompaniesPage() {
 
   return (
     <section className="candidate-companies-page">
+      <Breadcrumb
+        className="candidate-breadcrumb"
+        items={[{ label: 'Home', onClick: () => navigate('/candidate') }, { label: 'Companies' }]}
+      />
+
       <header className="candidate-companies-header">
         <div>
           <h1>Companies</h1>

@@ -1,8 +1,11 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { authApi } from '@/features/auth/infrastructure/authApi'
 import { getAppErrorMessage } from '@/core/utils/errorManager'
 import { shouldToastHttpError } from '@/core/utils/httpStatusManager'
-import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
+import { getPasswordStrength } from '@/core/utils/passwordStrength'
 import { authErrorMessages } from './authErrorMessages'
 import {
   validateConfirmPassword,
@@ -17,88 +20,97 @@ type UseSignupFormOptions = {
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }
 
+type SignupFormValues = {
+  fullName: string
+  email: string
+  phone: string
+  password: string
+  confirmPassword: string
+}
+
+const signupSchema = z
+  .object({
+    fullName: z.string().superRefine((value, context) => {
+      const message = validateFullName(value)
+      if (message) context.addIssue({ code: 'custom', message })
+    }),
+    email: z.string().superRefine((value, context) => {
+      const message = validateEmail(value)
+      if (message) context.addIssue({ code: 'custom', message })
+    }),
+    phone: z.string().superRefine((value, context) => {
+      const message = validatePhone(value)
+      if (message) context.addIssue({ code: 'custom', message })
+    }),
+    password: z.string().superRefine((value, context) => {
+      const message = validatePassword(value)
+      if (message) context.addIssue({ code: 'custom', message })
+    }),
+    confirmPassword: z.string(),
+  })
+  .superRefine((values, context) => {
+    const message = validateConfirmPassword(values.confirmPassword, values.password)
+    if (message) {
+      context.addIssue({ code: 'custom', path: ['confirmPassword'], message })
+    }
+  })
+
 export function useSignupForm({ onGoToSignin, triggerToast }: UseSignupFormOptions) {
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const signupForm = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+    },
+    mode: 'onSubmit',
+  })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [fullNameError, setFullNameError] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [phoneError, setPhoneError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
-  const [confirmPasswordError, setConfirmPasswordError] = useState('')
+  const fullName = signupForm.watch('fullName')
+  const email = signupForm.watch('email')
+  const phone = signupForm.watch('phone')
+  const password = signupForm.watch('password')
+  const confirmPassword = signupForm.watch('confirmPassword')
+  const fullNameError = signupForm.formState.errors.fullName?.message || ''
+  const emailError = signupForm.formState.errors.email?.message || ''
+  const phoneError = signupForm.formState.errors.phone?.message || ''
+  const passwordError = signupForm.formState.errors.password?.message || ''
+  const confirmPasswordError = signupForm.formState.errors.confirmPassword?.message || ''
   const passwordStrength = getPasswordStrength(password)
   const visibleStrengthScore = password ? passwordStrength.score : 0
 
   const handleInput =
-    (setter: (value: string) => void, clearError?: (value: string) => void) =>
+    (field: keyof SignupFormValues, clearDependentErrors?: (value: string) => void) =>
     (event: ChangeEvent<HTMLInputElement>) => {
       const nextValue = event.target.value
-      setter(nextValue)
-      clearError?.(nextValue)
+      signupForm.setValue(field, nextValue, { shouldDirty: true })
+      signupForm.clearErrors(field)
+      clearDependentErrors?.(nextValue)
     }
 
-  const updateFullName = handleInput(setFullName, (value) => {
-    if (fullNameError) setFullNameError(validateFullName(value))
-  })
+  const updateFullName = handleInput('fullName')
+  const updateEmail = handleInput('email')
+  const updatePhone = handleInput('phone')
 
-  const updateEmail = handleInput(setEmail, (value) => {
-    if (emailError) setEmailError(validateEmail(value))
-  })
-
-  const updatePhone = handleInput(setPhone, (value) => {
-    if (phoneError) setPhoneError(validatePhone(value))
-  })
-
-  const updatePassword = handleInput(setPassword, (value) => {
-    if (passwordError) {
-      setPasswordError(getMissingPasswordRequirementLabels(value).length > 0
-        ? validatePassword(value)
-        : '')
-    }
+  const updatePassword = handleInput('password', () => {
     if (confirmPasswordError) {
-      setConfirmPasswordError(validateConfirmPassword(confirmPassword, value))
+      signupForm.clearErrors('confirmPassword')
     }
   })
 
-  const updateConfirmPassword = handleInput(setConfirmPassword, (value) => {
-    if (confirmPasswordError) {
-      setConfirmPasswordError(validateConfirmPassword(value, password))
-    }
-  })
+  const updateConfirmPassword = handleInput('confirmPassword')
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-
-    const nextFullNameError = validateFullName(fullName)
-    const nextEmailError = validateEmail(email)
-    const nextPhoneError = validatePhone(phone)
-    const nextPasswordError = validatePassword(password)
-    const nextConfirmPasswordError = validateConfirmPassword(confirmPassword, password)
-
-    setFullNameError(nextFullNameError)
-    setEmailError(nextEmailError)
-    setPhoneError(nextPhoneError)
-    setPasswordError(nextPasswordError)
-    setConfirmPasswordError(nextConfirmPasswordError)
-
-    if (
-      nextFullNameError ||
-      nextEmailError ||
-      nextPhoneError ||
-      nextPasswordError ||
-      nextConfirmPasswordError
-    ) {
-      return
-    }
-
-    setIsLoading(true)
+  const handleSubmit = signupForm.handleSubmit(async (values) => {
     try {
-      const response: any = await authApi.register({ fullName, email, phone, password })
+      const response: any = await authApi.register({
+        fullName: values.fullName,
+        email: values.email,
+        phone: values.phone,
+        password: values.password,
+      })
       if (response && response.success) {
         triggerToast?.(authErrorMessages.registerSuccess, 'success')
         onGoToSignin()
@@ -107,7 +119,7 @@ export function useSignupForm({ onGoToSignin, triggerToast }: UseSignupFormOptio
         if (shouldToastHttpError(response)) {
           triggerToast?.(message, 'error')
         } else {
-          setEmailError(message)
+          signupForm.setError('email', { type: 'server', message })
         }
       }
     } catch (error: any) {
@@ -115,12 +127,10 @@ export function useSignupForm({ onGoToSignin, triggerToast }: UseSignupFormOptio
       if (shouldToastHttpError(error)) {
         triggerToast?.(message, 'error')
       } else {
-        setEmailError(message)
+        signupForm.setError('email', { type: 'server', message })
       }
-    } finally {
-      setIsLoading(false)
     }
-  }
+  })
 
   return {
     confirmPassword,
@@ -130,7 +140,7 @@ export function useSignupForm({ onGoToSignin, triggerToast }: UseSignupFormOptio
     fullName,
     fullNameError,
     handleSubmit,
-    isLoading,
+    isLoading: signupForm.formState.isSubmitting,
     password,
     passwordError,
     passwordStrength,
