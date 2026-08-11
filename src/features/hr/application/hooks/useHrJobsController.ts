@@ -7,6 +7,7 @@ import type { JobConfirmAction, JobDetailTab } from '../../infrastructure/hrJobL
 import {
   buildJobPayloadFromPosting,
   isDraftJobStatus,
+  isOpenJobStatus,
 } from '../../infrastructure/hrJobLogic'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
 import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
@@ -214,6 +215,10 @@ export function useHrJobsController({
     setJobPage(1)
   }
 
+  const refreshJobs = () => jobPostingsQuery.refetch()
+  const refreshJobStats = () => jobStatsQuery.refetch()
+  const refreshJobPostingLimit = () => jobPostingLimitQuery.refetch()
+
   const openCreateJob = () => {
     window.sessionStorage.removeItem('jobfusion.hr.jobFormRefreshView')
     setSelectedJob(null)
@@ -246,6 +251,7 @@ export function useHrJobsController({
 
   const requestJobAction = (action: Exclude<JobConfirmAction, null>, job: JobPosting) => {
     if (isActionLocked || isJobActionSubmitting) return
+    if (action === 'delete' && isOpenJobStatus(job.status)) return
     setJobConfirmAction(action)
     setJobConfirmTarget(job)
   }
@@ -352,6 +358,9 @@ export function useHrJobsController({
     updateJobSearchQuery,
     updateJobStatusFilter,
     updateJobEmploymentTypeFilter,
+    refreshJobs,
+    refreshJobStats,
+    refreshJobPostingLimit,
     openCreateJob,
     openGenerateWithAi,
     openJobDetail,

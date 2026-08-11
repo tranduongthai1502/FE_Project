@@ -3,6 +3,17 @@ import type { ActivityLog, StaffMember } from '@/features/tenant/domain/tenantAp
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import { useStaffActivityLogList } from '../../application/useStaffActivityLogList'
 
+function formatEventTypeLabel(value: string) {
+  const normalizedValue = value.trim().toUpperCase()
+  const knownLabels: Record<string, string> = {
+    LOGIN: 'Login',
+    LOGOUT: 'Logout',
+    ACTION: 'Action',
+  }
+
+  return knownLabels[normalizedValue] || normalizedValue.replace(/[_-]+/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase()) || 'Action'
+}
+
 export function StaffActivityLogView({
   staffMember,
   activityLogs,
@@ -117,8 +128,8 @@ export function StaffActivityLogView({
           <label className="staff-log-filter-select">
             <select aria-label="Filter logs by event type" value={eventTypeFilter} onChange={(event) => onEventTypeFilterChange(event.target.value)}>
               <option value="">All Event Types</option>
-              <option value="ACCOUNT">Account</option>
               <option value="LOGIN">Login</option>
+              <option value="LOGOUT">Logout</option>
               <option value="ACTION">Action</option>
             </select>
             <i className="fa-solid fa-chevron-down" aria-hidden="true"></i>
@@ -161,7 +172,7 @@ export function StaffActivityLogView({
           <div className="tenant-list-table-state error">{activityError}</div>
           ) : (
             activityLogs.map((activity) => {
-              const eventTypeLabel = String(activity.eventType || '').replace(/[_-]+/g, ' ').trim() || 'Action'
+              const eventTypeLabel = formatEventTypeLabel(String(activity.eventType || ''))
               const descriptionLabel = activity.description || activity.title || '-'
               const dateTimeLabel = formatLogDateTime(activity.createdAt)
               const ipAddressLabel = activity.ipAddress || '-'
@@ -208,5 +219,4 @@ export function StaffActivityLogView({
     </div>
   )
 }
-
 

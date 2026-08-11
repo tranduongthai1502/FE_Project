@@ -89,7 +89,7 @@ function normalizeActivityLog(log: any, index: number): ActivityLog | null {
 
   return {
     id: String(log?.id || log?.logId || log?.eventId || log?.uuid || `${title}-${index}`),
-    eventType: String(log?.eventType || log?.event_type || log?.type || 'ACTION'),
+    eventType: String(log?.eventType || log?.event_type || log?.type || 'ACTION').trim().toUpperCase(),
     title,
     description,
     ipAddress,

@@ -879,7 +879,9 @@
   left: 50%;
   bottom: calc(100% + 7px);
   z-index: 220;
-  max-width: 160px;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 24px));
+  box-sizing: border-box;
   padding: 4px 7px;
   border: 1px solid #d7deea;
   border-radius: 4px;
@@ -890,7 +892,8 @@
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 4px);
