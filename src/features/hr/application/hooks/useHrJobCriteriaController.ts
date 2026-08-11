@@ -54,7 +54,7 @@ export function useHrJobCriteriaController({
   triggerToast,
 }: {
   selectedJob: JobPosting | null
-  jobView: 'list' | 'detail' | 'create' | 'edit' | 'ai'
+  jobView: 'list' | 'detail' | 'create' | 'edit' | 'ai' | 'kanban'
   jobDetailTab: JobDetailTab
   jobs: JobPosting[]
   isActionLocked: boolean

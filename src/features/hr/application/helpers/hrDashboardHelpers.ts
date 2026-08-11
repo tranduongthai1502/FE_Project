@@ -141,10 +141,11 @@ export function formatRevisionMeta(actorName?: string, createdAt?: string): stri
   return `${actorLabel} • ${dateTime}`
 }
 
-export function getHrJobViewFromPath(pathname: string): 'list' | 'detail' | 'create' | 'edit' | 'ai' {
+export function getHrJobViewFromPath(pathname: string): 'list' | 'detail' | 'create' | 'edit' | 'ai' | 'kanban' {
   if (pathname === hrGenerateJobAiPath) return 'ai'
   if (pathname === hrCreateJobPostingPath) return 'create'
   if (pathname.startsWith(hrJobDetailPathPrefix) && pathname.endsWith('/edit')) return 'edit'
+  if (pathname.startsWith(hrJobDetailPathPrefix) && pathname.endsWith('/kanban')) return 'kanban'
   if (pathname.startsWith(hrJobDetailPathPrefix)) return 'detail'
   return 'list'
 }
@@ -155,6 +156,10 @@ export function getHrJobDetailPath(jobId: string): string {
 
 export function getHrJobEditPath(jobId: string): string {
   return `${getHrJobDetailPath(jobId)}/edit`
+}
+
+export function getHrJobKanbanPath(jobId: string): string {
+  return `${getHrJobDetailPath(jobId)}/kanban`
 }
 
 export function getHrJobIdFromPath(pathname: string): string {

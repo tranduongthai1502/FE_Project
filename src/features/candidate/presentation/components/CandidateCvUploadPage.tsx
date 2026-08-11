@@ -31,6 +31,8 @@ export function CandidateCvUploadPage() {
   const [isUploaded, setIsUploaded] = useState(false)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || candidateCompanyJobs.find((item) => item.id === jobId)
+  const company = candidateCompanies.find((item) => item.id === companyId)
+  const displayCompanyName = company?.name || 'Company Detail'
   const displayJobTitle = job?.title || 'Job Detail'
 
   if (!companyId || !jobId) return <Navigate to="/candidate/companies" replace />
