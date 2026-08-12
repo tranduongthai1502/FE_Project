@@ -19,6 +19,8 @@ import {
   PLAN_FILTER_LIST_SIZE,
   buildTenantListParams,
   duplicateCompanyNameMessage,
+  duplicateAdminEmailMessage,
+  getCreateTenantFieldErrors,
   emptyTenantForm,
   invalidTenantEmailMessage,
   isValidTenantAdminEmail,
@@ -367,7 +369,17 @@ export function useTenantManagementController({
       triggerToast?.('Tenant instance provisioned successfully.', 'success')
       resetCreateTenantPage()
     } catch (error) {
-      setTenantError(getAdminErrorMessage(error, 'Failed to create tenant instance.'))
+      const errorMessage = getAdminErrorMessage(error, 'Failed to create tenant instance.')
+      const fieldErrors = getCreateTenantFieldErrors(error, errorMessage)
+
+      if (fieldErrors.companyName) {
+        tenantCreateForm.setError('companyName', { type: 'server', message: duplicateCompanyNameMessage })
+      }
+      if (fieldErrors.adminEmail) {
+        tenantCreateForm.setError('adminEmail', { type: 'server', message: duplicateAdminEmailMessage })
+      }
+
+      setTenantError(Object.keys(fieldErrors).length > 0 ? '' : errorMessage)
     } finally {
       setIsSubmittingTenant(false)
     }
