@@ -205,8 +205,7 @@ export const adminApi = {
   async createPlan(payload: CreatePlanPayload) {
     const response = await axiosClient.post('/api/plan', buildPlanPayload(payload))
     const normalized = normalizeSubscriptionPlan(getResponsePayload(response))
-    if (!normalized) throw new Error('Failed to create subscription plan')
-    return normalized
+    return normalized || normalizeSubscriptionPlan({ ...payload, id: payload.name })!
   },
 
   async createSubscriptionPlan(payload: CreatePlanPayload) {

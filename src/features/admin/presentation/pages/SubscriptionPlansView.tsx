@@ -46,7 +46,6 @@ export function SubscriptionPlansView({
         }}
         onHome={onHome}
         onCreated={ctrl.handlePlanCreated}
-        existingPlans={ctrl.plans}
         triggerToast={triggerToast}
       />
     )
