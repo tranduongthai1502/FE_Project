@@ -9,6 +9,7 @@ export type TenantStatusFilter = 'all' | 'active' | 'inactive'
 
 export const requiredTenantFieldMessage = validationErrorMessages.requiredField
 export const duplicateCompanyNameMessage = validationErrorMessages.duplicateCompanyName
+export const duplicateAdminEmailMessage = 'This email address is already in use.'
 export const invalidTenantEmailMessage = validationErrorMessages.validEmailAddressRequired
 export const PLAN_FILTER_LIST_SIZE = 100
 
@@ -89,7 +90,7 @@ export function buildTenantListParams(
 
 export function getCreateTenantFieldErrors(error: unknown, message: string): CreateTenantFieldErrors {
   return mapErrorTextToFieldErrors<keyof CreateTenantFieldErrors>(error, message, [
-    { field: 'adminEmail', message: validationErrorMessages.emailAlreadyRegistered, keywords: ['email'] },
+    { field: 'adminEmail', message: duplicateAdminEmailMessage, keywords: ['email', 'email_already_exists', 'duplicate_email'] },
     { field: 'domain', message: 'Domain already exists. Please use another domain.', keywords: ['domain'] },
     { field: 'companyName', message: duplicateCompanyNameMessage, keywords: ['company', 'tenant', 'name_already_exists', 'duplicate_name'] },
   ])
