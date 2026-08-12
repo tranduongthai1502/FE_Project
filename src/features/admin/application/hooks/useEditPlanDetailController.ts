@@ -193,13 +193,13 @@ export function useEditPlanDetailController({
       return
     }
 
-    const isValid = await editPlanForm.trigger()
+    const isValid = await editPlanForm.trigger(['planName', 'description', 'monthlyPrice'])
     const nextFieldErrors: CreatePlanFieldErrors = {
       planName: editPlanForm.getFieldState('planName').error?.message,
       description: editPlanForm.getFieldState('description').error?.message,
       monthlyPrice: editPlanForm.getFieldState('monthlyPrice').error?.message,
-      maxStaffAccount: editPlanForm.getFieldState('maxStaffAccount').error?.message,
-      maxActiveJobPosting: editPlanForm.getFieldState('maxActiveJobPosting').error?.message,
+      maxStaffAccount: validatePositiveNumberOrUnlimited(maxStaffAccount, isStaffUnlimited) || undefined,
+      maxActiveJobPosting: validatePositiveNumberOrUnlimited(maxActiveJobPosting, isJobsUnlimited) || undefined,
     }
     if (!nextFieldErrors.planName && isPlanMaxLengthError(fieldErrors.planName)) nextFieldErrors.planName = fieldErrors.planName
     if (!nextFieldErrors.description && isPlanMaxLengthError(fieldErrors.description)) nextFieldErrors.description = fieldErrors.description
