@@ -69,6 +69,7 @@ export function ScrollableSelect({
     <div
       ref={rootRef}
       className={`admin-scroll-select ${isOpen ? 'open' : ''} ${disabled ? 'disabled' : ''} ${invalid ? 'has-error' : ''} ${className}`.trim()}
+      onClick={(event) => event.stopPropagation()}
     >
       <button
         type="button"

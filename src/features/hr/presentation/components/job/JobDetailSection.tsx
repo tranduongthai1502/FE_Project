@@ -89,7 +89,11 @@ export function JobDetailSection({
     ? { label: '', value: 'CLOSED', helper: 'Position Filled' }
     : selectedJobIsDraft
       ? { label: '', value: 'NOT YET PUBLISH', helper: '' }
-      : { label: 'Days Open', value: String(getDaysOpen(selectedJob.createdAt)), helper: daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left` }
+      : {
+        label: 'Days Open',
+        value: String(getDaysOpen(selectedJob.openedAt || selectedJob.publishedAt || selectedJob.createdAt)),
+        helper: daysUntilDeadline === null ? 'No deadline' : `Exp: ${daysUntilDeadline} days left`,
+      }
   const revisionHistoryItems = buildRevisionHistoryItems(selectedJob.revisionHistory, selectedJob.title)
 
   return (

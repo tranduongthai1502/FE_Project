@@ -70,15 +70,15 @@ export function CandidateDetailView() {
                 <div className={styles.contactRow}>
                   <span className={styles.contactItem}>
                     <i className="fa-regular fa-envelope"></i>
-                    {candidate?.email}
+                    <span className={styles.contactText} title={candidate?.email}>{candidate?.email}</span>
                   </span>
                   <span className={styles.contactItem}>
                     <i className="fa-solid fa-phone"></i>
-                    {candidate?.phone}
+                    <span className={styles.contactText} title={candidate?.phone}>{candidate?.phone}</span>
                   </span>
                   <span className={styles.contactItem}>
                     <i className="fa-solid fa-location-dot"></i>
-                    {candidate?.location}
+                    <span className={styles.contactText} title={candidate?.location}>{candidate?.location}</span>
                   </span>
                 </div>
               </div>
@@ -178,17 +178,17 @@ export function CandidateDetailView() {
                 <h2 className={styles.profileName}>{candidate?.name}</h2>
                 <div className={styles.profileRole}>{candidate?.targetJob}</div>
                 <div className={styles.contactRow}>
-                  <span className={styles.contactItem}>
-                    <i className="fa-regular fa-envelope"></i>
-                    {candidate?.email}
-                  </span>
-                  <span className={styles.contactItem}>
-                    <i className="fa-solid fa-phone"></i>
-                    {candidate?.phone}
-                  </span>
-                  <span className={styles.contactItem}>
-                    <i className="fa-solid fa-location-dot"></i>
-                    {candidate?.location}
+                <span className={styles.contactItem}>
+                  <i className="fa-regular fa-envelope"></i>
+                  <span className={styles.contactText} title={candidate?.email}>{candidate?.email}</span>
+                </span>
+                <span className={styles.contactItem}>
+                  <i className="fa-solid fa-phone"></i>
+                  <span className={styles.contactText} title={candidate?.phone}>{candidate?.phone}</span>
+                </span>
+                <span className={styles.contactItem}>
+                  <i className="fa-solid fa-location-dot"></i>
+                  <span className={styles.contactText} title={candidate?.location}>{candidate?.location}</span>
                   </span>
                 </div>
               </div>
