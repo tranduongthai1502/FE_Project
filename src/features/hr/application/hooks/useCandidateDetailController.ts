@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { CandidateDetail } from '../../domain/candidate.types'
+import { resolveApiBaseUrl } from '@/core/api/axiosClient'
+import type { Candidate, CandidateDetail } from '../../domain/candidate.types'
 import { mockCandidates } from './useCandidateListController'
 import { hrCandidateApplicationApi } from '../../infrastructure/hrCandidateApplicationApi'
 
@@ -118,6 +120,16 @@ export const mockCandidateDetails: Record<string, CandidateDetail> = {
 
 export type DetailTab = 'extracted' | 'scoring'
 
+const emptyExtractedCv = {
+  summary: '',
+  experience: [],
+  education: [],
+  certifications: [],
+  skills: [],
+  cvFileName: '',
+  cvDownloadUrl: '',
+}
+
 function getResumePayload(payload: any) {
   return payload?.data?.data || payload?.data || payload?.result || payload?.resume || payload
 }
@@ -130,9 +142,53 @@ function toText(value: unknown, fallback = '') {
   return value === undefined || value === null ? fallback : String(value)
 }
 
+function toUrlText(value: unknown) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function normalizeCvUrl(value: unknown) {
+  const url = toUrlText(value)
+  if (!url || url === '#' || url.toLowerCase() === 'null' || url.toLowerCase() === 'undefined') return ''
+  if (/^(https?:|blob:|data:)/i.test(url)) return url
+  if (url.startsWith('/')) return `${resolveApiBaseUrl()}${url}`
+  return url
+}
+
+function withPdfCacheKey(url: string, cacheKey?: unknown) {
+  const normalizedUrl = normalizeCvUrl(url)
+  if (!normalizedUrl || /^(blob:|data:)/i.test(normalizedUrl)) return normalizedUrl
+
+  const key = toUrlText(cacheKey)
+  if (!key) return normalizedUrl
+
+  try {
+    const nextUrl = new URL(normalizedUrl)
+    nextUrl.searchParams.set('cv_cache_key', key)
+    return nextUrl.toString()
+  } catch {
+    const separator = normalizedUrl.includes('?') ? '&' : '?'
+    return `${normalizedUrl}${separator}cv_cache_key=${encodeURIComponent(key)}`
+  }
+}
+
+function toCandidateSummary(candidate: any, fallbackId: string): Candidate {
+  return {
+    id: String(candidate?.id || fallbackId),
+    candidateId: candidate?.candidateId ? String(candidate.candidateId) : undefined,
+    jobId: candidate?.jobId ? String(candidate.jobId) : undefined,
+    name: toText(candidate?.name, 'Candidate'),
+    targetJob: toText(candidate?.targetJob, '-'),
+    matchScore: Number(candidate?.matchScore) || 0,
+    recruitmentStage: toText(candidate?.recruitmentStage, 'Screening'),
+    dateApplied: toText(candidate?.dateApplied, '-'),
+    reviewed: Boolean(candidate?.reviewed),
+  }
+}
+
 function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): CandidateDetail {
   const resume = getResumePayload(payload)
   const parsedData = resume?.parsedData || resume?.parsed_data || resume?.extractedCv || resume?.extracted_cv || {}
+  const hasParsedData = Boolean(resume?.parsedData || resume?.parsed_data || resume?.extractedCv || resume?.extracted_cv)
   const profile = parsedData?.profile || parsedData?.personalInfo || parsedData?.personal_info || parsedData?.candidate || {}
   const score = Number(resume?.matchingScore ?? resume?.candidateSelfScore ?? resume?.score ?? 0)
   const suggestions = resume?.cvImprovementSuggestions || resume?.cv_improvement_suggestions || resume?.reasoning || {}
@@ -180,18 +236,22 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
 
   return {
     ...base,
-    name: toText(profile?.fullName || profile?.full_name || profile?.name || parsedData?.fullName || parsedData?.full_name || resume?.candidateName || resume?.candidate_name),
-    email: toText(profile?.email || parsedData?.email || resume?.email),
-    phone: toText(profile?.phone || profile?.phoneNumber || profile?.phone_number || parsedData?.phone || resume?.phone),
-    location: toText(profile?.location || profile?.address || parsedData?.location || parsedData?.address || resume?.location),
-    targetJob: toText(resume?.jobTitle || resume?.job_title),
+    candidateId: toText(resume?.candidateId || resume?.candidate_id || resume?.userId || resume?.user_id, base.candidateId),
+    name: toText(profile?.fullName || profile?.full_name || profile?.name || parsedData?.fullName || parsedData?.full_name || resume?.candidateName || resume?.candidate_name, base.name),
+    email: toText(profile?.email || parsedData?.email || resume?.email, base.email),
+    phone: toText(profile?.phone || profile?.phoneNumber || profile?.phone_number || parsedData?.phone || resume?.phone, base.phone),
+    location: toText(profile?.location || profile?.address || parsedData?.location || parsedData?.address || resume?.location, base.location),
+    targetJob: toText(resume?.jobTitle || resume?.job_title, base.targetJob),
     avatarUrl: '',
     matchScore: Number.isFinite(score) ? Math.round(score) : 0,
-    scoringStatus: parsedData ? 'COMPLETED' : base.scoringStatus,
+    scoringStatus: hasParsedData ? 'COMPLETED' : base.scoringStatus,
     extractedCv: {
       summary: toText(parsedData?.summary || parsedData?.professionalSummary || parsedData?.professional_summary),
       cvFileName: toText(resume?.fileName || resume?.file_name || resume?.originalFileName || resume?.original_file_name),
-      cvDownloadUrl: toText(resume?.fileUrl || resume?.file_url || resume?.cvDownloadUrl || resume?.cv_download_url),
+      cvDownloadUrl: withPdfCacheKey(
+        resume?.fileUrl || resume?.file_url || resume?.cvDownloadUrl || resume?.cv_download_url,
+        resume?.updatedAt || resume?.updated_at || resume?.id,
+      ),
       experience,
       education,
       certifications,
@@ -204,43 +264,41 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
 }
 
 export function useCandidateDetailController(candidateId?: string) {
+  const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<DetailTab>('extracted')
   const [candidateState, setCandidateState] = useState<Record<string, CandidateDetail>>({})
   const queryClient = useQueryClient()
-
-  const cachedCandidate = useMemo(() => {
-    const listQueries = queryClient.getQueriesData({ queryKey: ['hr', 'candidate-applications'] })
-
-    for (const [, data] of listQueries) {
-      const candidates = Array.isArray(data) ? data : []
-      const match = candidates.find((item: any) => item?.id === candidateId)
-      if (match) return match
-    }
-
-    return null
-  }, [candidateId, queryClient])
+  const resumeJobId = searchParams.get('jobId') || ''
+  const resumeCandidateId = searchParams.get('candidateId') || ''
 
   const baseCandidate = useMemo(() => {
     const id = candidateId || 'cand-2'
     if (candidateState[id]) return candidateState[id]
 
-    const baseCandidate = cachedCandidate || mockCandidates.find((c) => c.id === id) || mockCandidates[1]
-    const details = mockCandidateDetails[id] || mockCandidateDetails['cand-2']
+    const mockCandidate = mockCandidates.find((c) => c.id === id)
+    const baseCandidate = toCandidateSummary(mockCandidate || { id, name: 'Candidate' }, id)
+    baseCandidate.jobId = resumeJobId || baseCandidate.jobId
+    baseCandidate.candidateId = resumeCandidateId || baseCandidate.candidateId
+    const details = mockCandidateDetails[id]
+    const useMockCv = !baseCandidate.jobId || !baseCandidate.candidateId
 
     return {
-      ...details,
       ...baseCandidate,
       id,
-      email: details?.email || `${baseCandidate.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-      phone: details?.phone || '+1 (555) 012-3456',
-      location: details?.location || 'San Francisco, CA',
-      scoringStatus: details?.scoringStatus || 'COMPLETED',
-      extractedCv: details?.extractedCv || mockCandidateDetails['cand-2'].extractedCv,
-      componentAnalysis: details?.componentAnalysis || mockCandidateDetails['cand-2'].componentAnalysis,
-      aiJustification: details?.aiJustification || mockCandidateDetails['cand-2'].aiJustification,
-      keySkillGaps: details?.keySkillGaps || mockCandidateDetails['cand-2'].keySkillGaps,
+      email: useMockCv ? details?.email || '' : '',
+      phone: useMockCv ? details?.phone || '' : '',
+      location: useMockCv ? details?.location || '' : '',
+      avatarUrl: useMockCv ? details?.avatarUrl : '',
+      scoringStatus: useMockCv && details ? details.scoringStatus || 'COMPLETED' : 'PENDING',
+      extractedCv: useMockCv && details ? {
+        ...details.extractedCv,
+        cvDownloadUrl: normalizeCvUrl(details.extractedCv?.cvDownloadUrl),
+      } : emptyExtractedCv,
+      componentAnalysis: useMockCv && details ? details.componentAnalysis || [] : [],
+      aiJustification: useMockCv && details ? details.aiJustification || [] : [],
+      keySkillGaps: useMockCv && details ? details.keySkillGaps || [] : [],
     } as CandidateDetail
-  }, [cachedCandidate, candidateId, candidateState])
+  }, [candidateId, candidateState, resumeCandidateId, resumeJobId])
 
   const resumeQuery = useQuery({
     queryKey: ['hr', 'candidate-resume', baseCandidate.jobId, baseCandidate.candidateId],

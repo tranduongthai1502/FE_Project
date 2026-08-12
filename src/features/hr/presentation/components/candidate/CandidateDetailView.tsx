@@ -13,6 +13,7 @@ export function CandidateDetailView() {
   const aiJustification = candidate?.aiJustification || []
   const keySkillGaps = candidate?.keySkillGaps || []
   const extractedCv = candidate?.extractedCv || { summary: '', experience: [], education: [], skills: [] }
+  const cvDownloadUrl = typeof extractedCv.cvDownloadUrl === 'string' ? extractedCv.cvDownloadUrl.trim() : ''
 
   return (
     <div className={`role-content ${styles.detailContainer}`}>
@@ -310,8 +311,8 @@ export function CandidateDetailView() {
                 <i className="fa-regular fa-file-pdf"></i>
                 <span>{extractedCv.cvFileName || ''}</span>
               </div>
-              {extractedCv.cvDownloadUrl && (
-                <a href={extractedCv.cvDownloadUrl} className={styles.pdfDownloadBtn} download>
+              {cvDownloadUrl && (
+                <a href={cvDownloadUrl} className={styles.pdfDownloadBtn} download>
                   <i className="fa-solid fa-download"></i>
                   Download CV
                 </a>
@@ -319,8 +320,10 @@ export function CandidateDetailView() {
             </div>
 
             <div className={styles.pdfPreviewBody}>
-              {extractedCv.cvDownloadUrl && (
-                <iframe className={styles.pdfFrame} src={extractedCv.cvDownloadUrl} title="Candidate CV" />
+              {cvDownloadUrl ? (
+                <iframe className={styles.pdfFrame} src={cvDownloadUrl} title="Candidate CV" />
+              ) : (
+                <div className={styles.resumeStateMessage}>Original CV file is not available.</div>
               )}
             </div>
           </div>

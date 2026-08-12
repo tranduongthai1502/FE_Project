@@ -153,9 +153,12 @@ function normalizeJobPostingLimit(payload: any): JobPostingLimitResponse {
   const item = payload?.data && typeof payload.data === 'object' ? payload.data : payload
   if (!item || typeof item !== 'object') return {}
 
+  const limitKeys = ['activeJobPostingLimit', 'activeJobPostingsLimit', 'maxActiveJobs', 'jobPostingLimit', 'limit', 'max']
+  const limitKey = limitKeys.find((key) => Object.prototype.hasOwnProperty.call(item, key))
+  const rawLimit = limitKey ? item[limitKey] : undefined
   const used = Number(item.activeJobPostingUsed ?? item.activeJobPostingsUsed ?? item.currentActiveJobs ?? item.jobPostingUsed ?? item.used ?? item.current ?? item.count)
-  const limit = Number(item.activeJobPostingLimit ?? item.activeJobPostingsLimit ?? item.maxActiveJobs ?? item.jobPostingLimit ?? item.limit ?? item.max)
-  const unlimited = Boolean(item.activeJobPostingUnlimited ?? item.activeJobPostingsUnlimited ?? item.jobPostingUnlimited ?? item.unlimited)
+  const limit = Number(rawLimit)
+  const unlimited = rawLimit === null || Boolean(item.activeJobPostingUnlimited ?? item.activeJobPostingsUnlimited ?? item.jobPostingUnlimited ?? item.unlimited)
 
   return {
     activeJobPostingUsed: Number.isFinite(used) ? used : undefined,
