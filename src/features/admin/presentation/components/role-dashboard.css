@@ -2935,20 +2935,20 @@
   padding: 24px 28px 58px;
 }
 
-.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(1) {
+.create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(1) {
   grid-column: 1 / 13;
 }
 
-.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2) {
+.create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(2) {
   grid-column: 13 / 25;
   max-width: none;
 }
 
-.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(4) {
+.create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(4) {
   grid-column: 13 / 19;
 }
 
-.create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(5) {
+.create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(5) {
   grid-column: 19 / 25;
 }
 
@@ -2973,10 +2973,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(1),
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2),
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(4),
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(5),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(1),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(2),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(4),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(5),
   .create-tenant-card .tenant-form-grid.admin label:nth-child(1),
   .create-tenant-card .tenant-form-grid.admin label:nth-child(2),
   .tenant-domain-field {
@@ -8793,10 +8793,10 @@
     padding: 20px 18px;
   }
 
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(1),
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(2),
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(4),
-  .create-tenant-card .tenant-form-grid:not(.admin) label:nth-child(5),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(1),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(2),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(4),
+  .create-tenant-card .tenant-form-grid:not(.admin) > :nth-child(5),
   .create-tenant-card .tenant-form-grid.admin label:nth-child(1),
   .create-tenant-card .tenant-form-grid.admin label:nth-child(2),
   .create-tenant-card .tenant-domain-field {
