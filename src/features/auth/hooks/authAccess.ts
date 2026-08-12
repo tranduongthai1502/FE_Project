@@ -1,4 +1,4 @@
-import { getStoredUserInfo } from '../infrastructure/authStorageRepository'
+import { getStoredUserInfo } from '../api/authStorageRepository'
 
 export function getStoredCurrentUserStatus() {
   const user = getStoredUserInfo()

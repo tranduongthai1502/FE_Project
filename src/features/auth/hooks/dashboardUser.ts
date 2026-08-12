@@ -1,4 +1,4 @@
-import { getStoredUserInfo } from '../infrastructure/authStorageRepository'
+import { getStoredUserInfo } from '../api/authStorageRepository'
 
 export type DashboardUser = {
   full_name?: string | null

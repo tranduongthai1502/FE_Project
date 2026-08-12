@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { authApi } from '@/features/auth/infrastructure/authApi'
+import { authApi } from '@/features/auth/api/authApi'
 import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
 import { getAppErrorMessage, getErrorCode } from '@/core/utils/errorManager'
 import { authErrorMessages } from '@/core/utils/errors/authErrorMessages'
 import { isPasswordLengthValid } from '@/core/api/axiosErrorHandler'
-import { clearAuthStorage, clearRequirePasswordChange } from '../infrastructure/authStorageRepository'
+import { clearAuthStorage, clearRequirePasswordChange } from '../api/authStorageRepository'
 
 export type UseChangePasswordFormOptions = {
   isPasswordChangeRequired?: boolean
