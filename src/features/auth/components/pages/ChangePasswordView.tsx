@@ -1,7 +1,7 @@
 import { getMissingPasswordRequirementLabels } from '@/core/utils/passwordStrength'
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 import { authErrorMessages } from '@/core/utils/errors/authErrorMessages'
-import { useChangePasswordForm } from '../../application/useChangePasswordForm'
+import { useChangePasswordForm } from '../../hooks/useChangePasswordForm'
 type ChangePasswordViewProps = {
   isPasswordChangeRequired?: boolean
   onBack: () => void

@@ -1,5 +1,5 @@
 import axiosClient from '../../../core/api/axiosClient'
-import type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '../domain/auth.types'
+import type { ChangePasswordPayload, LoginPayload, RegisterPayload } from '../types/auth.types'
 
 export const authApi = {
   async login(payload: LoginPayload) {

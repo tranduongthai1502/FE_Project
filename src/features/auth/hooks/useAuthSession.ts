@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { flushSync } from 'react-dom'
 import type { NavigateFunction } from 'react-router-dom'
-import { authApi } from '@/features/auth/infrastructure/authApi'
+import { authApi } from '@/features/auth/api/authApi'
 import { getPageForUserRole, unsupportedRoleMessage } from './authRole'
 import {
   AUTH_EXPIRED_EVENT_NAME,
@@ -11,7 +11,7 @@ import {
   getStoredAuthRole,
   hasStoredAuthToken,
   saveAuthRole,
-} from '../infrastructure/authStorageRepository'
+} from '../api/authStorageRepository'
 
 const pathByAuthRole = {
   candidate: '/candidate',

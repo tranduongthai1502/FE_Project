@@ -16,7 +16,6 @@ import {
   getHrJobDetailTabFromSearch,
   getHrJobEditPath,
   getHrJobIdFromPath,
-  getHrJobKanbanPath,
   getHrJobViewFromPath,
   getJobsEllipsisPageItems,
 } from '../helpers/hrDashboardHelpers'
@@ -47,7 +46,7 @@ export function useHrJobsController({
   const [jobPageCount, setJobPageCount] = useState(1)
   const [jobListReloadKey, setJobListReloadKey] = useState(0)
 
-  const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai' | 'kanban'>(() => getHrJobViewFromPath(location.pathname))
+  const [jobView, setJobView] = useState<'list' | 'detail' | 'create' | 'edit' | 'ai'>(() => getHrJobViewFromPath(location.pathname))
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null)
   const [jobDetailTab, setJobDetailTab] = useState<JobDetailTab>(() => getHrJobDetailTabFromSearch(location.search))
 
@@ -195,7 +194,7 @@ export function useHrJobsController({
     setJobDetailTab(tab)
     if (jobView !== 'detail') return
 
-    const search = tab === 'criteria' ? '?tab=criteria' : ''
+    const search = tab === 'overview' ? '' : `?tab=${tab}`
     if (location.search !== search) {
       navigate({ pathname: location.pathname, search })
     }
@@ -248,12 +247,6 @@ export function useHrJobsController({
     setSelectedJob(job)
     setJobView('edit')
     updateHrJobsPath(getHrJobEditPath(job.id))
-  }
-
-  const openJobKanban = (job: JobPosting) => {
-    setSelectedJob(job)
-    setJobView('kanban')
-    updateHrJobsPath(getHrJobKanbanPath(job.id))
   }
 
   const requestJobAction = (action: Exclude<JobConfirmAction, null>, job: JobPosting) => {
@@ -372,7 +365,6 @@ export function useHrJobsController({
     openGenerateWithAi,
     openJobDetail,
     openEditJob,
-    openJobKanban,
     requestJobAction,
     closeJobConfirm,
     confirmJobAction,

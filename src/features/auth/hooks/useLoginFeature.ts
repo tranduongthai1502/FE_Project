@@ -9,10 +9,10 @@ import {
 } from 'react'
 import { getMissingPasswordRequirementLabels, getPasswordStrength } from '@/core/utils/passwordStrength'
 import { validateEmail, validateRequired } from './validation'
-import { authApi } from '@/features/auth/infrastructure/authApi'
+import { authApi } from '@/features/auth/api/authApi'
 import { getAppErrorMessage, getErrorCode } from '@/core/utils/errorManager'
 import { authErrorMessages } from './authErrorMessages'
-import { saveAuthRole, saveLoginSession, saveRememberedEmail, saveRequirePasswordChange, getRememberedEmail } from '../infrastructure/authStorageRepository'
+import { saveAuthRole, saveLoginSession, saveRememberedEmail, saveRequirePasswordChange, getRememberedEmail } from '../api/authStorageRepository'
 import { getPageForUserRole } from './authRole'
 import { validateOptionalEmail, validationErrorMessages } from '@/core/api/axiosErrorHandler'
 
