@@ -116,7 +116,7 @@ export function CreateTenantPage({
               <FieldError message={fieldErrors.companyName} />
             </label>
 
-            <label>
+            <div className="tenant-select-field">
               <span>Subscription Plan <b>*</b></span>
               <ScrollableSelect
                 ariaLabel="Select subscription plan"
@@ -134,7 +134,7 @@ export function CreateTenantPage({
                 onChange={(nextValue) => onChange('planId', nextValue)}
               />
               <FieldError message={fieldErrors.planId} />
-            </label>
+            </div>
 
             <label className="tenant-domain-field">
               <span>Domain / Identifier <b>*</b></span>
@@ -151,7 +151,7 @@ export function CreateTenantPage({
               <FieldError message={fieldErrors.domain} />
             </label>
 
-            <label>
+            <div className="tenant-select-field">
               <span>Industry <b>*</b></span>
               <ScrollableSelect
                 ariaLabel="Select industry"
@@ -165,9 +165,9 @@ export function CreateTenantPage({
                 onChange={(nextValue) => onChange('industry', nextValue)}
               />
               <FieldError message={fieldErrors.industry} />
-            </label>
+            </div>
 
-            <label>
+            <div className="tenant-select-field">
               <span>Region <b>*</b></span>
               <ScrollableSelect
                 ariaLabel="Select region"
@@ -181,7 +181,7 @@ export function CreateTenantPage({
                 onChange={(nextValue) => onChange('region', nextValue)}
               />
               <FieldError message={fieldErrors.region} />
-            </label>
+            </div>
           </div>
 
           <hr />
