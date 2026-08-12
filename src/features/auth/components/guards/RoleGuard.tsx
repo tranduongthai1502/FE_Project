@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import type { AppRole } from '@/features/auth/domain/role.types'
+import type { AppRole } from '@/features/auth/types/role.types'
 import { ProtectedRoute } from './ProtectedRoute'
 
 type RoleGuardProps = {

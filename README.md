@@ -29,178 +29,89 @@ Nguyen tac thiet ke chinh la human-in-the-loop: AI dua ra goi y, con quyet dinh 
 - CSS thu cong
 - Font Awesome class icons va mot so SVG/icon component noi bo
 
-## Cau truc thu muc hien tai
+## Cau truc thu muc theo chuan Bulletproof React
 
 ```text
 FE_Project/
-+-- public/
-+-- src/
-|   +-- app/
-|   |   +-- routes/              # route config va route composition cap app
-|   +-- assets/                  # anh/static asset import trong app
-|   +-- core/
-|   |   +-- api/                 # axios client, interceptor, API type/mapper dung chung
-|   |   +-- components/          # UI component dung chung, khong phu thuoc feature
-|   |   +-- hooks/               # hook/helper dung chung
-|   |   +-- styles/              # global CSS imports
-|   |   +-- utils/               # helper thuan, khong phu thuoc React/feature
-|   +-- features/
-|   |   +-- admin/               # Super Admin feature
-|   |   +-- auth/                # login/signup/auth screens va auth-specific logic
-|   |   +-- candidate/           # Candidate feature
-|   |   +-- hr/                  # HR feature
-|   |   +-- interviewer/         # Interviewer feature
-|   |   +-- landing/             # Landing page
-|   |   +-- tenant/              # Tenant Admin feature
-+-- test/                        # Vitest unit tests
-+-- index.html
-+-- package.json
-+-- vite.config.ts
+├── public/
+├── src/
+│   ├── app/                     # Route composition & App layout
+│   ├── assets/                  # Images/static assets
+│   ├── components/
+│   │   └── ui/                  # Shared UI primitives (Button, Table, Modal, Dialog...)
+│   ├── config/                  # Global configuration, Axios client, env settings
+│   ├── features/                # Self-contained feature modules
+│   │   ├── auth/                # Auth feature (api, components, hooks, types, index.ts)
+│   │   ├── admin/               # Super Admin feature
+│   │   ├── candidate/           # Candidate feature
+│   │   ├── hr/                  # HR feature
+│   │   ├── interviewer/         # Interviewer feature
+│   │   ├── landing/             # Landing page
+│   │   └── tenant/              # Tenant Admin feature
+│   ├── hooks/                   # System-wide global custom hooks (useDebounce, useLocalStorage...)
+│   └── providers/               # Global React Context & QueryClient Providers
+├── test/                        # Vitest unit tests
+├── AGENTS.md                    # Quy chuan kien truc React + Vite (Bulletproof)
+├── AUDIT_REACT.md               # Bao cao Audit kien truc & lo trinh tai cau truc
+├── index.html
+├── package.json
+└── vite.config.ts
 ```
 
-## Kien truc
+## Kien truc & Quy chuan Module (Bulletproof React)
 
-Du an dang theo huong **Feature-based Architecture** ket hop voi cac quy tac **Clean Architecture** cho frontend.
+Du an tuan thu quy chuan kien truc **Bulletproof React**:
 
-Luon uu tien dependency mot chieu:
-
-```text
-app
-  -> features public API
-  -> core
-
-features/<feature>/presentation
-  -> features/<feature>/application
-  -> features/<feature>/domain
-  -> core
-
-features/<feature>/application
-  -> features/<feature>/domain
-  -> repository/storage/downloader ports
-  -> core utils
-
-features/<feature>/infrastructure
-  -> features/<feature>/domain
-  -> features/<feature>/application ports
-  -> core/api, core/utils
-```
-
-Feature co the dung shared layer:
-
-```text
-features/hr -> core/api, core/components, core/utils
-features/tenant -> core/api, core/components, core/utils
-features/admin -> core/api, core/components, core/utils
-```
-
-Feature khong nen import logic noi bo cua feature khac.
-
-Sai:
-
-```ts
-import { getListPageCount } from '@/features/admin/utils/adminMappers'
-```
-
-Dung:
-
-```ts
-import { getListPageCount } from '@/core/utils/pagination'
-```
+1. **Cua ngo duy nhat (Public API)**: Moi feature chi xuat khau (export) cac thanh phan can thiet ra ngoai thong qua file `src/features/<feature>/index.ts`. Cấm import file noi bo cua feature khac.
+2. **Tu dong goi (Self-contained)**: Moi feature phai tu dong goi ben trong thu muc cua minh theo 4 phan:
+   - `api/`: Dua tren TanStack Query / Axios client de fetch data va goi API.
+   - `components/`: Chua cac UI components, pages, guards dung rieng cho feature.
+   - `hooks/`: Custom hooks dung rieng cho feature.
+   - `types/`: Dinh nghia TypeScript types/interfaces cho feature.
+3. **Shared UI & Global Hooks**:
+   - Shared UI primitives khong mang logic nghiep vu dat tai `src/components/ui/`.
+   - Global custom hooks dat tai `src/hooks/`.
+   - Global config & Axios client dat tai `src/config/`.
+   - Context providers va QueryClientProvider bọc ung dung dat tai `src/providers/`.
 
 ## Vai tro tung layer
 
 ### `src/app`
 
-Chua bootstrap app, provider va route composition cap app.
+Chua routing cap ung dung va layout wrapper.
 
-Vi du:
-
-- `App.tsx`
-- `RouteConfig.tsx`
-- `RoleRoutes.tsx`
 - `AppRouteContent.tsx`
+- `App.tsx`
 
 Quy tac:
+- App chi import feature thong qua public API `features/<feature>/index.ts`.
 
-- App chi nen import feature qua public API `features/<feature>/index.ts`.
-- App co the ghep route, provider va guard cap ung dung.
-- Component feature khong tu update URL bang `window.history.pushState`; dung React Router.
+### `src/components/ui` & `src/config`
 
-### `src/core`
+Chua UI component nguyen thuy va cau hinh dung chung toan he thong.
 
-Chua code dung chung khong thuoc rieng role nao.
+- `src/config/axiosClient.ts`
+- `src/config/axiosInterceptors.ts`
+- `src/components/ui/` (Button, Table, Modal, Dialog...)
 
-Vi du:
+### `src/features/<feature-name>`
 
-- `core/api/axiosClient.ts`
-- `core/api/axiosInterceptors.ts`
-- `core/api/api.types.ts`
-- `core/components/Breadcrumb.tsx`
-- `core/components/DashboardShell.tsx`
-- `core/components/ListTable.tsx`
-- `core/utils/pagination.ts`
-- `core/utils/errorManager.ts`
-
-Quy tac:
-
-- `core` khong import tu `features/*`.
-- `core/components` chi chua UI dung chung, khong chua nghiep vu cua role.
-- `core/api` chua axios client/interceptor va type/mapper API dung chung.
-- `core/utils` chua helper thuan, khong import React component, axios implementation hoac feature.
-
-Sai:
-
-```ts
-import { LoginFeature } from '@/features/auth'
-```
-
-trong `src/core/components`.
-
-Dung:
-
-```ts
-import { getPasswordStrength } from '@/core/utils/passwordStrength'
-```
-
-### `src/features`
-
-Moi feature tu quan ly domain, application logic, infrastructure adapter, UI va style rieng cua feature do.
-
-Vi du:
+Moi feature tu dong goi 4 phan chính:
 
 ```text
-features/hr/
-+-- domain/
-+-- application/
-+-- infrastructure/
-+-- presentation/
-
-features/tenant/
-+-- domain/
-+-- application/
-+-- infrastructure/
-+-- presentation/
-
-features/admin/
-+-- domain/
-+-- application/
-+-- infrastructure/
-+-- presentation/
+src/features/auth/
+├── api/             # authApi.ts, authStorageRepository.ts
+├── components/      # pages (LoginFeature, SignupFeature), guards, UI components
+├── hooks/           # useAuthSession, useLoginFeature, useSignupForm...
+├── types/           # auth.types.ts, role.types.ts, user.types.ts
+└── index.ts         # Public entry point duy nhat
 ```
 
 Quy tac:
-
-- `features/admin` chi chua logic Super Admin.
-- `features/hr` khong import `features/admin`.
-- `features/tenant` khong import `features/admin`.
-- API rieng theo role dat trong `infrastructure` cua feature:
-  - `features/admin/infrastructure/adminApi.ts`
-  - `features/hr/infrastructure/hrApi.ts`
-  - `features/tenant/infrastructure/tenantAdminApi.ts`
-- Logic dieu phoi flow/state dat trong `application`.
-- Type/rule thuan dat trong `domain`.
-- UI dat trong `presentation`.
-- Logic dung chung thi dua ra `core`.
+- Feature A KHONG DUOC import truc tiep tu phan noi bo cua Feature B.
+- State server uu tien dung TanStack Query.
+- Form handling dung React Hook Form + Zod.
+- TypeScript: dinh nghia type ro rang, cam dung `any`.
 
 ## Quy tac code theo Clean Architecture
 
@@ -395,14 +306,12 @@ npm run preview
 
 ## Ghi chu phat trien
 
-- Khi them role moi, tao feature rieng trong `src/features/<role>`.
-- Khi them API payload/response type dung chung, uu tien dat trong `src/core/api/api.types.ts`.
-- Khi them API payload/response type rieng role, dat trong `src/features/<feature>/domain`.
-- Khi them mapper response API dung chung, dat trong `src/core/api/apiMappers.ts`.
-- Khi them mapper rieng role, dat trong `src/features/<feature>/infrastructure`.
-- Khi them route helper rieng role, dat trong feature so huu route do. Route composition cap app dat trong `src/app/routes`.
-- Khi tao component dung chung, dat trong `src/core/components` va dam bao khong import tu `features`.
-- Khi build refactor, chay `npm.cmd run build` de kiem tra import/type.
+- Khi them feature/role moi, tao thu muc rieng trong `src/features/<feature_name>` voi day du 4 phan: `api/`, `components/`, `hooks/`, `types/` va `index.ts`.
+- Public entry point: Moi giao tiep giua cac feature phai thong qua `src/features/<feature>/index.ts`.
+- Khi them UI component dung chung (button, table, dialog...), dat trong `src/components/ui`.
+- Khi them global hook dung chung, dat trong `src/hooks/`.
+- Khi them cau hinh toàn cục hoặc Axios client, dat trong `src/config/`.
+- Khi build refactor hoac them code moi, luon chay `npm run build` hoac `npm.cmd run build` de kiem tra type/import.
 
 ## Tai khoan demo
 
