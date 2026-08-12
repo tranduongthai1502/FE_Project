@@ -4284,12 +4284,14 @@
   padding-bottom: 34px;
 }
 
-.tenant-create-form label {
+.tenant-create-form label,
+.tenant-create-form .tenant-select-field {
   display: grid;
   gap: 8px;
 }
 
-.tenant-create-form label span {
+.tenant-create-form label > span,
+.tenant-create-form .tenant-select-field > span {
   color: #475467;
   font-size: 9px;
   font-weight: 900;
@@ -4297,7 +4299,8 @@
   text-transform: uppercase;
 }
 
-.tenant-create-form label span b {
+.tenant-create-form label > span b,
+.tenant-create-form .tenant-select-field > span b {
   color: #d93408;
   font-weight: 900;
 }
