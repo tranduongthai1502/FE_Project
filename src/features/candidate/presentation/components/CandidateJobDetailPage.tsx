@@ -41,6 +41,7 @@ export function CandidateJobDetailPage() {
   const fallbackJob = candidateCompanyJobs.find((item) => item.id === jobId)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || fallbackJob
+  const hasExistingApplication = job?.flag === true
   const displayCompanyName = company?.name || 'Selected Company'
   const jobDescription = stripParagraphTags(job?.description)
   const benefitItems = getBenefitItems(job?.benefits)

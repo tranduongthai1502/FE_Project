@@ -128,11 +128,13 @@ export function CandidateCvScorePage() {
         if (!isMounted) return
         setAnalysis(data)
         setError('')
-        setIsLoading(false)
 
         if (!isResumeParsed(data)) {
           timeoutId = window.setTimeout(pollResume, 4000)
+          return
         }
+
+        setIsLoading(false)
       } catch {
         if (!isMounted) return
         setError('Unable to load CV score. Please try again later.')

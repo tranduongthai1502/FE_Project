@@ -79,6 +79,7 @@ export const errorMessages: Record<string, string> = {
   role_not_found: 'Role not found.',
   tenant_not_found: 'Tenant not found.',
   plan_already_exists: 'Subscription plan already exists.',
+  max_plan_reached: 'Subscription plan limit reached. Please upgrade or remove an existing plan before creating a new one.',
   max_staff_limit_reached: 'Maximum staff limit reached.',
   staff_already_active_or_disabled: 'Staff account is already active or disabled.',
   invalid_request: 'Invalid request. Please check your information and try again.',
