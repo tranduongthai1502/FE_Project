@@ -39,20 +39,20 @@ export function buildTenantUpdatePayload(payload: UpdateTenantPayload): UpdateTe
   return payload
 }
 
-export function buildPlanPayload(form: CreatePlanForm): CreatePlanPayload {
+export function buildPlanPayload(payload: CreatePlanPayload): CreatePlanPayload {
   return {
-    name: form.name.trim(),
-    description: form.description.trim(),
-    billingCycle: form.billingCycle,
-    price: parseCurrencyInput(form.monthlyPrice),
-    maxStaffAccount: form.staffAccountUnlimited ? null : Number(form.maxStaffAccount || 0),
-    staffAccountUnlimited: form.staffAccountUnlimited,
-    maxActiveJobPosting: form.activeJobPostingUnlimited ? null : Number(form.maxActiveJobPosting || 0),
-    activeJobPostingUnlimited: form.activeJobPostingUnlimited,
-    status: form.status || 'ACTIVE',
-    features: form.features.map((feature) => ({
+    name: payload.name.trim(),
+    description: payload.description.trim(),
+    billingCycle: payload.billingCycle,
+    price: payload.price,
+    maxStaffAccount: payload.staffAccountUnlimited ? null : Number(payload.maxStaffAccount || 0),
+    staffAccountUnlimited: payload.staffAccountUnlimited,
+    maxActiveJobPosting: payload.activeJobPostingUnlimited ? null : Number(payload.maxActiveJobPosting || 0),
+    activeJobPostingUnlimited: payload.activeJobPostingUnlimited,
+    status: payload.status || 'ACTIVE',
+    features: payload.features.map((feature) => ({
       key: feature.key,
-      status: feature.enabled ? 'ACTIVE' : 'INACTIVE',
+      status: feature.status,
     })),
   }
 }

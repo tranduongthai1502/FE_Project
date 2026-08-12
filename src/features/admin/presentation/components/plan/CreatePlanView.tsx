@@ -1,4 +1,3 @@
-import type { SubscriptionPlan } from '@/features/admin/domain/adminApi.types'
 import {
   billingCycleOptions,
   planDescriptionMaxLength,
@@ -14,20 +13,17 @@ export function CreatePlanView({
   onBack,
   onHome,
   onCreated,
-  existingPlans,
   triggerToast,
 }: {
   onBack: () => void
   onHome: () => void
   onCreated: () => void
-  existingPlans: SubscriptionPlan[]
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }) {
   const ctrl = useCreatePlanController({
     onBack,
     onHome,
     onCreated,
-    existingPlans,
     triggerToast,
   })
 
@@ -60,6 +56,7 @@ export function CreatePlanView({
               onChange={(event) => {
                 ctrl.updateLimitedPlanField('planName', event.target.value, FIELD_LENGTH_LIMITS.defaultText, 'Plan name', ctrl.setPlanName)
               }}
+              onBlur={() => ctrl.validatePlanField('planName')}
               placeholder="Plan Name"
               required
             />
@@ -87,6 +84,7 @@ export function CreatePlanView({
                   onChange={(event) => {
                     ctrl.updateLimitedPlanField('monthlyPrice', event.target.value, planNumberFieldMaxLength, 'Price', ctrl.setMonthlyPrice, formatCurrencyInput)
                   }}
+                  onBlur={() => ctrl.validatePlanField('monthlyPrice')}
                   placeholder="0.00"
                   required
                 />
@@ -103,6 +101,7 @@ export function CreatePlanView({
               onChange={(event) => {
                 ctrl.updateLimitedPlanField('description', event.target.value, planDescriptionMaxLength, 'Description', ctrl.setDescription)
               }}
+              onBlur={() => ctrl.validatePlanField('description')}
               placeholder="Short Description"
               required
             />
@@ -121,6 +120,7 @@ export function CreatePlanView({
                   onChange={(event) => {
                     ctrl.updateLimitedPlanField('maxStaffAccount', event.target.value, planNumberFieldMaxLength, 'Max staff accounts', ctrl.setMaxStaffAccount)
                   }}
+                  onBlur={() => ctrl.validatePlanField('maxStaffAccount')}
                   placeholder="0"
                   disabled={ctrl.isStaffUnlimited}
                   required={!ctrl.isStaffUnlimited}
@@ -152,6 +152,7 @@ export function CreatePlanView({
                   onChange={(event) => {
                     ctrl.updateLimitedPlanField('maxActiveJobPosting', event.target.value, planNumberFieldMaxLength, 'Max active job postings', ctrl.setMaxActiveJobPosting)
                   }}
+                  onBlur={() => ctrl.validatePlanField('maxActiveJobPosting')}
                   placeholder="0"
                   disabled={ctrl.isJobsUnlimited}
                   required={!ctrl.isJobsUnlimited}

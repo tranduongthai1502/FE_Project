@@ -3,23 +3,22 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useCreatePlan } from '../queryHooks/useAdminQueries'
-import type { CreatePlanPayload, SubscriptionPlan } from '../../domain/adminApi.types'
+import type { CreatePlanPayload } from '../../domain/adminApi.types'
 import {
-  hasDuplicatePlanName,
   hasFeatureChanges,
   getSubscriptionPlanFieldErrors,
   type CreatePlanFieldErrors,
 } from '../../infrastructure/subscriptionPlansService'
 import { planFeatureDefaults } from '../../domain/subscriptionPlanFeatures'
 import { getErrorMessage as getAdminErrorMessage } from '@/core/utils/errors/errorMessages'
-import { formatCurrencyInput, parseCurrencyInput } from '@/core/utils/currencyFormat'
+import { parseCurrencyInput } from '@/core/utils/currencyFormat'
 import {
-  FIELD_LENGTH_LIMITS,
+  getBackendErrorMessage,
+  getErrorCode,
   validatePositiveNumberOrUnlimited,
   validateRequiredPlanName,
   validateRequiredPrice,
   validateRequiredShortDescription,
-  validationErrorMessages,
 } from '@/core/api/axiosErrorHandler'
 import { buildMaxLengthMessage } from '@/core/utils/errors/fieldErrorUtils'
 
@@ -35,24 +34,29 @@ export function getPlanMaxLengthMessage(label: string, maxLength: number) {
   return buildMaxLengthMessage(label, maxLength)
 }
 
+type BooleanStateAction = boolean | ((current: boolean) => boolean)
+
+function isMaxPlanReachedError(error: unknown) {
+  return [getErrorCode(error), getBackendErrorMessage(error)]
+    .some((value) => String(value || '').trim().toLowerCase() === 'max_plan_reached')
+}
+
 export function useCreatePlanController({
   onBack,
   onHome,
   onCreated,
-  existingPlans,
   triggerToast,
 }: {
   onBack: () => void
   onHome: () => void
   onCreated: () => void
-  existingPlans: SubscriptionPlan[]
   triggerToast?: (message: string, type?: 'success' | 'error') => void
 }) {
   const createPlanMutation = useCreatePlan()
   const createPlanForm = useForm({
     resolver: zodResolver(z.object({
       planName: z.string().superRefine((value, context) => {
-        const message = validateRequiredPlanName(value, hasDuplicatePlanName(existingPlans, value))
+        const message = validateRequiredPlanName(value)
         if (message) context.addIssue({ code: 'custom', message })
       }),
       description: z.string().superRefine((value, context) => {
@@ -82,7 +86,7 @@ export function useCreatePlanController({
       isStaffUnlimited: false,
       isJobsUnlimited: false,
     },
-    mode: 'onSubmit',
+    mode: 'onBlur',
   })
 
   const [planName, setPlanName] = useState('')
@@ -95,14 +99,26 @@ export function useCreatePlanController({
   const [isStaffUnlimited, setIsStaffUnlimited] = useState(false)
   const [isJobsUnlimited, setIsJobsUnlimited] = useState(false)
   const [planError, setPlanError] = useState('')
-  const [fieldErrors, setFieldErrors] = useState<CreatePlanFieldErrors>({})
+  const [apiFieldErrors, setApiFieldErrors] = useState<CreatePlanFieldErrors>({})
   const [isSavingPlan, setIsSavingPlan] = useState(false)
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
+  const fieldErrors: CreatePlanFieldErrors = {
+    planName: createPlanForm.formState.errors.planName?.message,
+    description: createPlanForm.formState.errors.description?.message,
+    monthlyPrice: createPlanForm.formState.errors.monthlyPrice?.message,
+    maxStaffAccount: createPlanForm.formState.errors.maxStaffAccount?.message,
+    maxActiveJobPosting: createPlanForm.formState.errors.maxActiveJobPosting?.message,
+    ...apiFieldErrors,
+  }
 
   const syncPlanFormField = (field: 'planName' | 'description' | 'monthlyPrice' | 'maxStaffAccount' | 'maxActiveJobPosting', value: string) => {
     createPlanForm.setValue(field, value, { shouldDirty: true })
     createPlanForm.clearErrors(field)
-    setFieldErrors((current) => current[field] ? { ...current, [field]: '' } : current)
+    setApiFieldErrors((current) => current[field] ? { ...current, [field]: '' } : current)
+  }
+
+  const validatePlanField = (field: 'planName' | 'description' | 'monthlyPrice' | 'maxStaffAccount' | 'maxActiveJobPosting') => {
+    void createPlanForm.trigger(field)
   }
 
   const updatePlanName = (value: string) => {
@@ -130,18 +146,20 @@ export function useCreatePlanController({
     syncPlanFormField('maxActiveJobPosting', value)
   }
 
-  const updateStaffUnlimited = (value: boolean) => {
-    setIsStaffUnlimited(value)
-    createPlanForm.setValue('isStaffUnlimited', value, { shouldDirty: true })
+  const updateStaffUnlimited = (value: BooleanStateAction) => {
+    const nextValue = typeof value === 'function' ? value(isStaffUnlimited) : value
+    setIsStaffUnlimited(nextValue)
+    createPlanForm.setValue('isStaffUnlimited', nextValue, { shouldDirty: true })
     createPlanForm.clearErrors('maxStaffAccount')
-    setFieldErrors((current) => current.maxStaffAccount ? { ...current, maxStaffAccount: '' } : current)
+    setApiFieldErrors((current) => current.maxStaffAccount ? { ...current, maxStaffAccount: '' } : current)
   }
 
-  const updateJobsUnlimited = (value: boolean) => {
-    setIsJobsUnlimited(value)
-    createPlanForm.setValue('isJobsUnlimited', value, { shouldDirty: true })
+  const updateJobsUnlimited = (value: BooleanStateAction) => {
+    const nextValue = typeof value === 'function' ? value(isJobsUnlimited) : value
+    setIsJobsUnlimited(nextValue)
+    createPlanForm.setValue('isJobsUnlimited', nextValue, { shouldDirty: true })
     createPlanForm.clearErrors('maxActiveJobPosting')
-    setFieldErrors((current) => current.maxActiveJobPosting ? { ...current, maxActiveJobPosting: '' } : current)
+    setApiFieldErrors((current) => current.maxActiveJobPosting ? { ...current, maxActiveJobPosting: '' } : current)
   }
 
   const updateLimitedPlanField = (
@@ -156,16 +174,12 @@ export function useCreatePlanController({
     const nextValue = isOverMaxLength ? value.slice(0, maxLength) : value
     setter(formatter ? formatter(nextValue) : nextValue)
     syncPlanFormField(field, formatter ? formatter(nextValue) : nextValue)
-    setFieldErrors((current) => {
-      if (isOverMaxLength) {
-        return {
-          ...current,
-          [field]: getPlanMaxLengthMessage(label, maxLength),
-        }
-      }
-      if (!current[field]) return current
-      return { ...current, [field]: '' }
-    })
+    if (isOverMaxLength) {
+      createPlanForm.setError(field, {
+        type: 'maxLength',
+        message: getPlanMaxLengthMessage(label, maxLength),
+      })
+    }
   }
 
   const toggleFeature = (key: string) => {
@@ -180,41 +194,10 @@ export function useCreatePlanController({
   const handleCreatePlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPlanError('')
-    const planDetailsAreEmpty = !planName.trim() &&
-      !description.trim() &&
-      !monthlyPrice.trim() &&
-      !maxStaffAccount.trim() &&
-      !maxActiveJobPosting.trim() &&
-      !isStaffUnlimited &&
-      !isJobsUnlimited
-
-    if (planDetailsAreEmpty) {
-      setFieldErrors({
-        planName: validationErrorMessages.planNameRequired,
-        description: validationErrorMessages.shortDescriptionRequired,
-        monthlyPrice: validationErrorMessages.validPriceRequired,
-        maxStaffAccount: validationErrorMessages.positiveNumberOrUnlimitedRequired,
-        maxActiveJobPosting: validationErrorMessages.positiveNumberOrUnlimitedRequired,
-      })
-      return
-    }
+    setApiFieldErrors({})
 
     const isValid = await createPlanForm.trigger()
-    const resolverErrors: CreatePlanFieldErrors = {
-      planName: createPlanForm.getFieldState('planName').error?.message,
-      description: createPlanForm.getFieldState('description').error?.message,
-      monthlyPrice: createPlanForm.getFieldState('monthlyPrice').error?.message,
-      maxStaffAccount: createPlanForm.getFieldState('maxStaffAccount').error?.message,
-      maxActiveJobPosting: createPlanForm.getFieldState('maxActiveJobPosting').error?.message,
-    }
-    setFieldErrors(resolverErrors)
     if (!isValid) {
-      return
-    }
-
-    if (!features.some((feature) => feature.enabled)) {
-      const message = 'Please enable at least one feature for this plan.'
-      setPlanError(message)
       return
     }
 
@@ -246,8 +229,11 @@ export function useCreatePlanController({
     } catch (error) {
       const message = getAdminErrorMessage(error, 'Failed to create subscription plan.')
       const nextFieldErrors = getSubscriptionPlanFieldErrors(error, message)
-      setFieldErrors(nextFieldErrors)
+      setApiFieldErrors(nextFieldErrors)
       setPlanError(Object.keys(nextFieldErrors).length > 0 ? '' : message)
+      if (isMaxPlanReachedError(error)) {
+        triggerToast?.(message, 'error')
+      }
     } finally {
       setIsSavingPlan(false)
     }
@@ -297,11 +283,12 @@ export function useCreatePlanController({
     setIsJobsUnlimited: updateJobsUnlimited,
     planError,
     fieldErrors,
-    setFieldErrors,
+    setFieldErrors: setApiFieldErrors,
     isSavingPlan,
     isCancelConfirmOpen,
     setIsCancelConfirmOpen,
     updateLimitedPlanField,
+    validatePlanField,
     toggleFeature,
     handleCreatePlan,
     handleCancelCreatePlan,
