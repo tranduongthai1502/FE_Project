@@ -239,7 +239,11 @@ export function getDaysOpen(value?: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return 0
 
-  return Math.max(0, Math.floor((Date.now() - date.getTime()) / 86400000))
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  date.setHours(0, 0, 0, 0)
+
+  return Math.max(0, Math.floor((today.getTime() - date.getTime()) / 86400000))
 }
 
 export function getDaysUntilDeadline(value?: string) {
