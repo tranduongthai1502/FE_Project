@@ -170,7 +170,15 @@ export function CandidateManagementView() {
           <div
             className="table-row candidate-table-row"
             key={cand.id}
-            onClick={() => navigate(getHrCandidateDetailPath(cand.id))}
+            onClick={() => {
+              const searchParams = new URLSearchParams()
+              if (cand.jobId) searchParams.set('jobId', cand.jobId)
+              if (cand.candidateId) searchParams.set('candidateId', cand.candidateId)
+              navigate({
+                pathname: getHrCandidateDetailPath(cand.id),
+                search: searchParams.toString(),
+              })
+            }}
             style={{ cursor: 'pointer' }}
           >
             <span>

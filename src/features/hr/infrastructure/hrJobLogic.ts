@@ -8,7 +8,7 @@ import { z } from 'zod'
 
 export type JobFieldErrors = Partial<Record<keyof JobPostingPayload, string>>
 export type JobConfirmAction = 'close' | 'open' | 'delete' | null
-export type JobDetailTab = 'overview' | 'criteria'
+export type JobDetailTab = 'overview' | 'criteria' | 'application'
 export type EditableCriterion = {
   clientId: string
   id?: string
@@ -341,11 +341,12 @@ export function getJobValidationErrors(payload: JobPostingPayload, salaryInputVa
   return collectZodJobFieldErrors(result)
 }
 
-export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInputValues: { salaryMin: string; salaryMax: string }) {
+export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInputValues: { salaryMin: string; salaryMax: string }, deadlineInputValue = '') {
   const minSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMin)
   const maxSalaryValue = stripCurrencyGrouping(salaryInputValues.salaryMax)
   const minSalaryEntered = minSalaryValue !== ''
   const maxSalaryEntered = maxSalaryValue !== ''
+  const deadlineEntered = deadlineInputValue.trim() !== ''
   const salaryNumberPattern = /^\d+(\.\d+)?$/
 
   const result = z
@@ -374,6 +375,10 @@ export function getAiJobValidationErrors(payload: JobPostingPayload, salaryInput
       }
       if (!minSalaryInvalid && !maxSalaryInvalid && minSalaryEntered && maxSalaryEntered && job.salaryMin > job.salaryMax) {
         context.addIssue({ code: 'custom', path: ['salaryMax'], message: salaryOrderMessage })
+      }
+
+      if (deadlineEntered && !job.applicationDeadline.trim()) {
+        context.addIssue({ code: 'custom', path: ['applicationDeadline'], message: deadlineFutureMessage })
       }
 
       if (job.applicationDeadline.trim()) {

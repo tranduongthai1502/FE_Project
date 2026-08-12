@@ -5,14 +5,14 @@ import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 import { hrJobsPath } from '@/features/hr/domain/hrRoutePaths'
 import { getHrJobDetailPath } from '@/features/hr/application/helpers/hrDashboardHelpers'
 import { calendarWeekdays, getCalendarDays, getCalendarMonth, getLocalDateKey } from '@/features/hr/application/helpers/hrDashboardHelpers'
-import { duplicateJobTitleConfirmMessage, jobTitleMaxLength, requiredJobFieldMessage } from '@/features/hr/infrastructure/hrJobLogic'
+import { duplicateJobTitleConfirmMessage, jobTitleMaxLength } from '@/features/hr/infrastructure/hrJobLogic'
 import styles from '@/features/hr/presentation/pages/HrDashboard.module.css'
 import { JobRichTextEditor } from '../HrRichTextEditor'
 
 export function JobFieldError({ message, showDefaultMessage = true }: { message?: string; showDefaultMessage?: boolean }) {
   return (
     <small className={styles.jobFieldError} aria-hidden={!message}>
-      {message || (showDefaultMessage ? requiredJobFieldMessage : '')}
+      {message || (showDefaultMessage ? '' : '')}
     </small>
   )
 }
