@@ -90,6 +90,8 @@ export type JobCriteriaResponse = {
   updatedAt?: string
 }
 
+export type GenerateJobCriteriaAiResponse = JobCriteriaResponse[]
+
 export type DashboardStatsJobPostingResponse = {
   totalActivePostings?: number
   totalApplicants?: number

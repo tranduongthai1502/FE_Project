@@ -1205,6 +1205,33 @@
   word-break: break-word;
 }
 
+.candidate-job-rich-html {
+  display: grid;
+  gap: 8px;
+  color: #4f5b6d;
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.candidate-job-rich-html p,
+.candidate-job-rich-html ul,
+.candidate-job-rich-html ol {
+  margin: 0;
+}
+
+.candidate-job-rich-html ul,
+.candidate-job-rich-html ol {
+  padding-left: 18px;
+}
+
+.candidate-job-rich-html strong,
+.candidate-job-rich-html b {
+  color: #182235;
+  font-weight: 800;
+}
+
 .candidate-job-requirements {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1233,7 +1260,7 @@
   background: #f5f6fb;
 }
 
-.candidate-job-benefits div {
+.candidate-job-benefits > div:not(.candidate-job-rich-html) {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
