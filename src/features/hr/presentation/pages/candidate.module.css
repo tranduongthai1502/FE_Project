@@ -60,7 +60,8 @@
 }
 
 .searchInputWrap {
-  flex: 1 1 320px;
+  flex: 1 1 42%;
+  max-width: 54%;
   min-width: 260px;
 }
 
@@ -100,6 +101,8 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto;
   gap: 12px;
 }
 
@@ -108,6 +111,11 @@
   flex-direction: row;
   align-items: center;
   gap: 10px;
+}
+
+.filterSelects :global(.candidate-filter-select) {
+  flex: 0 0 220px;
+  width: 220px;
 }
 
 .matchBadge {
@@ -348,6 +356,12 @@
   height: 38px !important;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
   transition: all 0.2s ease !important;
+}
+
+:global(.candidate-filter-select .admin-scroll-select-trigger span) {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 :global(.candidate-filter-select .admin-scroll-select-trigger:hover) {

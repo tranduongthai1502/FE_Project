@@ -174,4 +174,3 @@ function normalizeJobRevisionHistory(item: any, index: number): JobRevisionHisto
       : undefined,
   }
 }
-

@@ -43,6 +43,66 @@
   line-height: 1.45;
 }
 
+.candidateFilters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.candidateSearch {
+  flex: 1 1 320px;
+  max-width: 460px;
+  min-width: 220px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border: 1px solid #f0b8a8;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.candidateSearch input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #101c33;
+}
+
+.candidateSearch i {
+  color: #64748b;
+}
+
+.candidateFilter {
+  min-width: 220px;
+}
+
+.candidateFilter :global(.admin-scroll-select-trigger) {
+  min-height: 44px;
+  border: 1px solid #f0b8a8;
+  border-radius: 9px;
+  background: #fff;
+  color: #101c33;
+}
+
+@media (max-width: 760px) {
+  .candidateFilters {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .candidateSearch,
+  .candidateFilter {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+}
+
 .assignedCandidateGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
