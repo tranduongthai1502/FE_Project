@@ -199,6 +199,17 @@
   padding-bottom: 10px;
 }
 
+.kanbanBoardState {
+  margin-top: 12px;
+  color: #536680;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.kanbanBoardStateError {
+  color: #d71920;
+}
+
 .kanbanColumn {
   min-width: 170px;
   display: grid;
@@ -238,6 +249,24 @@
   gap: 12px;
 }
 
+.kanbanDropArea {
+  min-height: 118px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.kanbanDropAreaOver {
+  border-color: #efb7aa;
+  background: #fff6f2;
+}
+
+.kanbanItemSlot {
+  display: grid;
+  gap: 12px;
+}
+
 .kanbanCard {
   position: relative;
   display: grid;
@@ -249,6 +278,81 @@
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(16, 28, 51, 0.04);
+  cursor: grab;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+  touch-action: none;
+  user-select: none;
+}
+
+.kanbanCard:hover {
+  border-color: #d93408;
+  box-shadow: 0 10px 22px rgba(16, 28, 51, 0.1);
+}
+
+.kanbanCardDragging {
+  cursor: grabbing;
+  box-shadow: 0 16px 32px rgba(16, 28, 51, 0.14);
+}
+
+.kanbanCardSkeleton {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 94px;
+  padding: 12px;
+  border: 1px dashed #d93408;
+  border-radius: 8px;
+  background: #fff8f5;
+  box-shadow: inset 0 0 0 1px rgba(217, 52, 8, 0.06);
+}
+
+.kanbanCardSkeleton span,
+.kanbanCardSkeleton b,
+.kanbanCardSkeleton small,
+.kanbanCardSkeleton em {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f1d7d0 0%, #fff0eb 48%, #f1d7d0 100%);
+  background-size: 220% 100%;
+  animation: kanbanSkeletonPulse 1.15s ease-in-out infinite;
+}
+
+.kanbanCardSkeleton span {
+  width: 38px;
+  height: 38px;
+}
+
+.kanbanCardSkeleton div {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.kanbanCardSkeleton b {
+  width: min(128px, 74%);
+  height: 12px;
+}
+
+.kanbanCardSkeleton small {
+  width: min(168px, 92%);
+  height: 10px;
+}
+
+.kanbanCardSkeleton em {
+  width: min(112px, 66%);
+  height: 9px;
+  margin-top: 12px;
+}
+
+@keyframes kanbanSkeletonPulse {
+  0% {
+    background-position: 110% 0;
+  }
+
+  100% {
+    background-position: -110% 0;
+  }
 }
 
 .kanbanAvatar {
