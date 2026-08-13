@@ -138,6 +138,10 @@ function asArray(value: unknown): any[] {
   return Array.isArray(value) ? value : []
 }
 
+function firstArray(...values: unknown[]) {
+  return values.find((value) => Array.isArray(value)) as any[] | undefined
+}
+
 function toText(value: unknown, fallback = '') {
   return value === undefined || value === null ? fallback : String(value)
 }
@@ -185,6 +189,33 @@ function toCandidateSummary(candidate: any, fallbackId: string): Candidate {
   }
 }
 
+function normalizeComponentAnalysisItem(item: any) {
+  return {
+    category: toText(item?.category || item?.criteriaCategory || item?.criteria_category),
+    score: Number(item?.score ?? item?.matchingScore ?? item?.matching_score ?? item?.value ?? 0) || 0,
+    weight: Number(item?.weight ?? item?.weightPercent ?? item?.weight_percent ?? item?.maxScore ?? item?.max_score ?? 0) || 0,
+    analysis: toText(item?.criterionName || item?.criterion_name || item?.critionName || item?.crition_name),
+  }
+}
+
+function isWeightedComponentAnalysisItem(item: any) {
+  return Boolean(
+    item &&
+    typeof item === 'object' &&
+    (item.category || item.criteriaCategory || item.criteria_category || item.criterionName || item.criterion_name || item.critionName || item.crition_name) &&
+    (item.weight !== undefined || item.weightPercent !== undefined || item.weight_percent !== undefined || item.maxScore !== undefined || item.max_score !== undefined)
+  )
+}
+
+function hasScoreAndCriterion(item: any) {
+  return Boolean(
+    item &&
+    typeof item === 'object' &&
+    (item.score !== undefined || item.matchingScore !== undefined || item.matching_score !== undefined) &&
+    (item.category || item.criteriaCategory || item.criteria_category || item.criterionName || item.criterion_name || item.critionName || item.crition_name)
+  )
+}
+
 function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): CandidateDetail {
   const resume = getResumePayload(payload)
   const parsedData = resume?.parsedData || resume?.parsed_data || resume?.extractedCv || resume?.extracted_cv || {}
@@ -192,7 +223,17 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
   const profile = parsedData?.profile || parsedData?.personalInfo || parsedData?.personal_info || parsedData?.candidate || {}
   const score = Number(resume?.matchingScore ?? resume?.candidateSelfScore ?? resume?.score ?? 0)
   const suggestions = resume?.cvImprovementSuggestions || resume?.cv_improvement_suggestions || resume?.reasoning || {}
-  const suggestionItems = asArray(suggestions?.suggestions || resume?.skillGaps || resume?.skill_gaps)
+  const rawSuggestionItems = asArray(firstArray(
+    suggestions,
+    suggestions?.suggestions,
+    suggestions?.items,
+    suggestions?.data,
+    suggestions?.criteria,
+    suggestions?.components,
+    resume?.skillGaps,
+    resume?.skill_gaps,
+  ))
+  const suggestionItems = rawSuggestionItems.filter((item) => !isWeightedComponentAnalysisItem(item) && !hasScoreAndCriterion(item))
   const experience = asArray(parsedData?.experience || parsedData?.workExperience || parsedData?.work_experience).map((item) => ({
     title: toText(item?.title || item?.position || item?.role),
     company: toText(item?.company || item?.companyName || item?.company_name),
@@ -211,13 +252,33 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
     exp: toText(item?.exp || item?.expiresAt || item?.expires_at || item?.year),
   }))
   const skills = asArray(parsedData?.skills).map((skill) => toText(skill)).filter(Boolean)
-  const componentAnalysis = asArray(resume?.componentAnalysis || resume?.component_analysis || resume?.scoringBreakdown || resume?.scoring_breakdown)
-    .map((item) => ({
-      category: toText(item?.category || item?.criterionName || item?.criterion_name),
-      score: Number(item?.score ?? item?.matchingScore ?? 0) || 0,
-      weight: Number(item?.weight ?? item?.weightPercent ?? 0) || 0,
-      analysis: toText(item?.analysis || item?.feedback || item?.reason),
-    }))
+  const rawComponentAnalysis = asArray(firstArray(
+    resume?.componentAnalysis,
+    resume?.component_analysis,
+    resume?.componentScores,
+    resume?.component_scores,
+    resume?.scoringBreakdown,
+    resume?.scoring_breakdown,
+    resume?.scoreBreakdown,
+    resume?.score_breakdown,
+    resume?.criteriaScores,
+    resume?.criteria_scores,
+    parsedData?.componentAnalysis,
+    parsedData?.component_analysis,
+    parsedData?.scoringBreakdown,
+    parsedData?.scoring_breakdown,
+    suggestions,
+    suggestions?.suggestions,
+    suggestions?.criteria,
+    suggestions?.components,
+  ))
+  const weightedSuggestionComponents = rawSuggestionItems.filter((item) => isWeightedComponentAnalysisItem(item) || hasScoreAndCriterion(item))
+  const componentSource = rawComponentAnalysis.length > 0
+    ? rawComponentAnalysis
+    : weightedSuggestionComponents
+  const componentAnalysis = componentSource
+    .map(normalizeComponentAnalysisItem)
+    .filter((item) => item.category || item.score || item.weight || item.analysis)
   const suggestionComponentAnalysis = suggestionItems.map((item) => {
     const scoreOutOfTen = Number(item?.score ?? 0) || 0
     return {
@@ -230,8 +291,8 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
   const aiJustification = asArray(resume?.aiJustification || resume?.ai_justification || suggestions?.strengths || (suggestions?.overallFeedback ? [suggestions.overallFeedback] : []))
     .map((item) => toText(item))
     .filter(Boolean)
-  const keySkillGaps = suggestionItems
-    .map((item) => toText(item?.feedback || item?.criterionName || item?.criterion_name || item))
+  const keySkillGaps = rawSuggestionItems
+    .map((item) => toText(item?.feedback || item))
     .filter(Boolean)
 
   return {
