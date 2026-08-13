@@ -1,4 +1,8 @@
+import { useMemo, useState } from 'react'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
+import { CandidateEmptyState } from '@/core/components/CandidateEmptyState'
+import { SearchInput } from '@/core/components/SearchInput'
+import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import styles from './InterviewerDashboard.module.css'
 
 type AssignedCandidate = {
@@ -76,6 +80,25 @@ const assignedCandidates: AssignedCandidate[] = [
 ]
 
 export function InterviewerCandidatesPage({ onHome }: { onHome: () => void }) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedMatchScore, setSelectedMatchScore] = useState('all')
+  const [selectedAppliedDate, setSelectedAppliedDate] = useState('all')
+
+  const visibleCandidates = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    const filtered = assignedCandidates.filter((candidate) => {
+      const matchesSearch = !query || `${candidate.name} ${candidate.title}`.toLowerCase().includes(query)
+      const matchesScore = selectedMatchScore === 'all'
+        || (selectedMatchScore === 'high' && candidate.matchScore >= 90)
+        || (selectedMatchScore === 'medium' && candidate.matchScore >= 75 && candidate.matchScore < 90)
+        || (selectedMatchScore === 'low' && candidate.matchScore < 75)
+      return matchesSearch && matchesScore
+    })
+
+    if (selectedAppliedDate === 'oldest') return [...filtered].reverse()
+    return filtered
+  }, [searchQuery, selectedMatchScore, selectedAppliedDate])
+
   return (
     <div className={`role-content ${styles.candidatesContent}`}>
       <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Candidates' }]} />
@@ -85,8 +108,41 @@ export function InterviewerCandidatesPage({ onHome }: { onHome: () => void }) {
         <p>Review and evaluate candidates recently assigned for your expert feedback.</p>
       </header>
 
-      <section className={styles.assignedCandidateGrid} aria-label="Assigned candidates">
-        {assignedCandidates.map((candidate) => (
+      <div className={styles.candidateFilters}>
+        <SearchInput
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search candidates..."
+          ariaLabel="Search candidates"
+          className={styles.candidateSearch}
+        />
+        <ScrollableSelect
+          className={styles.candidateFilter}
+          value={selectedMatchScore}
+          onChange={setSelectedMatchScore}
+          ariaLabel="Filter by match score"
+          options={[
+            { value: 'all', label: 'Match Score: All' },
+            { value: 'high', label: 'Match Score: >= 90%' },
+            { value: 'medium', label: 'Match Score: 75% - 89%' },
+            { value: 'low', label: 'Match Score: < 75%' },
+          ]}
+        />
+        <ScrollableSelect
+          className={styles.candidateFilter}
+          value={selectedAppliedDate}
+          onChange={setSelectedAppliedDate}
+          ariaLabel="Filter by date applied"
+          options={[
+            { value: 'all', label: 'Date Applied: All' },
+            { value: 'newest', label: 'Date Applied: Newest First' },
+            { value: 'oldest', label: 'Date Applied: Oldest First' },
+          ]}
+        />
+      </div>
+
+      {visibleCandidates.length === 0 ? <CandidateEmptyState /> : <section className={styles.assignedCandidateGrid} aria-label="Assigned candidates">
+        {visibleCandidates.map((candidate) => (
           <article className={styles.assignedCandidateCard} key={candidate.id}>
             <header>
               <img src={candidate.image} alt="" />
@@ -120,7 +176,7 @@ export function InterviewerCandidatesPage({ onHome }: { onHome: () => void }) {
             </dl>
           </article>
         ))}
-      </section>
+      </section>}
     </div>
   )
 }

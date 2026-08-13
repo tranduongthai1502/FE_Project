@@ -2083,6 +2083,18 @@
   padding: 28px 24px 34px;
 }
 
+/* Keep the footer attached to the bottom of the candidate workspace when a
+   page (such as Companies) has little content. */
+.candidate-shell .role-main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.candidate-shell .candidate-content {
+  flex: 1 0 auto;
+}
+
 .candidate-content-settings {
   padding: 24px 24px 20px;
 }

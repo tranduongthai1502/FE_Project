@@ -6,6 +6,7 @@ import { candidateApplicationApi } from '../../infrastructure/candidateApplicati
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
 import { truncateCandidateText } from '../../application/candidateText'
 import { useCandidateJobDetail } from '../../application/useCandidateCompanies'
+import { useCandidateCompanyDetail } from '../../application/useCandidateCompanies'
 import { getCurrentCandidateId, getSavedResumeCandidateId } from '../../application/candidateResumeSession'
 
 const requirements = [
@@ -20,6 +21,35 @@ function stripParagraphTags(value?: string) {
   return String(value || '')
     .replace(/<\/?p[^>]*>/gi, '')
     .trim()
+}
+
+function stripHtmlTags(value: string) {
+  return value
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .trim()
+}
+
+function getRequirementItems(value?: string) {
+  const source = String(value || '').trim()
+  if (!source) return requirements
+
+  const listItems = Array.from(source.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi))
+    .map((match) => stripHtmlTags(match[1]))
+    .filter(Boolean)
+
+  if (listItems.length > 0) return listItems
+
+  const plainItems = stripHtmlTags(source)
+    .split(/\r?\n|[•▪]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  return plainItems.length > 0 ? plainItems : requirements
 }
 
 function getBenefitItems(value?: string) {
@@ -38,12 +68,14 @@ export function CandidateJobDetailPage() {
   const [viewApplicationError, setViewApplicationError] = useState('')
   const [isLoadingApplication, setIsLoadingApplication] = useState(false)
   const company = candidateCompanies.find((item) => item.id === companyId)
+  const companyQuery = useCandidateCompanyDetail(companyId)
   const fallbackJob = candidateCompanyJobs.find((item) => item.id === jobId)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || fallbackJob
   const hasExistingApplication = job?.flag === true
-  const displayCompanyName = company?.name || 'Selected Company'
+  const displayCompanyName = companyQuery.data?.name || company?.name || 'Selected Company'
   const jobDescription = stripParagraphTags(job?.description)
+  const requirementItems = getRequirementItems(job?.requirements)
   const benefitItems = getBenefitItems(job?.benefits)
 
   const handleApplicationAction = async () => {
@@ -130,7 +162,7 @@ export function CandidateJobDetailPage() {
             <section>
               <h3>Key Requirements</h3>
               <div className="candidate-job-requirements">
-                {requirements.map((item) => (
+                {requirementItems.map((item) => (
                   <span key={item}>
                     <i className="fa-regular fa-circle-check"></i>
                     {item}
