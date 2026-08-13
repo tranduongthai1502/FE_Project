@@ -17,12 +17,6 @@ const requirements = [
   'PhD or Masters in CS, Math, or Physics preferred.',
 ]
 
-function stripParagraphTags(value?: string) {
-  return String(value || '')
-    .replace(/<\/?p[^>]*>/gi, '')
-    .trim()
-}
-
 function stripHtmlTags(value: string) {
   return value
     .replace(/<br\s*\/?\s*>/gi, '\n')
@@ -32,6 +26,62 @@ function stripHtmlTags(value: string) {
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .trim()
+}
+
+function sanitizeHtml(value?: string) {
+  const source = String(value || '').trim()
+  if (!source) return ''
+  if (typeof window === 'undefined' || typeof document === 'undefined') return stripHtmlTags(source)
+
+  const template = document.createElement('template')
+  template.innerHTML = source
+
+  template.content.querySelectorAll('script, style, iframe, object, embed, link, meta, base').forEach((node) => {
+    node.remove()
+  })
+
+  template.content.querySelectorAll('*').forEach((element) => {
+    Array.from(element.attributes).forEach((attribute) => {
+      const name = attribute.name.toLowerCase()
+      const value = attribute.value.trim().toLowerCase()
+      const isEventHandler = name.startsWith('on')
+      const isUnsafeUrl = ['href', 'src', 'xlink:href', 'formaction'].includes(name)
+        && (/^(javascript|vbscript|data):/.test(value) || value.includes('javascript:'))
+
+      if (isEventHandler || isUnsafeUrl || name === 'srcdoc') {
+        element.removeAttribute(attribute.name)
+      }
+    })
+  })
+
+  return template.innerHTML.trim()
+}
+
+function formatApplicationDeadline(value?: string) {
+  const source = String(value || '').trim()
+  if (!source) return 'No deadline provided'
+
+  const isoDateMatch = source.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoDateMatch) {
+    const [, year, month, day] = isoDateMatch
+    const date = new Date(Number(year), Number(month) - 1, Number(day))
+    const isValidDate = (
+      date.getFullYear() === Number(year) &&
+      date.getMonth() === Number(month) - 1 &&
+      date.getDate() === Number(day)
+    )
+
+    if (isValidDate) return `${day}/${month}/${year}`
+  }
+
+  const date = new Date(source)
+  if (Number.isNaN(date.getTime())) return 'Invalid deadline'
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
 }
 
 function getRequirementItems(value?: string) {
@@ -52,16 +102,6 @@ function getRequirementItems(value?: string) {
   return plainItems.length > 0 ? plainItems : requirements
 }
 
-function getBenefitItems(value?: string) {
-  const normalized = stripParagraphTags(value)
-  if (!normalized) return []
-
-  return normalized
-    .split(/\r?\n|<br\s*\/?>|[,;]+/gi)
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
 export function CandidateJobDetailPage() {
   const navigate = useNavigate()
   const { companyId, jobId } = useParams<{ companyId?: string; jobId?: string }>()
@@ -74,9 +114,10 @@ export function CandidateJobDetailPage() {
   const job = jobQuery.data || fallbackJob
   const hasExistingApplication = job?.flag === true
   const displayCompanyName = companyQuery.data?.name || company?.name || 'Selected Company'
-  const jobDescription = stripParagraphTags(job?.description)
+  const safeJobDescriptionHtml = sanitizeHtml(job?.description)
+  const safeBenefitsHtml = sanitizeHtml(job?.benefits)
+  const applicationDeadline = formatApplicationDeadline(job?.applicationDeadline)
   const requirementItems = getRequirementItems(job?.requirements)
-  const benefitItems = getBenefitItems(job?.benefits)
 
   const handleApplicationAction = async () => {
     if (!companyId || !jobId) return
@@ -143,7 +184,7 @@ export function CandidateJobDetailPage() {
               </div>
               <div>
                 <span>Application Deadline</span>
-                <strong>{job.applicationDeadline || '12/08/2026'}</strong>
+                <strong>{applicationDeadline}</strong>
               </div>
               <div>
                 <span>Salary Range</span>
@@ -156,7 +197,11 @@ export function CandidateJobDetailPage() {
             <h2>Technical Overview</h2>
             <section>
               <h3>Job Description</h3>
-              <p>{jobDescription}</p>
+              {safeJobDescriptionHtml ? (
+                <div className="candidate-job-rich-html" dangerouslySetInnerHTML={{ __html: safeJobDescriptionHtml }} />
+              ) : (
+                <p>No description provided.</p>
+              )}
             </section>
 
             <section>
@@ -173,11 +218,11 @@ export function CandidateJobDetailPage() {
 
             <section className="candidate-job-benefits">
               <h3>Company Benefits</h3>
-              <div>
-                {benefitItems.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
+              {safeBenefitsHtml ? (
+                <div className="candidate-job-rich-html" dangerouslySetInnerHTML={{ __html: safeBenefitsHtml }} />
+              ) : (
+                <p>No benefits provided.</p>
+              )}
             </section>
           </article>
         </div>

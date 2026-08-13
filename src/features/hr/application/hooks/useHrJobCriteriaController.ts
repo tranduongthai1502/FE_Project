@@ -69,6 +69,7 @@ export function useHrJobCriteriaController({
   const [deletedCriteriaIds, setDeletedCriteriaIds] = useState<string[]>([])
   const [isLoadingCriteria, setIsLoadingCriteria] = useState(false)
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
+  const [isGeneratingAiCriteria, setIsGeneratingAiCriteria] = useState(false)
   const [pendingCriteriaCancelAction, setPendingCriteriaCancelAction] = useState<(() => void) | null>(null)
 
   // --- Job Form State ---
@@ -395,6 +396,37 @@ export function useHrJobCriteriaController({
     setDeletedCriteriaIds((currentIds) => Array.from(new Set([...currentIds, ...idsToDelete])))
   }
 
+  const generateAiCriteria = async () => {
+    if (isActionLocked || isSavingCriteria || isGeneratingAiCriteria || isClosedJobStatus(selectedJob?.status) || !selectedJob?.id) return
+
+    setIsGeneratingAiCriteria(true)
+    try {
+      const generatedCriteria = await hrApi.generateJobCriteriaAi(selectedJob.id)
+      const criteriaSource = generatedCriteria.length > 0
+        ? generatedCriteria
+        : await hrApi.getJobCriteriaByJobId(selectedJob.id)
+      const nextCriteria = criteriaSource
+        .slice(0, maxCriteriaCount)
+        .sort((first, second) => (first.sortOrder ?? 0) - (second.sortOrder ?? 0))
+
+      if (nextCriteria.length === 0) {
+        triggerToast?.('AI did not return any criteria. Please try again.', 'error')
+        return
+      }
+
+      setJobCriteria(nextCriteria)
+      setIsEditingCriteria(true)
+      setCriteriaForms(nextCriteria.map(mapCriteriaResponseToRow))
+      setCriteriaFieldErrors({})
+      setDeletedCriteriaIds([])
+      triggerToast?.('AI criteria generated successfully.', 'success')
+    } catch (error) {
+      triggerToast?.(getCriteriaSaveError(error), 'error')
+    } finally {
+      setIsGeneratingAiCriteria(false)
+    }
+  }
+
   // --- Job Form Handlers ---
   const updateJobFormField = <Field extends keyof JobPostingPayload>(field: Field, value: JobPostingPayload[Field]) => {
     const nextValue = field === 'title' && typeof value === 'string'
@@ -656,6 +688,7 @@ export function useHrJobCriteriaController({
     deletedCriteriaIds,
     isLoadingCriteria,
     isSavingCriteria,
+    isGeneratingAiCriteria,
     pendingCriteriaCancelAction,
     setPendingCriteriaCancelAction,
     reloadJobCriteria,
@@ -671,6 +704,7 @@ export function useHrJobCriteriaController({
     validateCriterionForms,
     saveCriteria,
     clearAllCriteria,
+    generateAiCriteria,
 
     // Job Form States & Handlers
     jobForm,

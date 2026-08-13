@@ -48,7 +48,7 @@ export function CandidatePortalPage({ onLogout, triggerToast }: CandidatePortalP
           <Route path="companies/:companyId" element={<CandidateCompanyDetailPage />} />
           <Route path="companies/:companyId/jobs/:jobId" element={<CandidateJobDetailPage />} />
           <Route path="companies/:companyId/jobs/:jobId/upload-cv" element={<CandidateCvUploadPage />} />
-          <Route path="companies/:companyId/jobs/:jobId/cv-score" element={<CandidateCvScorePage />} />
+          <Route path="companies/:companyId/jobs/:jobId/cv-score" element={<CandidateCvScorePage triggerToast={triggerToast} />} />
           <Route
             path="change-password"
             element={(

@@ -83,7 +83,7 @@ export function JobDetailSection({
   const daysUntilDeadline = getDaysUntilDeadline(selectedJob.applicationDeadline)
   const totalCriteriaWeight = criteriaCtrl.jobCriteria.reduce((total: number, item: any) => total + (Number(item.weight) || 0), 0)
   const normalizedCriteriaWeight = Math.round(totalCriteriaWeight * 10) / 10
-  const isCriteriaReadOnly = selectedJobIsClosed || isActionLocked || criteriaCtrl.isSavingCriteria
+  const isCriteriaReadOnly = selectedJobIsClosed || isActionLocked || criteriaCtrl.isSavingCriteria || criteriaCtrl.isGeneratingAiCriteria
   const projectedCriteriaWeight = Math.round(criteriaCtrl.getCriteriaTotalWithForm() * 10) / 10
   const isCriterionSaveDisabled = isCriteriaReadOnly || !criteriaCtrl.isEditingCriteria || criteriaCtrl.criteriaForms.length === 0 || projectedCriteriaWeight !== 100
   const jobStatusStat = selectedJobIsClosed
@@ -293,7 +293,7 @@ export function JobDetailSection({
                 ) : (
                   <button type="button" disabled={isCriteriaReadOnly} onClick={criteriaCtrl.startEditCriteria}>Edit Criterion</button>
                 )}
-                <button type="button" disabled={isCriteriaReadOnly} onClick={criteriaCtrl.isEditingCriteria ? criteriaCtrl.addCriterionRow : criteriaCtrl.startEditCriteria}><CriteriaAiSuggestIcon /> Re-suggest with AI</button>
+                <button type="button" disabled={isCriteriaReadOnly} onClick={criteriaCtrl.generateAiCriteria}><CriteriaAiSuggestIcon /> {criteriaCtrl.isGeneratingAiCriteria ? 'Suggesting...' : 'Re-suggest with AI'}</button>
                 {criteriaCtrl.isEditingCriteria && (
                   <button type="button" disabled={isCriteriaReadOnly || criteriaCtrl.criteriaForms.length === 0} onClick={criteriaCtrl.clearAllCriteria}>Clear All</button>
                 )}
