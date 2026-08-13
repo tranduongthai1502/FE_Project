@@ -309,9 +309,18 @@ export function useCandidateDetailController(candidateId?: string) {
     ),
   })
 
+  const applicationDetailQuery = useQuery({
+    queryKey: ['hr', 'candidate-application-detail', baseCandidate.id],
+    enabled: Boolean(baseCandidate.id),
+    queryFn: () => hrCandidateApplicationApi.getCandidateApplicationById(baseCandidate.id),
+  })
+
   const candidate = useMemo(() => (
-    resumeQuery.data ? mapResumeDetailToCandidateDetail(baseCandidate, resumeQuery.data) : baseCandidate
-  ), [baseCandidate, resumeQuery.data])
+    {
+      ...(resumeQuery.data ? mapResumeDetailToCandidateDetail(baseCandidate, resumeQuery.data) : baseCandidate),
+      reviewed: applicationDetailQuery.data?.reviewed ?? baseCandidate.reviewed,
+    }
+  ), [applicationDetailQuery.data?.reviewed, baseCandidate, resumeQuery.data])
 
   const markReviewedMutation = useMutation({
     mutationFn: (id: string) => hrCandidateApplicationApi.markAsReviewed(id),
@@ -324,6 +333,7 @@ export function useCandidateDetailController(candidateId?: string) {
         },
       }))
       queryClient.invalidateQueries({ queryKey: ['hr', 'candidate-applications'] })
+      queryClient.invalidateQueries({ queryKey: ['hr', 'candidate-application-detail', candidate.id] })
     },
   })
 
@@ -338,6 +348,7 @@ export function useCandidateDetailController(candidateId?: string) {
     handleMarkAsReviewed,
     isMarkingReviewed: markReviewedMutation.isPending,
     isLoadingResume: resumeQuery.isLoading || resumeQuery.isFetching,
+    isLoadingApplicationDetail: applicationDetailQuery.isLoading || applicationDetailQuery.isFetching,
     resumeError: resumeQuery.error,
   }
 }

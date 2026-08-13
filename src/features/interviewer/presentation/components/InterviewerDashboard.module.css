@@ -170,6 +170,332 @@
   line-height: 1;
 }
 
+.interviewScheduleContent {
+  min-height: calc(100vh - 70px);
+  padding: 20px 24px 28px;
+  background: #f7f8fd;
+}
+
+.interviewScheduleHeader {
+  margin-top: 18px;
+}
+
+.interviewScheduleHeader h1 {
+  margin: 0;
+  color: #101c33;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.interviewMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.interviewMetrics article {
+  display: flex;
+  gap: 14px;
+  min-height: 96px;
+  padding: 16px 18px;
+  border: 1px solid #f0b8a8;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.interviewMetrics article > span {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: #ffe8df;
+  color: #d93408;
+}
+
+.interviewMetrics article:nth-child(2) > span {
+  background: #e8f1ff;
+  color: #315b91;
+}
+
+.interviewMetrics article:nth-child(3) > span {
+  background: #def8ea;
+  color: #16a15f;
+}
+
+.interviewMetrics small {
+  display: block;
+  color: #6f4e43;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.interviewMetrics strong {
+  display: block;
+  margin-top: 4px;
+  color: #101c33;
+  font-size: 30px;
+  line-height: 0.95;
+  font-weight: 900;
+}
+
+.interviewMetrics p {
+  margin: 8px 0 0;
+  color: #536073;
+  font-size: 11px;
+}
+
+.myInterviewPanel {
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid #f0b8a8;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.myInterviewToolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #f0d3ca;
+}
+
+.myInterviewSearch {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 500px;
+  padding: 0 12px;
+  border: 1px solid #f0b8a8;
+  border-radius: 999px;
+  color: #536073;
+}
+
+.myInterviewSearch input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #101c33;
+  font: inherit;
+  font-size: 11px;
+}
+
+.myInterviewViewToggle,
+.myInterviewPeriodToggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 6px;
+  background: #eef3fb;
+}
+
+.myInterviewViewToggle button,
+.myInterviewPeriodToggle button,
+.myInterviewSelect,
+.myInterviewDate,
+.myInterviewToday {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #101c33;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.myInterviewViewToggle button {
+  padding: 0 14px;
+}
+
+.myInterviewPeriodToggle button {
+  padding: 0 10px;
+}
+
+.activeInterviewMode {
+  background: #ffffff !important;
+  color: #d93408 !important;
+}
+
+.myInterviewSelect,
+.myInterviewDate,
+.myInterviewToday {
+  border-color: #f0b8a8;
+  background: #ffffff;
+  padding: 0 12px;
+}
+
+.myInterviewDate {
+  grid-column: 3;
+}
+
+.myInterviewToday {
+  grid-column: 4;
+}
+
+.myInterviewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: 12px;
+  min-height: 260px;
+  padding: 12px;
+}
+
+.myInterviewGridList {
+  grid-template-columns: 1fr;
+}
+
+.myInterviewEmpty {
+  grid-column: 1 / -1;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: #536073;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.myInterviewCard {
+  min-width: 0;
+  overflow: hidden;
+  align-self: start;
+  border: 1px solid #f0b8a8;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.myInterviewCard header {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  gap: 9px;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #f0d3ca;
+}
+
+.myInterviewCard img,
+.myInterviewCard header > b {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+}
+
+.myInterviewCard img {
+  object-fit: cover;
+}
+
+.myInterviewCard header > b {
+  display: grid;
+  place-items: center;
+  background: #dfe7f3;
+  color: #101c33;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.myInterviewCard header div {
+  min-width: 0;
+}
+
+.myInterviewCard strong,
+.myInterviewCard span,
+.myInterviewCard dd {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.myInterviewCard strong {
+  display: block;
+  color: #101c33;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.myInterviewCard header span {
+  display: block;
+  margin-top: 3px;
+  color: #536073;
+  font-size: 10px;
+}
+
+.myInterviewCard em {
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  border: 1px solid #f6d5cc;
+  border-radius: 5px;
+  background: #fff9f7;
+  color: #d93408;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.myInterviewCard dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 10px 4px;
+}
+
+.myInterviewCard dl div {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) auto;
+  gap: 10px;
+}
+
+.myInterviewCard dt {
+  color: #6b7280;
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.myInterviewCard dd {
+  margin: 0;
+  color: #101c33;
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.myInterviewCard footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 10px 12px;
+}
+
+.myInterviewCard footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #d93408;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.myInterviewCard footer i {
+  font-size: 5px;
+}
+
 .dashboardGrid {
   display: grid;
   grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.15fr) minmax(280px, 0.85fr);
@@ -502,7 +828,8 @@
 
 @media (min-width: 981px) {
   .content,
-  .candidatesContent {
+  .candidatesContent,
+  .interviewScheduleContent {
     width: 100%;
     max-width: 1440px;
     margin: 0 auto;
@@ -548,12 +875,44 @@
 
 @media (min-width: 1536px) {
   .content,
-  .candidatesContent {
+  .candidatesContent,
+  .interviewScheduleContent {
     max-width: 1560px;
   }
 }
 
 @media (max-width: 980px) {
+  .interviewMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .myInterviewToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .myInterviewSearch {
+    max-width: none;
+  }
+
+  .myInterviewDate,
+  .myInterviewToday {
+    grid-column: auto;
+  }
+
+  .myInterviewViewToggle,
+  .myInterviewPeriodToggle {
+    justify-content: stretch;
+  }
+
+  .myInterviewViewToggle button,
+  .myInterviewPeriodToggle button {
+    flex: 1;
+  }
+
+  .myInterviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboardGrid {
     grid-template-columns: 1fr;
   }
@@ -569,7 +928,8 @@
 
 @media (max-width: 640px) {
   .content,
-  .candidatesContent {
+  .candidatesContent,
+  .interviewScheduleContent {
     padding: 16px 14px 24px;
   }
 
@@ -581,7 +941,8 @@
 
   .scoreGrid,
   .rightRail,
-  .assignedCandidateGrid {
+  .assignedCandidateGrid,
+  .myInterviewGrid {
     grid-template-columns: 1fr;
   }
 

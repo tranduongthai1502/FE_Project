@@ -242,7 +242,7 @@ export function JobApplicationKanbanSection({ jobId }: { jobId: string }) {
       const entries = await Promise.all(kanbanColumnMeta.map(async (column) => {
         const candidates = await hrCandidateApplicationApi.getCandidateApplications({
           page: 1,
-          size: 100,
+          size: 10,
           sortField: 'createdAt',
           sortBy: 'DESC',
           filters: {

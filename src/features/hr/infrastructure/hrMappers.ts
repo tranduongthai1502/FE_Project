@@ -39,7 +39,7 @@ export function normalizeJobPosting(job: any): JobPosting | null {
     salaryMin: source?.salaryMin ?? source?.salary_min ? Number(source?.salaryMin ?? source?.salary_min) : undefined,
     salaryMax: source?.salaryMax ?? source?.salary_max ? Number(source?.salaryMax ?? source?.salary_max) : undefined,
     status: String(source?.status || source?.jobStatus || source?.job_status || 'DRAFT'),
-    applicantCount: Number(source?.applicantCount ?? source?.applicantsCount ?? source?.noOfApplicants ?? source?.numberOfApplicants ?? source?.totalApplicants ?? 0) || 0,
+    applicantCount: Number(source?.applicantCount ?? source?.applicantsCount ?? source?.noOfApplicants ?? source?.numberOfApplicant ?? source?.numberOfApplicants ?? source?.totalApplicants ?? 0) || 0,
     flag: typeof flag === 'boolean' ? flag : undefined,
     createdAt: source?.createdAt || source?.createdDate || source?.created_at ? String(source?.createdAt || source?.createdDate || source?.created_at) : undefined,
     updatedAt: source?.updatedAt || source?.updatedDate || source?.updated_at || source?.modifiedAt || source?.modified_at
