@@ -10,6 +10,9 @@ import { markResumeUploaded, readCandidateIdFromPayload, saveResumeCandidateId, 
 
 const allowedCvExtensions = ['pdf', 'doc', 'docx']
 const maxCvFileSize = 5 * 1024 * 1024
+const resumePollingIntervalMs = 5000
+const maxResumePollingAttempts = 5
+const resumePollingTimeoutMessage = 'Token limit reached. Please try again later.'
 
 type ResumeAnalysis = {
   fileName?: string
@@ -85,7 +88,11 @@ function getFileExtension(file: File) {
   return file.name.split('.').pop()?.toLowerCase() || ''
 }
 
-export function CandidateCvScorePage() {
+export function CandidateCvScorePage({
+  triggerToast,
+}: {
+  triggerToast?: (message: string, type?: 'success' | 'error') => void
+}) {
   const navigate = useNavigate()
   const { companyId, jobId } = useParams<{ companyId?: string; jobId?: string }>()
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -152,16 +159,29 @@ export function CandidateCvScorePage() {
 
     let isMounted = true
     let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+    let pollingAttempts = 0
+
+    const stopPollingWithTokenError = () => {
+      setError(resumePollingTimeoutMessage)
+      setIsLoading(false)
+      triggerToast?.(resumePollingTimeoutMessage, 'error')
+    }
 
     const pollResume = async () => {
       try {
+        pollingAttempts += 1
         const data = getResumePayload(await candidateApplicationApi.getResumeByJobAndCandidate(jobId, candidateId))
         if (!isMounted) return
         setAnalysis(data)
         setError('')
 
         if (!isResumeParsed(data)) {
-          timeoutId = window.setTimeout(pollResume, 4000)
+          if (pollingAttempts >= maxResumePollingAttempts) {
+            stopPollingWithTokenError()
+            return
+          }
+
+          timeoutId = window.setTimeout(pollResume, resumePollingIntervalMs)
           return
         }
 
@@ -180,7 +200,7 @@ export function CandidateCvScorePage() {
       isMounted = false
       if (timeoutId) window.clearTimeout(timeoutId)
     }
-  }, [jobId, reloadKey])
+  }, [jobId, reloadKey, triggerToast])
 
   if (!companyId || !jobId) return <Navigate to="/candidate/companies" replace />
 

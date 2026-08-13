@@ -6,6 +6,7 @@ import type {
 import type {
   DashboardStatsJobPostingResponse,
   GenerateJobPostingAiRequest,
+  GenerateJobCriteriaAiResponse,
   GenerateJobPostingAiResponse,
   JobCriteriaPayload,
   JobCriteriaResponse,
@@ -172,11 +173,13 @@ function normalizeJobPostingLimit(payload: any): JobPostingLimitResponse {
 
 function getJobCriteriaList(payload: any): any[] {
   if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.criteria)) return payload.criteria
   if (Array.isArray(payload?.content)) return payload.content
   if (Array.isArray(payload?.items)) return payload.items
   if (Array.isArray(payload?.records)) return payload.records
   if (Array.isArray(payload?.list)) return payload.list
   if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.data?.criteria)) return payload.data.criteria
   if (Array.isArray(payload?.data?.content)) return payload.data.content
   if (Array.isArray(payload?.data?.items)) return payload.data.items
   if (Array.isArray(payload?.data?.records)) return payload.data.records
@@ -298,6 +301,13 @@ export const hrApi = {
 
   async getJobCriteriaByJobId(jobId: string): Promise<JobCriteriaResponse[]> {
     const response = await axiosClient.get(`/api/job-criteria/job/${encodeURIComponent(jobId)}`)
+    return getJobCriteriaList(getResponsePayload(response))
+      .map((item) => normalizeJobCriteria(item))
+      .filter((item): item is JobCriteriaResponse => Boolean(item))
+  },
+
+  async generateJobCriteriaAi(jobId: string): Promise<GenerateJobCriteriaAiResponse> {
+    const response = await axiosClient.post(`/api/job-criteria/job/${encodeURIComponent(jobId)}/generate-criteria`)
     return getJobCriteriaList(getResponsePayload(response))
       .map((item) => normalizeJobCriteria(item))
       .filter((item): item is JobCriteriaResponse => Boolean(item))
