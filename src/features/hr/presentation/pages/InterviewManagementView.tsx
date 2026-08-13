@@ -1,4 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import timeGridPlugin from '@fullcalendar/timegrid'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 import styles from './InterviewManagementView.module.css'
 
@@ -25,14 +29,14 @@ const interviews: Array<{
 ]
 
 const calendarEvents = [
-  { day: 2, name: 'Maya Thompson', note: '10:30 AM - Completed', tone: 'green' },
-  { day: 4, name: 'John Smith', note: '02:00 PM - Cancelled', tone: 'blue' },
-  { day: 11, name: 'Alex Rivera', note: '10:30 AM - Scheduled', tone: 'orange' },
-  { day: 12, name: 'Jordan S.', note: '10:30 AM - Scheduled', tone: 'orange' },
-  { day: 16, name: 'Alex Rivera', note: '10:30 AM - Scheduled', tone: 'orange' },
-  { day: 17, name: 'Jordan S.', note: '10:30 AM - Scheduled', tone: 'orange' },
-  { day: 26, name: 'Alex Rivera', note: '10:30 AM - Scheduled', tone: 'orange' },
-  { day: 27, name: 'Jordan S.', note: '10:30 AM - Scheduled', tone: 'orange' },
+  { id: 'cal-1', date: '2026-07-02T10:30:00', name: 'Maya Thompson', note: '10:30 AM - Completed', job: 'Sr. Product Designer', tone: 'green' },
+  { id: 'cal-2', date: '2026-07-04T14:00:00', name: 'John Smith', note: '02:00 PM - Cancelled', job: 'Sr. Product Designer', tone: 'blue' },
+  { id: 'cal-3', date: '2026-07-11T10:30:00', name: 'Alex Rivera', note: '10:30 AM - Scheduled', job: 'Sr. Product Designer', tone: 'orange' },
+  { id: 'cal-4', date: '2026-07-12T10:30:00', name: 'Jordan S.', note: '10:30 AM - Scheduled', job: 'Sr. Product Designer', tone: 'orange' },
+  { id: 'cal-5', date: '2026-07-16T10:30:00', name: 'Alex Rivera', note: '10:30 AM - Scheduled', job: 'Sr. Product Designer', tone: 'orange' },
+  { id: 'cal-6', date: '2026-07-17T10:30:00', name: 'Jordan S.', note: '10:30 AM - Scheduled', job: 'Sr. Product Designer', tone: 'orange' },
+  { id: 'cal-7', date: '2026-07-26T10:30:00', name: 'Alex Rivera', note: '10:30 AM - Scheduled', job: 'Sr. Product Designer', tone: 'orange' },
+  { id: 'cal-8', date: '2026-07-27T10:30:00', name: 'Jordan S.', note: '10:30 AM - Scheduled', job: 'Sr. Product Designer', tone: 'orange' },
 ]
 
 function getInitials(name: string) {
@@ -48,6 +52,30 @@ function getStatusClass(status: InterviewStatus) {
 
 export function InterviewManagementView({ onHome }: { onHome?: () => void }) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [calendarTitle, setCalendarTitle] = useState('July 2026')
+  const [calendarView, setCalendarView] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth')
+  const [calendarDate, setCalendarDate] = useState('2026-07-01')
+  const fullCalendarEvents = useMemo(() => calendarEvents.map((event) => ({
+    id: event.id,
+    title: `${event.name} - ${event.note}`,
+    start: event.date,
+    classNames: [styles.calendarEvent, styles[event.tone as 'green' | 'blue' | 'orange'] || styles.orange],
+    extendedProps: {
+      note: event.note,
+      job: event.job,
+      tone: event.tone,
+    },
+  })), [])
+
+  const changeCalendarView = (nextView: typeof calendarView) => {
+    setCalendarView(nextView)
+    setCalendarTitle(nextView === 'timeGridDay' ? 'July 1, 2026' : nextView === 'timeGridWeek' ? 'Jun 28 - Jul 4, 2026' : 'July 2026')
+  }
+  const goToToday = () => {
+    const today = new Date().toISOString().slice(0, 10)
+    setCalendarDate(today)
+    setCalendarTitle(new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }))
+  }
 
   return (
     <div className={`role-content ${styles.interviewPage}`}>
@@ -79,7 +107,7 @@ export function InterviewManagementView({ onHome }: { onHome?: () => void }) {
           {viewMode === 'list' ? (
             <button type="button" className={styles.selectButton}><i className="fa-regular fa-calendar"></i>Oct 12 - Oct 19, 2023</button>
           ) : (
-            <button type="button" className={styles.todayButton}>Today</button>
+            <button type="button" className={styles.todayButton} onClick={goToToday}>Today</button>
           )}
         </div>
 
@@ -105,19 +133,28 @@ export function InterviewManagementView({ onHome }: { onHome?: () => void }) {
           </>
         ) : (
           <div className={styles.calendarWrap}>
-            <div className={styles.calendarControls}><button type="button">Day</button><button type="button">Week</button><button type="button" className={styles.active}>Month</button><span>July 2026</span></div>
-            <div className={styles.calendarGrid}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <strong key={day}>{day}</strong>)}
-              {Array.from({ length: 28 }, (_, index) => index + 1).map((day) => (
-                <div className={styles.calendarCell} key={day}>
-                  <em>{day}</em>
-                  {calendarEvents.filter((event) => event.day === day).map((event) => (
-                    <article className={`${styles.calendarEvent} ${styles[event.tone as 'green' | 'blue' | 'orange']}`} key={`${event.day}-${event.name}`}>
-                      <b>{event.name}</b><small>{event.note}</small><span>Sr. Product Designer</span>
-                    </article>
-                  ))}
-                </div>
-              ))}
+            <div className={styles.calendarControls}>
+              <button type="button" className={calendarView === 'timeGridDay' ? styles.active : undefined} onClick={() => changeCalendarView('timeGridDay')}>Day</button>
+              <button type="button" className={calendarView === 'timeGridWeek' ? styles.active : undefined} onClick={() => changeCalendarView('timeGridWeek')}>Week</button>
+              <button type="button" className={calendarView === 'dayGridMonth' ? styles.active : undefined} onClick={() => changeCalendarView('dayGridMonth')}>Month</button>
+              <span>{calendarTitle}</span>
+            </div>
+            <div className={styles.fullCalendarShell}>
+              <FullCalendar
+                key={`${calendarView}-${calendarDate}`}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView={calendarView}
+                initialDate={calendarDate}
+                headerToolbar={false}
+                height="auto"
+                dayMaxEvents={3}
+                events={fullCalendarEvents}
+                eventTimeFormat={{
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  meridiem: 'short',
+                }}
+              />
             </div>
           </div>
         )}

@@ -302,47 +302,107 @@
   font-weight: 800;
 }
 
-.calendarGrid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+.fullCalendarShell {
   border-top: 1px solid #efcfc6;
 }
 
-.calendarGrid > strong {
-  padding: 12px;
-  border-right: 1px solid #efcfc6;
+.fullCalendarShell :global(.fc) {
+  --fc-border-color: #efcfc6;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #ffffff;
+  --fc-today-bg-color: #fff8f5;
+  color: #172033;
+  font-family: inherit;
+}
+
+.fullCalendarShell :global(.fc-theme-standard td),
+.fullCalendarShell :global(.fc-theme-standard th) {
+  border-color: #efcfc6;
+}
+
+.fullCalendarShell :global(.fc-col-header-cell) {
+  height: 44px;
+  background: #ffffff;
+}
+
+.fullCalendarShell :global(.fc-col-header-cell-cushion) {
+  display: block;
+  padding: 14px 12px 10px;
   color: #596579;
   font-size: 11px;
+  font-weight: 900;
+  text-align: left;
+  text-decoration: none;
   text-transform: uppercase;
 }
 
-.calendarCell {
+.fullCalendarShell :global(.fc-daygrid-day-frame) {
   min-height: 120px;
-  padding: 10px;
-  border-top: 1px solid #efcfc6;
-  border-right: 1px solid #efcfc6;
+  padding: 8px;
   background: #fafbfe;
 }
 
-.calendarCell em {
-  display: block;
-  text-align: right;
+.fullCalendarShell :global(.fc-daygrid-day-number) {
   color: #58657a;
-  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.fullCalendarShell :global(.fc-daygrid-event-harness),
+.fullCalendarShell :global(.fc-timegrid-event-harness) {
+  margin-top: 8px;
+}
+
+.fullCalendarShell :global(.fc-daygrid-event),
+.fullCalendarShell :global(.fc-timegrid-event) {
+  border: 0;
+  box-shadow: none;
+}
+
+.fullCalendarShell :global(.fc-event-main) {
+  color: inherit;
+}
+
+.fullCalendarShell :global(.fc-timegrid-slot) {
+  height: 44px;
+}
+
+.fullCalendarShell :global(.fc-timegrid-axis-cushion),
+.fullCalendarShell :global(.fc-timegrid-slot-label-cushion) {
+  color: #596579;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .calendarEvent {
-  margin-top: 10px;
   padding: 8px;
+  border: 0;
   border-radius: 4px;
+  color: #041a33;
   font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow: hidden;
 }
 
 .calendarEvent b,
 .calendarEvent small,
 .calendarEvent span {
   display: block;
+  overflow: hidden;
+  color: #041a33;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendarEvent b {
+  font-weight: 900;
+}
+
+.calendarEvent small,
+.calendarEvent span {
+  font-size: 10px;
 }
 
 .green { background: #e3f8ea; border-left: 3px solid #16a15f; }

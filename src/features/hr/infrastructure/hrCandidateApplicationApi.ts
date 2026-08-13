@@ -128,6 +128,11 @@ export const hrCandidateApplicationApi = {
       .filter((candidate): candidate is Candidate => Boolean(candidate)), response)
   },
 
+  async getCandidateApplicationById(id: string) {
+    const response = await axiosClient.get(`/api/candidate-application/${encodeURIComponent(id)}`)
+    return normalizeCandidateApplication(response) || normalizeCandidateApplication(response?.data)
+  },
+
   async markAsReviewed(id: string) {
     const response = await axiosClient.patch(`/api/candidate-application/${encodeURIComponent(id)}/review`)
     return response.data

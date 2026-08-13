@@ -1,1 +1,1 @@
-export type InterviewerHomeView = 'dashboard' | 'candidates' | 'settings'
+export type InterviewerHomeView = 'dashboard' | 'interviews' | 'settings'

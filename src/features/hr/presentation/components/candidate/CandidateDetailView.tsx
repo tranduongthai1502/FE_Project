@@ -7,13 +7,16 @@ import styles from './candidateDetail.module.css'
 export function CandidateDetailView() {
   const { candidateId } = useParams<{ candidateId?: string }>()
   const navigate = useNavigate()
-  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed, isLoadingResume, resumeError } = useCandidateDetailController(candidateId)
+  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed, isLoadingResume, isLoadingApplicationDetail, resumeError } = useCandidateDetailController(candidateId)
 
   const componentAnalysis = candidate?.componentAnalysis || []
   const aiJustification = candidate?.aiJustification || []
   const keySkillGaps = candidate?.keySkillGaps || []
   const extractedCv = candidate?.extractedCv || { summary: '', experience: [], education: [], skills: [] }
   const cvDownloadUrl = typeof extractedCv.cvDownloadUrl === 'string' ? extractedCv.cvDownloadUrl.trim() : ''
+  const formatComponentScore = (value: number) => (
+    Number.isInteger(value) ? String(value) : value.toFixed(1)
+  )
 
   return (
     <div className={`role-content ${styles.detailContainer}`}>
@@ -45,7 +48,7 @@ export function CandidateDetailView() {
         </div>
 
         <div>
-          <button type="button" className={styles.markReviewedBtn} onClick={handleMarkAsReviewed} disabled={isMarkingReviewed || candidate?.reviewed}>
+          <button type="button" className={styles.markReviewedBtn} onClick={handleMarkAsReviewed} disabled={isMarkingReviewed || isLoadingApplicationDetail || candidate?.reviewed}>
             {isMarkingReviewed ? 'Marking...' : candidate?.reviewed ? 'Reviewed' : 'Mark as Reviewed'}
           </button>
         </div>
@@ -118,8 +121,8 @@ export function CandidateDetailView() {
                   return (
                     <div key={`${comp.category || comp.analysis || 'component'}-${index}`} className={styles.componentItem}>
                       <div className={styles.componentHead}>
-                        <span>{comp.category}</span>
-                        <span>{weight > 0 ? `${score} / ${weight}` : `${score}`}</span>
+                        <span>{comp.category || 'Component'}</span>
+                        <span>{weight > 0 ? `${formatComponentScore(score)} / ${formatComponentScore(weight)}` : formatComponentScore(score)}</span>
                       </div>
                       <div className={styles.componentBarBg}>
                         <div className={styles.componentBarFill} style={{ width: `${barWidth}%` }} />
