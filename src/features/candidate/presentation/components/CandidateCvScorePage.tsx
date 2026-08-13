@@ -22,13 +22,15 @@ type ResumeAnalysis = {
   createdAt?: string
   cvImprovementSuggestions?: {
     overallFeedback?: string
-    suggestions?: Array<{ criterionName?: string; feedback?: string; improvementSteps?: string[] }>
-    skillGaps?: string[]
+    suggestions?: unknown
+    skillGaps?: unknown
   }
-  skillGaps?: string[]
+  skillGaps?: unknown
   parsedData?: {
-    skills?: string[]
-  } | null
+    skills?: unknown
+    technicalSkills?: unknown
+    softSkills?: unknown
+  } | Record<string, unknown> | null
 }
 
 function getScore(data: ResumeAnalysis | null) {
@@ -42,6 +44,34 @@ function getResumePayload(payload: any): ResumeAnalysis {
 
 function isResumeParsed(data: ResumeAnalysis | null) {
   return Boolean(data?.parsedData)
+}
+
+function toTextList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item ?? '').trim()).filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    return value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean)
+  }
+
+  return []
+}
+
+function getParsedSkills(data: ResumeAnalysis | null): string[] {
+  const parsedData = data?.parsedData
+  if (!parsedData || typeof parsedData !== 'object') return []
+
+  return Array.from(new Set([
+    ...toTextList(parsedData.skills),
+    ...toTextList(parsedData.technicalSkills),
+    ...toTextList(parsedData.softSkills),
+  ]))
+}
+
+function getSuggestions(data: ResumeAnalysis | null): Array<{ criterionName?: string; feedback?: string; improvementSteps?: unknown }> {
+  const suggestions = data?.cvImprovementSuggestions?.suggestions
+  return Array.isArray(suggestions) ? suggestions : []
 }
 
 function formatAppliedDate(value?: string) {
@@ -72,8 +102,9 @@ export function CandidateCvScorePage() {
   const breadcrumbCompanyName = displayCompanyName || 'Company Detail'
   const displayJobTitle = job?.title || 'Job Detail'
   const score = getScore(analysis)
-  const suggestions = analysis?.cvImprovementSuggestions?.suggestions || []
-  const skillGaps = analysis?.cvImprovementSuggestions?.skillGaps || analysis?.skillGaps || []
+  const suggestions = getSuggestions(analysis)
+  const skillGaps = toTextList(analysis?.cvImprovementSuggestions?.skillGaps || analysis?.skillGaps)
+  const skills = getParsedSkills(analysis)
   const appliedDate = formatAppliedDate(analysis?.appliedAt || analysis?.createdAt)
 
   const handleUpdateCvFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -128,11 +159,13 @@ export function CandidateCvScorePage() {
         if (!isMounted) return
         setAnalysis(data)
         setError('')
-        setIsLoading(false)
 
         if (!isResumeParsed(data)) {
           timeoutId = window.setTimeout(pollResume, 4000)
+          return
         }
+
+        setIsLoading(false)
       } catch {
         if (!isMounted) return
         setError('Unable to load CV score. Please try again later.')
@@ -222,7 +255,7 @@ export function CandidateCvScorePage() {
                 {suggestions.map((item) => (
                   <section key={item.criterionName || item.feedback}>
                     {item.criterionName && <h3><i className="fa-solid fa-sparkles"></i>{item.criterionName}</h3>}
-                    <p>{item.feedback || item.improvementSteps?.join(' ')}</p>
+                    <p>{item.feedback || toTextList(item.improvementSteps).join(' ')}</p>
                   </section>
                 ))}
               </div>

@@ -54,7 +54,7 @@ export function useHrJobCriteriaController({
   triggerToast,
 }: {
   selectedJob: JobPosting | null
-  jobView: 'list' | 'detail' | 'create' | 'edit' | 'ai' | 'kanban'
+  jobView: 'list' | 'detail' | 'create' | 'edit' | 'ai'
   jobDetailTab: JobDetailTab
   jobs: JobPosting[]
   isActionLocked: boolean
@@ -93,6 +93,7 @@ export function useHrJobCriteriaController({
     mode: 'onSubmit',
   })
   const jobForm = jobFormMethods.watch()
+  const jobFormErrors = jobFormMethods.formState.errors
   const setJobForm = (nextValue: JobPostingPayload | ((current: JobPostingPayload) => JobPostingPayload)) => {
     const nextForm = typeof nextValue === 'function'
       ? nextValue(jobFormMethods.getValues())
@@ -455,6 +456,7 @@ export function useHrJobCriteriaController({
     })
     setDeadlineInputValue(formatDeadlineDisplay(nextPayload.applicationDeadline))
     setJobFieldErrors({})
+    jobFormMethods.clearErrors()
   }
 
   const discardAiGeneratedJob = () => {
@@ -484,14 +486,22 @@ export function useHrJobCriteriaController({
   const generateAiJobContent = async () => {
     if (isActionLocked || isGeneratingAiJob) return
     const payload = jobForm
-    const nextErrors = getAiJobValidationErrors(payload, salaryInputValues)
+    const nextErrors = getAiJobValidationErrors(payload, salaryInputValues, deadlineInputValue)
 
     if (Object.keys(nextErrors).length > 0) {
       setJobFieldErrors(nextErrors)
+      jobFormMethods.clearErrors()
+      Object.entries(nextErrors).forEach(([field, message]) => {
+        jobFormMethods.setError(field as keyof JobPostingPayload, {
+          type: 'manual',
+          message,
+        })
+      })
       return
     }
 
     setJobFieldErrors({})
+    jobFormMethods.clearErrors()
 
     setIsGeneratingAiJob(true)
     setAiGenerateError('')
@@ -667,6 +677,7 @@ export function useHrJobCriteriaController({
     setJobForm,
     salaryInputValues,
     setSalaryInputValues,
+    jobFormErrors,
     jobFieldErrors,
     setJobFieldErrors,
     isSavingJob,

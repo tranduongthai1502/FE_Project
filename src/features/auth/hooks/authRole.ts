@@ -1,4 +1,4 @@
-import type { AppRole } from '@/features/auth/domain/role.types'
+import type { AppRole } from '@/features/auth/types/role.types'
 
 export const unsupportedRoleMessage = 'This role is not supported in the current frontend.'
 

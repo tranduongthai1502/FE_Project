@@ -2,9 +2,11 @@ import { ADMIN_LIST_PAGE_SIZE } from './adminApi'
 import type { AdminListParams } from '@/core/api/api.types'
 import type { SubscriptionPlan, Tenant } from '@/features/admin/domain/adminApi.types'
 import {
+  getBackendErrorMessage,
+  getErrorCode,
+  getErrorRawMessage,
   validationErrorMessages,
 } from '@/core/api/axiosErrorHandler'
-import { mapErrorTextToFieldErrors } from '@/core/utils/errors/fieldErrorUtils'
 import { planFeatureDefaults, type PlanFeatureState } from '../domain/subscriptionPlanFeatures'
 
 export const TOP_TIER_PLAN_LIST_SIZE = 1000
@@ -149,11 +151,35 @@ export function getPlanFeatureState(plan?: SubscriptionPlan) {
 }
 
 export function getSubscriptionPlanFieldErrors(error: unknown, message: string): CreatePlanFieldErrors {
-  return mapErrorTextToFieldErrors<keyof CreatePlanFieldErrors>(error, message, [
-    {
-      field: 'planName',
-      message: validationErrorMessages.duplicatePlanName,
-      keywords: ['plan', 'name', 'duplicate', 'already exist'],
-    },
-  ])
+  return isDuplicateSubscriptionPlanNameError(error, message)
+    ? { planName: validationErrorMessages.duplicatePlanName }
+    : {}
+}
+
+function normalizeErrorText(value: string) {
+  return value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ')
+}
+
+function isDuplicateSubscriptionPlanNameError(error: unknown, message: string) {
+  const code = normalizeErrorText(getErrorCode(error))
+  const backendMessage = normalizeErrorText(getBackendErrorMessage(error))
+  const rawMessage = normalizeErrorText(getErrorRawMessage(error))
+  const displayMessage = normalizeErrorText(message)
+  const combinedMessage = [backendMessage, rawMessage, displayMessage].join(' ')
+
+  if ([
+    'plan already exists',
+    'subscription plan already exists',
+    'duplicate plan name',
+    'duplicate subscription plan name',
+    'plan name already exists',
+    'subscription plan name already exists',
+  ].includes(code)) {
+    return true
+  }
+
+  const mentionsPlanName = /\b(subscription\s+)?plan\s+name\b/.test(combinedMessage) || /\bsubscription\s+plan\b/.test(combinedMessage)
+  const mentionsDuplicate = /\bduplicate\b/.test(combinedMessage) || /\balready exists?\b/.test(combinedMessage)
+
+  return mentionsPlanName && mentionsDuplicate
 }

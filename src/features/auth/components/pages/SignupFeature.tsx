@@ -1,6 +1,6 @@
 import { AuthLayout } from '../components/AuthLayout'
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '@/core/components/Icons'
-import { useSignupForm } from '../../application'
+import { useSignupForm } from "../../hooks/useSignupForm"
 import { FIELD_LENGTH_LIMITS } from '@/core/api/axiosErrorHandler'
 
 type SignupFeatureProps = {

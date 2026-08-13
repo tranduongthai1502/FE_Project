@@ -7,6 +7,7 @@ import { formatLocationDisplay, formatRevisionMeta, formatRevisionTitle } from '
 import { criteriaCategories, formatEmploymentType, formatJobDate, formatJobStatus, getDaysOpen, getDaysUntilDeadline, getJobActionConfirmMessage, isClosedJobStatus, isDraftJobStatus, isOpenJobStatus, maxCriteriaCount } from '@/features/hr/infrastructure/hrJobLogic'
 import styles from '@/features/hr/presentation/pages/HrDashboard.module.css'
 import { RequirementsDisplay, RichTextDisplay } from '../HrRichTextEditor'
+import { JobApplicationKanbanSection } from './JobApplicationKanbanSection'
 import { CloseJobIcon } from './JobListSection'
 
 export function RevisionHistoryOpenIcon() {
@@ -103,6 +104,7 @@ export function JobDetailSection({
         { label: 'Jobs', onClick: () => criteriaCtrl.requestCriteriaCancel(() => { jobsCtrl.setJobView('list'); jobsCtrl.updateHrJobsPath(hrJobsPath) }) },
         { label: 'Job Detail', onClick: () => criteriaCtrl.requestCriteriaCancel(() => jobsCtrl.updateJobDetailTab('overview')) },
         ...(jobsCtrl.jobDetailTab === 'criteria' ? [{ label: 'Job Criteria Setup' }] : []),
+        ...(jobsCtrl.jobDetailTab === 'application' ? [{ label: 'Application' }] : []),
       ]} />
       <div className={styles.jobsHeader}>
         <h1>{selectedJob.title} <em className={`${styles.jobStatusBadge} ${selectedJob.status.toLowerCase()}`}>{formatJobStatus(selectedJob.status)}</em></h1>
@@ -117,7 +119,6 @@ export function JobDetailSection({
             {selectedJobIsOpen && (
               <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.requestJobAction('close', selectedJob)}>Close</button>
             )}
-            <button type="button" className={styles.secondaryJobButton} disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.openJobKanban(selectedJob)}>Kanban Board</button>
             <button type="button" disabled={isActionLocked || jobsCtrl.isJobActionSubmitting} onClick={() => jobsCtrl.openEditJob(selectedJob)}>Edit</button>
           </div>
         )}
@@ -125,8 +126,9 @@ export function JobDetailSection({
       <div className={styles.jobDetailTabs}>
         <button type="button" className={jobsCtrl.jobDetailTab === 'overview' ? styles.activeJobDetailTab : undefined} onClick={() => criteriaCtrl.requestCriteriaCancel(() => jobsCtrl.updateJobDetailTab('overview'))}>Job Overview</button>
         <button type="button" className={jobsCtrl.jobDetailTab === 'criteria' ? styles.activeJobDetailTab : undefined} onClick={() => criteriaCtrl.requestCriteriaCancel(() => jobsCtrl.updateJobDetailTab('criteria'))}>Criteria Set</button>
+        <button type="button" className={jobsCtrl.jobDetailTab === 'application' ? styles.activeJobDetailTab : undefined} onClick={() => criteriaCtrl.requestCriteriaCancel(() => jobsCtrl.updateJobDetailTab('application'))}>Application</button>
       </div>
-      {jobsCtrl.jobDetailTab === 'overview' ? (
+      {jobsCtrl.jobDetailTab === 'overview' && (
         <section className={styles.jobDetailGrid}>
           <div className={styles.jobDetailMain}>
             <article className={styles.jobGeneralInfoCard}>
@@ -215,7 +217,11 @@ export function JobDetailSection({
             </section>
           </aside>
         </section>
-      ) : (
+      )}
+      {jobsCtrl.jobDetailTab === 'application' && (
+        <JobApplicationKanbanSection />
+      )}
+      {jobsCtrl.jobDetailTab === 'criteria' && (
         <section className={styles.criteriaSetup}>
           <article className={styles.criteriaTableCard}>
             <header>

@@ -241,6 +241,23 @@
   background-color: #fff8f6 !important;
 }
 
+:global(.candidate-table-card .table-state) {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 96px !important;
+  padding: 10px !important;
+  border-bottom: 1px solid #f0cfc6 !important;
+  background: #ffffff !important;
+  color: #b42318 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+:global(.candidate-table-card .table-state.error) {
+  color: #b42318 !important;
+  background: #fff7f5 !important;
+}
+
 :global(.candidate-table-row > :last-child) {
   justify-self: center !important;
 }
@@ -287,6 +304,11 @@
   justify-content: center !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
+}
+
+:global(.candidate-table-card footer button i) {
+  margin: 0 !important;
+  line-height: 1 !important;
 }
 
 :global(.candidate-table-card footer button:hover:not(:disabled)) {
