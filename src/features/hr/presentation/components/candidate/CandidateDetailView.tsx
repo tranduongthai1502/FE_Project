@@ -4,10 +4,10 @@ import { hrCandidatesPath } from '../../../domain/hrRoutePaths'
 import { useCandidateDetailController } from '../../../application/hooks/useCandidateDetailController'
 import styles from './candidateDetail.module.css'
 
-export function CandidateDetailView() {
+export function CandidateDetailView({ triggerToast }: { triggerToast?: (message: string, type?: 'success' | 'error') => void }) {
   const { candidateId } = useParams<{ candidateId?: string }>()
   const navigate = useNavigate()
-  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed, isLoadingResume, isLoadingApplicationDetail, resumeError } = useCandidateDetailController(candidateId)
+  const { candidate, activeTab, setActiveTab, handleMarkAsReviewed, isMarkingReviewed, isLoadingResume, isLoadingApplicationDetail, resumeError } = useCandidateDetailController(candidateId, triggerToast)
 
   const componentAnalysis = candidate?.componentAnalysis || []
   const aiJustification = candidate?.aiJustification || []

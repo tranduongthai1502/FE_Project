@@ -324,7 +324,10 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
   }
 }
 
-export function useCandidateDetailController(candidateId?: string) {
+export function useCandidateDetailController(
+  candidateId?: string,
+  triggerToast?: (message: string, type?: 'success' | 'error') => void,
+) {
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<DetailTab>('extracted')
   const [candidateState, setCandidateState] = useState<Record<string, CandidateDetail>>({})
@@ -395,6 +398,10 @@ export function useCandidateDetailController(candidateId?: string) {
       }))
       queryClient.invalidateQueries({ queryKey: ['hr', 'candidate-applications'] })
       queryClient.invalidateQueries({ queryKey: ['hr', 'candidate-application-detail', candidate.id] })
+      triggerToast?.('Candidate marked as reviewed.', 'success')
+    },
+    onError: () => {
+      triggerToast?.('Unable to mark candidate as reviewed.', 'error')
     },
   })
 

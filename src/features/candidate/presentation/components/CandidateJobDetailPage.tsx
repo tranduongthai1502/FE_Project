@@ -175,7 +175,7 @@ export function CandidateJobDetailPage() {
               <h3>Company Benefits</h3>
               <div>
                 {benefitItems.map((item) => (
-                  <span key={item}><i className="fa-solid fa-briefcase"></i>{item}</span>
+                  <span key={item}>{item}</span>
                 ))}
               </div>
             </section>
