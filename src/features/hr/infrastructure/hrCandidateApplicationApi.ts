@@ -133,6 +133,11 @@ export const hrCandidateApplicationApi = {
     return response.data
   },
 
+  async updateCandidateApplicationStatus(id: string, status: string) {
+    const response = await axiosClient.patch(`/api/candidate-application/${encodeURIComponent(id)}/status`, { status })
+    return response.data
+  },
+
   async getCandidateResumeByJobAndCandidate(jobId: string, candidateId: string) {
     const response = await axiosClient.get(
       `/api/candidate/resume/job/${encodeURIComponent(jobId)}/candidate/${encodeURIComponent(candidateId)}`,
