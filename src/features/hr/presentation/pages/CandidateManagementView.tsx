@@ -4,22 +4,19 @@ import { MetricCard } from '@/core/components/MetricCard'
 import { SearchInput } from '@/core/components/SearchInput'
 import { ScrollableSelect } from '@/core/components/ScrollableSelect'
 import { ListTable } from '@/core/components/ListTable'
+import { CandidateEmptyState } from '@/core/components/CandidateEmptyState'
 import { getCompactPageItems } from '@/core/utils/pagination'
 import { getHrCandidateDetailPath } from '../../domain/hrRoutePaths'
 import { useCandidateListController } from '../../application/hooks/useCandidateListController'
 import styles from './candidate.module.css'
 
-export function CandidateManagementView() {
+export function CandidateManagementView({ onHome }: { onHome?: () => void }) {
   const navigate = useNavigate()
   const {
     stats,
     candidates,
     searchQuery,
     setSearchQuery,
-    selectedJob,
-    setSelectedJob,
-    selectedStatus,
-    setSelectedStatus,
     selectedMatchScore,
     setSelectedMatchScore,
     selectedAppliedDate,
@@ -34,7 +31,7 @@ export function CandidateManagementView() {
 
   const pageItems = getCompactPageItems(currentPage, pageCount)
 
-  const columns = ['CANDIDATE NAME', 'TARGET JOB', 'MATCH SCORE', 'RECRUITMENT STAGE', 'DATE APPLIED', 'REVIEWED']
+  const columns = ['CANDIDATE NAME', 'JOB POSTING', 'MATCH SCORE', 'RECRUITMENT STAGE', 'DATE APPLIED', 'REVIEWED']
 
   const getMatchBadgeClass = (score: number) => {
     if (score >= 90) return `${styles.matchBadge} ${styles.matchHigh}`
@@ -53,7 +50,7 @@ export function CandidateManagementView() {
   return (
     <div className={`role-content ${styles.candidateContainer}`}>
       <div className={styles.candidateHeader}>
-        <Breadcrumb items={[{ label: 'Home' }, { label: 'Candidates', current: true }]} />
+        <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Candidates', current: true }]} />
         <h1 className={styles.candidateTitle}>Candidates</h1>
       </div>
 
@@ -86,7 +83,7 @@ export function CandidateManagementView() {
           <SearchInput
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search job title, or department or..."
+            placeholder="Search job title or department..."
             ariaLabel="Search candidates"
           />
         </div>
@@ -95,41 +92,14 @@ export function CandidateManagementView() {
           <div className={styles.filterSelects}>
             <ScrollableSelect
               className="candidate-filter-select"
-              icon="fa-solid fa-briefcase"
-              value={selectedJob}
-              onChange={setSelectedJob}
-              options={[
-                { value: 'all', label: 'All Jobs' },
-                { value: 'Senior Cloud Architect', label: 'Senior Cloud Architect' },
-                { value: 'Senior Software Engineer', label: 'Senior Software Engineer' },
-                { value: 'Machine Learning Engineer', label: 'Machine Learning Engineer' },
-                { value: 'Data Engineer', label: 'Data Engineer' },
-                { value: 'Accountant', label: 'Accountant' },
-              ]}
-            />
-            <ScrollableSelect
-              className="candidate-filter-select"
-              icon="fa-regular fa-star"
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              options={[
-                { value: 'all', label: 'Status' },
-                { value: 'Final Interview', label: 'Final Interview' },
-                { value: 'Technical Test', label: 'Technical Test' },
-                { value: 'Pass', label: 'Pass' },
-                { value: 'Hired', label: 'Hired' },
-              ]}
-            />
-            <ScrollableSelect
-              className="candidate-filter-select"
               icon="fa-solid fa-chart-line"
               value={selectedMatchScore}
               onChange={setSelectedMatchScore}
               options={[
-                { value: 'all', label: 'Match Score' },
-                { value: 'high', label: '>= 90%' },
-                { value: 'medium', label: '75% - 89%' },
-                { value: 'low', label: '< 75%' },
+                { value: 'all', label: 'Match Score: All' },
+                { value: 'high', label: 'Match Score: >= 90%' },
+                { value: 'medium', label: 'Match Score: 75% - 89%' },
+                { value: 'low', label: 'Match Score: < 75%' },
               ]}
             />
             <ScrollableSelect
@@ -138,16 +108,16 @@ export function CandidateManagementView() {
               value={selectedAppliedDate}
               onChange={setSelectedAppliedDate}
               options={[
-                { value: 'all', label: 'Applied Date' },
-                { value: 'newest', label: 'Newest First' },
-                { value: 'oldest', label: 'Oldest First' },
+                { value: 'all', label: 'Date Applied: All' },
+                { value: 'newest', label: 'Date Applied: Newest First' },
+                { value: 'oldest', label: 'Date Applied: Oldest First' },
               ]}
             />
           </div>
         </div>
       </div>
 
-      <ListTable
+      {!isLoading && !isError && candidates.length === 0 ? <CandidateEmptyState /> : <ListTable
         cardClassName="table-card candidate-table-card"
         rowClassName="candidate-table-row"
         headClassName="candidate-table-head"
@@ -156,7 +126,7 @@ export function CandidateManagementView() {
         isLoading={isLoading}
         empty={!isLoading && (isError || candidates.length === 0)}
         loadingMessage="Loading candidates..."
-        emptyMessage={isError ? 'Unable to load candidates.' : 'No candidates found.'}
+        emptyMessage="No candidates found."
         pagination={{
           label: `Showing ${candidates.length} of ${totalElements.toLocaleString()} candidates`,
           currentPage,
@@ -208,7 +178,7 @@ export function CandidateManagementView() {
             </span>
           </div>
         ))}
-      </ListTable>
+      </ListTable>}
     </div>
   )
 }

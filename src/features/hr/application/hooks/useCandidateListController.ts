@@ -63,17 +63,13 @@ export const CANDIDATE_PAGE_SIZE = 5
 
 export function useCandidateListController() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedJob, setSelectedJob] = useState('all')
-  const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedMatchScore, setSelectedMatchScore] = useState('all')
   const [selectedAppliedDate, setSelectedAppliedDate] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
 
   const filters = useMemo(() => ({
     ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
-    ...(selectedJob !== 'all' ? { title: selectedJob } : {}),
-    ...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
-  }), [searchQuery, selectedJob, selectedStatus])
+  }), [searchQuery])
 
   const candidateQuery = useQuery({
     queryKey: ['hr', 'candidate-applications', { page: currentPage, filters, selectedAppliedDate, selectedMatchScore }],
@@ -86,7 +82,12 @@ export function useCandidateListController() {
     }),
   })
 
-  const candidates = candidateQuery.data ?? []
+  const candidates = useMemo(() => (candidateQuery.data ?? []).filter((candidate) => {
+    if (selectedMatchScore === 'high') return candidate.matchScore >= 90
+    if (selectedMatchScore === 'medium') return candidate.matchScore >= 75 && candidate.matchScore < 90
+    if (selectedMatchScore === 'low') return candidate.matchScore < 75
+    return true
+  }), [candidateQuery.data, selectedMatchScore])
 
   const pageCount = getListPageCount(candidates, currentPage, CANDIDATE_PAGE_SIZE)
   const totalElements = getListTotalElements(candidates, candidates.length)
@@ -107,10 +108,6 @@ export function useCandidateListController() {
     isError: candidateQuery.isError,
     searchQuery,
     setSearchQuery,
-    selectedJob,
-    setSelectedJob,
-    selectedStatus,
-    setSelectedStatus,
     selectedMatchScore,
     setSelectedMatchScore,
     selectedAppliedDate,

@@ -46,12 +46,12 @@ function getStatusClass(status: InterviewStatus) {
   return styles.statusScheduled
 }
 
-export function InterviewManagementView() {
+export function InterviewManagementView({ onHome }: { onHome?: () => void }) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
 
   return (
     <div className={`role-content ${styles.interviewPage}`}>
-      <Breadcrumb items={[{ label: 'Home' }, { label: 'Interviews', current: true }]} />
+      <Breadcrumb items={[{ label: 'Home', onClick: onHome }, { label: 'Interviews', current: true }]} />
 
       <header className={styles.header}>
         <div>
@@ -69,7 +69,7 @@ export function InterviewManagementView() {
 
       <section className={styles.panel}>
         <div className={styles.toolbar}>
-          <label className={styles.search}><i className="fa-solid fa-magnifying-glass"></i><input placeholder="Search job title, or department..." /></label>
+          <label className={styles.search}><i className="fa-solid fa-magnifying-glass"></i><input placeholder="Search job title or department..." /></label>
           <div className={styles.viewToggle}>
             <button type="button" className={viewMode === 'list' ? styles.active : ''} onClick={() => setViewMode('list')}><i className="fa-solid fa-list"></i>List View</button>
             <button type="button" className={viewMode === 'calendar' ? styles.active : ''} onClick={() => setViewMode('calendar')}><i className="fa-regular fa-calendar"></i>Calendar View</button>

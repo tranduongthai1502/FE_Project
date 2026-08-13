@@ -86,7 +86,7 @@ export function CandidateCompanyDetailPage() {
       <div className="candidate-company-job-toolbar">
         <label>
           <i className="fa-solid fa-magnifying-glass"></i>
-          <input type="search" placeholder="Search job title, or department..." />
+          <input type="search" placeholder="Search job title or department..." />
         </label>
         <div>
           <button type="button">Department: All <i className="fa-solid fa-chevron-down"></i></button>
