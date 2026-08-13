@@ -219,7 +219,7 @@ export function JobDetailSection({
         </section>
       )}
       {jobsCtrl.jobDetailTab === 'application' && (
-        <JobApplicationKanbanSection />
+        <JobApplicationKanbanSection jobId={selectedJob.id} />
       )}
       {jobsCtrl.jobDetailTab === 'criteria' && (
         <section className={styles.criteriaSetup}>
