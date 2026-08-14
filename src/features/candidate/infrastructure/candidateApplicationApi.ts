@@ -11,7 +11,6 @@ export const candidateApplicationApi = {
     const response = await axiosClient.post(
       `/api/candidate/resume/job/${encodeURIComponent(jobId)}`,
       buildFileFormData(file),
-      { headers: { 'Content-Type': 'multipart/form-data' } },
     )
     return response.data
   },

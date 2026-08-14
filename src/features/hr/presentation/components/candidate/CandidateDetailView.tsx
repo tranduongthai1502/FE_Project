@@ -14,6 +14,13 @@ export function CandidateDetailView({ triggerToast }: { triggerToast?: (message:
   const keySkillGaps = candidate?.keySkillGaps || []
   const extractedCv = candidate?.extractedCv || { summary: '', experience: [], education: [], skills: [] }
   const cvDownloadUrl = typeof extractedCv.cvDownloadUrl === 'string' ? extractedCv.cvDownloadUrl.trim() : ''
+  const cvFileName = extractedCv.cvFileName || 'Candidate CV'
+  const cvFileExtension = (cvFileName.split('.').pop() || cvDownloadUrl.split('?')[0].split('.').pop() || '').toLowerCase()
+  const cvMimeType = extractedCv.cvMimeType?.toLowerCase() || ''
+  const isWordFile = ['doc', 'docx'].includes(cvFileExtension)
+    || cvMimeType.includes('msword')
+    || cvMimeType.includes('wordprocessingml')
+  const isPdfFile = !isWordFile && (cvFileExtension === 'pdf' || !cvFileExtension || cvMimeType.includes('pdf'))
   const formatComponentScore = (value: number) => (
     Number.isInteger(value) ? String(value) : value.toFixed(1)
   )
@@ -311,8 +318,8 @@ export function CandidateDetailView({ triggerToast }: { triggerToast?: (message:
           <div className={styles.pdfPreviewCard}>
             <div className={styles.pdfPreviewHeader}>
               <div className={styles.pdfFileNameWrap}>
-                <i className="fa-regular fa-file-pdf"></i>
-                <span>{extractedCv.cvFileName || ''}</span>
+                <i className={`fa-regular ${isPdfFile ? 'fa-file-pdf' : 'fa-file-word'}`}></i>
+                <span>{cvFileName}</span>
               </div>
               {cvDownloadUrl && (
                 <a href={cvDownloadUrl} className={styles.pdfDownloadBtn} download>
@@ -323,8 +330,12 @@ export function CandidateDetailView({ triggerToast }: { triggerToast?: (message:
             </div>
 
             <div className={styles.pdfPreviewBody}>
-              {cvDownloadUrl ? (
+              {cvDownloadUrl && isPdfFile ? (
                 <iframe className={styles.pdfFrame} src={cvDownloadUrl} title="Candidate CV" />
+              ) : cvDownloadUrl ? (
+                <div className={styles.resumeStateMessage}>
+                  Word files cannot be previewed in the browser. Click “Download CV” to open this document.
+                </div>
               ) : (
                 <div className={styles.resumeStateMessage}>Original CV file is not available.</div>
               )}

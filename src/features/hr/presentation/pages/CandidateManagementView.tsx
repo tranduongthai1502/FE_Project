@@ -83,7 +83,7 @@ export function CandidateManagementView({ onHome }: { onHome?: () => void }) {
           <SearchInput
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search job title or department..."
+            placeholder="Search job title, name..."
             ariaLabel="Search candidates"
           />
         </div>

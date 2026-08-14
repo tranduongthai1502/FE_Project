@@ -308,7 +308,22 @@ function mapResumeDetailToCandidateDetail(base: CandidateDetail, payload: any): 
     scoringStatus: hasParsedData ? 'COMPLETED' : base.scoringStatus,
     extractedCv: {
       summary: toText(parsedData?.summary || parsedData?.professionalSummary || parsedData?.professional_summary),
-      cvFileName: toText(resume?.fileName || resume?.file_name || resume?.originalFileName || resume?.original_file_name),
+      cvFileName: toText(
+        resume?.fileName ||
+        resume?.file_name ||
+        resume?.originalFileName ||
+        resume?.original_file_name ||
+        resume?.originalName ||
+        resume?.original_name,
+      ),
+      cvMimeType: toText(
+        resume?.mimeType ||
+        resume?.mime_type ||
+        resume?.contentType ||
+        resume?.content_type ||
+        resume?.fileType ||
+        resume?.file_type,
+      ),
       cvDownloadUrl: withPdfCacheKey(
         resume?.fileUrl || resume?.file_url || resume?.cvDownloadUrl || resume?.cv_download_url,
         resume?.updatedAt || resume?.updated_at || resume?.id,
