@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { getHttpErrorToastMessage } from '@/core/api/axiosErrorHandler'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
@@ -84,8 +85,8 @@ export function CandidateCvUploadPage() {
       markResumeUploaded(jobId)
       setIsUploaded(true)
       navigate(`/candidate/companies/${companyId}/jobs/${jobId}/cv-score`)
-    } catch {
-      setError('Upload failed. Please try again.')
+    } catch (uploadError) {
+      setError(getHttpErrorToastMessage(uploadError, { fallbackMessage: 'Upload failed. Please try again.' }))
     } finally {
       setIsUploading(false)
     }

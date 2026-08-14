@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { getHttpErrorToastMessage } from '@/core/api/axiosErrorHandler'
 import { Breadcrumb } from '@/core/components/Breadcrumb'
 
 import { candidateApplicationApi } from '../../infrastructure/candidateApplicationApi'
 import { candidateCompanies, candidateCompanyJobs } from '../../domain/candidateData'
 import { truncateCandidateText } from '../../application/candidateText'
-import { useCandidateJobDetail } from '../../application/useCandidateCompanies'
+import { useCandidateCompanyDetail, useCandidateJobDetail } from '../../application/useCandidateCompanies'
 import { markResumeUploaded, readCandidateIdFromPayload, saveResumeCandidateId, getCurrentCandidateId, getSavedResumeCandidateId } from '../../application/candidateResumeSession'
 
 const allowedCvExtensions = ['pdf', 'doc', 'docx']
@@ -102,10 +103,11 @@ export function CandidateCvScorePage({
   const [reloadKey, setReloadKey] = useState(0)
   const [error, setError] = useState('')
   const company = candidateCompanies.find((item) => item.id === companyId)
+  const companyQuery = useCandidateCompanyDetail(companyId)
   const fallbackJob = candidateCompanyJobs.find((item) => item.id === jobId)
   const jobQuery = useCandidateJobDetail(jobId)
   const job = jobQuery.data || fallbackJob
-  const displayCompanyName = company?.name || ''
+  const displayCompanyName = companyQuery.data?.name || company?.name || ''
   const breadcrumbCompanyName = displayCompanyName || 'Company Detail'
   const displayJobTitle = job?.title || 'Job Detail'
   const score = getScore(analysis)
@@ -140,8 +142,8 @@ export function CandidateCvScorePage({
       setAnalysis(getResumePayload(uploadResult))
       setIsLoading(true)
       setReloadKey((key) => key + 1)
-    } catch {
-      setError('Upload failed. Please try again.')
+    } catch (uploadError) {
+      setError(getHttpErrorToastMessage(uploadError, { fallbackMessage: 'Upload failed. Please try again.' }))
     } finally {
       setIsUploadingCv(false)
     }
@@ -211,6 +213,14 @@ export function CandidateCvScorePage({
         items={[
           { label: 'Home', onClick: () => navigate('/candidate') },
           { label: 'Companies', onClick: () => navigate('/candidate/companies') },
+          {
+            label: truncateCandidateText(breadcrumbCompanyName),
+            onClick: () => navigate(`/candidate/companies/${companyId}`),
+          },
+          {
+            label: truncateCandidateText(displayJobTitle),
+            onClick: () => navigate(`/candidate/companies/${companyId}/jobs/${jobId}`),
+          },
           { label: 'View CV Score & Suggestions' },
         ]}
       />
