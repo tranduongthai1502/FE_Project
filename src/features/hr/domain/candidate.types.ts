@@ -46,6 +46,7 @@ export type ExtractedCvData = {
   certifications?: ExtractedCertificationItem[]
   skills: string[]
   cvFileName?: string
+  cvMimeType?: string
   cvDownloadUrl?: string
 }
 

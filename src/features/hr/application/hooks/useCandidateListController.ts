@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getListPageCount, getListTotalElements } from '@/core/utils/pagination'
+import { getListPageCount, getListTotalElements, type PaginationMeta } from '@/core/utils/pagination'
 import type { Candidate, CandidateDashboardStats } from '../../domain/candidate.types'
 import { hrCandidateApplicationApi } from '../../infrastructure/hrCandidateApplicationApi'
 
@@ -89,21 +89,28 @@ export function useCandidateListController() {
     return true
   }), [candidateQuery.data, selectedMatchScore])
 
-  const pageCount = getListPageCount(candidates, currentPage, CANDIDATE_PAGE_SIZE)
-  const totalElements = getListTotalElements(candidates, candidates.length)
-  const avgMatchScore = candidates.length
-    ? Math.round(candidates.reduce((sum, candidate) => sum + candidate.matchScore, 0) / candidates.length)
+  // Array.prototype.filter() returns a new array and drops the pagination
+  // metadata attached by the API adapter. Preserve it so records after the
+  // first page (for example candidate #6) remain reachable.
+  const candidatesWithPagination = Object.assign(candidates, {
+    __pagination: (candidateQuery.data as (Candidate[] & { __pagination?: PaginationMeta }) | undefined)?.__pagination,
+  })
+
+  const pageCount = getListPageCount(candidatesWithPagination, currentPage, CANDIDATE_PAGE_SIZE)
+  const totalElements = getListTotalElements(candidatesWithPagination, candidatesWithPagination.length)
+  const avgMatchScore = candidatesWithPagination.length
+    ? Math.round(candidatesWithPagination.reduce((sum, candidate) => sum + candidate.matchScore, 0) / candidatesWithPagination.length)
     : 0
   const stats = {
     totalCandidates: totalElements,
     newThisWeek: 0,
     avgMatchScore,
-    pendingReview: candidates.filter((candidate) => !candidate.reviewed).length,
+    pendingReview: candidatesWithPagination.filter((candidate) => !candidate.reviewed).length,
   }
 
   return {
     stats,
-    candidates,
+    candidates: candidatesWithPagination,
     isLoading: candidateQuery.isLoading,
     isError: candidateQuery.isError,
     searchQuery,
